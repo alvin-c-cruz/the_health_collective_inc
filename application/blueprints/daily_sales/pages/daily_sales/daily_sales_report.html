@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Daily Sales & Petty Cash Report – The Health Collective Inc.</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #f5f2ec;
+      --surface: #fff;
+      --border: #ccc8c0;
+      --border-dark: #999690;
+      --text: #1a1714;
+      --muted: #888480;
+      --accent: #c8a96e;
+      --accent-dk: #9e7d44;
+      --highlight: #fff8e1;
+      --green-bg: #e8f5e9;
+      --green-txt: #2e7d32;
+      --red: #c0392b;
+      --ink: #2c2825;
+      --rule: 1px solid var(--border);
+      --rule-dk: 1px solid var(--border-dark);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 8.5pt;
+      background: var(--bg);
+      color: var(--text);
+      padding: 1.5rem;
+    }
+
+    .page {
+      background: var(--surface);
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 11mm 13mm 10mm;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+    }
+
+    @media print {
+      @page { size: A4 portrait; margin: 10mm 12mm 10mm; }
+      body { background: #fff; padding: 0; font-size: 8pt; }
+      .page { box-shadow: none; padding: 0; width: 100%; min-height: unset; }
+      .print-btn { display: none !important; }
+    }
+
+    /* HEADER */
+    .hdr {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-top: 3px solid var(--ink);
+      border-bottom: var(--rule-dk);
+      padding: 5px 0 4px;
+      margin-bottom: 6px;
+    }
+    .org { font-size: 10.5pt; font-weight: 700; letter-spacing: 0.02em; color: var(--ink); }
+    .sub { font-family: 'DM Mono', monospace; font-size: 6pt; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+    .date-badges { display: flex; gap: 4px; }
+    .badge { text-align: center; border: var(--rule); border-radius: 3px; padding: 3px 8px; min-width: 84px; background: var(--surface); }
+    .badge.active { background: var(--accent); border-color: var(--accent-dk); }
+    .badge .dl { font-family: 'DM Mono', monospace; font-size: 5.5pt; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); display: block; }
+    .badge.active .dl { color: rgba(255,255,255,0.75); }
+    .badge .ds { font-size: 7pt; font-weight: 600; color: var(--ink); display: block; margin-top: 1px; }
+    .badge.active .ds { color: #fff; }
+
+    /* TOTAL SALES */
+    .ts-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 6px; }
+    .ts-card { border: var(--rule); border-radius: 3px; padding: 4px 8px; display: flex; justify-content: space-between; align-items: center; }
+    .ts-card.today { border-color: var(--accent); background: #fffbf3; }
+    .ts-lbl { font-family: 'DM Mono', monospace; font-size: 6pt; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+    .ts-dt { font-size: 6pt; color: var(--muted); }
+    .ts-amt { font-family: 'DM Mono', monospace; font-size: 10.5pt; font-weight: 600; color: var(--ink); }
+    .ts-card.today .ts-amt { color: var(--accent-dk); }
+
+    /* SECTION */
+    .sec { border: var(--rule); border-radius: 3px; margin-bottom: 5px; overflow: hidden; }
+    .sec-title { font-family: 'DM Mono', monospace; font-size: 6.5pt; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink); background: #f5f2ec; border-bottom: var(--rule); padding: 3px 5px; }
+
+    /* TABLE */
+    .tbl { width: 100%; border-collapse: collapse; }
+    .tbl td, .tbl th { padding: 1.8px 4px; border-bottom: var(--rule); font-size: 7.5pt; line-height: 1.3; }
+    .tbl th { font-family: 'DM Mono', monospace; font-size: 6pt; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); text-align: right; border-bottom: var(--rule-dk); padding-bottom: 2px; }
+    .tbl th:first-child { text-align: left; }
+    .tbl td.num { font-family: 'DM Mono', monospace; text-align: right; font-size: 7.5pt; }
+    .tbl td.lbl { color: var(--muted); padding-left: 12px; }
+    .tbl td.lbl2 { padding-left: 20px; font-size: 7pt; }
+    .tbl tr:last-child td { border-bottom: none; }
+
+    .tbl tr.sub-hdr td { font-family: 'DM Mono', monospace; font-size: 5.8pt; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); background: #faf8f4; border-bottom: var(--rule-dk); padding: 2px 4px 2px 5px; }
+    .tbl tr.total-row td { font-weight: 600; font-family: 'DM Mono', monospace; background: #f0ede7; border-top: var(--rule-dk); border-bottom: none; font-size: 7.5pt; }
+    .tbl tr.ending-row td { font-weight: 700; font-family: 'DM Mono', monospace; background: var(--highlight); border-top: var(--rule-dk); border-bottom: none; }
+    .tbl tr.highlight-row td { font-weight: 600; font-family: 'DM Mono', monospace; background: var(--highlight); border-bottom: var(--rule); }
+    .tbl tr.zero-row td { font-weight: 700; font-family: 'DM Mono', monospace; background: var(--green-bg); color: var(--green-txt); border-bottom: none; }
+    .neg { color: var(--red) !important; }
+
+    /* LOWER GRID */
+    .lower-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 5px; }
+
+    /* SIGNATURE */
+    .sig-block { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; border-top: var(--rule-dk); padding-top: 7px; margin-top: 5px; }
+    .sig-lbl { font-family: 'DM Mono', monospace; font-size: 6pt; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 14px; }
+    .sig-line { border-bottom: 1px solid var(--border-dark); margin-bottom: 3px; }
+    .sig-name { font-size: 7.5pt; font-weight: 600; }
+    .sig-date { font-family: 'DM Mono', monospace; font-size: 6pt; color: var(--muted); margin-top: 1px; }
+
+    /* PRINT BUTTON */
+    .print-btn { display: block; margin: 12px auto 0; padding: 6px 20px; font-family: 'DM Mono', monospace; font-size: 7pt; letter-spacing: 0.1em; text-transform: uppercase; background: var(--ink); color: #fff; border: none; border-radius: 3px; cursor: pointer; }
+    .print-btn:hover { background: var(--accent-dk); }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div>
+      <div class="org">The Health Collective Inc.</div>
+      <div class="sub">Daily Sales &amp; Petty Cash Report</div>
+    </div>
+    <div class="date-badges">
+      <div class="badge"><span class="dl">{{ prev_report.report_date.strftime("%A") }}</span><span class="ds">{{ prev_report.report_date.strftime("%B %d, %Y") }}</span></div>
+      <div class="badge active"><span class="dl">{{ curr_report.report_date.strftime("%A") }}</span><span class="ds">{{ curr_report.report_date.strftime("%B %d, %Y") }}</span></div>
+    </div>
+  </div>
+
+  <!-- TOTAL SALES -->
+  <div class="ts-strip">
+    <div class="ts-card">
+      <div><div class="ts-lbl">Total Sales</div><div class="ts-dt">{{ prev_report.report_date.strftime("%A, %B %d") }}</div></div>
+      <div class="ts-amt">{{ "{:,.2f}".format(prev_report.total_sales) }}</div>
+    </div>
+    <div class="ts-card today">
+      <div><div class="ts-lbl">Total Sales</div><div class="ts-dt">{{ curr_report.report_date.strftime("%A, %B %d") }}</div></div>
+      <div class="ts-amt">{{ "{:,.2f}".format(curr_report.total_sales) }}</div>
+    </div>
+  </div>
+
+  <!-- DIAGNOSTICS -->
+  <div class="sec">
+    <div class="sec-title">Diagnostics — Sales Breakdown</div>
+    <table class="tbl">
+      <thead>
+        <tr><th style="width:46%"></th><th style="width:14%;text-align:right">Receivable</th><th style="width:20%">Apr 24</th><th style="width:20%">Apr 25</th></tr>
+      </thead>
+      <tbody>
+        <tr class="sub-hdr"><td colspan="4">HMO</td></tr>
+        {% for hmo in hmos %}
+        <tr><td class="lbl2">{{ hmo.hmo_name }}</td><td class="num">{{ hmo.receivable }}</td><td class="num">{{ "{:,.2f}".format(prev_report.hmo_sales.get(hmo.hmo_name, 0.00)) }}</td><td class="num">{{ "{:,.2f}".format(curr_report.hmo_sales.get(hmo.hmo_name, 0.00)) }}</td></tr>
+        {% endfor %}
+        
+        <tr class="sub-hdr"><td colspan="4">APE</td></tr>
+        {% for ape in apes %}
+        <tr><td class="lbl2">{{ ape.ape_name }}</td><td class="num">{{ ape.receivable }}</td><td class="num">{{ "{:,.2f}".format(prev_report.hmo_sales.get(ape.ape_name, 0.00)) }}</td><td class="num">{{ "{:,.2f}".format(curr_report.hmo_sales.get(ape.ape_name, 0.00)) }}</td></tr>
+        {% endfor %}
+        
+        <tr class="sub-hdr"><td colspan="4">Home Service</td></tr>
+        <tr><td class="lbl2">Gcash / Bank Transfer</td><td class="num"></td><td class="num">2,482.00</td><td class="num">0.00</td></tr>
+        <tr><td class="lbl2">Credit Card</td><td class="num">—</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+        <tr><td class="lbl2">Cash</td><td class="num"></td><td class="num">0.00</td><td class="num">0.00</td></tr>
+        <tr class="sub-hdr"><td colspan="4">Walk-in</td></tr>
+        <tr><td class="lbl2">Gcash / Bank Transfer</td><td class="num"></td><td class="num">0.00</td><td class="num">0.00</td></tr>
+        <tr><td class="lbl2">A/R-o/o</td><td class="num">—</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+        <tr><td class="lbl2">Credit Card</td><td class="num">—</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+        <tr><td class="lbl2">Cash</td><td class="num"></td><td class="num">0.00</td><td class="num">1,540.00</td></tr>
+        <tr class="total-row"><td style="padding-left:5px">Total Diagnostics Sales</td><td class="num"></td><td class="num">2,482.00</td><td class="num">1,540.00</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- DIALYSIS -->
+  <div class="sec">
+    <div class="sec-title">Dialysis</div>
+    <table class="tbl">
+      <thead>
+        <tr><th style="width:46%"></th><th style="width:14%;text-align:right">Receivable</th><th style="width:20%">Apr 24</th><th style="width:20%">Apr 25</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="lbl2">Philhealth</td><td class="num">431,800.00</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+        <tr><td class="lbl2">Credit Card</td><td class="num">—</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+        <tr><td class="lbl2">Gcash / Bank Transfer</td><td class="num"></td><td class="num">0.00</td><td class="num">0.00</td></tr>
+        <tr><td class="lbl2">A/R-o/o</td><td class="num">—</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+        <tr><td class="lbl2">Cash</td><td class="num"></td><td class="num">0.00</td><td class="num">0.00</td></tr>
+        <tr class="total-row"><td style="padding-left:5px">Total Dialysis Sales</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- LOWER: Cash on Hand + Accountabilities -->
+  <div class="lower-grid">
+    <div class="sec">
+      <div class="sec-title">Cash on Hand</div>
+      <table class="tbl">
+        <thead><tr><th style="width:50%"></th><th>Apr 24</th><th>Apr 25</th></tr></thead>
+        <tbody>
+          <tr><td class="lbl">Beginning Cash</td><td class="num" style="font-weight:600">3,101.00</td><td class="num" style="font-weight:600">2,807.00</td></tr>
+          <tr><td class="lbl">Funds Received</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+          <tr><td class="lbl">Cash Sales</td><td class="num">0.00</td><td class="num">1,540.00</td></tr>
+          <tr><td class="lbl">Cash Deposited</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+          <tr><td class="lbl">Deposit Cash Out</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+          <tr><td class="lbl">Expenses</td><td class="num neg">(294.00)</td><td class="num">0.00</td></tr>
+          <tr class="ending-row"><td style="padding-left:5px">Ending Cash</td><td class="num">2,807.00</td><td class="num">4,347.00</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Accountabilities</div>
+      <table class="tbl">
+        <thead><tr><th style="width:50%"></th><th>Apr 24</th><th>Apr 25</th></tr></thead>
+        <tbody>
+          <tr><td class="lbl">Petty Cash Fund</td><td class="num">5,000.00</td><td class="num">5,000.00</td></tr>
+          <tr><td class="lbl">Unreimbursed Expenses</td><td class="num neg">(3,193.00)</td><td class="num neg">(3,193.00)</td></tr>
+          <tr><td class="lbl">Cash Fund</td><td class="num">1,000.00</td><td class="num">1,000.00</td></tr>
+          <tr><td class="lbl">Undeposited Cash Sales</td><td class="num">0.00</td><td class="num">1,540.00</td></tr>
+          <tr class="total-row"><td style="padding-left:5px">Total Accountabilities</td><td class="num">2,807.00</td><td class="num">4,347.00</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SIGNATURE -->
+  <div class="sig-block">
+    <div>
+      <div class="sig-lbl">Prepared by</div>
+      <div class="sig-line"></div>
+      <div class="sig-name">Stiffany Joy C. Salvador</div>
+      <div class="sig-date">April 25, 2026</div>
+    </div>
+    <div>
+      <div class="sig-lbl">Approved by</div>
+      <div class="sig-line"></div>
+      <div class="sig-name">DGO</div>
+    </div>
+  </div>
+
+</div>
+
+<button class="print-btn" onclick="window.print()">⎙ &nbsp; Print / Save as PDF</button>
+
+</body>
+</html>

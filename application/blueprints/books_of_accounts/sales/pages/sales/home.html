@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Sales{% endblock %}
+
+{% block styles %}
+    <style>
+        table {font-size: 11px;}
+    </style>
+    <style>
+        .small-button {
+            font-size: 11px;
+            padding: 2px 6px; /* Optional: Adjusts button size to match smaller font */
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <form method="post" id="filter-form">
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <label for="date_from"><strong>Date From</strong></label>
+                <input type="date" class="form-control" name="date_from" id="date_from" value="{{ date_from }}" onchange="document.getElementById('filter-form').submit();">
+            </div>
+            <div class="col-md-3">
+                <label for="date_to"><strong>Date To</strong></label>
+                <input type="date" class="form-control" name="date_to" id="date_to" value="{{ date_to }}" onchange="document.getElementById('filter-form').submit();">
+            </div>
+            <div class="col-md-3">
+                <label><strong></strong></label>
+                <a href="{{ url_for('sales.download', date_from=date_from, date_to=date_to) }}" class="btn btn-outline-secondary form-control">Download</a>
+            </div>
+            <div class="col-md-3">
+                <label><strong></strong></label>
+                <a href="{{ url_for('sales.add') }}" class="btn btn-outline-success form-control">Add Sales</a>
+            </div>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped text-nowrap">
+            <thead>
+                <tr>
+                <td colspan="{{ 5 + account_titles|length }}" class="border-0 text-left">
+                    <h5 class="mb-0">{{ app_name.upper() }} JOURNAL</h5>
+                    <small>FROM {{ date_from }} TO {{ date_to }}</small>
+                </td>
+            </tr>
+
+                <tr class="bg-light text-center">
+                    <th>Action</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>SI No.</th>
+                    <th>DR No.</th>
+                    <th>Customer</th>
+                    <th>Particulars</th>
+                    {% for title in account_titles %}
+                    <th>{{ title.upper() }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% set totals = {} %}
+                {% for title in account_titles %}
+                    {% set _ = totals.update({title: 0.0}) %}
+                {% endfor %}
+
+                {% for row in rows %}
+                <tr>
+                    <td>
+                                {% if row.submitted or row.cancelled %}
+                                    <a href="{{ url_for('sales.view', record_id=row.id) }}" class="btn btn-warning btn-sm small-button">View</a>
+                                    {% if current_user.admin %}
+                                    <a href="{{ url_for('sales.unlock', record_id=row.id) }}"
+                                       class="btn btn-info btn-sm small-button"
+                                       onclick="return confirmMessage('Type YES to unlock this record.')">Unlock</a>
+                                    {% endif %}
+                                {% else %}
+                                    <a href="{{ url_for('sales.edit', record_id=row.id) }}" class="btn btn-warning btn-sm small-button">Edit</a>
+                                    {% if current_user.admin %}
+                                    <a href="{{ url_for('sales.cancel', record_id=row.id) }}"
+                                       class="btn btn-danger btn-sm small-button"
+                                       onclick="return confirmMessage('Type YES to cancel this record.')">Cancel</a>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if row.cancelled %}
+                                    <span class="text-danger">Cancelled<br>{{ row.formatted_cancelled }}</span>
+                                {% elif row.submitted %}
+                                    <span class="text-warning">For Approval<br>{{ row.formatted_submitted }}</span>
+                                {% else %}
+                                    <span class="text-success font-weight-bold">DRAFT</span>
+                                {% endif %}
+                            </td>
+                    <td>{{ row.formatted_record_date }}</td>
+                    <td>{{ row.record_number }}</td>
+                    <td>{{ row.so_number }}</td>
+                    <td>{{ row.po_number }}</td>
+                    <td>{{ row.customer.customer_name }}</td>
+                    <td>{{ row.description }}</td>
+                    {% for title in account_titles %}
+                        {% set matched = row.sales_details | selectattr("account.account_title", "equalto", title) | list %}
+                        {% if matched %}
+                            {% set amount = matched[0].debit - matched[0].credit %}
+                            <td style="text-align: right;">
+                                {{ "{:,.2f}".format(amount | float if amount else "") }}
+                                {% set _ = totals.update({title: totals[title] + amount}) %}
+                            </td>
+                        {% else %}
+                            <td></td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="bg-light font-weight-bold text-right">
+                    <td colspan="7">TOTAL</td>
+                    {% for title in account_titles %}
+                    <td style="text-align: right;">
+                        {{ "{:,.2f}".format(totals[title] | float) }}
+                    </td>
+                    {% endfor %}
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "macros.html" import add_btn, edit_btn, delete_btn %}
+
+{% block title %}General Ledger{% endblock %}
+
+{% block content %}
+    <h1>General Ledger</h1>
+    <form action="{{ url_for('ledger.home') }}" method="post">
+        <label for="account_number">Account Number</label>
+        <input type="text" class="ui-autocomplete-input" name="account_number" id="account_number" autocomplete="off" value="{{ account_number }}">
+
+        <label for="date_from">From</label>
+        <input type="date" name="date_from" value="{{ date_from }}">
+        
+        <label for="date_to">To</label>
+        <input type="date" name="date_to" value="{{ date_to }}">
+
+        <input type="submit" name="cmd_button" value="Submit">
+        <input type="submit" name="cmd_button" value="Download">
+        <input type="submit" name="cmd_button" value="Download All">
+    </form>
+    
+    <table class="table table-striped table-dark">
+        <tr>
+            <th>Date</th>
+            <th>Reference</th>
+            <th>Particulars</th>
+            <th>Debit</th>
+            <th>Credit</th>
+            <th>Actions</th>
+        </tr>
+        {% for transaction in transactions %}
+        <tr>
+            <td>{{ transaction["date"] }}</td>
+            <td>{{ transaction["book"] }} no. {{ transaction["reference"] }}</td>            
+            <td>{{ transaction["particulars"] }}</td>
+            <td>{{ transaction["formatted_debit"] }}</td>
+            <td>{{ transaction["formatted_credit"] }}</td>
+            <td>
+                {% if transaction["date_posted"] %}
+                <a href="{{ transaction['view_url'] }}" class="btn btn-info mt-2 mb-2">View</a>
+                {% else %}
+                <a href="{{ transaction['edit_url'] }}" class="btn btn-success mt-2 mb-2">Edit</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        $(function() {
+            $.ajax({
+                url: '{{ url_for("accounts.account_autocomplete") }}'
+                }).done(function (data){
+                    $('#account_number').autocomplete({
+                        source: data,
+                        minLength: 2
+                    });
+                });
+            });
+    </script>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% from "macros_button.html" import edit_button, delete_button, approve_button, unlock_button %}
+
+{% block title %}Measure{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Measure</h1>
+
+    <!-- Add Button -->
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        <a href="{{ url_for('measure.add') }}" class="btn btn-outline-success">Add Measure</a>
+
+        <div class="d-flex gap-2">
+    <form method="POST" action="{{ url_for('measure.upload') }}" enctype="multipart/form-data">
+        <div class="input-group">
+            <input type="file" name="xlsx_file" accept=".xlsx" class="form-control" required>
+            <button type="submit" class="btn btn-outline-primary">Upload Excel</button>
+        </div>
+    </form>
+
+    <a href="{{ url_for('measure.download_template') }}" class="btn btn-outline-secondary">Download Template</a>
+</div>
+
+
+    </div>
+
+    <!-- Measure Table -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Description</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                        <tr>
+                            <td aria-label="Description">{{ row.measure_name }}</td>
+                            <td>
+                                {% if not row.approved %}
+                                    {{ edit_button(url_for('measure.edit', record_id=row.id)) }}
+                                    {{ delete_button(url_for('measure.delete', record_id=row.id)) }}
+                                    {% if current_user.admin %}
+                                        {{ approve_button(url_for('measure.approve', record_id=row.id)) }}
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">Approved — editing locked.</span>
+                                    {% if current_user.admin %}
+                                        {{ unlock_button(url_for('measure.unlock', record_id=row.id)) }}
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="2" class="text-center text-muted py-4">
+                                No accounts found. 
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

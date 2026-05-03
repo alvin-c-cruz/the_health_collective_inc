@@ -1,0 +1,6 @@
+            {% if ("Sales Extra" in current_user.user_roles) %}
+            <li class="nav-item">
+              <a class="dropdown-item" href="{{ url_for('sales_extra.home') }}">Sales Extra</a>
+            </li>
+            {% endif %}
+

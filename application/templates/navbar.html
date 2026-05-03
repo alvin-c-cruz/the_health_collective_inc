@@ -1,0 +1,144 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">Home</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+
+          {% if current_user.is_active %}
+          
+          <!-- Reports Menu -->
+            {% if (
+              "Trial Balance" in current_user.user_roles 
+              ) %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Reports
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+              {% include "trial_balance/navbar.html" %}
+              </ul>
+            </li>
+            {% endif %}
+            <!-- End of Reports Menu -->
+
+          <!-- Operations Menu -->
+            {% if (
+              "Daily Sales" in current_user.user_roles 
+              ) %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Operations
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+              {% include "daily_sales/navbar.html" %}
+              </ul>
+            </li>
+            {% endif %}
+            <!-- End of Reports Menu -->
+
+          <!-- Books of Accounts Menu -->
+            {% if (
+              "Sales" in current_user.user_roles 
+              or "Receipt" in current_user.user_roles
+              or "Accounts Payable" in current_user.user_roles
+              or "Disbursement" in current_user.user_roles
+              or "General" in current_user.user_roles
+              ) %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Books of Accounts
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+              {% include "sales/navbar.html" %}
+              {% include "receipt/navbar.html" %}
+              {% include "accounts_payable/navbar.html" %}
+              {% include "disbursement/navbar.html" %}
+              {% include "general/navbar.html" %}
+              </ul>
+            </li>
+            {% endif %}
+            <!-- End of Books of Accounts Menu -->
+
+
+          <!-- Extra Books Menu -->
+            {% if (
+              "Sales Extra" in current_user.user_roles 
+              or "Receipt Extra" in current_user.user_roles
+              or "Accounts Payable Extra" in current_user.user_roles
+              or "Disbursement Extra" in current_user.user_roles
+              or "General Extra" in current_user.user_roles
+              ) %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Extra Books
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+              {% include "sales_extra/navbar.html" %}
+              {% include "receipt_extra/navbar.html" %}
+              {% include "accounts_payable_extra/navbar.html" %}
+              {% include "disbursement_extra/navbar.html" %}
+              {% include "general_extra/navbar.html" %}
+              </ul>
+            </li>
+            {% endif %}
+            <!-- End of Books of Accounts Menu -->
+
+          <!-- Accounts Menu -->
+            {% if (
+              "Account" in current_user.user_roles 
+              or "Account Type" in current_user.user_roles
+              or "Account Class" in current_user.user_roles
+              ) %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Accounts
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+              {% include "account/navbar.html" %}
+              {% include "account_type/navbar.html" %}
+              {% include "account_class/navbar.html" %}
+              </ul>
+            </li>
+            {% endif %}
+            <!-- End of Accounts Menu -->
+          
+
+
+          {% endif %}
+          <!-- Options Menu -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Options
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                  {% if current_user.admin %}
+                  <li class="nav-item">
+                      <a class="dropdown-item" href="{{ url_for('user.user_list') }}">User Register</a>
+                  </li>
+                  <li class="nav-item">
+                      <a class="dropdown-item" href="{{ url_for('user.change_password') }}">User Change Password</a>
+                  </li>
+                  {% endif %}
+                  {% include "customer/navbar.html" %}
+                  {% include "vendor/navbar.html" %}
+                  {% include "product/navbar.html" %}
+                  {% include "measure/navbar.html" %}
+              </ul>
+          </li>
+            <!-- End of Options Menu -->
+
+          <li class="nav-item">
+            <span class="nav-link">Logged in as {{ current_user.user_name }}</span>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-link nav-link custom-border" href="{{ url_for('user.logout') }}">Logout</a>
+          </li>
+        </ul>
+      </div>
+      <span class="navbar-version ms-auto text-muted">v0.18</span>
+    </div>
+  </nav>
+  

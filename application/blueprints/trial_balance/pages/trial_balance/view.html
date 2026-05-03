@@ -1,0 +1,37 @@
+{% extends "base_financial_report.html" %}
+
+{% block title %}Trial Balance{% endblock %}
+
+{% block content %}
+<h2>
+    Ledger – {{ account.account_number }} {{ account.account_title }}
+    ({{ month_label }} {{ year }})
+</h2>
+
+<table class="table table-sm table-bordered">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Ref</th>
+            <th>Description</th>
+            <th class="text-end">Debit</th>
+            <th class="text-end">Credit</th>
+            <th class="text-end">Balance</th>
+            <th>View</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry in entries %}
+        <tr>
+            <td>{{ entry.date }}</td>
+            <td>{{ entry.reference }}</td>
+            <td>{{ entry.description }}</td>
+            <td class="text-end">{{ entry.debit }}</td>
+            <td class="text-end">{{ entry.credit }}</td>
+            <td class="text-end">{{ entry.balance }}</td>
+            <td><a href="#">Click Here</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

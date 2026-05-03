@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "macros_button.html" import edit_button, delete_button, approve_button, unlock_button %}
+
+{% block title %}Account Classification{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Account Classification</h1>
+
+    <!-- Add Button -->
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        <a href="{{ url_for('account_class.add') }}" class="btn btn-outline-success">Add Account Classification</a>
+
+        <div class="d-flex gap-2">
+    <form method="POST" action="{{ url_for('account_class.upload') }}" enctype="multipart/form-data">
+        <div class="input-group">
+            <input type="file" name="xlsx_file" accept=".xlsx" class="form-control" required>
+            <button type="submit" class="btn btn-outline-primary">Upload Excel</button>
+        </div>
+    </form>
+
+    <a href="{{ url_for('account_class.download_template') }}" class="btn btn-outline-secondary">Download Template</a>
+</div>
+
+
+    </div>
+
+    <!-- Account Table -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle table-striped">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Account Classification</th>
+                            <th scope="col">Order</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                        <tr>
+                            <td aria-label="Account Classification">{{ row.account_class_name }}</td>
+                            <td aria-label="Order">{{ row.priority }}</td>
+                            <td>
+                                {% if not row.approved %}
+                                    {{ edit_button(url_for('account_class.edit', record_id=row.id)) }}
+                                    {{ delete_button(url_for('account_class.delete', record_id=row.id)) }}
+                                    {% if current_user.admin %}
+                                        {{ approve_button(url_for('account_class.approve', record_id=row.id)) }}
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">Approved — editing locked.</span>
+                                    {% if current_user.admin %}
+                                        {{ unlock_button(url_for('account_class.unlock', record_id=row.id)) }}
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-4">
+                                No records found. Click "Add" to create one.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
