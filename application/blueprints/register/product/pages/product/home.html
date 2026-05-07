@@ -33,6 +33,7 @@
                     <thead class="table-light">
                         <tr>
                             <th scope="col">Product Name</th>
+                            <th scope="col">Product Type</th>
                             <th scope="col">Action</th>
                         </tr>
                     </thead>
@@ -40,6 +41,7 @@
                         {% for row in rows %}
                         <tr>
                             <td aria-label="Product Name">{{ row.product_name }}</td>
+                            <td>{{ row.product_type.product_type_name }}</td>
                             <td>
                                 {% if not row.approved %}
                                     {{ edit_button(url_for('product.edit', record_id=row.id)) }}
@@ -57,8 +59,8 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="2" class="text-center text-muted py-4">
-                                No accounts found. 
+                            <td colspan="3" class="text-center text-muted py-4">
+                                No records found. 
                             </td>
                         </tr>
                         {% endfor %}

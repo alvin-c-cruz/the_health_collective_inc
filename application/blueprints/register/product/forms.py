@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from sqlalchemy import func
+from application.blueprints.register import customer
+from application.blueprints.register.product_type.models import ProductType
 from application.extensions import db
 from .models import Product as Obj
 from .admin_models import UserProduct as Preparer
@@ -35,6 +37,8 @@ def get_attributes_as_dict(object):
 class Form:
     id: int = None
     product_name: str = ""
+    product_type_id: int = None
+    product_type_name: str = ""
     
     user_prepare_id: int = None
     user_prepare: str = ""
@@ -45,6 +49,12 @@ class Form:
         for attribute in get_attributes(self):
             if attribute in ["errors"]:
                 continue
+            elif attribute in ["product_type_id"]:
+                setattr(self, attribute, int(getattr(row, attribute)))
+                product_type = ProductType.query.get(getattr(row, attribute))
+                self.product_type_name = product_type.product_type_name if product_type else ""
+            elif attribute == "product_type_name":
+                pass
             else:
                 value = getattr(row, attribute)
                 if value is None:
@@ -57,6 +67,7 @@ class Form:
             # Add a new record
             _dict = get_attributes_as_dict(self)
             if "locked" in _dict: _dict.pop("locked")
+            _dict.pop("product_type_name")
             
             new_record = Obj(
                 **_dict
@@ -103,8 +114,19 @@ class Form:
                 value = getattr(request_form, "get")("record_id")
                 if value:
                     setattr(self, "id", int(value))
+                    
             elif attribute in ("submitted", "cancelled"):
                 continue
+            
+            elif attribute in ["product_type_id"]:
+                product_type_name = request_form.get('product_type_name')
+                product_type = ProductType.query.filter_by(
+                    product_type_name=product_type_name
+                    ).first()
+                if product_type:
+                    setattr(self, attribute, product_type.id)
+                self.product_type_name = product_type_name
+
             else:
                 try:
                     setattr(self, attribute, getattr(request_form, "get")(attribute).upper())
@@ -127,6 +149,15 @@ class Form:
                     ).first()
             if duplicate:
                 self.errors["product_name"] = "Product name is already used."               
+                
+        if not self.product_type_name:
+                self.errors["product_type_name"] = "Please select product type."
+        else:
+            product_type = ProductType.query.filter(ProductType.product_type_name==self.product_type_name).first()
+            if not product_type:
+                self.errors["product_type_name"] = f"{self.product_type_name} does not exists."
+            else:
+                self.product_type_id = product_type.id
 
         if not self.errors:
             return True     

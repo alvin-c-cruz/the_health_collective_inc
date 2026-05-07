@@ -9,6 +9,7 @@ from .register import vendor
 from .register import customer
 from .register import measure
 from .register import product
+from .register import product_type
 from .register import tender
 
 from .books_of_accounts import sales
