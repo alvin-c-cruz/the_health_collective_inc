@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from sqlalchemy import func
 from application.extensions import db
-from .models import Product as Obj
+from .models import Tender as Obj
 from .admin_models import UserTender as Preparer
 from . import app_name
 
