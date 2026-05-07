@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "macros_simple_form.html" import text_box, text_area, save_button %}
+
+{% block title %}Product Type{% endblock %}
+
+{% block content %}
+<div class="container p-5">
+    {% if form.id %}
+    <h1 class="mb-4">Edit Product Type</h1>
+    <form action="{{ url_for('product_type.edit', record_id=form.id) }}" method="post">
+        <input type="number" name="record_id" value="{{ form.id }}" hidden>
+        {% else %}
+    <h1 class="mb-4">Add Product Type</h1>
+    <form action="{{ url_for('product_type.add') }}" method="post">
+        {% endif %}
+    
+        {{ text_box(form, "Product Type Name", "product_type_name", form.product_type_name, autofocus=True) }}
+
+        {{  save_button() }}
+
+    </form>
+</div>
+{% endblock %}

@@ -9,6 +9,7 @@ from .register import vendor
 from .register import customer
 from .register import measure
 from .register import product
+from .register import tender
 
 from .books_of_accounts import sales
 from .books_of_accounts import receipt
@@ -25,5 +26,5 @@ from .books_of_accounts_extra import general_extra
 from . import trial_balance
 from . import ledger
 
-from . import daily_sales
+from .operations import daily_sales
 
