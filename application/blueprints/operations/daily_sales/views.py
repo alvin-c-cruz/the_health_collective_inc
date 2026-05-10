@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, request
 from datetime import date
 from dataclasses import dataclass
 
@@ -14,7 +14,25 @@ ROLES_ACCEPTED = app_label
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def home():
-    return render_template("daily_sales/home.html", app_label=app_label)
+    summary = Summary()
+    
+    context = {
+        "app_label": app_label,
+        "today": date.today(),
+        "summary": summary,
+    }
+    return render_template("daily_sales/home.html", **context)
+
+
+@bp.route('/transaction/new', methods=['GET'])
+def new_transaction():
+    transaction_type = request.args.get('type')  # gets 'walk_in' from ?type=walk_in
+    return render_template('daily_sales/new_transaction.html', transaction_type=transaction_type)
+
+
+@bp.route('/deposit/new', methods=['GET'])
+def record_deposit():
+    return render_template('record_deposit.html')
 
 
 @bp.route("/daily_report", methods=["GET", "POST"])
@@ -60,7 +78,7 @@ def daily_report():
         "prev_report": prev_report,
         "curr_report": curr_report,
         "hmos": hmos,
-        "app_label": app_label
+        "app_label": app_label,
     }
     return render_template("daily_sales/daily_sales_report.html", **context)
 
@@ -79,3 +97,8 @@ class Report:
     def total_sales(self):
         total = self.dialysis_sales + self.total_diagnostic_sales
         return total
+    
+
+class Summary:
+    total_sales: float = 0.00
+    cash_on_hand: float = 0.00

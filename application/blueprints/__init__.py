@@ -11,6 +11,7 @@ from .register import measure
 from .register import product
 from .register import product_type
 from .register import tender
+from .register import sex
 
 from .books_of_accounts import sales
 from .books_of_accounts import receipt

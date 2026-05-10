@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 from sqlalchemy import func
-from application.blueprints.register.sex.models import Sex
 from application.extensions import db
-from .models import Customer as Obj
-from .admin_models import UserCustomer as Preparer
+from .models import Sex as Obj
+from .admin_models import UserSex as Preparer
 from . import app_name
 
 def get_attributes(object):
@@ -35,14 +34,7 @@ def get_attributes_as_dict(object):
 @dataclass
 class Form:
     id: int = None
-    customer_name: str = ""
-    birthday: str = ""
-    sex_id: int = None
     sex_name: str = ""
-    tin: str = ""
-    address: str = ""
-    business_style: str = ""
-    salesman: str = ""
     
     user_prepare_id: int = None
     user_prepare: str = ""
@@ -53,10 +45,6 @@ class Form:
         for attribute in get_attributes(self):
             if attribute in ["errors"]:
                 continue
-            elif attribute in ["sex_id"]:
-                sex = Sex.query.get(getattr(row, "sex_id"))
-                setattr(self, attribute, sex.id)
-                self.sex_name = sex.sex_name
             else:
                 value = getattr(row, attribute)
                 if value is None:
@@ -69,8 +57,7 @@ class Form:
             # Add a new record
             _dict = get_attributes_as_dict(self)
             if "locked" in _dict: _dict.pop("locked")
-            _dict.pop("sex_name")
-
+            
             new_record = Obj(
                 **_dict
                 )
@@ -118,14 +105,6 @@ class Form:
                     setattr(self, "id", int(value))
             elif attribute in ("submitted", "cancelled"):
                 continue
-            elif attribute in ["sex_name"]:
-                sex_name = request_form.get('sex_name')
-                sex = Sex.query.filter_by(
-                    sex_name=sex_name
-                    ).first()
-                if sex:
-                    setattr(self, attribute, sex.id)
-                self.sex_name = sex_name
             else:
                 try:
                     setattr(self, attribute, getattr(request_form, "get")(attribute).upper())
@@ -137,25 +116,17 @@ class Form:
     def _validate_on_submit(self):
         self.errors = {}
 
-        if not self.customer_name:
-            self.errors["customer_name"] = "Please type customer name."
+        if not self.sex_name:
+            self.errors["sex_name"] = "Please type description."
         else:
             duplicate = Obj.query.filter(
                 func.lower(
-                    Obj.customer_name
-                    ) == func.lower(self.customer_name), 
+                    Obj.sex_name
+                    ) == func.lower(self.sex_name), 
                     Obj.id != self.id
                     ).first()
             if duplicate:
-                self.errors["customer_name"] = "Customer name is already used."               
-
-        if not self.sex_name:
-            self.errors["sex_name"] = "Please type sex."
-        else:
-            sex = Sex.query.filter(Sex.sex_name == self.sex_name).first()
-            if not sex:
-                self.errors["sex_name"] = f"{self.sex_name} does not exist."
-
+                self.errors["sex_name"] = "Sex is already used."               
 
         if not self.errors:
             return True     

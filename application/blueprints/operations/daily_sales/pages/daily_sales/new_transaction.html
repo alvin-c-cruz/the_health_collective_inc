@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}New Transaction{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+  <div class="row mb-3">
+    <div class="col">
+      <h4>New Transaction
+        <span class="badge bg-secondary text-capitalize">{{ transaction_type | replace('_', ' ') }}</span>
+      </h4>
+      <hr>
+    </div>
+  </div>
+
+  <form method="POST">
+
+    <!-- Header Info -->
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <label class="form-label">Record Date</label>
+        <input type="date" name="record_date" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Record Number</label>
+        <input type="text" name="record_number" class="form-control upper-case">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">POS Number</label>
+        <input type="text" name="pos_number" class="form-control upper-case">
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label class="form-label">DashLabs Number</label>
+        <input type="text" name="dashlabs_number" class="form-control upper-case">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Customer</label>
+        <input type="text" name="customer_id" class="form-control" placeholder="Search customer...">
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-md-12">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-control" rows="2"></textarea>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Transaction Details (Line Items) -->
+    <div class="row mb-2">
+      <div class="col">
+        <h6>Items</h6>
+      </div>
+    </div>
+
+    <div class="row mb-2 fw-bold">
+      <div class="col-md-5">Product</div>
+      <div class="col-md-2">Amount</div>
+      <div class="col-md-2">Discount</div>
+      <div class="col-md-2">Note</div>
+      <div class="col-md-1"></div>
+    </div>
+
+    <div id="transaction-details">
+      <div class="row mb-2 detail-row">
+        <div class="col-md-5">
+          <select name="product_id[]" class="form-select">
+            <option value="">-- Select Product --</option>
+            {% for pt in product_types %}
+            <optgroup label="{{ pt.product_type_name }}">
+              {% for product in pt.products %}
+              <option value="{{ product.id }}">{{ product.product_name }}</option>
+              {% endfor %}
+            </optgroup>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <input type="number" name="amount[]" class="form-control" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="col-md-2">
+          <input type="number" name="detail_discount[]" class="form-control" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="col-md-2">
+          <input type="text" name="side_note[]" class="form-control" placeholder="Optional">
+        </div>
+        <div class="col-md-1">
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col">
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addDetailRow()">+ Add Item</button>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Tender -->
+    <div class="row mb-2">
+      <div class="col">
+        <h6>Payment / Tender</h6>
+      </div>
+    </div>
+
+    <div class="row mb-2 fw-bold">
+      <div class="col-md-4">Tender Type</div>
+      <div class="col-md-3">Amount</div>
+      <div class="col-md-4">Note</div>
+      <div class="col-md-1"></div>
+    </div>
+
+    <div id="transaction-tenders">
+      <div class="row mb-2 tender-row">
+        <div class="col-md-4">
+          <select name="tender_id[]" class="form-select">
+            <option value="">-- Select Tender --</option>
+            {% for tender in tenders %}
+            <option value="{{ tender.id }}">{{ tender.tender_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <input type="number" name="tender_amount[]" class="form-control" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="col-md-4">
+          <input type="text" name="tender_note[]" class="form-control" placeholder="Optional">
+        </div>
+        <div class="col-md-1">
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col">
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addTenderRow()">+ Add Tender</button>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Header Discount -->
+    <div class="row mb-3 justify-content-end">
+      <div class="col-md-3">
+        <label class="form-label">Header Discount</label>
+        <input type="number" name="discount" class="form-control" placeholder="0.00" step="0.01" min="0" value="0">
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="row mb-4">
+      <div class="col d-flex gap-2">
+        <button type="submit" class="btn btn-primary"
+          onclick="return confirmSubmit()">Save Transaction</button>
+        <a href="javascript:history.back()" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </div>
+
+  </form>
+</div>
+
+{% block scripts %}
+<script>
+  // Clone the first detail row template
+  function addDetailRow() {
+    const container = document.getElementById('transaction-details');
+    const firstRow = container.querySelector('.detail-row');
+    const clone = firstRow.cloneNode(true);
+    // Clear values in clone
+    clone.querySelectorAll('input, select').forEach(el => el.value = '');
+    container.appendChild(clone);
+  }
+
+  function addTenderRow() {
+    const container = document.getElementById('transaction-tenders');
+    const firstRow = container.querySelector('.tender-row');
+    const clone = firstRow.cloneNode(true);
+    clone.querySelectorAll('input, select').forEach(el => el.value = '');
+    container.appendChild(clone);
+  }
+
+  function removeRow(btn) {
+    const row = btn.closest('.row');
+    const container = row.parentElement;
+    // Keep at least one row
+    if (container.querySelectorAll('.row').length > 1) {
+      row.remove();
+    }
+  }
+</script>
+{% endblock %}
+
+{% endblock %}

@@ -9,6 +9,11 @@ class Customer(db.Model):
     tin = db.Column(db.String(255))
     address = db.Column(db.String(255))
     business_style = db.Column(db.String(), default="")
+    birthday = db.Column(db.String())
+
+    sex_id = db.Column(db.Integer, db.ForeignKey('sex.id'), nullable=False)
+    sex = db.relationship('Sex', backref='customers', lazy=True)
+
     salesman = db.Column(db.String(), default="")
 
     def __str__(self):
