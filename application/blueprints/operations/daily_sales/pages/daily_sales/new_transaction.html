@@ -714,7 +714,7 @@
 
           <input type="text" name="dashlabs_number" class="form-control upper-case"
 
-            value="{{ form.dashlabs_number }}" placeholder="e.g. DL-0001" {{ 'readonly' if form._locked_ }}>
+            value="{{ form.dashlabs_number }}" placeholder="e.g. DL-0001" {{ 'readonly' if form._locked_ }} {{ 'autofocus' if not form._locked_ }}>
 
         </div>
 
