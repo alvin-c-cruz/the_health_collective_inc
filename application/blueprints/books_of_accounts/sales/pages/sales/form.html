@@ -41,61 +41,38 @@
     {% endif %}
     <hr>
 
-    <div class="row mb-2">
-        <div class="col-6">
-            <div class="row">
-                <div class="col-4">
-                    {% if form.errors.get('entry') %}
-                    <p class="text-danger">{{ form.errors.get('entry') }}</p>
-                    {% endif %}
-                    {% if form.cancelled %}
-                    <h1 style="color:red;">CANCELLED</h1>
-                    {% endif %}
-                </div>
-                <div class="col-4">
-                    {% if form.id %}
-                    <a href="{{ url_for('sales.add') }}"
-                       class="btn btn-success form-control"
-                       >Add new voucher</a>
-                    {% endif %}
-                </div>
-                <div class="col-4">
-                    {% if form.id and not (form.submitted or form.cancelled) %}
-                    <a href="{{ url_for('sales.print', record_id=form.id) }}"
-                       class="btn btn-secondary form-control"
-                       target="_blank">Print Preview</a>
-                    {% endif %}
-                </div>
-            </div>
+    <div class="row mb-2 align-items-center">
+        <div class="col-6 d-flex gap-2 align-items-center">
+            {% if form.errors.get('entry') %}
+            <span class="text-danger small">{{ form.errors.get('entry') }}</span>
+            {% endif %}
+            {% if form.cancelled %}
+            <span class="fw-bold text-danger">CANCELLED</span>
+            {% endif %}
+            {% if form.id %}
+            <a href="{{ url_for('sales.add') }}" class="btn btn-primary btn-sm">Add new voucher</a>
+            {% endif %}
+            {% if form.id and not (form.submitted or form.cancelled) %}
+            <a href="{{ url_for('sales.print', record_id=form.id) }}" class="btn btn-secondary btn-sm" target="_blank">Print Preview</a>
+            {% endif %}
+            {% if form.id and (form.submitted or form.cancelled) %}
+            <a href="{{ url_for('sales.print', record_id=form.id) }}" class="btn btn-secondary btn-sm" target="_blank">Print</a>
+            {% endif %}
         </div>
-        <div class="col-6">
-            <div class="row">
-                <div class="col-4">
-                    {% if not form.submitted and not form.cancelled %}
-                    <input type="submit" value="Save Draft" name="cmd_button" class="btn btn-success form-control">
-                    {% endif %}
-                </div>
-                <div class="col-4">
-                    {% if form.id %}
-                        {% if form.submitted or form.cancelled %}
-                        <a href="{{ url_for('sales.print', record_id=form.id) }}"
-                           class="btn btn-secondary form-control"
-                           target="_blank">Print</a>
-                        {% else %}
-                        <input type="submit" value="Submit for Printing" name="cmd_button"
-                               class="btn btn-primary form-control"
-                               onclick="return confirmMessage('Type YES to submit this record for printing.');">
-                        {% endif %}
-                    {% endif %}
-                </div>
-                <div class="col-4">
-                    {% if not form.cancelled and form.id %}
-                    <a href="{{ url_for('sales.cancel', record_id=form.id) }}"
-                       class="btn btn-danger form-control"
-                       onclick="return confirmMessage('Type YES to cancel this record.');">Cancel</a>
-                    {% endif %}
-                </div>
-            </div>
+        <div class="col-6 d-flex gap-2 justify-content-end align-items-center">
+            {% if not form.submitted and not form.cancelled %}
+            <input type="submit" value="Save Draft" name="cmd_button" class="btn btn-primary">
+            {% endif %}
+            {% if form.id and not (form.submitted or form.cancelled) %}
+            <input type="submit" value="Submit for Printing" name="cmd_button"
+                   class="btn btn-info"
+                   onclick="return confirmMessage('Type YES to submit this record for printing.');">
+            {% endif %}
+            {% if not form.cancelled and form.id %}
+            <a href="{{ url_for('sales.cancel', record_id=form.id) }}"
+               class="btn btn-secondary"
+               onclick="return confirmMessage('Type YES to cancel this record.');">Cancel</a>
+            {% endif %}
         </div>
     </div>
 
@@ -128,7 +105,7 @@
     {% endif %}
 
     {% if form.errors.get("totals") %}
-    <p style="color: red;">{{ form.errors.get("totals") }}</p>
+    <div class="alert alert-danger py-2 small">{{ form.errors.get("totals") }}</div>
     {% endif %}
 
     <table class="table table-striped table-light">

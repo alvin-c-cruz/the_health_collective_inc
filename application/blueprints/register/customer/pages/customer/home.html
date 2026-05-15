@@ -9,17 +9,17 @@
 
     <!-- Add Button -->
     <div class="mb-3 d-flex justify-content-between align-items-center">
-        <a href="{{ url_for('customer.add') }}" class="btn btn-outline-success">Add Customer</a>
+        <a href="{{ url_for('customer.add') }}" class="btn btn-primary btn-sm">Add Customer</a>
 
         <div class="d-flex gap-2">
     <form method="POST" action="{{ url_for('customer.upload') }}" enctype="multipart/form-data">
         <div class="input-group">
             <input type="file" name="xlsx_file" accept=".xlsx" class="form-control" required>
-            <button type="submit" class="btn btn-outline-primary">Upload Excel</button>
+            <button type="submit" class="btn btn-info btn-sm">Upload Excel</button>
         </div>
     </form>
 
-    <a href="{{ url_for('customer.download_template') }}" class="btn btn-outline-secondary">Download Template</a>
+    <a href="{{ url_for('customer.download_template') }}" class="btn btn-secondary btn-sm">Download Template</a>
 </div>
 
 
