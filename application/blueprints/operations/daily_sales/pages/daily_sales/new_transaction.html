@@ -1,202 +1,1692 @@
 {% extends "base.html" %}
 
-{% block title %}New Transaction{% endblock %}
+
+
+{% block title %}{{ "Edit" if not is_new else "New" }} Transaction{% endblock %}
+
+
+
+{% block styles %}
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+<style>
+
+  :root {
+
+    --thc-bg: #f5f3ee;
+
+    --thc-surface: #ffffff;
+
+    --thc-border: #e4e0d8;
+
+    --thc-border-focus: #6a8f7a;
+
+    --thc-text: #1a1a1a;
+
+    --thc-text-muted: #7a7670;
+
+    --thc-accent: #6a8f7a;
+
+    --thc-accent-light: #eef3f0;
+
+    --thc-accent-hover: #557a68;
+
+    --thc-danger: #c0392b;
+
+    --thc-danger-light: #fdf0ee;
+
+    --thc-warning-bg: #fffbf0;
+
+    --thc-warning-border: #f0c040;
+
+    --thc-badge-bg: #e8f0eb;
+
+    --thc-badge-text: #3d6b51;
+
+    --thc-shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+
+    --thc-radius: 10px;
+
+    --thc-radius-sm: 6px;
+
+  }
+
+
+
+  body { font-family: 'DM Sans', sans-serif; background-color: var(--thc-bg); color: var(--thc-text); }
+
+
+
+  .txn-wrapper { max-width: 960px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+
+
+
+  .txn-page-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.75rem; flex-wrap: wrap; }
+
+  .txn-page-header h4 { font-size: 1.3rem; font-weight: 600; margin: 0; letter-spacing: -0.02em; }
+
+  .txn-type-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 999px; background: var(--thc-badge-bg); color: var(--thc-badge-text); font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
+
+
+
+  .txn-locked-banner { background: var(--thc-warning-bg); border: 1px solid var(--thc-warning-border); border-radius: var(--thc-radius-sm); padding: 0.65rem 1rem; margin-bottom: 1.25rem; font-size: 0.85rem; color: #7a5c00; }
+
+
+
+  .txn-card { background: var(--thc-surface); border: 1px solid var(--thc-border); border-radius: var(--thc-radius); box-shadow: var(--thc-shadow-sm); padding: 1.5rem; margin-bottom: 1.25rem; }
+
+  .txn-card-title { display: flex; align-items: center; justify-content: space-between; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--thc-text-muted); margin-bottom: 1.25rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--thc-border); }
+  .txn-card-title .btn-add-row { margin-top: 0; font-size: 0.75rem; padding: 0.3rem 0.7rem; text-transform: none; letter-spacing: 0; }
+
+
+
+  .form-label { font-size: 0.78rem; font-weight: 500; color: var(--thc-text-muted); margin-bottom: 0.35rem; }
+
+  .form-control, .form-select { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; border: 1px solid var(--thc-border); border-radius: var(--thc-radius-sm); padding: 0.5rem 0.75rem; transition: border-color 0.15s, box-shadow 0.15s; }
+
+  .form-control:focus, .form-select:focus { border-color: var(--thc-border-focus); box-shadow: 0 0 0 3px rgba(106,143,122,0.12); outline: none; }
+
+  .form-control.is-invalid, .form-select.is-invalid { border-color: var(--thc-danger); }
+
+  .invalid-feedback { display: block; font-size: 0.75rem; color: var(--thc-danger); margin-top: 0.2rem; }
+
+  textarea.form-control { resize: vertical; min-height: 70px; }
+
+  input[type="number"] { font-family: 'DM Mono', monospace; font-size: 0.85rem; }
+
+
+
+  /* Read-only field badge on label */
+
+  .field-badge {
+
+    display: inline-block;
+
+    font-size: 0.62rem;
+
+    font-weight: 600;
+
+    letter-spacing: 0.06em;
+
+    text-transform: uppercase;
+
+    background: #f0ede7;
+
+    color: var(--thc-text-muted);
+
+    border-radius: 99px;
+
+    padding: 1px 7px;
+
+    margin-left: 6px;
+
+    vertical-align: middle;
+
+  }
+
+
+
+  /* Muted styling for system-controlled readonly inputs */
+
+  .input-readonly {
+
+    background: #f9f8f5 !important;
+
+    color: var(--thc-text-muted) !important;
+
+    cursor: not-allowed;
+
+  }
+
+
+
+  /* Alert for form-level errors */
+
+  .form-errors { background: #fdf0ee; border: 1px solid #e8c0bb; border-radius: var(--thc-radius-sm); padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.82rem; color: var(--thc-danger); }
+
+  .form-errors ul { margin: 0; padding-left: 1.2rem; }
+
+
+
+  .line-header { display: grid; gap: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--thc-border); margin-bottom: 0.5rem; }
+
+  .line-header.detail-grid { grid-template-columns: 4fr 1.5fr 1.5fr 2fr 1.5fr 32px; }
+
+  .line-header.tender-grid { grid-template-columns: 4fr 2fr 1.5fr 32px; }
+
+  .line-header span { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--thc-text-muted); }
+
+
+
+  .detail-row, .tender-row { display: grid; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center; }
+
+  .detail-row { grid-template-columns: 4fr 1.5fr 1.5fr 2fr 1.5fr 32px; }
+
+  .tender-row { grid-template-columns: 4fr 1.5fr 2fr 32px; }
+
+
+
+  .btn-remove-row { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--thc-border); background: transparent; color: var(--thc-text-muted); cursor: pointer; font-size: 0.8rem; transition: background 0.15s, border-color 0.15s, color 0.15s; padding: 0; flex-shrink: 0; }
+
+  .btn-remove-row:hover { background: var(--thc-danger-light); border-color: var(--thc-danger); color: var(--thc-danger); }
+
+
+
+  .btn-add-row { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; font-weight: 500; color: var(--thc-accent); background: var(--thc-accent-light); border: 1px dashed var(--thc-border-focus); border-radius: var(--thc-radius-sm); padding: 0.4rem 0.85rem; cursor: pointer; margin-top: 0.5rem; transition: background 0.15s; font-family: 'DM Sans', sans-serif; }
+
+  .btn-add-row:hover { background: #daeae2; }
+
+
+
+  /* Header / transaction-level discount */
+
+  .header-discount-row {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin-top: 1rem;
+
+    padding: 0.65rem 0.85rem;
+
+    background: #faf8f4;
+
+    border: 1px solid var(--thc-border);
+
+    border-radius: var(--thc-radius-sm);
+
+    gap: 1rem;
+
+  }
+
+  .header-discount-label { flex: 1; }
+
+  .hd-title {
+
+    display: block;
+
+    font-size: 0.8rem;
+
+    font-weight: 600;
+
+    color: var(--thc-text);
+
+  }
+
+  .hd-desc {
+
+    display: block;
+
+    font-size: 0.7rem;
+
+    color: var(--thc-text-muted);
+
+    margin-top: 1px;
+
+  }
+
+  .hd-desc {
+
+    display: block;
+
+    font-size: 0.7rem;
+
+    color: var(--thc-text-muted);
+
+    margin-top: 1px;
+
+  }
+
+
+
+  /* ── Items summary box (bottom of Items card) ── */
+
+  .items-summary {
+
+    margin-top: 1rem;
+
+    margin-left: auto;
+
+    width: 320px;
+
+    border: 1px solid var(--thc-border);
+
+    border-radius: var(--thc-radius-sm);
+
+    overflow: hidden;
+
+  }
+
+  .items-summary-row {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    padding: 0.45rem 0.85rem;
+
+    border-bottom: 1px solid var(--thc-border);
+
+    background: #faf8f4;
+
+    gap: 0.75rem;
+
+  }
+
+  .items-summary-row:last-child { border-bottom: none; }
+
+  .is-label {
+
+    font-size: 0.78rem;
+
+    color: var(--thc-text-muted);
+
+    flex: 1;
+
+  }
+
+  .is-value {
+
+    font-family: 'DM Mono', monospace;
+
+    font-size: 0.85rem;
+
+    color: var(--thc-text);
+
+    text-align: right;
+
+    min-width: 90px;
+
+  }
+
+  .is-discount-row { background: #fff; }
+
+  .is-discount-row .is-label { color: var(--thc-text); font-weight: 500; }
+
+  .is-input {
+
+    width: 100px;
+
+    flex-shrink: 0;
+
+    text-align: right;
+
+    font-family: 'DM Mono', monospace !important;
+
+    font-size: 0.85rem !important;
+
+    padding: 0.3rem 0.5rem !important;
+
+    height: auto !important;
+
+  }
+
+  .is-total-row {
+
+    background: #f0ede7;
+
+    border-top: 1px solid var(--thc-border-dark, #ccc);
+
+  }
+
+  .is-total-row .is-label {
+
+    font-size: 0.78rem;
+
+    font-weight: 700;
+
+    color: var(--thc-text);
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.05em;
+
+  }
+
+  .is-total-row .is-value {
+
+    font-size: 1rem;
+
+    font-weight: 700;
+
+    color: var(--thc-text);
+
+  }
+
+  /* Balance row — green if zero, red if not */
+
+  .balance-zero { background: #e8f5e9 !important; }
+
+  .balance-zero .is-label, .balance-zero .is-value { color: #2e7d32 !important; }
+
+  .balance-nonzero { background: #fdecea !important; }
+
+  .balance-nonzero .is-label, .balance-nonzero .is-value { color: #c0392b !important; }
+
+
+
+  /* Numeric textbox — editable amount/discount fields */
+
+  .num-input {
+
+    text-align: right;
+
+    font-family: 'DM Mono', monospace !important;
+
+    font-size: 0.85rem !important;
+
+  }
+
+  /* Read-only net textbox */
+
+  .line-net {
+
+    text-align: right;
+
+    font-family: 'DM Mono', monospace !important;
+
+    font-size: 0.85rem !important;
+
+    background: #f9f8f5 !important;
+
+    color: var(--thc-text) !important;
+
+    cursor: default;
+
+    border-color: transparent !important;
+
+    box-shadow: none !important;
+
+  }
+
+
+
+  .txn-actions { display: flex; gap: 0.75rem; padding-top: 0.25rem; flex-wrap: wrap; }
+
+
+
+  .btn-save { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 600; background: var(--thc-accent); color: #fff; border: none; border-radius: var(--thc-radius-sm); padding: 0.6rem 1.5rem; cursor: pointer; transition: background 0.15s, transform 0.1s; }
+
+  .btn-save:hover { background: var(--thc-accent-hover); transform: translateY(-1px); }
+
+  .btn-submit { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 600; background: #185FA5; color: #fff; border: none; border-radius: var(--thc-radius-sm); padding: 0.6rem 1.5rem; cursor: pointer; transition: background 0.15s; }
+
+  .btn-submit:hover { background: #0f4880; }
+
+  .btn-back { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 500; background: transparent; color: var(--thc-text-muted); border: 1px solid var(--thc-border); border-radius: var(--thc-radius-sm); padding: 0.6rem 1.25rem; text-decoration: none; display: inline-flex; align-items: center; transition: border-color 0.15s, color 0.15s; }
+
+  .btn-back:hover { border-color: var(--thc-text-muted); color: var(--thc-text); }
+
+
+
+  .btn-danger-outline { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 500; background: transparent; color: var(--thc-danger); border: 1px solid var(--thc-danger); border-radius: var(--thc-radius-sm); padding: 0.6rem 1.25rem; cursor: pointer; margin-left: auto; transition: background 0.15s; }
+
+  .btn-danger-outline:hover { background: var(--thc-danger-light); }
+
+
+
+  /* Tom Select — customer field */
+  .ts-wrapper { width: 100%; }
+
+  .ts-wrapper.single .ts-control {
+
+    font-family: 'DM Sans', sans-serif;
+
+    font-size: 0.875rem;
+
+    border: 1px solid var(--thc-border);
+
+    border-radius: var(--thc-radius-sm);
+
+    background: #fff;
+
+    color: var(--thc-text);
+
+    padding: 0.375rem 2rem 0.375rem 0.75rem;
+
+    cursor: pointer;
+
+  }
+
+  .ts-wrapper.single.focus .ts-control,
+
+  .ts-wrapper.single .ts-control:focus {
+
+    border-color: var(--thc-border-focus);
+
+    box-shadow: 0 0 0 3px rgba(106,143,122,0.15);
+
+    outline: none;
+
+  }
+
+  .ts-dropdown {
+
+    font-family: 'DM Sans', sans-serif;
+
+    font-size: 0.875rem;
+
+    border: 1px solid var(--thc-border);
+
+    border-radius: var(--thc-radius-sm);
+
+    box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+
+    background: #fff;
+  z-index: 9999;
+
+  }
+
+  .ts-dropdown .option {
+
+    padding: 7px 14px;
+
+    color: var(--thc-text);
+
+    cursor: pointer;
+
+  }
+
+  .ts-dropdown .option.active,
+
+  .ts-dropdown .option:hover {
+
+    background: var(--thc-accent-light);
+
+    color: var(--thc-accent);
+
+    font-weight: 500;
+
+  }
+
+  .ts-dropdown .create {
+
+    padding: 7px 14px;
+
+    color: var(--thc-text-muted);
+
+    font-style: italic;
+
+  }
+  /* Customer autocomplete */
+  .ui-autocomplete { max-height: 260px; overflow-y: auto; overflow-x: hidden; border: 1px solid var(--thc-border) !important; border-radius: var(--thc-radius-sm) !important; box-shadow: 0 4px 12px rgba(0,0,0,0.10) !important; font-family: 'DM Sans', sans-serif !important; font-size: 0.875rem !important; padding: 4px 0 !important; background: #fff !important; z-index: 9999 !important; }
+  .ui-menu-item-wrapper { padding: 7px 14px !important; color: var(--thc-text) !important; cursor: pointer; }
+  .ui-menu-item-wrapper.ui-state-active, .ui-menu-item-wrapper:hover { background: var(--thc-accent-light) !important; color: var(--thc-accent) !important; font-weight: 500 !important; border: none !important; margin: 0 !important; }
+  .match-highlight { font-weight: 700; color: var(--thc-accent); }
+  .add-new-customer-item { color: var(--thc-accent) !important; font-weight: 600 !important; border-bottom: 1px solid var(--thc-border); }
+
+    .ts-add-new {
+    display: block;
+    padding: 7px 14px;
+    color: var(--thc-accent);
+    font-size: 0.875rem;
+    border-bottom: 1px solid var(--thc-border);
+    text-decoration: none;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .ts-add-new:hover { background: var(--thc-accent-light); }
+
+  .ts-wrapper.is-invalid .ts-control {
+
+    border-color: #dc3545;
+
+  }
+
+  /* Tom Select inside grid rows (items/tender) */
+  .detail-row .ts-wrapper,
+  .tender-row .ts-wrapper { min-width: 0; }
+  .detail-row .ts-wrapper.single .ts-control,
+  .tender-row .ts-wrapper.single .ts-control {
+    padding: 0.25rem 2rem 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    min-height: unset;
+  }
+
+
+
+  @media (max-width: 640px) {
+
+    .line-header { display: none; }
+
+    .detail-row, .tender-row { grid-template-columns: 1fr; }
+
+  }
+
+</style>
+
+{% endblock %}
+
+
 
 {% block content %}
-<div class="container mt-4">
 
-  <div class="row mb-3">
-    <div class="col">
-      <h4>New Transaction
-        <span class="badge bg-secondary text-capitalize">{{ transaction_type | replace('_', ' ') }}</span>
-      </h4>
-      <hr>
-    </div>
+<div class="txn-wrapper">
+
+
+
+  <div class="txn-page-header">
+
+    <a href="{{ url_for('daily_sales.home') }}" style="color:var(--thc-text-muted);text-decoration:none;font-size:0.85rem;">
+
+      ← Daily Sales
+
+    </a>
+
+    <h4>{{ "Edit" if not is_new else "New" }} Transaction</h4>
+
+    <span class="txn-type-badge">{{ transaction_type | replace('_', ' ') }}</span>
+
+    {% if not is_new and record %}
+
+      <span style="font-size:0.75rem;color:var(--thc-text-muted);margin-left:auto;"># {{ record.id }}</span>
+
+    {% endif %}
+
   </div>
 
-  <form method="POST">
 
-    <!-- Header Info -->
-    <div class="row mb-3">
-      <div class="col-md-4">
-        <label class="form-label">Record Date</label>
-        <input type="date" name="record_date" class="form-control" required>
-      </div>
-      <div class="col-md-4">
-        <label class="form-label">Record Number</label>
-        <input type="text" name="record_number" class="form-control upper-case">
-      </div>
-      <div class="col-md-4">
-        <label class="form-label">POS Number</label>
-        <input type="text" name="pos_number" class="form-control upper-case">
-      </div>
-    </div>
 
-    <div class="row mb-3">
-      <div class="col-md-6">
-        <label class="form-label">DashLabs Number</label>
-        <input type="text" name="dashlabs_number" class="form-control upper-case">
-      </div>
-      <div class="col-md-6">
-        <label class="form-label">Customer</label>
-        <input type="text" name="customer_id" class="form-control" placeholder="Search customer...">
-      </div>
-    </div>
+  {% if form._locked_ %}
 
-    <div class="row mb-3">
-      <div class="col-md-12">
-        <label class="form-label">Description</label>
-        <textarea name="description" class="form-control" rows="2"></textarea>
-      </div>
-    </div>
+  <div class="txn-locked-banner">
 
-    <hr>
+    ⚠️ This transaction is <strong>{{ "submitted" if form.submitted else "cancelled" }}</strong> and is read-only.
 
-    <!-- Transaction Details (Line Items) -->
-    <div class="row mb-2">
-      <div class="col">
-        <h6>Items</h6>
-      </div>
-    </div>
+  </div>
 
-    <div class="row mb-2 fw-bold">
-      <div class="col-md-5">Product</div>
-      <div class="col-md-2">Amount</div>
-      <div class="col-md-2">Discount</div>
-      <div class="col-md-2">Note</div>
-      <div class="col-md-1"></div>
-    </div>
+  {% endif %}
 
-    <div id="transaction-details">
-      <div class="row mb-2 detail-row">
-        <div class="col-md-5">
-          <select name="product_id[]" class="form-select">
-            <option value="">-- Select Product --</option>
-            {% for pt in product_types %}
-            <optgroup label="{{ pt.product_type_name }}">
-              {% for product in pt.products %}
-              <option value="{{ product.id }}">{{ product.product_name }}</option>
-              {% endfor %}
-            </optgroup>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <input type="number" name="amount[]" class="form-control" placeholder="0.00" step="0.01" min="0">
-        </div>
-        <div class="col-md-2">
-          <input type="number" name="detail_discount[]" class="form-control" placeholder="0.00" step="0.01" min="0">
-        </div>
-        <div class="col-md-2">
-          <input type="text" name="side_note[]" class="form-control" placeholder="Optional">
-        </div>
-        <div class="col-md-1">
-          <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">✕</button>
-        </div>
-      </div>
-    </div>
 
-    <div class="row mb-3">
-      <div class="col">
-        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addDetailRow()">+ Add Item</button>
-      </div>
-    </div>
 
-    <hr>
+  {% if form.errors %}
 
-    <!-- Tender -->
-    <div class="row mb-2">
-      <div class="col">
-        <h6>Payment / Tender</h6>
-      </div>
-    </div>
+  <div class="form-errors">
 
-    <div class="row mb-2 fw-bold">
-      <div class="col-md-4">Tender Type</div>
-      <div class="col-md-3">Amount</div>
-      <div class="col-md-4">Note</div>
-      <div class="col-md-1"></div>
-    </div>
+    <strong>Please fix the following:</strong>
 
-    <div id="transaction-tenders">
-      <div class="row mb-2 tender-row">
-        <div class="col-md-4">
-          <select name="tender_id[]" class="form-select">
-            <option value="">-- Select Tender --</option>
-            {% for tender in tenders %}
-            <option value="{{ tender.id }}">{{ tender.tender_name }}</option>
-            {% endfor %}
-          </select>
-        </div>
+    <ul>
+
+      {% for key, msg in form.errors.items() %}
+
+      <li>{{ msg }}</li>
+
+      {% endfor %}
+
+    </ul>
+
+  </div>
+
+  {% endif %}
+
+
+
+  <form method="POST" id="txn-form">
+
+    {# Hidden field for record ID on edit #}
+
+    {% if not is_new and form.id %}
+
+    <input type="hidden" name="record_id" value="{{ form.id }}">
+
+    {% endif %}
+
+    <input type="hidden" name="action" id="form-action" value="save">
+
+
+
+    <!-- ── Transaction Info ── -->
+
+    <div class="txn-card">
+
+      <div class="txn-card-title">Transaction Info</div>
+
+
+
+      {# Row 1: Date · Record No. (auto, readonly) · DashLabs No. #}
+
+      <div class="row g-3 mb-3">
+
         <div class="col-md-3">
-          <input type="number" name="tender_amount[]" class="form-control" placeholder="0.00" step="0.01" min="0">
+
+          <label class="form-label">Record Date *</label>
+
+          <input type="date" name="record_date"
+
+            class="form-control {{ 'is-invalid' if form.errors.get('record_date') }}"
+
+            value="{{ form.record_date }}" {{ 'readonly' if form._locked_ }}>
+
+          {% if form.errors.get('record_date') %}
+
+            <div class="invalid-feedback">{{ form.errors.record_date }}</div>
+
+          {% endif %}
+
         </div>
+
+        <div class="col-md-5">
+
+          <label class="form-label">
+
+            Sales Number
+
+            <span class="field-badge">auto · read-only</span>
+
+          </label>
+
+          <input type="text" name="record_number"
+
+            class="form-control input-readonly {{ 'is-invalid' if form.errors.get('record_number') }}"
+
+            value="{{ form.record_number }}" placeholder="Auto-generated" readonly>
+
+          {% if form.errors.get('record_number') %}
+
+            <div class="invalid-feedback">{{ form.errors.record_number }}</div>
+
+          {% endif %}
+
+        </div>
+
         <div class="col-md-4">
-          <input type="text" name="tender_note[]" class="form-control" placeholder="Optional">
+
+          <label class="form-label">DashLabs Number</label>
+
+          <input type="text" name="dashlabs_number" class="form-control upper-case"
+
+            value="{{ form.dashlabs_number }}" placeholder="e.g. DL-0001" {{ 'readonly' if form._locked_ }}>
+
         </div>
-        <div class="col-md-1">
-          <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">✕</button>
+
+      </div>
+
+
+
+      {# Row 2: Customer (wider) · POS Number (same width as DashLabs above) #}
+
+      <div class="row g-3 mb-3">
+
+        <div class="col-md-8">
+
+          <label class="form-label">Customer *</label>
+
+          <select name="customer_name" id="customer-name-input"
+            class="form-select {{ 'is-invalid' if form.errors.get('customer_name') }}"
+            {{ 'disabled' if form._locked_ }}>
+            <option value="">— Select customer —</option>
+            {% for c in customers %}
+              <option value="{{ c.customer_name }}" {{ 'selected' if form.customer_name == c.customer_name }}>{{ c.customer_name }}</option>
+            {% endfor %}
+          </select>
+
+          {% if form.errors.get('customer_name') %}
+
+            <div class="invalid-feedback">{{ form.errors.customer_name }}</div>
+
+          {% endif %}
+
         </div>
+
+        <div class="col-md-4">
+
+          <label class="form-label">POS Number</label>
+
+          <input type="text" name="pos_number" class="form-control upper-case"
+
+            value="{{ form.pos_number }}" placeholder="e.g. POS-0001" {{ 'readonly' if form._locked_ }}>
+
+        </div>
+
       </div>
+
+
+
+      {# Row 3: Description #}
+
+      <div class="row g-3">
+
+        <div class="col-12">
+
+          <label class="form-label">Description / Notes</label>
+
+          <textarea name="description" class="form-control" rows="2"
+
+            {{ 'readonly' if form._locked_ }}>{{ form.description }}</textarea>
+
+        </div>
+
+      </div>
+
     </div>
 
-    <div class="row mb-3">
-      <div class="col">
-        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addTenderRow()">+ Add Tender</button>
+
+
+    <!-- ── Items ── -->
+
+    <div class="txn-card">
+
+      <div class="txn-card-title">
+        Patient Services
+        {% if not form._locked_ %}
+        <button type="button" class="btn-add-row" onclick="addDetailRow()">+ Add service</button>
+        {% endif %}
       </div>
+
+
+
+      {% if form.errors.get('details') %}
+
+      <div class="invalid-feedback" style="display:block;margin-bottom:0.75rem;">{{ form.errors.details }}</div>
+
+      {% endif %}
+
+
+
+      <div class="line-header detail-grid">
+
+        <span>Service</span>
+
+        <span style="text-align:right">Amount</span>
+
+        <span style="text-align:right">Discount</span>
+
+        <span>Note</span>
+
+        <span style="text-align:right">Net</span>
+
+        <span></span>
+
+      </div>
+
+
+
+      <div id="transaction-details">
+
+        {% for i, detail in form.details %}
+
+        {% if detail._is_dirty() or loop.first %}
+
+        <div class="detail-row">
+
+          <select name="product_id[]" class="form-select" {{ 'disabled' if form._locked_ }}>
+
+            <option value="">— Select service —</option>
+
+            {% for pt in product_types %}
+
+            <optgroup label="{{ pt.product_type_name }}">
+
+              {% for product in pt.products %}
+
+              <option value="{{ product.id }}" {{ 'selected' if detail.product_id == product.id }}>{{ product.product_name }}</option>
+
+              {% endfor %}
+
+            </optgroup>
+
+            {% endfor %}
+
+          </select>
+
+          <input type="text" name="amount[]" class="form-control num-input" placeholder="0.00"
+
+            value="{{ '{:,.2f}'.format(detail.amount) if detail.amount else '0.00' }}" {{ 'readonly' if form._locked_ }}>
+
+          <input type="text" name="detail_discount[]" class="form-control num-input" placeholder="0.00"
+
+            value="{{ '{:,.2f}'.format(detail.discount) if detail.discount else '0.00' }}" {{ 'readonly' if form._locked_ }}>
+
+          <input type="text" name="side_note[]" class="form-control" placeholder="Optional"
+
+            value="{{ detail.side_note }}" {{ 'readonly' if form._locked_ }}>
+
+          <input type="text" class="form-control num-input line-net" readonly
+
+            value="{{ '{:,.2f}'.format(detail.amount - detail.discount) if detail.amount else '0.00' }}">
+
+          {% if not form._locked_ %}
+
+          <button type="button" class="btn-remove-row" onclick="removeRow(this, 'transaction-details', 'detail-row')" title="Remove">✕</button>
+
+          {% else %}
+
+          <span></span>
+
+          {% endif %}
+
+        </div>
+
+        {% endif %}
+
+        {% endfor %}
+
+      </div>
+
+
+
+      <div class="items-summary">
+
+        <div class="items-summary-row">
+
+          <span class="is-label">Total</span>
+
+          <span class="is-value" id="gross-total">0.00</span>
+
+        </div>
+
+        <div class="items-summary-row" >
+
+          <span class="is-label">Less: Discount</span>
+
+          <input type="text" name="discount" id="header-discount" class="form-control is-input num-input"
+
+            placeholder="0.00"
+
+            value="{{ '{:,.2f}'.format(form.discount) }}" {{ 'readonly' if form._locked_ }}>
+
+        </div>
+
+        {% if not form._locked_ %}
+
+        {% endif %}
+
+        <div class="items-summary-row is-total-row">
+
+          <span class="is-label">Net Due</span>
+
+          <span class="is-value" id="net-total">0.00</span>
+
+        </div>
+
+      </div>
+
     </div>
 
-    <hr>
 
-    <!-- Header Discount -->
-    <div class="row mb-3 justify-content-end">
-      <div class="col-md-3">
-        <label class="form-label">Header Discount</label>
-        <input type="number" name="discount" class="form-control" placeholder="0.00" step="0.01" min="0" value="0">
+
+    <!-- ── Tender ── -->
+
+    <div class="txn-card">
+
+      <div class="txn-card-title">
+        Payment / Tender
+        {% if not form._locked_ %}
+        <button type="button" class="btn-add-row" onclick="addTenderRow()">+ Add tender</button>
+        {% endif %}
       </div>
+
+
+
+      {% if form.errors.get('tenders') %}
+
+      <div class="invalid-feedback" style="display:block;margin-bottom:0.75rem;">{{ form.errors.tenders }}</div>
+
+      {% endif %}
+
+      {% if form.errors.get('totals') %}
+
+      <div class="invalid-feedback" style="display:block;margin-bottom:0.75rem;">{{ form.errors.totals }}</div>
+
+      {% endif %}
+
+
+
+      <div class="line-header tender-grid">
+
+        <span>Tender Type</span>
+
+        <span>Note</span>
+
+        <span style="text-align:right">Amount</span>
+
+        <span></span>
+
+      </div>
+
+
+
+      <div id="transaction-tenders">
+
+        {% for i, tender in form.tenders %}
+
+        {% if tender._is_dirty() or loop.first %}
+
+        <div class="tender-row">
+
+          <select name="tender_id[]" class="form-select" {{ 'disabled' if form._locked_ }}>
+
+            <option value="">— Select tender —</option>
+
+            {% for t in tenders %}
+
+            <option value="{{ t.id }}" {{ 'selected' if tender.tender_id == t.id }}>{{ t.tender_name }}</option>
+
+            {% endfor %}
+
+          </select>
+
+          <input type="text" name="tender_note[]" class="form-control" placeholder="Optional"
+
+            value="{{ tender.side_note }}" {{ 'readonly' if form._locked_ }}>
+
+          <input type="text" name="tender_amount[]" class="form-control num-input" placeholder="0.00"
+
+            value="{{ '{:,.2f}'.format(tender.amount) if tender.amount else '0.00' }}" {{ 'readonly' if form._locked_ }}>
+
+          {% if not form._locked_ %}
+
+          <button type="button" class="btn-remove-row" onclick="removeRow(this, 'transaction-tenders', 'tender-row')" title="Remove">✕</button>
+
+          {% else %}
+
+          <span></span>
+
+          {% endif %}
+
+        </div>
+
+        {% endif %}
+
+        {% endfor %}
+
+      </div>
+
+
+
+      <div class="items-summary">
+
+        <div class="items-summary-row">
+
+          <span class="is-label">Total Tendered</span>
+
+          <span class="is-value" id="tender-total">0.00</span>
+
+        </div>
+
+        <div class="items-summary-row">
+
+          <span class="is-label">Net Due</span>
+
+          <span class="is-value" id="tender-net-due">0.00</span>
+
+        </div>
+
+        <div class="items-summary-row is-total-row" id="balance-row">
+
+          <span class="is-label">Balance</span>
+
+          <span class="is-value" id="balance-total">0.00</span>
+
+        </div>
+
+      </div>
+
+
+
     </div>
 
-    <!-- Actions -->
-    <div class="row mb-4">
-      <div class="col d-flex gap-2">
-        <button type="submit" class="btn btn-primary"
-          onclick="return confirmSubmit()">Save Transaction</button>
-        <a href="javascript:history.back()" class="btn btn-outline-secondary">Cancel</a>
-      </div>
+
+
+    <!-- ── Actions ── -->
+
+    {% if not form._locked_ %}
+
+    <div class="txn-actions">
+
+      <button type="button" class="btn-save" onclick="submitForm('save')">
+
+        💾 Save Draft
+
+      </button>
+
+      <button type="button" class="btn-submit" onclick="submitForm('submit')">
+
+        ✔ Save &amp; Submit
+
+      </button>
+
+      <a href="{{ url_for('daily_sales.home') }}" class="btn-back">Cancel</a>
+
+
+
+      {% if not is_new %}
+
+      <form method="POST" action="{{ url_for('daily_sales.cancel_transaction', transaction_id=form.id) }}"
+
+        style="margin-left:auto;" onsubmit="return confirm('Cancel this transaction?')">
+
+        <button type="submit" class="btn-danger-outline">✗ Cancel Transaction</button>
+
+      </form>
+
+      {% endif %}
+
     </div>
+
+    {% else %}
+
+    <div class="txn-actions">
+
+      <a href="{{ url_for('daily_sales.home') }}" class="btn-back">← Back to Daily Sales</a>
+
+    </div>
+
+    {% endif %}
+
+
 
   </form>
+
+</div>
+
+
+
+{% endblock %}
+
+
+
+
+<!-- New Customer Modal -->
+<div class="modal fade" id="newCustomerModal" tabindex="-1"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog">
+    <div class="modal-content" style="font-family:'DM Sans',sans-serif;">
+      <div class="modal-header" style="border-bottom:1px solid var(--thc-border);">
+        <h5 class="modal-title" style="font-size:0.95rem;font-weight:600;">New Customer</h5>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--thc-text-muted);">Customer Name *</label>
+          <input type="text" id="nc-name" class="form-control" placeholder="Full name" autocomplete="off">
+          <div class="invalid-feedback" id="nc-name-err"></div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--thc-text-muted);">Sex *</label>
+          <select id="nc-sex" class="form-select">
+            <option value="">— Select —</option>
+            {% for s in sexes %}
+            <option value="{{ s.sex_name }}">{{ s.sex_name }}</option>
+            {% endfor %}
+          </select>
+          <div class="invalid-feedback" id="nc-sex-err"></div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--thc-text-muted);">Birthday</label>
+          <input type="date" id="nc-birthday" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--thc-text-muted);">Address</label>
+          <input type="text" id="nc-address" class="form-control" placeholder="Optional">
+        </div>
+        <div id="nc-general-err" class="text-danger" style="font-size:0.85rem;display:none;"></div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--thc-border);">
+        <button type="button" class="btn btn-secondary btn-sm" id="nc-cancel-btn">Cancel</button>
+        <button type="button" class="btn btn-sm" id="nc-save-btn"
+          style="background:var(--thc-accent);color:#fff;font-weight:600;">Save Customer</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 {% block scripts %}
+
 <script>
-  // Clone the first detail row template
-  function addDetailRow() {
+
+  // ── Product options built from Jinja into a JS array ──────────────────
+
+  const PRODUCT_OPTIONS = [
+
+    { value: '', label: '— Select service —', group: null }
+
+    {% for pt in product_types %}
+
+    {% for product in pt.products %}
+
+    , { value: '{{ product.id }}', label: '{{ product.product_name | e }}', group: '{{ pt.product_type_name | e }}' }
+
+    {% endfor %}
+
+    {% endfor %}
+
+  ];
+
+
+
+  const TENDER_OPTIONS = [
+
+    { value: '', label: '— Select tender —' }
+
+    {% for t in tenders %}
+
+    , { value: '{{ t.id }}', label: '{{ t.tender_name | e }}' }
+
+    {% endfor %}
+
+  ];
+
+
+
+  // ── Build <select> HTML from options array ─────────────────────────────
+
+  function buildProductSelect(selectedValue) {
+
+    const groups = {};
+
+    PRODUCT_OPTIONS.forEach(opt => {
+
+      if (!opt.group) return;
+
+      if (!groups[opt.group]) groups[opt.group] = [];
+
+      groups[opt.group].push(opt);
+
+    });
+
+
+
+    let html = `<select name="product_id[]" class="form-select">
+
+      <option value="">— Select service —</option>`;
+
+    Object.entries(groups).forEach(([groupName, opts]) => {
+
+      html += `<optgroup label="${groupName}">`;
+
+      opts.forEach(opt => {
+
+        const sel = opt.value == selectedValue ? 'selected' : '';
+
+        html += `<option value="${opt.value}" ${sel}>${opt.label}</option>`;
+
+      });
+
+      html += `</optgroup>`;
+
+    });
+
+    html += `</select>`;
+
+    return html;
+
+  }
+
+
+
+  function buildTenderSelect(selectedValue) {
+
+    let html = `<select name="tender_id[]" class="form-select">`;
+
+    TENDER_OPTIONS.forEach(opt => {
+
+      const sel = opt.value == selectedValue ? 'selected' : '';
+
+      html += `<option value="${opt.value}" ${sel}>${opt.label}</option>`;
+
+    });
+
+    html += `</select>`;
+
+    return html;
+
+  }
+
+
+  // ── Tom Select helpers ─────────────────────────────────────────────────
+
+  function initProductTomSelect(el) {
+    if (el.tomselect) return;
+    new TomSelect(el, {
+      create: false,
+      allowEmptyOption: true,
+      placeholder: '— Select service —',
+      onDropdownOpen: function(dropdown) {
+        if (!dropdown.querySelector('.ts-add-new')) {
+          const a = document.createElement('a');
+          a.className = 'ts-add-new';
+          a.href = '/product/add';
+          a.target = '_blank';
+          a.textContent = '+ Add new service';
+          dropdown.prepend(a);
+        }
+      }
+    });
+  }
+
+  function initTenderTomSelect(el) {
+    if (el.tomselect) return;
+    new TomSelect(el, {
+      create: false,
+      allowEmptyOption: true,
+      placeholder: '— Select tender —',
+      onDropdownOpen: function(dropdown) {
+        if (!dropdown.querySelector('.ts-add-new')) {
+          const a = document.createElement('a');
+          a.className = 'ts-add-new';
+          a.href = '/tender/add';
+          a.target = '_blank';
+          a.textContent = '+ Add new tender';
+          dropdown.prepend(a);
+        }
+      }
+    });
+  }
+
+
+
+  // ── Number formatting helpers ──────────────────────────────────────────
+
+  const fmt     = v => parseFloat(v || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const fmtRaw  = v => parseFloat(v || 0).toFixed(2);           // plain ##0.00 for active editing
+
+  const parseNum = v => parseFloat((v || '0').replace(/,/g, '')) || 0;
+
+
+
+  function formatInput(el) {
+
+    const val = parseNum(el.value);
+
+    el.value = fmt(val);
+
+  }
+
+
+
+  function unformatInput(el) {
+
+    const val = parseNum(el.value);
+
+    el.value = fmtRaw(val);
+
+    el.select();
+
+  }
+
+
+
+  // ── Add rows ───────────────────────────────────────────────────────────
+
+  function addDetailRow(productId = '', amount = '0.00', discount = '0.00', note = '') {
+
     const container = document.getElementById('transaction-details');
-    const firstRow = container.querySelector('.detail-row');
-    const clone = firstRow.cloneNode(true);
-    // Clear values in clone
-    clone.querySelectorAll('input, select').forEach(el => el.value = '');
-    container.appendChild(clone);
+
+    const div = document.createElement('div');
+
+    div.className = 'detail-row';
+
+    div.innerHTML = `
+
+      ${buildProductSelect(productId)}
+
+      <input type="text" name="amount[]" class="form-control num-input" placeholder="0.00" value="${fmt(amount)}">
+
+      <input type="text" name="detail_discount[]" class="form-control num-input" placeholder="0.00" value="${fmt(discount)}">
+
+      <input type="text" name="side_note[]" class="form-control" placeholder="Optional" value="${note}">
+
+      <input type="text" class="form-control num-input line-net" readonly value="0.00">
+
+      <button type="button" class="btn-remove-row" onclick="removeRow(this, 'transaction-details', 'detail-row')" title="Remove">✕</button>
+
+    `;
+
+    container.appendChild(div);
+
+    initProductTomSelect(div.querySelector('select[name="product_id[]"]'));
+
+    recalcTotals();
+
   }
 
-  function addTenderRow() {
+
+
+  function addTenderRow(tenderId = '', amount = '0.00', note = '') {
+
     const container = document.getElementById('transaction-tenders');
-    const firstRow = container.querySelector('.tender-row');
-    const clone = firstRow.cloneNode(true);
-    clone.querySelectorAll('input, select').forEach(el => el.value = '');
-    container.appendChild(clone);
+
+    const div = document.createElement('div');
+
+    div.className = 'tender-row';
+
+    div.innerHTML = `
+
+      ${buildTenderSelect(tenderId)}
+
+      <input type="text" name="tender_note[]" class="form-control" placeholder="Optional" value="${note}">
+
+      <input type="text" name="tender_amount[]" class="form-control num-input" placeholder="0.00" value="${fmt(amount)}">
+
+      <button type="button" class="btn-remove-row" onclick="removeRow(this, 'transaction-tenders', 'tender-row')" title="Remove">✕</button>
+
+    `;
+
+    container.appendChild(div);
+
+    initTenderTomSelect(div.querySelector('select[name="tender_id[]"]'));
+
   }
 
-  function removeRow(btn) {
-    const row = btn.closest('.row');
-    const container = row.parentElement;
-    // Keep at least one row
-    if (container.querySelectorAll('.row').length > 1) {
-      row.remove();
+
+
+  // ── Remove row ─────────────────────────────────────────────────────────
+
+  function removeRow(btn, containerId, rowClass) {
+
+    const container = document.getElementById(containerId);
+
+    if (container.querySelectorAll('.' + rowClass).length > 1) {
+
+      btn.closest('.' + rowClass).remove();
+
+      recalcTotals();
+
     }
+
+  }
+
+  }
+
+
+
+  // ── Running totals ─────────────────────────────────────────────────────
+
+  function recalcTotals() {
+
+    let gross = 0, lineDiscounts = 0;
+
+    const headerDiscount = parseNum(document.getElementById('header-discount')?.value);
+
+
+
+    document.querySelectorAll('#transaction-details .detail-row').forEach(row => {
+
+      const amt  = parseNum(row.querySelector('input[name="amount[]"]')?.value);
+
+      const disc = parseNum(row.querySelector('input[name="detail_discount[]"]')?.value);
+
+      const net  = amt - disc;
+
+      gross         += amt;
+
+      lineDiscounts += disc;
+
+      const lineNet = row.querySelector('.line-net');
+
+      if (lineNet) lineNet.value = fmt(net);
+
+    });
+
+
+
+    const netDue = gross - lineDiscounts - headerDiscount;
+
+    document.getElementById('gross-total').textContent = fmt(gross);
+
+    document.getElementById('net-total').textContent   = fmt(netDue);
+
+
+
+    // Tender summary
+
+    let tenderTotal = 0;
+
+    document.querySelectorAll('#transaction-tenders .tender-row').forEach(row => {
+
+      tenderTotal += parseNum(row.querySelector('input[name="tender_amount[]"]')?.value);
+
+    });
+
+
+
+    const balance = tenderTotal - netDue;
+
+    const tenderNetEl  = document.getElementById('tender-net-due');
+
+    const tenderTotEl  = document.getElementById('tender-total');
+
+    const balanceEl    = document.getElementById('balance-total');
+
+    const balanceRow   = document.getElementById('balance-row');
+
+
+
+    if (tenderNetEl) tenderNetEl.textContent = fmt(netDue);
+
+    if (tenderTotEl) tenderTotEl.textContent = fmt(tenderTotal);
+
+    if (balanceEl)   balanceEl.textContent   = fmt(balance);
+
+
+
+    // Color the balance row
+
+    if (balanceRow) {
+
+      balanceRow.classList.remove('balance-zero', 'balance-nonzero');
+
+      balanceRow.classList.add(Math.abs(balance) < 0.005 ? 'balance-zero' : 'balance-nonzero');
+
+    }
+
+  }
+
+
+
+  // ── Submit with action flag ────────────────────────────────────────────
+
+  function submitForm(action) {
+
+    // Before submitting, strip commas from all num-inputs so server gets plain floats
+
+    document.querySelectorAll('.num-input').forEach(el => {
+
+      if (!el.readOnly) el.value = fmtRaw(parseNum(el.value));
+
+    });
+
+    document.getElementById('form-action').value = action;
+
+    if (action === 'submit' && !confirm('Submit this transaction? It will be locked after submission.')) return;
+
+    document.getElementById('txn-form').submit();
+
+  }
+
+
+
+  // ── Focus / blur / input events ────────────────────────────────────────
+
+  document.addEventListener('focus', function (e) {
+
+    if (e.target.matches('.num-input') && !e.target.readOnly) {
+
+      unformatInput(e.target);
+
+    }
+
+  }, true);  // capture phase so it fires before browser default
+
+
+
+  document.addEventListener('blur', function (e) {
+
+    if (e.target.matches('.num-input') && !e.target.readOnly) {
+
+      formatInput(e.target);
+
+      recalcTotals();
+
+    }
+
+  }, true);
+
+
+
+  document.addEventListener('input', function (e) {
+
+    if (e.target.matches('input[name="amount[]"], input[name="detail_discount[]"], #header-discount, input[name="tender_amount[]"]')) {
+
+      recalcTotals();
+
+    }
+
+  });
+
+
+
+    // ── Customer Tom Select ────────────────────────────────────────────────
+  function initCustomerTomSelect() {
+    const el = document.getElementById('customer-name-input');
+    if (!el || el.tomselect) return;
+    const ts = new TomSelect(el, {
+      create: false,
+      allowEmptyOption: true,
+      placeholder: '— Select customer —',
+      onDropdownOpen: function (dropdown) {
+        if (!dropdown.querySelector('.ts-add-new')) {
+          const a = document.createElement('a');
+          a.className = 'ts-add-new';
+          a.href = '#';
+          a.textContent = '+ Add Customer';
+          a.addEventListener('click', function (e) {
+            e.preventDefault();
+            ts.close();
+            openNewCustomerModal();
+          });
+          dropdown.prepend(a);
+        }
+      }
+    });
+  }
+
+  // ── On load ────────────────────────────────────────────────────────────
+
+  document.addEventListener('DOMContentLoaded', function () {
+
+    const detailContainer = document.getElementById('transaction-details');
+
+    const tenderContainer = document.getElementById('transaction-tenders');
+
+
+
+    if (detailContainer && detailContainer.querySelectorAll('.detail-row').length === 0) {
+
+      addDetailRow();
+
+    }
+
+    if (tenderContainer && tenderContainer.querySelectorAll('.tender-row').length === 0) {
+
+      addTenderRow();
+
+    }
+
+
+
+    // Init Tom Select on Jinja-rendered product/tender selects
+    document.querySelectorAll('select[name="product_id[]"]').forEach(initProductTomSelect);
+    document.querySelectorAll('select[name="tender_id[]"]').forEach(initTenderTomSelect);
+
+    // Init customer Tom Select
+    {% if not form._locked_ %}
+    initCustomerTomSelect();
+    {% endif %}
+
+    // Format all existing num-inputs on page load
+
+    document.querySelectorAll('.num-input:not([readonly])').forEach(el => formatInput(el));
+
+
+
+    recalcTotals();
+
+  });
+
+
+  // New Customer Modal
+  var _ncModal = null;
+  document.addEventListener('DOMContentLoaded', function () {
+    var el = document.getElementById('newCustomerModal');
+    if (el) _ncModal = new bootstrap.Modal(el);
+
+    var saveBtn = document.getElementById('nc-save-btn');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', async function () {
+        var btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+
+        ['nc-name', 'nc-sex'].forEach(function (id) {
+          var f = document.getElementById(id);
+          if (f) f.classList.remove('is-invalid');
+        });
+        var genErr = document.getElementById('nc-general-err');
+        if (genErr) genErr.style.display = 'none';
+
+        var fd = new FormData();
+        fd.append('customer_name', document.getElementById('nc-name').value.trim());
+        fd.append('sex_name',      document.getElementById('nc-sex').value);
+        fd.append('birthday',      document.getElementById('nc-birthday').value);
+        fd.append('address',       document.getElementById('nc-address').value.trim());
+
+        try {
+          var resp = await fetch("{{ url_for('customer.quick_add') }}", {
+            method: 'POST', body: fd,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          });
+          var data = await resp.json();
+          if (data.success) {
+            var ts = document.getElementById('customer-name-input').tomselect;
+            ts.addOption({ value: data.customer_name, text: data.customer_name });
+            ts.setValue(data.customer_name);
+            _ncModal.hide();
+          } else {
+            if (data.errors && data.errors.customer_name) {
+              document.getElementById('nc-name').classList.add('is-invalid');
+              document.getElementById('nc-name-err').textContent = data.errors.customer_name;
+            }
+            if (data.errors && data.errors.sex_name) {
+              document.getElementById('nc-sex').classList.add('is-invalid');
+              document.getElementById('nc-sex-err').textContent = data.errors.sex_name;
+            }
+          }
+        } catch (err) {
+          if (genErr) { genErr.textContent = 'An error occurred. Please try again.'; genErr.style.display = 'block'; }
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Save Customer';
+        }
+      });
+    }
+
+    var cancelBtn = document.getElementById('nc-cancel-btn');
+    if (cancelBtn) cancelBtn.addEventListener('click', function () { _ncModal.hide(); });
+  });
+
+  function openNewCustomerModal() {
+    if (!_ncModal) return;
+    ['nc-name', 'nc-sex'].forEach(function (id) {
+      var f = document.getElementById(id);
+      if (f) { f.value = ''; f.classList.remove('is-invalid'); }
+    });
+    var bd = document.getElementById('nc-birthday'); if (bd) bd.value = '';
+    var ad = document.getElementById('nc-address');  if (ad) ad.value = '';
+    var ge = document.getElementById('nc-general-err'); if (ge) ge.style.display = 'none';
+    _ncModal.show();
   }
 </script>
-{% endblock %}
+
 
 {% endblock %}

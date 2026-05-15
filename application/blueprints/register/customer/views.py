@@ -54,6 +54,18 @@ def add():
     return render_template(f"{app_name}/form.html", **context)
 
 
+@bp.route("/quick-add", methods=["POST"])
+@login_required
+def quick_add():
+    from flask import jsonify
+    form = Form()
+    form._post(request.form, current_user.id)
+    if form._validate_on_submit():
+        form._save()
+        return jsonify({"success": True, "customer_name": form.customer_name})
+    return jsonify({"success": False, "errors": form.errors}), 400
+
+
 @bp.route(f"/edit/<int:record_id>", methods=["POST", "GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])

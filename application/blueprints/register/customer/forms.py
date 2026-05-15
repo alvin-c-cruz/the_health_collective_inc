@@ -124,7 +124,7 @@ class Form:
                     sex_name=sex_name
                     ).first()
                 if sex:
-                    setattr(self, attribute, sex.id)
+                    setattr(self, "sex_id", sex.id)
                 self.sex_name = sex_name
             else:
                 try:

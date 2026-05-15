@@ -1,325 +1,372 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from sqlalchemy import func
 from application.extensions import db
-from .models import Sales as Obj
-from .models import SalesDetail as ObjDetail
-from .admin_models import UserSales as Preparer
+from .models import Transaction as Obj
+from .models import TransactionDetail as ObjDetail
+from .models import TransactionTender as ObjTender
+from .admin_models import UserTransaction as Preparer
 from datetime import datetime
 from . import app_name
 
-from ... account import Account
-from ... register.customer import Customer
+from ...register.customer import Customer
+from ...register.product import Product
+from ...register.tender import Tender
 
 
-DETAIL_ROWS = 20
+DETAIL_ROWS = 10
+TENDER_ROWS = 5
 
 
-def get_attributes(object):
-    attributes = [x for x in dir(object) if (not x.startswith("_"))]
-    exceptions = (
-        "user_prepare_id", 
-        "user_prepare", 
-        "errors", 
-        "active", 
-        "details",
-        "locked", 
-        app_name,
-        )
-    for i in exceptions:
-        try:
-            attributes.remove(i)
-        except ValueError:
-            pass
-    return attributes
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _safe_float(value, default=0.0):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
 
 
-def get_attributes_as_dict(object):
-    attributes = get_attributes(object)
-    return {
-        attribute: getattr(object, attribute)
-        for attribute in attributes
-    }
-
+# ---------------------------------------------------------------------------
+# SubForm – one product line item
+# ---------------------------------------------------------------------------
 
 @dataclass
-class SubForm:
+class DetailSubForm:
     id: int = 0
-    sales_id:int = 0
-    account_id: int = 0
-    debit: float = 0
-    credit: float = 0
+    product_id: int = 0
+    amount: float = 0.0
+    discount: float = 0.0
     side_note: str = ""
 
-    account_name: str = ""
+    product_name: str = ""
+    errors: dict = field(default_factory=dict)
 
-    errors = {}
+    def _populate(self, row: ObjDetail):
+        self.id = row.id
+        self.product_id = row.product_id
+        self.amount = float(row.amount)
+        self.discount = float(row.discount)
+        self.side_note = row.side_note or ""
+        if row.product:
+            self.product_name = row.product.product_name
 
-    def _populate(self, row):
-        for attribute in get_attributes(self):
-            if attribute in ["errors", "amount", "account_name"]:
-                continue
-            elif attribute in ["account_id"]:
-                account = Account.query.get(getattr(row, "account_id"))
-                setattr(self, attribute, account.id)
-                self.account_name = account.account_name
-            elif attribute in ["debit", "credit"]:
-                setattr(self, attribute, float(getattr(row, attribute)))
-            else:
-                setattr(self, attribute, getattr(row, attribute))
+    def _is_dirty(self):
+        return bool(self.product_id or self.amount or self.side_note)
 
     def _validate(self):
         self.errors = {}
+        if self._is_dirty():
+            if not self.product_id:
+                self.errors["product_id"] = "Please select a product."
+            if self.amount < 0:
+                self.errors["amount"] = "Amount cannot be negative."
+            if self.discount < 0:
+                self.errors["discount"] = "Discount cannot be negative."
+            if self.discount > self.amount:
+                self.errors["discount"] = "Discount cannot exceed amount."
+        return not self.errors
 
-        if self._is_dirty():            
-            if self.debit < 0:
-                self.errors["debit"] = "Debit cannot be less than zero (0)."
 
-            if self.credit < 0:
-                self.errors["credit"] = "Credit cannot be less than zero (0)."
+# ---------------------------------------------------------------------------
+# TenderSubForm – one payment line
+# ---------------------------------------------------------------------------
 
-            if not self.account_name:
-                self.errors["account_name"] = "Please select account title."
-            else:
-                account_number, account_title = self.account_name.split(": ")
-                account = Account.query.filter(Account.account_number==account_number).first()
-                if not account:
-                    self.errors["account_name"] = f"{self.account_name} does not exists."
-                else:
-                    self.account_id = account.id
+@dataclass
+class TenderSubForm:
+    id: int = 0
+    tender_id: int = 0
+    amount: float = 0.0
+    side_note: str = ""
 
-        if not self.errors:
-            return True
-        else:
-            return False    
+    tender_name: str = ""
+    errors: dict = field(default_factory=dict)
+
+    def _populate(self, row: ObjTender):
+        self.id = row.id
+        self.tender_id = row.tender_id
+        self.amount = float(row.amount)
+        self.side_note = row.side_note or ""
+        if row.tender:
+            self.tender_name = row.tender.tender_name
 
     def _is_dirty(self):
-        return any([
-            self.account_name, 
-            self.debit, 
-            self.credit, 
-            self.side_note
-            ])    
-        
+        return bool(self.tender_id or self.amount)
+
+    def _validate(self):
+        self.errors = {}
+        if self._is_dirty():
+            if not self.tender_id:
+                self.errors["tender_id"] = "Please select a tender type."
+            if self.amount <= 0:
+                self.errors["amount"] = "Tender amount must be greater than zero."
+        return not self.errors
+
+
+# ---------------------------------------------------------------------------
+# Main Form
+# ---------------------------------------------------------------------------
 
 @dataclass
 class Form:
     id: int = None
     record_date: str = ""
     record_number: str = ""
+    dashlabs_number: str = ""
+    pos_number: str = ""
     customer_id: int = 0
-    dr_number: str = ""
     prepared_by: str = ""
     checked_by: str = ""
     approved_by: str = ""
     description: str = ""
+    discount: float = 0.0
 
     submitted: str = ""
     cancelled: str = ""
-    locked: bool = False
 
     user_prepare_id: int = None
-    
     customer_name: str = ""
 
-    details = []
-    errors = {}
+    details: list = field(default_factory=list)
+    tenders: list = field(default_factory=list)
+    errors: dict = field(default_factory=dict)
 
     def __post_init__(self):
-        self.details = []
-        for i in range(DETAIL_ROWS):
-            self.details.append((i, SubForm()))
+        if not self.details:
+            self.details = [(i, DetailSubForm()) for i in range(DETAIL_ROWS)]
+        if not self.tenders:
+            self.tenders = [(i, TenderSubForm()) for i in range(TENDER_ROWS)]
 
-    def _save(self):
-        if self.id is None:
-            # Add a new record
-            _dict = get_attributes_as_dict(self)
-            if "locked" in _dict: _dict.pop("locked")
-            _dict.pop("customer_name")
-            
-            new_record = Obj(
-                **_dict
-                )
-            db.session.add(new_record)
-            db.session.commit()
+    # ------------------------------------------------------------------ #
+    # Populate from DB object                                              #
+    # ------------------------------------------------------------------ #
 
-            self.id = new_record.id
+    def _populate(self, obj: Obj):
+        self.id = obj.id
+        self.record_date = obj.record_date or ""
+        self.record_number = obj.record_number or ""
+        self.dashlabs_number = obj.dashlabs_number or ""
+        self.pos_number = obj.pos_number or ""
+        self.customer_id = obj.customer_id
+        self.prepared_by = obj.prepared_by or ""
+        self.checked_by = obj.checked_by or ""
+        self.approved_by = obj.approved_by or ""
+        self.description = obj.description or ""
+        self.discount = float(obj.discount or 0)
+        self.submitted = obj.submitted or ""
+        self.cancelled = obj.cancelled or ""
 
-            for _, detail in self.details:
-                if detail._is_dirty():
-                    _dict = get_attributes_as_dict(detail)
-                    _dict.pop("id")
-                    _dict.pop("account_name")
-                    _dict[f"{app_name}_id"] = new_record.id
-                    new_detail = ObjDetail(**_dict)
-                    db.session.add(new_detail)
-                    db.session.commit()
-            
-            data = {
-                f"{app_name}_id": new_record.id,
-                "user_id": self.user_prepare_id
-            }
-            
-            preparer = Preparer(**data)
+        if obj.customer:
+            self.customer_name = obj.customer.customer_name
 
-            db.session.add(preparer)
-            db.session.commit()
+        self.details = [(i, DetailSubForm()) for i in range(DETAIL_ROWS)]
+        for i, row in enumerate(obj.transaction_details):
+            if i >= DETAIL_ROWS:
+                break
+            sub = DetailSubForm()
+            sub._populate(row)
+            self.details[i] = (i, sub)
 
-        else:
-            # Update an existing record
-            record = Obj.query.get(self.id)
-            if record:
-                data = {
-                    f"{app_name}_id": self.id
-                }
-                preparer = Preparer.query.filter_by(**data).first()
-                if preparer:
-                    preparer.user_id = self.user_prepare_id
-                else:
-                    data[f"user_id"] = self.user_prepare_id
-                    preparer = Preparer(**data)
-                    db.session.add(preparer)
+        self.tenders = [(i, TenderSubForm()) for i in range(TENDER_ROWS)]
+        for i, row in enumerate(obj.transaction_tenders):
+            if i >= TENDER_ROWS:
+                break
+            sub = TenderSubForm()
+            sub._populate(row)
+            self.tenders[i] = (i, sub)
 
-                for attribute in get_attributes(self):
-                    if attribute == "id": continue
-                    setattr(record, attribute, getattr(self, attribute))
-                                    
-                details = ObjDetail.query.filter(
-                    getattr(ObjDetail, f"{app_name}_id")==self.id
-                    )
-                
-                for detail in details:
-                    db.session.delete(detail)
-
-                for _, detail in self.details:
-                    if detail._is_dirty():
-                        _dict = get_attributes_as_dict(detail)
-                        _dict.pop("id")
-                        _dict.pop("account_name")
-                        _dict[f"{app_name}_id"] = record.id
-                        row_detail = ObjDetail(**_dict)
-                        db.session.add(row_detail)
-                
-        db.session.commit()
-   
-    def _populate(self, obj):
-        for attribute in get_attributes(self):
-            if attribute in ["customer_id"]:
-                setattr(self, attribute, int(getattr(obj, attribute)))
-                customer = Customer.query.get(getattr(obj, attribute))
-                self.customer_name = customer.customer_name
-            elif attribute == "customer_name":
-                pass
-            elif attribute in ("debit", "credit"):
-                setattr(self, attribute, float(getattr(obj, attribute)))
-            else:
-                setattr(self, attribute, getattr(obj, attribute))
-
-        for i, row in enumerate(getattr(obj, f"{app_name}_details")):
-            subform = SubForm()
-            subform._populate(row)
-            self.details[i] = (i, subform)
+    # ------------------------------------------------------------------ #
+    # Populate from request.form (POST)                                   #
+    # ------------------------------------------------------------------ #
 
     def _post(self, request_form):
-        for attribute in get_attributes(self):
-            if attribute == "id":
-                value = getattr(request_form, "get")("record_id")
-                if value:
-                    setattr(self, "id", int(value))
-            elif attribute in ["customer_id"]:
-                customer_name = request_form.get('customer_name')
-                customer = Customer.query.filter_by(
-                    customer_name=customer_name
-                    ).first()
-                if customer:
-                    setattr(self, attribute, customer.id)
-                self.customer_name = customer_name
+        record_id = request_form.get("record_id")
+        self.id = int(record_id) if record_id else None
 
-            elif attribute in ("submitted", "cancelled"):
-                continue
-            else:
-                setattr(self, attribute, getattr(request_form, "get")(attribute))
+        self.record_date = request_form.get("record_date", "")
+        self.record_number = request_form.get("record_number", "")
+        self.dashlabs_number = request_form.get("dashlabs_number", "")
+        self.pos_number = request_form.get("pos_number", "")
+        self.prepared_by = request_form.get("prepared_by", "")
+        self.checked_by = request_form.get("checked_by", "")
+        self.approved_by = request_form.get("approved_by", "")
+        self.description = request_form.get("description", "")
+        self.discount = _safe_float(request_form.get("discount"))
 
-        for i in range(DETAIL_ROWS):
-            for attribute in ["account_name"] + get_attributes(ObjDetail):
-                if attribute in ("debit", "credit"):
-                    if type(request_form.get(f'{attribute}-{i}')) == str:
-                        _value = request_form.get(f'{attribute}-{i}')
-                        if _value.isnumeric() or (_value.replace('.', '', 1).isdigit() and _value.count('.') <= 1):
-                            setattr(self.details[i][1], attribute, float(_value))
-                        else:
-                            setattr(getattr(self.details[i][1], attribute), 0)
-                    else: 
-                        setattr(getattr(self.details[i][1], attribute), float(request_form.get(f'{attribute}-{i}')))
-                elif attribute in ["account_name"]:
-                    account_name = request_form.get(f'account_name-{i}')
-                    setattr(self.details[i][1], attribute, account_name)
-                    if account_name:
-                        account = Account.query.filter_by(account_name=account_name).first()
-                        if account:
-                            setattr(self.details[i][1], "account_id", account.id)
-                elif attribute in ["side_note"]:
-                    setattr(self.details[i][1], attribute, request_form.get(f'{attribute}-{i}'))
-                else:
-                    continue
+        # Customer
+        customer_name = request_form.get("customer_name", "")
+        self.customer_name = customer_name
+        customer = Customer.query.filter_by(customer_name=customer_name).first()
+        self.customer_id = customer.id if customer else 0
+
+        # Detail rows – HTML sends arrays: product_id[], amount[], etc.
+        product_ids = request_form.getlist("product_id[]")
+        amounts = request_form.getlist("amount[]")
+        detail_discounts = request_form.getlist("detail_discount[]")
+        side_notes = request_form.getlist("side_note[]")
+
+        self.details = []
+        for i in range(len(product_ids)):
+            sub = DetailSubForm()
+            sub.product_id = int(product_ids[i]) if product_ids[i] else 0
+            sub.amount = _safe_float(amounts[i] if i < len(amounts) else 0)
+            sub.discount = _safe_float(detail_discounts[i] if i < len(detail_discounts) else 0)
+            sub.side_note = side_notes[i] if i < len(side_notes) else ""
+            self.details.append((i, sub))
+
+        # Tender rows
+        tender_ids = request_form.getlist("tender_id[]")
+        tender_amounts = request_form.getlist("tender_amount[]")
+        tender_notes = request_form.getlist("tender_note[]")
+
+        self.tenders = []
+        for i in range(len(tender_ids)):
+            sub = TenderSubForm()
+            sub.tender_id = int(tender_ids[i]) if tender_ids[i] else 0
+            sub.amount = _safe_float(tender_amounts[i] if i < len(tender_amounts) else 0)
+            sub.side_note = tender_notes[i] if i < len(tender_notes) else ""
+            self.tenders.append((i, sub))
+
+    # ------------------------------------------------------------------ #
+    # Validation                                                           #
+    # ------------------------------------------------------------------ #
 
     def _validate_on_submit(self):
         self.errors = {}
-        detail_validation = True
+        detail_valid = True
+        tender_valid = True
 
         if not self.record_date:
-            self.errors["record_date"] = "Please type date."
-
-        if not self.record_number:
-            self.errors["record_number"] = "Please type sales invoice number."
-        else:
-            duplicate = Obj.query.filter(
-                func.lower(Obj.record_number) == func.lower(self.record_number), 
-                Obj.id != self.id
-            ).first()
-            if duplicate:
-                self.errors["record_number"] = "Sales invoice number is already used, please verify."        
+            self.errors["record_date"] = "Please enter a date."
 
         if not self.customer_name:
-            self.errors["customer_name"] = "Please type customer."
+            self.errors["customer_name"] = "Please enter a customer."
         else:
-            customer = Customer.query.filter(Customer.customer_name == self.customer_name).first()
+            customer = Customer.query.filter_by(customer_name=self.customer_name).first()
             if not customer:
-                self.errors["customer_name"] = f"{self.customer_name} does not exist."
+                self.errors["customer_name"] = f'"{self.customer_name}" not found.'
 
-        total_debit = 0
-        total_credit = 0
-        all_not_dirty = True
+        # At least one dirty detail
+        dirty_details = [sub for _, sub in self.details if sub._is_dirty()]
+        if not dirty_details:
+            self.errors["details"] = "At least one item is required."
+        else:
+            for _, sub in self.details:
+                if sub._is_dirty() and not sub._validate():
+                    detail_valid = False
 
-        for i in range(DETAIL_ROWS):
-            detail = self.details[i][1]
+        # Tender total must equal (gross - discount)
+        dirty_tenders = [sub for _, sub in self.tenders if sub._is_dirty()]
+        if not dirty_tenders:
+            self.errors["tenders"] = "At least one tender/payment is required."
+        else:
+            for _, sub in self.tenders:
+                if sub._is_dirty() and not sub._validate():
+                    tender_valid = False
 
-            if detail._is_dirty():
-                all_not_dirty = False
+        if not self.errors and detail_valid and tender_valid:
+            gross = sum(sub.amount for _, sub in self.details if sub._is_dirty())
+            detail_discount = sum(sub.discount for _, sub in self.details if sub._is_dirty())
+            total_due = gross - detail_discount - self.discount
+            total_tendered = sum(sub.amount for _, sub in self.tenders if sub._is_dirty())
 
-                # Validate subform
-                if not detail._validate():
-                    detail_validation = False
+            if round(total_due, 2) != round(total_tendered, 2):
+                self.errors["totals"] = (
+                    f"Total tendered ({total_tendered:,.2f}) must equal "
+                    f"amount due ({total_due:,.2f})."
+                )
 
-                total_debit += detail.debit
-                total_credit += detail.credit
+        return not self.errors and detail_valid and tender_valid
 
-        if all_not_dirty:
-            self.errors["entry"] = "There should be at least one entry."
+    # ------------------------------------------------------------------ #
+    # Save (create or update)                                              #
+    # ------------------------------------------------------------------ #
 
-        # Check if total debit equals total credit
-        if round(total_debit, 2) != round(total_credit, 2):
-            self.errors["totals"] = f"Total debit ({total_debit:,.2f}) and credit ({total_credit:,.2f}) must be equal."
+    def _save(self):
+        if self.id is None:
+            record = Obj(
+                record_date=self.record_date,
+                record_number=self.record_number,
+                dashlabs_number=self.dashlabs_number,
+                pos_number=self.pos_number,
+                customer_id=self.customer_id,
+                prepared_by=self.prepared_by,
+                checked_by=self.checked_by,
+                approved_by=self.approved_by,
+                description=self.description,
+                discount=self.discount,
+            )
+            db.session.add(record)
+            db.session.flush()  # get record.id before committing
+            self.id = record.id
+        else:
+            record = Obj.query.get(self.id)
+            record.record_date = self.record_date
+            record.record_number = self.record_number
+            record.dashlabs_number = self.dashlabs_number
+            record.pos_number = self.pos_number
+            record.customer_id = self.customer_id
+            record.prepared_by = self.prepared_by
+            record.checked_by = self.checked_by
+            record.approved_by = self.approved_by
+            record.description = self.description
+            record.discount = self.discount
 
-        if not self.errors and detail_validation:
-            return True  
-    
+            # Delete existing details & tenders, then re-insert
+            ObjDetail.query.filter_by(transaction_id=self.id).delete()
+            ObjTender.query.filter_by(transaction_id=self.id).delete()
+
+        # Insert details
+        for _, sub in self.details:
+            if sub._is_dirty():
+                db.session.add(ObjDetail(
+                    transaction_id=self.id,
+                    product_id=sub.product_id,
+                    amount=sub.amount,
+                    discount=sub.discount,
+                    side_note=sub.side_note,
+                ))
+
+        # Insert tenders
+        for _, sub in self.tenders:
+            if sub._is_dirty():
+                db.session.add(ObjTender(
+                    transaction_id=self.id,
+                    tender_id=sub.tender_id,
+                    amount=sub.amount,
+                    side_note=sub.side_note,
+                ))
+
+        # Preparer (upsert)
+        if self.user_prepare_id:
+            preparer = Preparer.query.filter_by(transaction_id=self.id).first()
+            if preparer:
+                preparer.user_id = self.user_prepare_id
+            else:
+                db.session.add(Preparer(
+                    transaction_id=self.id,
+                    user_id=self.user_prepare_id,
+                ))
+
+        db.session.commit()
+
+    # ------------------------------------------------------------------ #
+    # Submit / Cancel                                                      #
+    # ------------------------------------------------------------------ #
+
     def _submit(self):
-        self.submitted = str(datetime.today())[:10]
+        record = Obj.query.get(self.id)
+        record.submitted = str(datetime.today())[:10]
+        self.submitted = record.submitted
+        db.session.commit()
+
+    def _cancel(self):
+        record = Obj.query.get(self.id)
+        record.cancelled = str(datetime.today())[:10]
+        self.cancelled = record.cancelled
+        db.session.commit()
 
     @property
     def _locked_(self):
-        if self.submitted or self.cancelled:
-            return True
-        else:
-            return False
-    
+        return bool(self.submitted or self.cancelled)

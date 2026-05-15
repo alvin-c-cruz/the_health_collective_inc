@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Transaction #{{ record.id }}{% endblock %}
+
+{% block styles %}
+<style>
+  :root {
+    --thc-bg: #f5f3ee; --thc-surface: #fff; --thc-border: #e4e0d8;
+    --thc-text: #1a1a1a; --thc-text-muted: #7a7670;
+    --thc-radius: 10px; --thc-shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--thc-bg); }
+  .vt-wrap { max-width: 860px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  .vt-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem; }
+  .vt-title { font-size: 1.2rem; font-weight: 600; margin: 0; }
+  .vt-meta { font-size: 0.78rem; color: var(--thc-text-muted); margin-top: 3px; }
+  .vt-card { background: var(--thc-surface); border: 1px solid var(--thc-border); border-radius: var(--thc-radius); box-shadow: var(--thc-shadow-sm); padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+  .vt-card-title { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--thc-text-muted); padding-bottom: 0.6rem; border-bottom: 1px solid var(--thc-border); margin-bottom: 1rem; }
+  .vt-field { margin-bottom: 0.75rem; }
+  .vt-label { font-size: 0.72rem; color: var(--thc-text-muted); margin-bottom: 2px; }
+  .vt-value { font-size: 0.88rem; font-weight: 500; }
+  .vt-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .vt-table th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--thc-text-muted); padding: 0 0.5rem 0.5rem; border-bottom: 1px solid var(--thc-border); text-align: left; }
+  .vt-table th.num { text-align: right; }
+  .vt-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid #f0ede7; }
+  .vt-table td.num { text-align: right; font-family: 'DM Mono', monospace; }
+  .vt-table tr.total-row td { font-weight: 600; border-top: 1px solid var(--thc-border); border-bottom: none; background: #f9f7f3; font-family: 'DM Mono', monospace; }
+  .badge-submitted { background: #e8f5e9; color: #2e7d32; padding: 3px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 600; }
+  .badge-draft { background: #fff8e1; color: #856404; padding: 3px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 600; }
+  .badge-cancelled { background: #fdecea; color: #c0392b; padding: 3px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 600; }
+  .vt-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 1.25rem; }
+  .btn-edit { background: #6a8f7a; color: #fff; border: none; border-radius: 6px; padding: 0.55rem 1.25rem; font-size: 0.875rem; font-weight: 600; text-decoration: none; display: inline-block; }
+  .btn-edit:hover { background: #557a68; color: #fff; text-decoration: none; }
+  .btn-back { background: transparent; color: var(--thc-text-muted); border: 1px solid var(--thc-border); border-radius: 6px; padding: 0.55rem 1.1rem; font-size: 0.875rem; text-decoration: none; display: inline-block; }
+  .btn-back:hover { color: var(--thc-text); border-color: #aaa; text-decoration: none; }
+  .btn-delete { background: transparent; color: #c0392b; border: 1px solid #c0392b; border-radius: 6px; padding: 0.55rem 1.1rem; font-size: 0.875rem; cursor: pointer; margin-left: auto; }
+  .btn-delete:hover { background: #fdecea; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="vt-wrap">
+
+  <div class="vt-header">
+    <div>
+      <h4 class="vt-title">Transaction #{{ record.id }}</h4>
+      <p class="vt-meta">
+        {{ record.formatted_record_date or record.record_date }}
+        &nbsp;·&nbsp; {{ record.record_number or '—' }}
+        &nbsp;·&nbsp;
+        {% if record.submitted %}
+          <span class="badge-submitted">Submitted {{ record.formatted_submitted }}</span>
+        {% elif record.cancelled %}
+          <span class="badge-cancelled">Cancelled {{ record.formatted_cancelled }}</span>
+        {% else %}
+          <span class="badge-draft">Draft</span>
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  <!-- Info -->
+  <div class="vt-card">
+    <div class="vt-card-title">Transaction Info</div>
+    <div class="row">
+      <div class="col-md-3">
+        <div class="vt-field"><div class="vt-label">Customer</div><div class="vt-value">{{ record.customer.customer_name if record.customer else '—' }}</div></div>
+      </div>
+      <div class="col-md-3">
+        <div class="vt-field"><div class="vt-label">POS Number</div><div class="vt-value">{{ record.pos_number or '—' }}</div></div>
+      </div>
+      <div class="col-md-3">
+        <div class="vt-field"><div class="vt-label">DashLabs Number</div><div class="vt-value">{{ record.dashlabs_number or '—' }}</div></div>
+      </div>
+      <div class="col-md-3">
+        <div class="vt-field"><div class="vt-label">Header Discount</div><div class="vt-value">{{ record.formatted_discount }}</div></div>
+      </div>
+    </div>
+    {% if record.description %}
+    <div class="vt-field"><div class="vt-label">Description</div><div class="vt-value">{{ record.description }}</div></div>
+    {% endif %}
+  </div>
+
+  <!-- Items -->
+  <div class="vt-card">
+    <div class="vt-card-title">Items</div>
+    <table class="vt-table">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th class="num">Amount</th>
+          <th class="num">Discount</th>
+          <th class="num">Net</th>
+          <th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set gross = namespace(val=0) %}
+        {% set disc = namespace(val=0) %}
+        {% for detail in record.transaction_details %}
+        {% set gross.val = gross.val + detail.amount %}
+        {% set disc.val = disc.val + detail.discount %}
+        <tr>
+          <td>{{ detail.product.product_name if detail.product else '—' }}</td>
+          <td class="num">{{ detail.formatted_amount }}</td>
+          <td class="num">{{ detail.formatted_discount }}</td>
+          <td class="num">{{ '{:,.2f}'.format(detail.amount - detail.discount) }}</td>
+          <td>{{ detail.side_note or '' }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="total-row">
+          <td>Total</td>
+          <td class="num">{{ '{:,.2f}'.format(gross.val) }}</td>
+          <td class="num">{{ '{:,.2f}'.format(disc.val) }}</td>
+          <td class="num">{{ '{:,.2f}'.format(gross.val - disc.val - (record.discount or 0)) }}</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Tenders -->
+  <div class="vt-card">
+    <div class="vt-card-title">Payment / Tender</div>
+    <table class="vt-table">
+      <thead>
+        <tr>
+          <th>Tender Type</th>
+          <th class="num">Amount</th>
+          <th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set tender_total = namespace(val=0) %}
+        {% for t in record.transaction_tenders %}
+        {% set tender_total.val = tender_total.val + t.amount %}
+        <tr>
+          <td>{{ t.tender.tender_name if t.tender else '—' }}</td>
+          <td class="num">{{ t.formatted_amount }}</td>
+          <td>{{ t.side_note or '' }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="total-row">
+          <td>Total Tendered</td>
+          <td class="num">{{ '{:,.2f}'.format(tender_total.val) }}</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Actions -->
+  <div class="vt-actions">
+    <a href="{{ url_for('daily_sales.home') }}" class="btn-back">← Back</a>
+
+    {% if not record.submitted and not record.cancelled %}
+    <a href="{{ url_for('daily_sales.edit_transaction', transaction_id=record.id) }}" class="btn-edit">✏ Edit</a>
+
+    <form method="POST" action="{{ url_for('daily_sales.delete_transaction', transaction_id=record.id) }}"
+      style="margin-left:auto;" onsubmit="return confirm('Permanently delete this draft?')">
+      <button type="submit" class="btn-delete">🗑 Delete</button>
+    </form>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
