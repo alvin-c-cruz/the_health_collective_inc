@@ -70,11 +70,21 @@ def home():
     summary.cash_on_hand = cash_on_hand
     summary.transaction_count = len([t for t in transactions if t.submitted and not t.cancelled])
 
+    all_tenders = Tender.query.order_by(Tender.tender_name).all()
+    txn_type_tenders = {}
+    for t in all_tenders:
+        if t.transaction_types:
+            for tt in t.transaction_types.split(','):
+                tt = tt.strip()
+                if tt:
+                    txn_type_tenders.setdefault(tt, []).append(t)
+
     context = {
         "app_label": app_label,
         "today": date.today(),
         "summary": summary,
         "transactions": transactions,
+        "txn_type_tenders": txn_type_tenders,
     }
     return render_template("daily_sales/home.html", **context)
 

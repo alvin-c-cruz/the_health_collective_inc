@@ -25,12 +25,12 @@
 
   /* ── transaction cards ── */
   .thc-txn-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1.5rem; }
-  .thc-txn-card { background: #fff; border: 1px solid #e0ddd6; border-radius: 12px; padding: 18px 16px; cursor: pointer; transition: border-color .15s, background .15s; text-decoration: none; display: block; color: inherit; }
+  .thc-txn-card { background: #fff; border: 1px solid #e0ddd6; border-radius: 12px; padding: 16px; cursor: pointer; transition: border-color .15s, background .15s; text-decoration: none; display: flex; align-items: center; gap: 14px; color: inherit; }
   .thc-txn-card:hover { border-color: #aaa8a2; background: #fafaf8; text-decoration: none; color: inherit; }
-  .thc-txn-card.featured { border: 1.5px solid #378ADD; background: #E6F1FB; }
-  .thc-txn-card.featured:hover { background: #d9eaf8; }
+  .thc-txn-card.featured { border: 1.5px solid #378ADD; background: #fff; }
+  .thc-txn-card.featured:hover { background: #E6F1FB; }
 
-  .thc-txn-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; margin-bottom: 10px; }
+  .thc-txn-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
   .ic-blue   { background: #E6F1FB; color: #185FA5; }
   .ic-green  { background: #EAF3DE; color: #3B6D11; }
   .ic-purple { background: #EEEDFE; color: #3C3489; }
@@ -38,11 +38,13 @@
   .ic-amber  { background: #FAEEDA; color: #854F0B; }
   .ic-teal   { background: #E1F5EE; color: #0F6E56; }
 
-  .thc-txn-title { font-size: .875rem; font-weight: 600; color: #1a1714; margin: 0 0 4px; }
-  .thc-txn-desc  { font-size: .75rem; color: #888480; margin: 0 0 10px; line-height: 1.45; }
+  .thc-txn-info { flex: 1; min-width: 0; }
+  .thc-txn-title { font-size: .875rem; font-weight: 600; color: #1a1714; margin: 0 0 2px; }
+  .thc-txn-desc  { font-size: .75rem; color: #888480; margin: 0 0 8px; line-height: 1.45; }
 
   .thc-badges { display: flex; flex-wrap: wrap; gap: 5px; }
-  .thc-badge { font-size: .65rem; padding: 2px 9px; border-radius: 99px; font-weight: 500; }
+  .thc-badge { font-size: .65rem; padding: 2px 9px; border-radius: 99px; font-weight: 500; text-decoration: none; display: inline-block; }
+  .thc-badge:hover { opacity: .8; text-decoration: none; }
   .thc-badge-blue   { background: #B5D4F4; color: #0C447C; }
   .thc-badge-green  { background: #C0DD97; color: #27500A; }
   .thc-badge-purple { background: #CECBF6; color: #3C3489; }
@@ -95,9 +97,17 @@
       <p class="thc-brand-name">The Health Collective Inc.</p>
       <p class="thc-brand-sub">Daily Sales &amp; Petty Cash</p>
     </div>
-    <div class="thc-date-badge">
-      <i class="bi bi-calendar3"></i>
-      {{ today.strftime("%A, %B %d, %Y") }}
+    <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+      <div class="thc-date-badge">
+        <i class="bi bi-calendar3"></i>
+        {{ today.strftime("%A, %B %d, %Y") }}
+      </div>
+      <button
+        class="btn btn-warning btn-sm" type="button"
+        data-url="{{ url_for('daily_sales.daily_report') }}"
+        onclick="window.open(this.dataset.url,'_blank','width=1200,height=700,scrollbars=yes,resizable=yes')">
+        <i class="bi bi-file-earmark-text me-1"></i> Generate report
+      </button>
     </div>
   </div>
 
@@ -126,52 +136,72 @@
   <div class="thc-txn-grid">
 
     {# Walk-in #}
-    <a href="{{ url_for('daily_sales.new_transaction', type='walk_in') }}" class="thc-txn-card featured">
+    {% set _url = url_for('daily_sales.new_transaction', type='walk_in') %}
+    <div class="thc-txn-card featured" onclick="window.location.href='{{ _url }}'">
       <div class="thc-txn-icon ic-blue"><i class="bi bi-person-walking"></i></div>
-      <p class="thc-txn-title">Walk-in patient</p>
-      <p class="thc-txn-desc">Diagnostics for patients arriving at the clinic</p>
-      <div class="thc-badges">
-        <span class="thc-badge thc-badge-blue">Cash</span>
-        <span class="thc-badge thc-badge-blue">GCash / bank</span>
-        <span class="thc-badge thc-badge-blue">Credit card</span>
-        <span class="thc-badge thc-badge-blue">A/R – Co.</span>
+      <div class="thc-txn-info">
+        <p class="thc-txn-title">Walk-in patient</p>
+        <p class="thc-txn-desc">Diagnostics for patients arriving at the clinic</p>
+        <div class="thc-badges">
+          {% for t in txn_type_tenders.get('walk_in', []) %}
+          {% if t.symbol or t.tender_name %}
+          <a href="{{ url_for('daily_sales.new_transaction', type='walk_in', prefill_tender_id=t.id) }}" class="thc-badge thc-badge-blue" onclick="event.stopPropagation()">{{ t.symbol or t.tender_name }}</a>
+          {% endif %}
+          {% endfor %}
+        </div>
       </div>
-    </a>
+    </div>
 
     {# Home service #}
-    <a href="{{ url_for('daily_sales.new_transaction', type='home_service') }}" class="thc-txn-card">
+    {% set _url = url_for('daily_sales.new_transaction', type='home_service') %}
+    <div class="thc-txn-card" onclick="window.location.href='{{ _url }}'">
       <div class="thc-txn-icon ic-green"><i class="bi bi-house-heart"></i></div>
-      <p class="thc-txn-title">Home service</p>
-      <p class="thc-txn-desc">Diagnostics performed at the patient's home</p>
-      <div class="thc-badges">
-        <span class="thc-badge thc-badge-green">Cash</span>
-        <span class="thc-badge thc-badge-green">GCash / bank</span>
-        <span class="thc-badge thc-badge-green">Credit card</span>
+      <div class="thc-txn-info">
+        <p class="thc-txn-title">Home service</p>
+        <p class="thc-txn-desc">Diagnostics performed at the patient's home</p>
+        <div class="thc-badges">
+          {% for t in txn_type_tenders.get('home_service', []) %}
+          {% if t.symbol or t.tender_name %}
+          <a href="{{ url_for('daily_sales.new_transaction', type='home_service', prefill_tender_id=t.id) }}" class="thc-badge thc-badge-green" onclick="event.stopPropagation()">{{ t.symbol or t.tender_name }}</a>
+          {% endif %}
+          {% endfor %}
+        </div>
       </div>
-    </a>
+    </div>
 
-    {# HMO / APE #}
-    <a href="{{ url_for('daily_sales.new_transaction', type='hmo_ape') }}" class="thc-txn-card">
+    {# APE #}
+    {% set _url = url_for('daily_sales.new_transaction', type='hmo_ape') %}
+    <div class="thc-txn-card" onclick="window.location.href='{{ _url }}'">
       <div class="thc-txn-icon ic-purple"><i class="bi bi-hospital"></i></div>
-      <p class="thc-txn-title">HMO / APE</p>
-      <p class="thc-txn-desc">Health maintenance org. and annual physical exam billing</p>
-      <div class="thc-badges">
-        <span class="thc-badge thc-badge-purple">HMO</span>
-        <span class="thc-badge thc-badge-purple">APE</span>
+      <div class="thc-txn-info">
+        <p class="thc-txn-title">APE</p>
+        <p class="thc-txn-desc">Annual physical exam billing</p>
+        <div class="thc-badges">
+          {% for t in txn_type_tenders.get('hmo_ape', []) %}
+          {% if t.symbol or t.tender_name %}
+          <a href="{{ url_for('daily_sales.new_transaction', type='hmo_ape', prefill_tender_id=t.id) }}" class="thc-badge thc-badge-purple" onclick="event.stopPropagation()">{{ t.symbol or t.tender_name }}</a>
+          {% endif %}
+          {% endfor %}
+        </div>
       </div>
-    </a>
+    </div>
 
     {# Dialysis #}
-    <a href="{{ url_for('daily_sales.new_transaction', type='dialysis') }}" class="thc-txn-card">
+    {% set _url = url_for('daily_sales.new_transaction', type='dialysis') %}
+    <div class="thc-txn-card" onclick="window.location.href='{{ _url }}'">
       <div class="thc-txn-icon ic-coral"><i class="bi bi-droplet-half"></i></div>
-      <p class="thc-txn-title">Dialysis</p>
-      <p class="thc-txn-desc">Dialysis session billing and Philhealth coverage</p>
-      <div class="thc-badges">
-        <span class="thc-badge thc-badge-coral">Philhealth</span>
-        <span class="thc-badge thc-badge-coral">Cash</span>
-        <span class="thc-badge thc-badge-coral">GCash / bank</span>
+      <div class="thc-txn-info">
+        <p class="thc-txn-title">Dialysis</p>
+        <p class="thc-txn-desc">Dialysis session billing and Philhealth coverage</p>
+        <div class="thc-badges">
+          {% for t in txn_type_tenders.get('dialysis', []) %}
+          {% if t.symbol or t.tender_name %}
+          <a href="{{ url_for('daily_sales.new_transaction', type='dialysis', prefill_tender_id=t.id) }}" class="thc-badge thc-badge-coral" onclick="event.stopPropagation()">{{ t.symbol or t.tender_name }}</a>
+          {% endif %}
+          {% endfor %}
+        </div>
       </div>
-    </a>
+    </div>
 
   </div>
 
@@ -242,11 +272,6 @@
         <p class="thc-cashier-role">Cashier on duty</p>
       </div>
     </div>
-    <button
-      class="btn btn-warning btn-sm"
-      onclick="window.open('{{ url_for('daily_sales.daily_report') }}', '_blank', 'width=1200,height=700,scrollbars=yes,resizable=yes')">
-      <i class="bi bi-file-earmark-text me-1"></i> Generate report
-    </button>
   </div>
 
 </div>

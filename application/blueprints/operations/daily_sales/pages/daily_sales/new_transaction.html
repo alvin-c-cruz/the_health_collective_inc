@@ -1691,9 +1691,19 @@
     }
 
     if (tenderContainer && tenderContainer.querySelectorAll('.tender-row').length === 0) {
-
       addTenderRow();
+    }
 
+    const prefillTenderId = '{{ request.args.get("prefill_tender_id", "") }}';
+    if (prefillTenderId) {
+      const opt = TENDER_OPTIONS.find(o => o.value === prefillTenderId);
+      const firstRow = tenderContainer ? tenderContainer.querySelector('.tender-row') : null;
+      if (firstRow) {
+        const displayInput = firstRow.querySelector('.tender-ac-display');
+        const hiddenInput  = firstRow.querySelector('input[name="tender_id[]"]');
+        if (displayInput) displayInput.value = opt ? opt.label : '';
+        if (hiddenInput)  hiddenInput.value  = prefillTenderId;
+      }
     }
 
 

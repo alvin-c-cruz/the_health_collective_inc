@@ -35,7 +35,9 @@ def get_attributes_as_dict(object):
 class Form:
     id: int = None
     tender_name: str = ""
-    
+    symbol: str = ""
+    transaction_types: str = ""
+
     user_prepare_id: int = None
     user_prepare: str = ""
 
@@ -103,15 +105,18 @@ class Form:
                 value = getattr(request_form, "get")("record_id")
                 if value:
                     setattr(self, "id", int(value))
+            elif attribute == "transaction_types":
+                types = request_form.getlist("transaction_types")
+                self.transaction_types = ','.join(types)
             elif attribute in ("submitted", "cancelled"):
                 continue
             else:
                 try:
                     setattr(self, attribute, getattr(request_form, "get")(attribute).upper())
                 except:
-                    setattr(self, attribute, getattr(request_form, "get")(attribute)) 
-            
-            self.user_prepare_id = current_user_id
+                    setattr(self, attribute, getattr(request_form, "get")(attribute))
+
+        self.user_prepare_id = current_user_id
 
     def _validate_on_submit(self):
         self.errors = {}

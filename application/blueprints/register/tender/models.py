@@ -6,6 +6,13 @@ from . import app_name
 class Tender(db.Model):
     id = db.Column(db.Integer(), primary_key=True)
     tender_name = db.Column(db.String(255))
+    symbol = db.Column(db.String(50))
+    transaction_types = db.Column(db.String(255))  # comma-separated: walk_in,home_service,hmo_ape,dialysis
+
+    def has_transaction_type(self, txn_type):
+        if not self.transaction_types:
+            return False
+        return txn_type in self.transaction_types.split(',')
 
     def __str__(self):
         return self.tender_name
