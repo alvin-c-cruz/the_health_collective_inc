@@ -65,6 +65,21 @@
   .thc-cashier-name { font-size: .8rem; font-weight: 600; color: #1a1714; margin: 0; }
   .thc-cashier-role { font-size: .7rem; color: #888480; margin: 1px 0 0; }
 
+  /* ── today's transactions list ── */
+  .thc-txn-list { margin-bottom: 1.5rem; }
+  .thc-rec-row { background: #fff; border: 1px solid #e0ddd6; border-radius: 10px; padding: 11px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 6px; text-decoration: none; color: inherit; transition: border-color .15s, background .15s; }
+  .thc-rec-row:hover { border-color: #aaa8a2; background: #fafaf8; text-decoration: none; color: inherit; }
+  .thc-rec-info { flex: 1; min-width: 0; }
+  .thc-rec-num { font-size: .68rem; color: #888480; font-family: 'DM Mono', monospace; }
+  .thc-rec-customer { font-size: .85rem; font-weight: 600; color: #1a1714; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .thc-rec-type { font-size: .7rem; color: #888480; margin-top: 1px; }
+  .thc-rec-amount { font-family: 'DM Mono', monospace; font-size: .88rem; font-weight: 600; color: #1a1714; text-align: right; flex-shrink: 0; }
+  .thc-rec-badge { flex-shrink: 0; font-size: .62rem; font-weight: 600; padding: 2px 8px; border-radius: 99px; text-transform: uppercase; letter-spacing: .04em; }
+  .badge-draft     { background: #f0ede7; color: #888480; }
+  .badge-submitted { background: #EAF3DE; color: #3B6D11; }
+  .badge-cancelled { background: #FAECE7; color: #993C1D; }
+  .thc-empty { text-align: center; padding: 1.25rem; color: #888480; font-size: .8rem; background: #f5f2ec; border-radius: 10px; }
+
   @media (max-width: 600px) {
     .thc-txn-grid, .thc-cash-grid, .thc-metrics { grid-template-columns: 1fr; }
   }
@@ -182,6 +197,38 @@
       <i class="bi bi-chevron-right thc-cash-chev"></i>
     </a>
 
+  </div>
+
+  {# ── Today's transactions ── #}
+  <div class="thc-sec-lbl">Today's transactions</div>
+  <div class="thc-txn-list">
+    {% if transactions %}
+      {% for t in transactions %}
+        {% set net = namespace(val=0) %}
+        {% for d in t.transaction_details %}{% set net.val = net.val + d.amount - d.discount %}{% endfor %}
+        {% set net.val = net.val - (t.discount or 0) %}
+        <a href="{{ url_for('daily_sales.edit_transaction', transaction_id=t.id) if not t.submitted and not t.cancelled else url_for('daily_sales.view_transaction', transaction_id=t.id) }}"
+           class="thc-rec-row">
+          <div class="thc-rec-info">
+            <div class="thc-rec-num"># {{ t.record_number }}</div>
+            <div class="thc-rec-customer">{{ t.customer.customer_name if t.customer else '—' }}</div>
+            <div class="thc-rec-type">{{ (t.description or 'walk_in') | replace('_', ' ') | title }}</div>
+          </div>
+          <div class="thc-rec-amount">₱{{ "%.2f" | format(net.val) }}</div>
+          <div>
+            {% if t.cancelled %}
+              <span class="thc-rec-badge badge-cancelled">Cancelled</span>
+            {% elif t.submitted %}
+              <span class="thc-rec-badge badge-submitted">Submitted</span>
+            {% else %}
+              <span class="thc-rec-badge badge-draft">Draft</span>
+            {% endif %}
+          </div>
+        </a>
+      {% endfor %}
+    {% else %}
+      <div class="thc-empty">No transactions recorded today.</div>
+    {% endif %}
   </div>
 
   {# ── Footer ── #}

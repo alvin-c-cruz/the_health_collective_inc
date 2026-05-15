@@ -2,162 +2,229 @@
 {% block title %}Transaction #{{ record.id }}{% endblock %}
 
 {% block styles %}
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --thc-bg: #f5f3ee; --thc-surface: #fff; --thc-border: #e4e0d8;
-    --thc-text: #1a1a1a; --thc-text-muted: #7a7670;
-    --thc-radius: 10px; --thc-shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --thc-bg: #f5f3ee;
+    --thc-surface: #ffffff;
+    --thc-border: #e4e0d8;
+    --thc-border-focus: #6a8f7a;
+    --thc-text: #1a1a1a;
+    --thc-text-muted: #7a7670;
+    --thc-accent: #6a8f7a;
+    --thc-accent-light: #eef3f0;
+    --thc-accent-hover: #557a68;
+    --thc-danger: #c0392b;
+    --thc-danger-light: #fdf0ee;
+    --thc-badge-bg: #e8f0eb;
+    --thc-badge-text: #3d6b51;
+    --thc-shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --thc-radius: 10px;
+    --thc-radius-sm: 6px;
   }
-  body { font-family: 'DM Sans', sans-serif; background: var(--thc-bg); }
-  .vt-wrap { max-width: 860px; margin: 0 auto; padding: 2rem 1rem 4rem; }
-  .vt-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem; }
-  .vt-title { font-size: 1.2rem; font-weight: 600; margin: 0; }
-  .vt-meta { font-size: 0.78rem; color: var(--thc-text-muted); margin-top: 3px; }
-  .vt-card { background: var(--thc-surface); border: 1px solid var(--thc-border); border-radius: var(--thc-radius); box-shadow: var(--thc-shadow-sm); padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
-  .vt-card-title { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--thc-text-muted); padding-bottom: 0.6rem; border-bottom: 1px solid var(--thc-border); margin-bottom: 1rem; }
-  .vt-field { margin-bottom: 0.75rem; }
+
+  body { font-family: 'DM Sans', sans-serif; background-color: var(--thc-bg); color: var(--thc-text); }
+
+  .txn-wrapper { max-width: 960px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+
+  .txn-page-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.75rem; flex-wrap: wrap; }
+  .txn-page-header h4 { font-size: 1.3rem; font-weight: 600; margin: 0; letter-spacing: -0.02em; }
+  .txn-type-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 999px; background: var(--thc-badge-bg); color: var(--thc-badge-text); font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
+
+  .txn-card { background: var(--thc-surface); border: 1px solid var(--thc-border); border-radius: var(--thc-radius); box-shadow: var(--thc-shadow-sm); padding: 1.5rem; margin-bottom: 1.25rem; }
+  .txn-card-title { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--thc-text-muted); margin-bottom: 1.25rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--thc-border); }
+
   .vt-label { font-size: 0.72rem; color: var(--thc-text-muted); margin-bottom: 2px; }
-  .vt-value { font-size: 0.88rem; font-weight: 500; }
+  .vt-value { font-size: 0.875rem; font-weight: 500; }
+
+  /* Items / tender table */
   .vt-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-  .vt-table th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--thc-text-muted); padding: 0 0.5rem 0.5rem; border-bottom: 1px solid var(--thc-border); text-align: left; }
+  .vt-table th { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--thc-text-muted); padding: 0 0.5rem 0.6rem; border-bottom: 1px solid var(--thc-border); text-align: left; }
   .vt-table th.num { text-align: right; }
-  .vt-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid #f0ede7; }
-  .vt-table td.num { text-align: right; font-family: 'DM Mono', monospace; }
-  .vt-table tr.total-row td { font-weight: 600; border-top: 1px solid var(--thc-border); border-bottom: none; background: #f9f7f3; font-family: 'DM Mono', monospace; }
+  .vt-table td { padding: 0.45rem 0.5rem; border-bottom: 1px solid #f0ede7; vertical-align: middle; }
+  .vt-table td.num { text-align: right; font-family: 'DM Mono', monospace; font-size: 0.85rem; }
+  .vt-table td.name { color: var(--thc-accent); font-weight: 500; }
+  .vt-table tr.total-row td { font-weight: 600; border-top: 1px solid var(--thc-border); border-bottom: none; background: #f9f7f3; font-family: 'DM Mono', monospace; font-size: 0.85rem; }
+
+  /* Summary box — mirrors .items-summary in new_transaction */
+  .items-summary { margin-top: 1rem; margin-left: auto; width: 320px; border: 1px solid var(--thc-border); border-radius: var(--thc-radius-sm); overflow: hidden; }
+  .items-summary-row { display: flex; justify-content: space-between; align-items: center; padding: 0.45rem 0.85rem; border-bottom: 1px solid var(--thc-border); background: #faf8f4; gap: 0.75rem; }
+  .items-summary-row:last-child { border-bottom: none; }
+  .is-label { font-size: 0.78rem; color: var(--thc-text-muted); flex: 1; }
+  .is-value { font-family: 'DM Mono', monospace; font-size: 0.85rem; color: var(--thc-text); text-align: right; min-width: 90px; }
+  .is-total-row { background: #f0ede7; }
+  .is-total-row .is-label { font-size: 0.78rem; font-weight: 700; color: var(--thc-text); text-transform: uppercase; letter-spacing: 0.05em; }
+  .is-total-row .is-value { font-size: 1rem; font-weight: 700; }
+  .balance-zero { background: #e8f5e9 !important; }
+  .balance-zero .is-label, .balance-zero .is-value { color: #2e7d32 !important; }
+  .balance-nonzero { background: #fdecea !important; }
+  .balance-nonzero .is-label, .balance-nonzero .is-value { color: #c0392b !important; }
+
+  /* Status badges */
   .badge-submitted { background: #e8f5e9; color: #2e7d32; padding: 3px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 600; }
   .badge-draft { background: #fff8e1; color: #856404; padding: 3px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 600; }
   .badge-cancelled { background: #fdecea; color: #c0392b; padding: 3px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 600; }
-  .vt-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 1.25rem; }
-  .btn-edit { background: #6a8f7a; color: #fff; border: none; border-radius: 6px; padding: 0.55rem 1.25rem; font-size: 0.875rem; font-weight: 600; text-decoration: none; display: inline-block; }
-  .btn-edit:hover { background: #557a68; color: #fff; text-decoration: none; }
-  .btn-back { background: transparent; color: var(--thc-text-muted); border: 1px solid var(--thc-border); border-radius: 6px; padding: 0.55rem 1.1rem; font-size: 0.875rem; text-decoration: none; display: inline-block; }
-  .btn-back:hover { color: var(--thc-text); border-color: #aaa; text-decoration: none; }
-  .btn-delete { background: transparent; color: #c0392b; border: 1px solid #c0392b; border-radius: 6px; padding: 0.55rem 1.1rem; font-size: 0.875rem; cursor: pointer; margin-left: auto; }
-  .btn-delete:hover { background: #fdecea; }
+
+  /* Action buttons */
+  .txn-actions { display: flex; gap: 0.75rem; padding-top: 0.25rem; flex-wrap: wrap; }
+  .btn-edit { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 600; background: var(--thc-accent); color: #fff; border: none; border-radius: var(--thc-radius-sm); padding: 0.6rem 1.5rem; text-decoration: none; display: inline-flex; align-items: center; transition: background 0.15s; }
+  .btn-edit:hover { background: var(--thc-accent-hover); color: #fff; text-decoration: none; }
+  .btn-back { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 500; background: transparent; color: var(--thc-text-muted); border: 1px solid var(--thc-border); border-radius: var(--thc-radius-sm); padding: 0.6rem 1.25rem; text-decoration: none; display: inline-flex; align-items: center; transition: border-color 0.15s, color 0.15s; }
+  .btn-back:hover { border-color: var(--thc-text-muted); color: var(--thc-text); text-decoration: none; }
+  .btn-danger-outline { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 500; background: transparent; color: var(--thc-danger); border: 1px solid var(--thc-danger); border-radius: var(--thc-radius-sm); padding: 0.6rem 1.25rem; cursor: pointer; margin-left: auto; transition: background 0.15s; }
+  .btn-danger-outline:hover { background: var(--thc-danger-light); }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="vt-wrap">
+<div class="txn-wrapper">
 
-  <div class="vt-header">
-    <div>
-      <h4 class="vt-title">Transaction #{{ record.id }}</h4>
-      <p class="vt-meta">
-        {{ record.formatted_record_date or record.record_date }}
-        &nbsp;·&nbsp; {{ record.record_number or '—' }}
-        &nbsp;·&nbsp;
-        {% if record.submitted %}
-          <span class="badge-submitted">Submitted {{ record.formatted_submitted }}</span>
-        {% elif record.cancelled %}
-          <span class="badge-cancelled">Cancelled {{ record.formatted_cancelled }}</span>
-        {% else %}
-          <span class="badge-draft">Draft</span>
-        {% endif %}
-      </p>
-    </div>
+  {# ── Header ── #}
+  <div class="txn-page-header">
+    <a href="{{ url_for('daily_sales.home') }}" style="color:var(--thc-text-muted);text-decoration:none;font-size:0.85rem;">
+      ← Daily Sales
+    </a>
+    <h4>Transaction</h4>
+    <span style="font-size:0.75rem;color:var(--thc-text-muted);">{{ record.formatted_record_date or record.record_date }}</span>
+    <span style="font-size:0.75rem;color:var(--thc-text-muted);">&middot; {{ record.record_number or '—' }}</span>
+    <span style="margin-left:auto;">
+      {% if record.submitted %}
+        <span class="badge-submitted">Submitted {{ record.formatted_submitted }}</span>
+      {% elif record.cancelled %}
+        <span class="badge-cancelled">Cancelled {{ record.formatted_cancelled }}</span>
+      {% else %}
+        <span class="badge-draft">Draft</span>
+      {% endif %}
+    </span>
   </div>
 
-  <!-- Info -->
-  <div class="vt-card">
-    <div class="vt-card-title">Transaction Info</div>
-    <div class="row">
-      <div class="col-md-3">
-        <div class="vt-field"><div class="vt-label">Customer</div><div class="vt-value">{{ record.customer.customer_name if record.customer else '—' }}</div></div>
+  {# ── Transaction Info ── #}
+  <div class="txn-card">
+    <div class="txn-card-title">Transaction Info</div>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="vt-label">Customer</div>
+        <div class="vt-value">{{ record.customer.customer_name if record.customer else '—' }}</div>
       </div>
-      <div class="col-md-3">
-        <div class="vt-field"><div class="vt-label">POS Number</div><div class="vt-value">{{ record.pos_number or '—' }}</div></div>
+      <div class="col-md-4">
+        <div class="vt-label">POS Number</div>
+        <div class="vt-value">{{ record.pos_number or '—' }}</div>
       </div>
-      <div class="col-md-3">
-        <div class="vt-field"><div class="vt-label">DashLabs Number</div><div class="vt-value">{{ record.dashlabs_number or '—' }}</div></div>
-      </div>
-      <div class="col-md-3">
-        <div class="vt-field"><div class="vt-label">Header Discount</div><div class="vt-value">{{ record.formatted_discount }}</div></div>
+      <div class="col-md-4">
+        <div class="vt-label">DashLabs Number</div>
+        <div class="vt-value">{{ record.dashlabs_number or '—' }}</div>
       </div>
     </div>
     {% if record.description %}
-    <div class="vt-field"><div class="vt-label">Description</div><div class="vt-value">{{ record.description }}</div></div>
+    <div class="row g-3 mt-1">
+      <div class="col-12">
+        <div class="vt-label">Description / Notes</div>
+        <div class="vt-value">{{ record.description }}</div>
+      </div>
+    </div>
     {% endif %}
   </div>
 
-  <!-- Items -->
-  <div class="vt-card">
-    <div class="vt-card-title">Items</div>
+  {# ── Patient Services ── #}
+  {% set gross = namespace(val=0) %}
+  {% set disc  = namespace(val=0) %}
+  {% for d in record.transaction_details %}
+    {% set gross.val = gross.val + d.amount %}
+    {% set disc.val  = disc.val  + d.discount %}
+  {% endfor %}
+  {% set net_due = gross.val - disc.val - (record.discount or 0) %}
+
+  <div class="txn-card">
+    <div class="txn-card-title">Patient Services</div>
     <table class="vt-table">
       <thead>
         <tr>
-          <th>Product</th>
+          <th>Service</th>
           <th class="num">Amount</th>
           <th class="num">Discount</th>
           <th class="num">Net</th>
-          <th>Note</th>
         </tr>
       </thead>
       <tbody>
-        {% set gross = namespace(val=0) %}
-        {% set disc = namespace(val=0) %}
         {% for detail in record.transaction_details %}
-        {% set gross.val = gross.val + detail.amount %}
-        {% set disc.val = disc.val + detail.discount %}
         <tr>
-          <td>{{ detail.product.product_name if detail.product else '—' }}</td>
+          <td class="name">{{ detail.product.product_name if detail.product else '—' }}</td>
           <td class="num">{{ detail.formatted_amount }}</td>
           <td class="num">{{ detail.formatted_discount }}</td>
           <td class="num">{{ '{:,.2f}'.format(detail.amount - detail.discount) }}</td>
-          <td>{{ detail.side_note or '' }}</td>
         </tr>
         {% endfor %}
-        <tr class="total-row">
-          <td>Total</td>
-          <td class="num">{{ '{:,.2f}'.format(gross.val) }}</td>
-          <td class="num">{{ '{:,.2f}'.format(disc.val) }}</td>
-          <td class="num">{{ '{:,.2f}'.format(gross.val - disc.val - (record.discount or 0)) }}</td>
-          <td></td>
-        </tr>
       </tbody>
     </table>
+
+    <div class="items-summary">
+      <div class="items-summary-row">
+        <span class="is-label">Total</span>
+        <span class="is-value">{{ '{:,.2f}'.format(gross.val) }}</span>
+      </div>
+      <div class="items-summary-row">
+        <span class="is-label">Less: Discount</span>
+        <span class="is-value">{{ '{:,.2f}'.format(record.discount or 0) }}</span>
+      </div>
+      <div class="items-summary-row is-total-row">
+        <span class="is-label">Net Due</span>
+        <span class="is-value">{{ '{:,.2f}'.format(net_due) }}</span>
+      </div>
+    </div>
   </div>
 
-  <!-- Tenders -->
-  <div class="vt-card">
-    <div class="vt-card-title">Payment / Tender</div>
+  {# ── Payment / Tender ── #}
+  {% set tender_total = namespace(val=0) %}
+  {% for t in record.transaction_tenders %}
+    {% set tender_total.val = tender_total.val + t.amount %}
+  {% endfor %}
+  {% set balance = tender_total.val - net_due %}
+
+  <div class="txn-card">
+    <div class="txn-card-title">Payment / Tender</div>
     <table class="vt-table">
       <thead>
         <tr>
           <th>Tender Type</th>
           <th class="num">Amount</th>
-          <th>Note</th>
         </tr>
       </thead>
       <tbody>
-        {% set tender_total = namespace(val=0) %}
         {% for t in record.transaction_tenders %}
-        {% set tender_total.val = tender_total.val + t.amount %}
         <tr>
-          <td>{{ t.tender.tender_name if t.tender else '—' }}</td>
+          <td class="name">{{ t.tender.tender_name if t.tender else '—' }}</td>
           <td class="num">{{ t.formatted_amount }}</td>
-          <td>{{ t.side_note or '' }}</td>
         </tr>
         {% endfor %}
-        <tr class="total-row">
-          <td>Total Tendered</td>
-          <td class="num">{{ '{:,.2f}'.format(tender_total.val) }}</td>
-          <td></td>
-        </tr>
       </tbody>
     </table>
+
+    <div class="items-summary">
+      <div class="items-summary-row">
+        <span class="is-label">Total Tendered</span>
+        <span class="is-value">{{ '{:,.2f}'.format(tender_total.val) }}</span>
+      </div>
+      <div class="items-summary-row">
+        <span class="is-label">Net Due</span>
+        <span class="is-value">{{ '{:,.2f}'.format(net_due) }}</span>
+      </div>
+      <div class="items-summary-row is-total-row {% if balance | abs < 0.005 %}balance-zero{% else %}balance-nonzero{% endif %}">
+        <span class="is-label">Balance</span>
+        <span class="is-value">{{ '{:,.2f}'.format(balance) }}</span>
+      </div>
+    </div>
   </div>
 
-  <!-- Actions -->
-  <div class="vt-actions">
-    <a href="{{ url_for('daily_sales.home') }}" class="btn-back">← Back</a>
+  {# ── Actions ── #}
+  <div class="txn-actions">
+    <a href="{{ url_for('daily_sales.home') }}" class="btn-back">← Back to Daily Sales</a>
 
     {% if not record.submitted and not record.cancelled %}
     <a href="{{ url_for('daily_sales.edit_transaction', transaction_id=record.id) }}" class="btn-edit">✏ Edit</a>
 
     <form method="POST" action="{{ url_for('daily_sales.delete_transaction', transaction_id=record.id) }}"
       style="margin-left:auto;" onsubmit="return confirm('Permanently delete this draft?')">
-      <button type="submit" class="btn-delete">🗑 Delete</button>
+      <button type="submit" class="btn-danger-outline">✗ Delete</button>
     </form>
     {% endif %}
   </div>
