@@ -14,7 +14,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="thc-page">
     <form method="post" id="filter-form">
         <div class="row mb-4">
             <div class="col-md-3">
@@ -38,7 +38,7 @@
     </form>
 
     <div class="table-responsive">
-        <table class="table table-bordered table-striped text-nowrap">
+        <table class="thc-table">
             <thead>
                 <tr>
                 <td colspan="{{ 5 + account_titles|length }}" class="border-0 text-left">
@@ -70,14 +70,14 @@
                 <tr>
                     <td>
                                 {% if row.submitted or row.cancelled %}
-                                    <a href="{{ url_for('disbursement_extra.view', record_id=row.id) }}" class="btn btn-warning btn-sm small-button">View</a>
+                                    <a href="{{ url_for('disbursement_extra.view', record_id=row.id) }}" class="btn btn-warning btn-sm">View</a>
                                     {% if current_user.admin %}
                                     <a href="{{ url_for('disbursement_extra.unlock', record_id=row.id) }}"
-                                       class="btn btn-info btn-sm small-button"
+                                       class="btn btn-info btn-sm"
                                        onclick="return confirmMessage('Type YES to unlock this record.')">Unlock</a>
                                     {% endif %}
                                 {% else %}
-                                    <a href="{{ url_for('disbursement_extra.edit', record_id=row.id) }}" class="btn btn-warning btn-sm small-button">Edit</a>
+                                    <a href="{{ url_for('disbursement_extra.edit', record_id=row.id) }}" class="btn btn-warning btn-sm">Edit</a>
                                     {% if current_user.admin %}
                                     <a href="{{ url_for('disbursement_extra.cancel', record_id=row.id) }}"
                                        class="btn btn-danger btn-sm"

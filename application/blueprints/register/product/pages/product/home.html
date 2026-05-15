@@ -4,10 +4,11 @@
 {% block title %}Product{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1 class="mb-4">Product</h1>
+<div class="thc-page">
+        <div class="thc-page-header">
+        <h4>Product</h4>
+    </div>
 
-    <!-- Add Button -->
     <div class="mb-3 d-flex justify-content-between align-items-center">
         <a href="{{ url_for('product.add') }}" class="btn btn-primary btn-sm">Add Product</a>
 
@@ -25,16 +26,14 @@
 
     </div>
 
-    <!-- Measure Table -->
-    <div class="card shadow-sm">
-        <div class="card-body">
+    <div class="thc-card">
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
+                <table class="thc-table">
+                    <thead>
                         <tr>
-                            <th scope="col">Product Name</th>
-                            <th scope="col">Product Type</th>
-                            <th scope="col">Action</th>
+                            <th>Product Name</th>
+                            <th>Product Type</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -50,7 +49,7 @@
                                         {{ approve_button(url_for('product.approve', record_id=row.id)) }}
                                     {% endif %}
                                 {% else %}
-                                    <span class="text-muted">Approved — editing locked.</span>
+                                    <span style="font-size:0.8rem;color:var(--thc-text-muted);">Approved — editing locked.</span>
                                     {% if current_user.admin %}
                                         {{ unlock_button(url_for('product.unlock', record_id=row.id)) }}
                                     {% endif %}
@@ -68,6 +67,4 @@
                 </table>
             </div>
         </div>
-    </div>
-</div>
 {% endblock %}

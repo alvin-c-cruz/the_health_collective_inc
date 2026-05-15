@@ -4,10 +4,11 @@
 {% block title %}Tender{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1 class="mb-4">Tender</h1>
+<div class="thc-page">
+        <div class="thc-page-header">
+        <h4>Tender</h4>
+    </div>
 
-    <!-- Add Button -->
     <div class="mb-3 d-flex justify-content-between align-items-center">
         <a href="{{ url_for('tender.add') }}" class="btn btn-primary btn-sm">Add Tender</a>
 
@@ -25,15 +26,13 @@
 
     </div>
 
-    <!-- Tender Table -->
-    <div class="card shadow-sm">
-        <div class="card-body">
+    <div class="thc-card">
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
+                <table class="thc-table">
+                    <thead>
                         <tr>
-                            <th scope="col">Tender Name</th>
-                            <th scope="col">Action</th>
+                            <th>Tender Name</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -48,7 +47,7 @@
                                         {{ approve_button(url_for('tender.approve', record_id=row.id)) }}
                                     {% endif %}
                                 {% else %}
-                                    <span class="text-muted">Approved — editing locked.</span>
+                                    <span style="font-size:0.8rem;color:var(--thc-text-muted);">Approved — editing locked.</span>
                                     {% if current_user.admin %}
                                         {{ unlock_button(url_for('tender.unlock', record_id=row.id)) }}
                                     {% endif %}
@@ -66,6 +65,4 @@
                 </table>
             </div>
         </div>
-    </div>
-</div>
 {% endblock %}

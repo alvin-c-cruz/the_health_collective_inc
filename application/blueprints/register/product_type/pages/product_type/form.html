@@ -4,13 +4,17 @@
 {% block title %}Product Type{% endblock %}
 
 {% block content %}
-<div class="container p-5">
+<div class="thc-page">
     {% if form.id %}
-    <h1 class="mb-4">Edit Product Type</h1>
+        <div class="thc-page-header">
+        <h4>Edit Product Type</h4>
+    </div>
     <form action="{{ url_for('product_type.edit', record_id=form.id) }}" method="post">
         <input type="number" name="record_id" value="{{ form.id }}" hidden>
         {% else %}
-    <h1 class="mb-4">Add Product Type</h1>
+        <div class="thc-page-header">
+        <h4>Add Product Type</h4>
+    </div>
     <form action="{{ url_for('product_type.add') }}" method="post">
         {% endif %}
     

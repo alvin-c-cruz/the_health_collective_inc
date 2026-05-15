@@ -26,17 +26,23 @@
 {% endblock %}
 
 {% block content %}
-<div class="container p-5">
+<div class="thc-page">
     {% if form.id %}
         {% if form.submitted or form.cancelled %}
-        <h1 class="mb-4"><span style="color:red;">Locked</span> Receipt Extra</h1>
+            <div class="thc-page-header">
+        <h4><span style="color:#c0392b;">Locked</span> Receipt Extra</h4>
+    </div>
         {% else %}
-        <h1 class="mb-4">Edit Receipt Extra</h1>
+            <div class="thc-page-header">
+        <h4>Edit Receipt Extra</h4>
+    </div>
         {% endif %}
         <form action="{{ url_for('receipt_extra.edit', record_id=form.id) }}" method="post">
             <input type="number" name="record_id" value="{{ form.id }}" hidden>
     {% else %}
-        <h1 class="mb-4">New Receipt Extra</h1>
+            <div class="thc-page-header">
+        <h4>New Receipt Extra</h4>
+    </div>
         <form action="{{ url_for('receipt_extra.add') }}" method="post">
     {% endif %}
     <hr>
@@ -49,7 +55,9 @@
                     <p class="text-danger">{{ form.errors.get('entry') }}</p>
                     {% endif %}
                     {% if form.cancelled %}
-                    <h1 style="color:red;">CANCELLED</h1>
+                        <div class="thc-page-header">
+        <h4>CANCELLED</h4>
+    </div>
                     {% endif %}
                 </div>
                 <div class="col-4">
@@ -128,10 +136,10 @@
     {% endif %}
 
     {% if form.errors.get("totals") %}
-    <p style="color: red;">{{ form.errors.get("totals") }}</p>
+    <div class="alert alert-danger py-2 small">{{ form.errors.get("totals") }}</div>
     {% endif %}
 
-    <table class="table table-striped table-light">
+    <table class="thc-table">
         <thead>
             <tr>
                 <th>Account Title</th>

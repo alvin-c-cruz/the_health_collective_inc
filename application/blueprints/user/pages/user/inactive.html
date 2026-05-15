@@ -1,16 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}User Inactive{% endblock %}
+{% block title %}Account Inactive{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-12">
-            <h2 class="mt-5">User Inactive</h2>
-            <p>Your account is currently inactive.</p>
-            <p>Contact your system administrator.</p>
-        </div>
+<div class="thc-page" style="max-width:600px;">
+    <div class="thc-card text-center" style="padding:3rem 2rem;">
+        <div style="font-size:2.5rem;margin-bottom:1rem;">&#x26A0;</div>
+        <h4 class="mb-2">Account Inactive</h4>
+        <p style="color:var(--thc-text-muted);margin-bottom:1.5rem;">
+            Your account is currently inactive.<br>
+            Please contact your system administrator to get access.
+        </p>
+        <a href="{{ url_for('user.login') }}" class="btn btn-secondary btn-sm">Back to Login</a>
     </div>
 </div>
 {% endblock %}
-

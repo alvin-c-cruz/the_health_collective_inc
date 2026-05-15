@@ -1,83 +1,39 @@
 {% extends "base_login.html" %}
 
-{% block title %}Register{% endblock %}
+{% block title %}Register — The Health Collective{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-4">
-            <h2 class="mt-5">Register</h2>
-            <form action="{{ url_for('user.register') }}" method="post" class="p-3 bg-beige">
-
-                <div class="form-group">
-                    <label for="user_name">Username</label>
-                    <input type="text" class="form-control" name="user_name" id="user_name" placeholder="Enter your username" value="{{ form.user_name }}" autocomplete="off" autofocus>
-                    {% if form.errors.get('user_name') %}
-                    <span style="color: red;">{{ form.errors.get('user_name') }}</span>
-                    {% endif %}
-                </div>
-
-                <div class="form-group">
-                    <label for="pass_word">Password</label>
-                    <input type="password" class="form-control" name="pass_word" id="pass_word" placeholder="Enter your password" value="{{ form.pass_word }}" autocomplete="off">
-                    {% if form.errors.get('pass_word') %}
-                    <span style="color: red;">{{ form.errors.get('pass_word') }}</span>
-                    {% endif %}
-                </div>
-
-                <div class="form-group">
-                    <label for="confirm_pass_word">Confirm Password</label>
-                    <input type="password" class="form-control" name="confirm_pass_word" id="confirm_pass_word" placeholder="Re-enter your password" value="{{ form.confirm_pass_word }}" autocomplete="off">
-                    {% if form.errors.get('confirm_pass_word') %}
-                    <span style="color: red;">{{ form.errors.get('confirm_pass_word') }}</span>
-                    {% endif %}
-                </div>
-
-                <div class="form-group">
-                    <label for="first_name">First Name</label>
-                    <input type="text" class="form-control" name="first_name" id="first_name" placeholder="Enter your first name" value="{{ form.first_name }}" autocomplete="off">
-                    {% if form.errors.get('first_name') %}
-                    <span style="color: red;">{{ form.errors.get('first_name') }}</span>
-                    {% endif %}
-                </div>
-
-                <div class="form-group">
-                    <label for="middle_name">Middle Name</label>
-                    <input type="text" class="form-control" name="middle_name" id="middle_name" placeholder="Middle name is optional." value="{{ form.middle_name }}" autocomplete="off">
-                    {% if form.errors.get('middle_name') %}
-                    <span style="color: red;">{{ form.errors.get('middle_name') }}</span>
-                    {% endif %}
-                </div>
-
-                <div class="form-group">
-                    <label for="last_name">Last Name</label>
-                    <input type="text" class="form-control" name="last_name" id="last_name" placeholder="Enter your last name" value="{{ form.last_name }}" autocomplete="off">
-                    {% if form.errors.get('last_name') %}
-                    <span style="color: red;">{{ form.errors.get('last_name') }}</span>
-                    {% endif %}
-                </div>
-
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="text" class="form-control" name="email" id="email" placeholder="Enter is optional" value="{{ form.email }}" autocomplete="off">
-                    {% if form.errors.get('email') %}
-                    <span style="color: red;">{{ form.errors.get('email') }}</span>
-                    {% endif %}
-                </div>
-
-                <button type="submit" class="btn btn-primary">Register</button>
-                <p><a href="{{ url_for('user.login') }}">Click here</a> to login.</p>
-            </form>
-        </div>
+<div class="container" style="max-width: 480px; padding: 2rem 1rem;">
+    <div class="thc-login-card">
+        <div class="thc-login-brand">The Health Collective</div>
+        <h4 class="mb-4 text-center" style="font-size:1.1rem;">Create an account</h4>
+        <form action="{{ url_for('user.register') }}" method="post">
+            {% for field_id, field_label, field_type in [
+                ('user_name', 'Username', 'text'),
+                ('pass_word', 'Password', 'password'),
+                ('confirm_pass_word', 'Confirm Password', 'password'),
+                ('first_name', 'First Name', 'text'),
+                ('middle_name', 'Middle Name (optional)', 'text'),
+                ('last_name', 'Last Name', 'text'),
+                ('email', 'Email (optional)', 'text')
+            ] %}
+            <div class="mb-3">
+                <label for="{{ field_id }}" class="form-label">{{ field_label }}</label>
+                <input type="{{ field_type }}"
+                    class="form-control{% if form.errors.get(field_id) %} is-invalid{% endif %}"
+                    name="{{ field_id }}" id="{{ field_id }}"
+                    value="{{ form[field_id] if field_type != 'password' else '' }}"
+                    autocomplete="off"{% if loop.first %} autofocus{% endif %}>
+                {% if form.errors.get(field_id) %}
+                <div class="invalid-feedback">{{ form.errors.get(field_id) }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary w-100 mt-2">Register</button>
+        </form>
+        <p class="text-center mt-3" style="font-size:0.85rem;color:var(--thc-text-muted);">
+            Already have an account? <a href="{{ url_for('user.login') }}">Sign in</a>
+        </p>
     </div>
 </div>
-<script>
-    // Select input content on focus
-    document.querySelectorAll('input[autofocus]').forEach(function(input) {
-        input.addEventListener('focus', function() {
-            this.select();
-        });
-    });
-</script>
 {% endblock %}
-

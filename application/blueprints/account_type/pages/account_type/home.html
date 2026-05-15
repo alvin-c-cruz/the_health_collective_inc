@@ -4,10 +4,11 @@
 {% block title %}Account Type{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1 class="mb-4">Account Type</h1>
+<div class="thc-page">
+        <div class="thc-page-header">
+        <h4>Account Type</h4>
+    </div>
 
-    <!-- Add Button -->
     <div class="mb-3 d-flex justify-content-between align-items-center">
         <a href="{{ url_for('account_type.add') }}" class="btn btn-primary btn-sm">Add Account Type</a>
 
@@ -25,17 +26,15 @@
 
     </div>
 
-    <!-- Account Type Table -->
-    <div class="card shadow-sm">
-        <div class="card-body">
+    <div class="thc-card">
             <div class="table-responsive">
-                <table class="table table-hover align-middle table-striped">
-                    <thead class="table-light">
+                <table class="thc-table">
+                    <thead>
                         <tr>
-                            <th scope="col">Account Type</th>
-                            <th scope="col">Account Classification</th>
-                            <th scope="col">Order</th>
-                            <th scope="col">Action</th>
+                            <th>Account Type</th>
+                            <th>Account Classification</th>
+                            <th>Order</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -52,7 +51,7 @@
                                         {{ approve_button(url_for('account_type.approve', record_id=row.id)) }}
                                     {% endif %}
                                 {% else %}
-                                    <span class="text-muted">Approved — editing locked.</span>
+                                    <span style="font-size:0.8rem;color:var(--thc-text-muted);">Approved — editing locked.</span>
                                     {% if current_user.admin %}
                                         {{ unlock_button(url_for('account_type.unlock', record_id=row.id)) }}
                                     {% endif %}
@@ -70,6 +69,4 @@
                 </table>
             </div>
         </div>
-    </div>
-</div>
 {% endblock %}

@@ -1,35 +1,35 @@
 {% extends "base_login.html" %}
 
-{% block title %}Login{% endblock %}
+{% block title %}Login — The Health Collective{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-4">
-            <h2 class="mt-5">Login</h2>
-            <form action="{{ url_for('user.login') }}" method="post" class="bg-beige p-3">
-
-                <div class="form-group mt-3">
-                    <label for="user_name">Username</label>
-                    <input type="text" class="form-control" name="user_name" id="user_name" placeholder="Enter your username" value="{{ form.user_name }}" autocomplete="off" autofocus>
-                    {% if form.errors.get('user_name') %}
-                    <span style="color: red;">{{ form.errors.get('user_name') }}</span>
-                    {% endif %}
-                </div>
-
-                <div class="form-group mt-3">
-                    <label for="pass_word">Password</label>
-                    <input type="password" class="form-control" name="pass_word" id="pass_word" placeholder="Enter your password" autocomplete="off">
-                    {% if form.errors.get('pass_word') %}
-                    <span style="color: red;">{{ form.errors.get('pass_word') }}</span>
-                    {% endif %}
-                </div>
-                <button type="submit" class="btn btn-primary mt-3">Login</button>
-                <p><a href="{{ url_for('user.register') }}" class="mt-3">Click here</a> to register.</p>
-            </form>
-        </div>
+<div class="container" style="max-width: 420px; padding: 2rem 1rem;">
+    <div class="thc-login-card">
+        <div class="thc-login-brand">The Health Collective</div>
+        <h4 class="mb-4 text-center" style="font-size:1.1rem;">Sign in to your account</h4>
+        <form action="{{ url_for('user.login') }}" method="post">
+            <div class="mb-3">
+                <label for="user_name" class="form-label">Username</label>
+                <input type="text" class="form-control{% if form.errors.get('user_name') %} is-invalid{% endif %}"
+                    name="user_name" id="user_name" value="{{ form.user_name }}"
+                    autocomplete="off" autofocus>
+                {% if form.errors.get('user_name') %}
+                <div class="invalid-feedback">{{ form.errors.get('user_name') }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="pass_word" class="form-label">Password</label>
+                <input type="password" class="form-control{% if form.errors.get('pass_word') %} is-invalid{% endif %}"
+                    name="pass_word" id="pass_word" autocomplete="off">
+                {% if form.errors.get('pass_word') %}
+                <div class="invalid-feedback">{{ form.errors.get('pass_word') }}</div>
+                {% endif %}
+            </div>
+            <button type="submit" class="btn btn-primary w-100 mt-2">Sign In</button>
+        </form>
+        <p class="text-center mt-3" style="font-size:0.85rem;color:var(--thc-text-muted);">
+            Don't have an account? <a href="{{ url_for('user.register') }}">Register</a>
+        </p>
     </div>
 </div>
-
 {% endblock %}
-
