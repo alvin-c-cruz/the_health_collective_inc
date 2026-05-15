@@ -3,40 +3,157 @@
 {% block title %}User Delegations{% endblock %}
 
 {% block content %}
-<div class="thc-page">
+<div class="thc-page" style="max-width: 900px;">
+
     <div class="thc-page-header">
         <h4>User Delegations</h4>
     </div>
 
+    {% set is_super = user.user_name == 'admin' %}
+
+    {# ── User identity card ── #}
     <div class="thc-card">
-        <div class="mb-1" style="font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--thc-text-muted);">
-            {{ user.user_name }}
-        </div>
-        <div class="mb-3" style="font-size:1rem;font-weight:600;color:var(--thc-text);">
-            {{ user.first_name }} {{ user.last_name }}
-        </div>
-
-        <div class="thc-card-title">Access Flags</div>
-        <div class="d-flex gap-2 mb-4 flex-wrap">
-            <a href="{{ url_for('user.user_admin', user_id=user.id, value=0 if user.admin else 1) }}"
-               class="btn btn-sm {% if user.admin %}btn-success{% else %}btn-secondary{% endif %}">
-                Admin: {% if user.admin %}ON{% else %}OFF{% endif %}
-            </a>
-            <a href="{{ url_for('user.user_active', user_id=user.id, value=0 if user.active else 1) }}"
-               class="btn btn-sm {% if user.active %}btn-success{% else %}btn-secondary{% endif %}">
-                Active: {% if user.active %}ON{% else %}OFF{% endif %}
-            </a>
-        </div>
-
-        <div class="thc-card-title">Roles</div>
-        <div class="d-flex gap-2 flex-wrap">
-            {% for role in roles %}
-            <a href="{% if role.role_name in user.user_roles %}{{ url_for('user.remove_role', user_id=user.id, role_id=role.id) }}{% else %}{{ url_for('user.add_role', user_id=user.id, role_id=role.id) }}{% endif %}"
-               class="btn btn-sm {% if role.role_name in user.user_roles %}btn-primary{% else %}btn-secondary{% endif %}">
-                {{ role.role_name }}
-            </a>
-            {% endfor %}
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div style="width:48px;height:48px;border-radius:50%;background:var(--thc-primary-light);
+                        display:flex;align-items:center;justify-content:center;
+                        font-size:1.2rem;font-weight:700;color:var(--thc-primary);flex-shrink:0;">
+                {{ user.first_name[0] | upper }}{{ user.last_name[0] | upper if user.last_name else '' }}
+            </div>
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:1rem;font-weight:600;color:var(--thc-text);">
+                    {{ user.first_name }} {{ user.last_name }}
+                </div>
+                <div style="font-size:0.78rem;color:var(--thc-text-muted);letter-spacing:0.04em;">
+                    {{ user.user_name | upper }}
+                </div>
+            </div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                {# Role count badge #}
+                <span style="font-size:0.78rem;color:var(--thc-text-muted);padding:0.25rem 0.6rem;
+                             background:#f0f8fa;border:1px solid #e2e8f0;border-radius:20px;">
+                    {{ assigned_count }} / {{ total_count }} roles
+                </span>
+                {# Status badge #}
+                <span style="font-size:0.78rem;font-weight:600;padding:0.25rem 0.6rem;border-radius:20px;
+                             {% if user.active %}background:#dcfce7;color:#166534;{% else %}background:#fee2e2;color:#c0392b;{% endif %}">
+                    {% if user.active %}Active{% else %}Inactive{% endif %}
+                </span>
+                {% if user.admin %}
+                <span style="font-size:0.78rem;font-weight:600;padding:0.25rem 0.6rem;border-radius:20px;
+                             background:#e0f2fe;color:#0369a1;">Admin</span>
+                {% endif %}
+            </div>
         </div>
     </div>
+
+    {# ── Access flags ── #}
+    <div class="thc-card">
+        <div class="thc-card-title">Access Flags</div>
+        <div class="d-flex gap-3 flex-wrap">
+
+            {# Admin toggle #}
+            <div style="display:flex;flex-direction:column;gap:0.35rem;align-items:flex-start;">
+                <span style="font-size:0.7rem;font-weight:600;letter-spacing:0.06em;
+                             text-transform:uppercase;color:var(--thc-text-muted);">Administrator</span>
+                <a href="{{ url_for('user.user_admin', user_id=user.id, value=0 if user.admin else 1) }}"
+                   {% if is_super %}onclick="return false;" style="pointer-events:none;opacity:0.5;"{% endif %}
+                   class="btn btn-sm {% if user.admin %}btn-success{% else %}btn-secondary{% endif %}">
+                    {% if user.admin %}<i class="bi bi-shield-check me-1"></i>ON{% else %}<i class="bi bi-shield me-1"></i>OFF{% endif %}
+                </a>
+            </div>
+
+            {# Active toggle #}
+            <div style="display:flex;flex-direction:column;gap:0.35rem;align-items:flex-start;">
+                <span style="font-size:0.7rem;font-weight:600;letter-spacing:0.06em;
+                             text-transform:uppercase;color:var(--thc-text-muted);">Account Status</span>
+                <a href="{{ url_for('user.user_active', user_id=user.id, value=0 if user.active else 1) }}"
+                   {% if is_super %}onclick="return false;" style="pointer-events:none;opacity:0.5;"{% endif %}
+                   class="btn btn-sm {% if user.active %}btn-success{% else %}btn-secondary{% endif %}">
+                    {% if user.active %}<i class="bi bi-person-check me-1"></i>Active{% else %}<i class="bi bi-person-slash me-1"></i>Inactive{% endif %}
+                </a>
+            </div>
+
+        </div>
+        {% if is_super %}
+        <div style="font-size:0.75rem;color:var(--thc-text-muted);margin-top:0.75rem;">
+            <i class="bi bi-lock me-1"></i>Super admin flags cannot be changed.
+        </div>
+        {% endif %}
+    </div>
+
+    {# ── Roles by group ── #}
+    <div class="thc-card">
+        <div class="thc-card-title">Roles</div>
+
+        {% for group_name, group_roles in role_groups %}
+        <div style="margin-bottom:1.25rem;">
+            <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+                        color:var(--thc-text-muted);margin-bottom:0.5rem;padding-bottom:0.4rem;
+                        border-bottom:1px solid #f0f2f5;">
+                {{ group_name }}
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                {% for role in group_roles %}
+                    {% set assigned = role.role_name in user.user_roles %}
+                    {% if assigned %}
+                    <a href="{{ url_for('user.remove_role', user_id=user.id, role_id=role.id) }}"
+                       class="role-btn role-btn--on"
+                       title="Click to remove {{ role.role_name }}">
+                        <i class="bi bi-check2"></i> {{ role.role_name }}
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('user.add_role', user_id=user.id, role_id=role.id) }}"
+                       class="role-btn role-btn--off"
+                       title="Click to assign {{ role.role_name }}">
+                        <i class="bi bi-plus"></i> {{ role.role_name }}
+                    </a>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
 </div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .role-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.3rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        font-family: var(--thc-font-body);
+        text-decoration: none;
+        transition: background 0.12s, border-color 0.12s, transform 0.1s;
+        border: 1px solid transparent;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    .role-btn:hover { transform: translateY(-1px); text-decoration: none; }
+    .role-btn--on {
+        background: var(--thc-primary);
+        border-color: var(--thc-primary);
+        color: #fff;
+    }
+    .role-btn--on:hover {
+        background: var(--thc-primary-dark);
+        border-color: var(--thc-primary-dark);
+        color: #fff;
+    }
+    .role-btn--off {
+        background: #fff;
+        border-color: #d1d5db;
+        color: var(--thc-text-muted);
+    }
+    .role-btn--off:hover {
+        border-color: var(--thc-primary);
+        color: var(--thc-primary);
+        background: var(--thc-primary-light);
+    }
+</style>
 {% endblock %}

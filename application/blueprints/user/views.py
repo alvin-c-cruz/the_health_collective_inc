@@ -1,12 +1,53 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, current_user, logout_user
 from functools import wraps
+from collections import defaultdict
 from werkzeug.security import generate_password_hash
 
 from .models import User, Role, UserRole
 from .forms import LoginForm, UserForm
 
 from application.extensions import db
+
+# Maps role name -> display group. Anything not listed falls into "Other".
+_ROLE_CATEGORIES = {
+    'Account':                'Accounts',
+    'Account Class':          'Accounts',
+    'Account Type':           'Accounts',
+    'Accounts Payable':       'Books of Accounts',
+    'Accounts Payable Extra': 'Books of Accounts',
+    'Disbursement':           'Books of Accounts',
+    'Disbursement Extra':     'Books of Accounts',
+    'General':                'Books of Accounts',
+    'General Extra':          'Books of Accounts',
+    'Receipt':                'Books of Accounts',
+    'Receipt Extra':          'Books of Accounts',
+    'Sales':                  'Books of Accounts',
+    'Sales Extra':            'Books of Accounts',
+    'Customer':               'Register',
+    'Measure':                'Register',
+    'Product':                'Register',
+    'Product Type':           'Register',
+    'Sex':                    'Register',
+    'Tender':                 'Register',
+    'Vendor':                 'Register',
+    'Daily Sales':            'Operations',
+    'Trial Balance':          'Reports',
+    'user':                   'System',
+}
+
+_CATEGORY_ORDER = ['Operations', 'Books of Accounts', 'Register', 'Accounts', 'Reports', 'System', 'Other']
+
+
+def _group_roles(roles):
+    buckets = defaultdict(list)
+    for role in roles:
+        buckets[_ROLE_CATEGORIES.get(role.role_name, 'Other')].append(role)
+    result = []
+    for cat in _CATEGORY_ORDER:
+        if cat in buckets:
+            result.append((cat, sorted(buckets[cat], key=lambda r: r.role_name)))
+    return result
 
 
 bp = Blueprint("user", __name__, template_folder="pages", url_prefix="/user")
@@ -62,7 +103,10 @@ def user_group(record_id):
     roles = Role.query.order_by('role_name').all()
     context = {
         "user": user,
-        "roles": roles
+        "roles": roles,
+        "role_groups": _group_roles(roles),
+        "assigned_count": sum(1 for r in roles if r.role_name in user.user_roles),
+        "total_count": len(roles),
     }
     return render_template("user/user_group.html", **context)
 
