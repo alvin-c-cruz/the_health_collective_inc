@@ -83,43 +83,60 @@
       }
       .custom-border:hover { border-color: rgba(255,255,255,0.6); }
 
-      /* ── THC Global Button System ── */
+      /* ── THC Global Button System ──────────────────────────────────────
+         Family: flat solid, no gradients, 6px radius, 600 weight, 0.875rem
+         Modeled after the custom btn-save / btn-submit / btn-back family.
+         ─────────────────────────────────────────────────────────────── */
+      .btn {
+        font-family: var(--thc-font-body) !important;
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+        border-radius: 6px !important;
+        padding: 0.5rem 1.25rem !important;
+        transition: background 0.15s, border-color 0.15s, transform 0.1s !important;
+        box-shadow: none !important;
+        letter-spacing: 0.01em;
+      }
+      .btn:hover { transform: translateY(-1px); }
+      .btn:active { transform: translateY(0); }
+      .btn-sm { padding: 0.3rem 0.75rem !important; font-size: 0.8rem !important; }
+      .btn-lg { padding: 0.7rem 1.75rem !important; font-size: 1rem !important; }
 
-      /* Primary — THC teal */
-      .btn-primary { background-color: #1a6473 !important; border-color: #1a6473 !important; color: #fff !important; }
-      .btn-primary:hover, .btn-primary:focus { background-color: #135260 !important; border-color: #135260 !important; }
-      .btn-outline-primary { color: #1a6473 !important; border-color: #1a6473 !important; background: transparent !important; }
-      .btn-outline-primary:hover { background-color: #1a6473 !important; color: #fff !important; }
+      /* Primary — THC teal (Add, Save Draft, Edit) */
+      .btn-primary { background: #1a6473 !important; border-color: #1a6473 !important; color: #fff !important; }
+      .btn-primary:hover, .btn-primary:focus { background: #135260 !important; border-color: #135260 !important; color: #fff !important; }
+      .btn-outline-primary { background: transparent !important; border-color: #1a6473 !important; color: #1a6473 !important; }
+      .btn-outline-primary:hover { background: #1a6473 !important; color: #fff !important; }
 
-      /* Success — deep green */
-      .btn-success { background-color: #166534 !important; border-color: #166534 !important; color: #fff !important; }
-      .btn-success:hover, .btn-success:focus { background-color: #14532d !important; border-color: #14532d !important; }
-      .btn-outline-success { color: #166534 !important; border-color: #166534 !important; background: transparent !important; }
-      .btn-outline-success:hover { background-color: #166534 !important; color: #fff !important; }
+      /* Info — royal blue (Save & Submit, Upload, Confirm) */
+      .btn-info { background: #185FA5 !important; border-color: #185FA5 !important; color: #fff !important; }
+      .btn-info:hover, .btn-info:focus { background: #0f4880 !important; border-color: #0f4880 !important; color: #fff !important; }
+      .btn-outline-info { background: transparent !important; border-color: #185FA5 !important; color: #185FA5 !important; }
+      .btn-outline-info:hover { background: #185FA5 !important; color: #fff !important; }
 
-      /* Warning — amber */
-      .btn-warning { background-color: #b45309 !important; border-color: #b45309 !important; color: #fff !important; }
-      .btn-warning:hover, .btn-warning:focus { background-color: #92400e !important; border-color: #92400e !important; }
-      .btn-outline-warning { color: #b45309 !important; border-color: #b45309 !important; background: transparent !important; }
-      .btn-outline-warning:hover { background-color: #b45309 !important; color: #fff !important; }
+      /* Success — deep green (Approve) */
+      .btn-success { background: #166534 !important; border-color: #166534 !important; color: #fff !important; }
+      .btn-success:hover, .btn-success:focus { background: #14532d !important; border-color: #14532d !important; color: #fff !important; }
+      .btn-outline-success { background: transparent !important; border-color: #166534 !important; color: #166534 !important; }
+      .btn-outline-success:hover { background: #166534 !important; color: #fff !important; }
 
-      /* Danger — crimson */
-      .btn-danger { background-color: #c0392b !important; border-color: #c0392b !important; color: #fff !important; }
-      .btn-danger:hover, .btn-danger:focus { background-color: #a93226 !important; border-color: #a93226 !important; }
-      .btn-outline-danger { color: #c0392b !important; border-color: #c0392b !important; background: transparent !important; }
-      .btn-outline-danger:hover { background-color: #c0392b !important; color: #fff !important; }
+      /* Warning — amber (Edit, Unlock) */
+      .btn-warning { background: #b45309 !important; border-color: #b45309 !important; color: #fff !important; }
+      .btn-warning:hover, .btn-warning:focus { background: #92400e !important; border-color: #92400e !important; color: #fff !important; }
+      .btn-outline-warning { background: transparent !important; border-color: #b45309 !important; color: #b45309 !important; }
+      .btn-outline-warning:hover { background: #b45309 !important; color: #fff !important; }
 
-      /* Secondary — slate gray */
-      .btn-secondary { background-color: #4b5563 !important; border-color: #4b5563 !important; color: #fff !important; }
-      .btn-secondary:hover, .btn-secondary:focus { background-color: #374151 !important; border-color: #374151 !important; }
-      .btn-outline-secondary { color: #4b5563 !important; border-color: #4b5563 !important; background: transparent !important; }
-      .btn-outline-secondary:hover { background-color: #4b5563 !important; color: #fff !important; }
+      /* Danger — crimson (Delete, Cancel transaction) */
+      .btn-danger { background: #c0392b !important; border-color: #c0392b !important; color: #fff !important; }
+      .btn-danger:hover, .btn-danger:focus { background: #a93226 !important; border-color: #a93226 !important; color: #fff !important; }
+      .btn-outline-danger { background: transparent !important; border-color: #c0392b !important; color: #c0392b !important; }
+      .btn-outline-danger:hover { background: #c0392b !important; color: #fff !important; }
 
-      /* Info — steel blue */
-      .btn-info { background-color: #0369a1 !important; border-color: #0369a1 !important; color: #fff !important; }
-      .btn-info:hover, .btn-info:focus { background-color: #075985 !important; border-color: #075985 !important; }
-      .btn-outline-info { color: #0369a1 !important; border-color: #0369a1 !important; background: transparent !important; }
-      .btn-outline-info:hover { background-color: #0369a1 !important; color: #fff !important; }
+      /* Secondary — ghost/outline (Cancel, Back, Download) */
+      .btn-secondary { background: transparent !important; border: 1px solid #d1d5db !important; color: #6b7280 !important; }
+      .btn-secondary:hover, .btn-secondary:focus { background: transparent !important; border-color: #6b7280 !important; color: #374151 !important; }
+      .btn-outline-secondary { background: transparent !important; border-color: #d1d5db !important; color: #6b7280 !important; }
+      .btn-outline-secondary:hover { background: transparent !important; border-color: #6b7280 !important; color: #374151 !important; }
     </style>
 
 
