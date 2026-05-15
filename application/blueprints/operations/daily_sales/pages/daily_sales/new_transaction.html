@@ -524,17 +524,21 @@
   .match-highlight { font-weight: 700; color: var(--thc-accent); }
   .add-new-customer-item { color: var(--thc-accent) !important; font-weight: 600 !important; border-bottom: 1px solid var(--thc-border); }
 
-    .ts-add-new {
-    display: block;
+  .ts-dropdown .option[data-value="__add__"] {
+    padding: 0;
+    border-bottom: 1px solid var(--thc-border);
+  }
+  .ts-dropdown .option[data-value="__add__"] > div {
     padding: 7px 14px;
     color: var(--thc-accent);
+    font-weight: 600;
     font-size: 0.875rem;
-    border-bottom: 1px solid var(--thc-border);
-    text-decoration: none;
-    font-weight: 500;
     font-family: 'DM Sans', sans-serif;
   }
-  .ts-add-new:hover { background: var(--thc-accent-light); }
+  .ts-dropdown .option[data-value="__add__"]:hover > div,
+  .ts-dropdown .option.active[data-value="__add__"] > div {
+    background: var(--thc-accent-light);
+  }
 
   .ts-wrapper.is-invalid .ts-control {
 
@@ -553,6 +557,12 @@
   }
 
 
+
+  /* Customer autocomplete dropdown */
+  .customer-ac-dropdown { position:absolute; top:100%; left:0; right:0; z-index:9999; background:#fff; border:1px solid var(--thc-border); border-radius:var(--thc-radius-sm); box-shadow:0 4px 12px rgba(0,0,0,.10); max-height:240px; overflow-y:auto; display:none; font-family:'DM Sans',sans-serif; font-size:0.875rem; }
+  .customer-ac-item { padding:7px 14px; cursor:pointer; color:var(--thc-text); }
+  .customer-ac-item:hover, .customer-ac-item--active { background:var(--thc-accent-light); color:var(--thc-accent); font-weight:500; }
+  .customer-ac-add { color:var(--thc-accent) !important; font-weight:600 !important; border-bottom:1px solid var(--thc-border); }
 
   @media (max-width: 640px) {
 
@@ -720,14 +730,14 @@
 
           <label class="form-label">Customer *</label>
 
-          <select name="customer_name" id="customer-name-input"
-            class="form-select {{ 'is-invalid' if form.errors.get('customer_name') }}"
-            {{ 'disabled' if form._locked_ }}>
-            <option value="">— Select customer —</option>
-            {% for c in customers %}
-              <option value="{{ c.customer_name }}" {{ 'selected' if form.customer_name == c.customer_name }}>{{ c.customer_name }}</option>
-            {% endfor %}
-          </select>
+          <div style="position:relative;">
+          <input type="text" name="customer_name" id="customer-name-input"
+            class="form-control {{ 'is-invalid' if form.errors.get('customer_name') }}"
+            value="{{ form.customer_name }}"
+            placeholder="Search customer…"
+            autocomplete="off"
+            {{ 'readonly' if form._locked_ }}>
+          </div>
 
           {% if form.errors.get('customer_name') %}
 
@@ -1175,6 +1185,12 @@
 
   ];
 
+  const CUSTOMER_OPTIONS = [
+    {% for c in customers %}
+    '{{ c.customer_name | e }}',
+    {% endfor %}
+  ];
+
 
 
   // ── Build <select> HTML from options array ─────────────────────────────
@@ -1244,42 +1260,49 @@
 
   // ── Tom Select helpers ─────────────────────────────────────────────────
 
-  function initProductTomSelect(el) {
-    if (el.tomselect) return;
-    new TomSelect(el, {
+  function makeTomSelect(el, addText, addAction) {
+    if (!el || el.tomselect) return;
+    const ADD_VAL = '__add__';
+    if (!el.querySelector(`option[value="${ADD_VAL}"]`)) {
+      const opt = document.createElement('option');
+      opt.value = ADD_VAL;
+      opt.textContent = addText;
+      el.insertBefore(opt, el.firstChild);
+    }
+    const ts = new TomSelect(el, {
       create: false,
       allowEmptyOption: true,
-      placeholder: '— Select service —',
-      onDropdownOpen: function(dropdown) {
-        if (!dropdown.querySelector('.ts-add-new')) {
-          const a = document.createElement('a');
-          a.className = 'ts-add-new';
-          a.href = '/product/add';
-          a.target = '_blank';
-          a.textContent = '+ Add new service';
-          dropdown.prepend(a);
+      score: function(search) {
+        const score = this.getScoreFunction(search);
+        return function(item) {
+          if (item.value === ADD_VAL) return 1;
+          return score(item);
+        };
+      },
+      render: {
+        option: function(data, escape) {
+          if (data.value === ADD_VAL) {
+            return `<div>${escape(data.text)}</div>`;
+          }
+          return `<div>${escape(data.text)}</div>`;
+        }
+      },
+      onChange: function(value) {
+        if (value === ADD_VAL) {
+          ts.clear(true);
+          addAction(ts);
         }
       }
     });
+    return ts;
+  }
+
+  function initProductTomSelect(el) {
+    makeTomSelect(el, '+ Add new service', function() { window.open('/product/add', '_blank'); });
   }
 
   function initTenderTomSelect(el) {
-    if (el.tomselect) return;
-    new TomSelect(el, {
-      create: false,
-      allowEmptyOption: true,
-      placeholder: '— Select tender —',
-      onDropdownOpen: function(dropdown) {
-        if (!dropdown.querySelector('.ts-add-new')) {
-          const a = document.createElement('a');
-          a.className = 'ts-add-new';
-          a.href = '/tender/add';
-          a.target = '_blank';
-          a.textContent = '+ Add new tender';
-          dropdown.prepend(a);
-        }
-      }
-    });
+    makeTomSelect(el, '+ Add new tender', function() { window.open('/tender/add', '_blank'); });
   }
 
 
@@ -1393,8 +1416,6 @@
       recalcTotals();
 
     }
-
-  }
 
   }
 
@@ -1546,28 +1567,82 @@
 
 
 
-    // ── Customer Tom Select ────────────────────────────────────────────────
-  function initCustomerTomSelect() {
-    const el = document.getElementById('customer-name-input');
-    if (!el || el.tomselect) return;
-    const ts = new TomSelect(el, {
-      create: false,
-      allowEmptyOption: true,
-      placeholder: '— Select customer —',
-      onDropdownOpen: function (dropdown) {
-        if (!dropdown.querySelector('.ts-add-new')) {
-          const a = document.createElement('a');
-          a.className = 'ts-add-new';
-          a.href = '#';
-          a.textContent = '+ Add Customer';
-          a.addEventListener('click', function (e) {
-            e.preventDefault();
-            ts.close();
-            openNewCustomerModal();
-          });
-          dropdown.prepend(a);
-        }
-      }
+    // ── Customer autocomplete ──────────────────────────────────────────────
+  function initCustomerAutocomplete() {
+    const input = document.getElementById('customer-name-input');
+    if (!input || input.readOnly) return;
+
+    const wrap = input.parentNode;
+    const dd = document.createElement('div');
+    dd.className = 'customer-ac-dropdown';
+    wrap.appendChild(dd);
+
+    let active = -1;
+
+    function getMatches(q) {
+      if (!q) return CUSTOMER_OPTIONS.slice(0, 100);
+      const lq = q.toLowerCase();
+      return CUSTOMER_OPTIONS.filter(function(n) { return n.toLowerCase().includes(lq); });
+    }
+
+    function hl(text, q) {
+      if (!q) return text;
+      const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return text.replace(re, '<strong style="font-weight:700;color:var(--thc-accent)">$1</strong>');
+    }
+
+    function render(q) {
+      const matches = getMatches(q);
+      dd.innerHTML = '';
+      active = -1;
+
+      const addEl = document.createElement('div');
+      addEl.className = 'customer-ac-item customer-ac-add';
+      addEl.textContent = '+ Add Customer';
+      addEl.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        openNewCustomerModal(input.value.trim());
+        hide();
+      });
+      dd.appendChild(addEl);
+
+      matches.forEach(function(name) {
+        const item = document.createElement('div');
+        item.className = 'customer-ac-item';
+        item.innerHTML = hl(name, q);
+        item.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          input.value = name;
+          hide();
+        });
+        dd.appendChild(item);
+      });
+
+      dd.style.display = 'block';
+    }
+
+    function hide() { dd.style.display = 'none'; active = -1; }
+
+    function setActive(i) {
+      const items = dd.querySelectorAll('.customer-ac-item');
+      items.forEach(function(el, idx) {
+        el.classList.toggle('customer-ac-item--active', idx === i);
+      });
+      active = i;
+    }
+
+    input.addEventListener('input', function() { render(this.value.trim()); });
+    input.addEventListener('focus', function() { render(this.value.trim()); });
+    input.addEventListener('blur', function() { setTimeout(hide, 150); });
+    input.addEventListener('keydown', function(e) {
+      if (dd.style.display === 'none') return;
+      const items = dd.querySelectorAll('.customer-ac-item');
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(active + 1, items.length - 1)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(active - 1, 0)); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (active >= 0 && items[active]) items[active].dispatchEvent(new MouseEvent('mousedown'));
+      } else if (e.key === 'Escape') { hide(); }
     });
   }
 
@@ -1599,9 +1674,9 @@
     document.querySelectorAll('select[name="product_id[]"]').forEach(initProductTomSelect);
     document.querySelectorAll('select[name="tender_id[]"]').forEach(initTenderTomSelect);
 
-    // Init customer Tom Select
+    // Init customer autocomplete
     {% if not form._locked_ %}
-    initCustomerTomSelect();
+    initCustomerAutocomplete();
     {% endif %}
 
     // Format all existing num-inputs on page load
@@ -1648,9 +1723,8 @@
           });
           var data = await resp.json();
           if (data.success) {
-            var ts = document.getElementById('customer-name-input').tomselect;
-            ts.addOption({ value: data.customer_name, text: data.customer_name });
-            ts.setValue(data.customer_name);
+            CUSTOMER_OPTIONS.push(data.customer_name);
+            document.getElementById('customer-name-input').value = data.customer_name;
             _ncModal.hide();
           } else {
             if (data.errors && data.errors.customer_name) {
@@ -1675,7 +1749,7 @@
     if (cancelBtn) cancelBtn.addEventListener('click', function () { _ncModal.hide(); });
   });
 
-  function openNewCustomerModal() {
+  function openNewCustomerModal(prefillName) {
     if (!_ncModal) return;
     ['nc-name', 'nc-sex'].forEach(function (id) {
       var f = document.getElementById(id);
@@ -1684,6 +1758,7 @@
     var bd = document.getElementById('nc-birthday'); if (bd) bd.value = '';
     var ad = document.getElementById('nc-address');  if (ad) ad.value = '';
     var ge = document.getElementById('nc-general-err'); if (ge) ge.style.display = 'none';
+    if (prefillName) { var nf = document.getElementById('nc-name'); if (nf) nf.value = prefillName; }
     _ncModal.show();
   }
 </script>
