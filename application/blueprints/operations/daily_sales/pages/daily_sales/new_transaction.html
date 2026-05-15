@@ -154,9 +154,9 @@
 
   .line-header { display: grid; gap: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--thc-border); margin-bottom: 0.5rem; }
 
-  .line-header.detail-grid { grid-template-columns: 4fr 1.5fr 1.5fr 2fr 1.5fr 32px; }
+  .line-header.detail-grid { grid-template-columns: 4fr 1.5fr 1.5fr 1.5fr 32px; }
 
-  .line-header.tender-grid { grid-template-columns: 4fr 2fr 1.5fr 32px; }
+  .line-header.tender-grid { grid-template-columns: 4fr 1.5fr 32px; }
 
   .line-header span { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--thc-text-muted); }
 
@@ -164,9 +164,9 @@
 
   .detail-row, .tender-row { display: grid; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center; }
 
-  .detail-row { grid-template-columns: 4fr 1.5fr 1.5fr 2fr 1.5fr 32px; }
+  .detail-row { grid-template-columns: 4fr 1.5fr 1.5fr 1.5fr 32px; }
 
-  .tender-row { grid-template-columns: 4fr 1.5fr 2fr 32px; }
+  .tender-row { grid-template-columns: 4fr 1.5fr 32px; }
 
 
 
@@ -810,8 +810,6 @@
 
         <span style="text-align:right">Discount</span>
 
-        <span>Note</span>
-
         <span style="text-align:right">Net</span>
 
         <span></span>
@@ -828,25 +826,12 @@
 
         <div class="detail-row">
 
-          <select name="product_id[]" class="form-select" {{ 'disabled' if form._locked_ }}>
-
-            <option value="">— Select service —</option>
-
-            {% for pt in product_types %}
-
-            <optgroup label="{{ pt.product_type_name }}">
-
-              {% for product in pt.products %}
-
-              <option value="{{ product.id }}" {{ 'selected' if detail.product_id == product.id }}>{{ product.product_name }}</option>
-
-              {% endfor %}
-
-            </optgroup>
-
-            {% endfor %}
-
-          </select>
+          {% set ns = namespace(name='') %}
+          {% for pt in product_types %}{% for product in pt.products %}{% if product.id == detail.product_id %}{% set ns.name = product.product_name %}{% endif %}{% endfor %}{% endfor %}
+          <div style="position:relative;">
+            <input type="text" class="form-control service-ac-display{{ ' input-readonly' if form._locked_ }}" placeholder="— Select service —" autocomplete="off" value="{{ ns.name }}" {{ 'readonly' if form._locked_ }}>
+            <input type="hidden" name="product_id[]" value="{{ detail.product_id or '' }}">
+          </div>
 
           <input type="text" name="amount[]" class="form-control num-input" placeholder="0.00"
 
@@ -856,9 +841,7 @@
 
             value="{{ '{:,.2f}'.format(detail.discount) if detail.discount else '0.00' }}" {{ 'readonly' if form._locked_ }}>
 
-          <input type="text" name="side_note[]" class="form-control" placeholder="Optional"
-
-            value="{{ detail.side_note }}" {{ 'readonly' if form._locked_ }}>
+          <input type="hidden" name="side_note[]" value="{{ detail.side_note }}">
 
           <input type="text" class="form-control num-input line-net" readonly
 
@@ -955,8 +938,6 @@
 
         <span>Tender Type</span>
 
-        <span>Note</span>
-
         <span style="text-align:right">Amount</span>
 
         <span></span>
@@ -973,21 +954,14 @@
 
         <div class="tender-row">
 
-          <select name="tender_id[]" class="form-select" {{ 'disabled' if form._locked_ }}>
+          {% set ns = namespace(name='') %}
+          {% for t in tenders %}{% if t.id == tender.tender_id %}{% set ns.name = t.tender_name %}{% endif %}{% endfor %}
+          <div style="position:relative;">
+            <input type="text" class="form-control tender-ac-display{{ ' input-readonly' if form._locked_ }}" placeholder="— Select tender —" autocomplete="off" value="{{ ns.name }}" {{ 'readonly' if form._locked_ }}>
+            <input type="hidden" name="tender_id[]" value="{{ tender.tender_id or '' }}">
+          </div>
 
-            <option value="">— Select tender —</option>
-
-            {% for t in tenders %}
-
-            <option value="{{ t.id }}" {{ 'selected' if tender.tender_id == t.id }}>{{ t.tender_name }}</option>
-
-            {% endfor %}
-
-          </select>
-
-          <input type="text" name="tender_note[]" class="form-control" placeholder="Optional"
-
-            value="{{ tender.side_note }}" {{ 'readonly' if form._locked_ }}>
+          <input type="hidden" name="tender_note[]" value="{{ tender.side_note }}">
 
           <input type="text" name="tender_amount[]" class="form-control num-input" placeholder="0.00"
 
@@ -1193,116 +1167,176 @@
 
 
 
-  // ── Build <select> HTML from options array ─────────────────────────────
+  // ── Service autocomplete ───────────────────────────────────────────────
 
-  function buildProductSelect(selectedValue) {
+  function initServiceAutocomplete(input) {
+    if (!input || input.readOnly) return;
+    const hiddenInput = input.nextElementSibling;
+    const wrap = input.parentNode;
+    const dd = document.createElement('div');
+    dd.className = 'customer-ac-dropdown';
+    wrap.appendChild(dd);
+    let active = -1;
 
-    const groups = {};
+    function getMatches(q) {
+      const opts = PRODUCT_OPTIONS.filter(function(o) { return o.value; });
+      if (!q) return opts.slice(0, 100);
+      const lq = q.toLowerCase();
+      return opts.filter(function(o) { return o.label.toLowerCase().includes(lq); });
+    }
 
-    PRODUCT_OPTIONS.forEach(opt => {
+    function hl(text, q) {
+      if (!q) return text;
+      const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return text.replace(re, '<strong style="font-weight:700;color:var(--thc-accent)">$1</strong>');
+    }
 
-      if (!opt.group) return;
+    function render(q) {
+      const matches = getMatches(q);
+      dd.innerHTML = '';
+      active = -1;
 
-      if (!groups[opt.group]) groups[opt.group] = [];
+      const addEl = document.createElement('div');
+      addEl.className = 'customer-ac-item customer-ac-add';
+      addEl.textContent = '+ Add new service';
+      addEl.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        window.open('{{ url_for("product.add", popup=1) }}', 'add_product', 'width=640,height=520,resizable=yes,scrollbars=yes');
+        hide();
+      });
+      dd.appendChild(addEl);
 
-      groups[opt.group].push(opt);
-
-    });
-
-
-
-    let html = `<select name="product_id[]" class="form-select">
-
-      <option value="">— Select service —</option>`;
-
-    Object.entries(groups).forEach(([groupName, opts]) => {
-
-      html += `<optgroup label="${groupName}">`;
-
-      opts.forEach(opt => {
-
-        const sel = opt.value == selectedValue ? 'selected' : '';
-
-        html += `<option value="${opt.value}" ${sel}>${opt.label}</option>`;
-
+      const groups = {};
+      matches.forEach(function(opt) {
+        const g = opt.group || '';
+        if (!groups[g]) groups[g] = [];
+        groups[g].push(opt);
       });
 
-      html += `</optgroup>`;
+      Object.entries(groups).forEach(function([groupName, opts]) {
+        if (groupName) {
+          const groupEl = document.createElement('div');
+          groupEl.style.cssText = 'padding:4px 14px 2px;font-size:0.68rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--thc-text-muted);background:#faf8f4;pointer-events:none;';
+          groupEl.textContent = groupName;
+          dd.appendChild(groupEl);
+        }
+        opts.forEach(function(opt) {
+          const item = document.createElement('div');
+          item.className = 'customer-ac-item';
+          item.style.paddingLeft = groupName ? '20px' : '14px';
+          item.innerHTML = hl(opt.label, q);
+          item.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            input.value = opt.label;
+            hiddenInput.value = opt.value;
+            hide();
+          });
+          dd.appendChild(item);
+        });
+      });
 
-    });
-
-    html += `</select>`;
-
-    return html;
-
-  }
-
-
-
-  function buildTenderSelect(selectedValue) {
-
-    let html = `<select name="tender_id[]" class="form-select">`;
-
-    TENDER_OPTIONS.forEach(opt => {
-
-      const sel = opt.value == selectedValue ? 'selected' : '';
-
-      html += `<option value="${opt.value}" ${sel}>${opt.label}</option>`;
-
-    });
-
-    html += `</select>`;
-
-    return html;
-
-  }
-
-
-  // ── Tom Select helpers ─────────────────────────────────────────────────
-
-  function makeTomSelect(el, addText, addAction) {
-    if (!el || el.tomselect) return;
-    const ADD_VAL = '__add__';
-    if (!el.querySelector(`option[value="${ADD_VAL}"]`)) {
-      const opt = document.createElement('option');
-      opt.value = ADD_VAL;
-      opt.textContent = addText;
-      el.insertBefore(opt, el.firstChild);
+      dd.style.display = 'block';
     }
-    const ts = new TomSelect(el, {
-      create: false,
-      allowEmptyOption: true,
-      score: function(search) {
-        const score = this.getScoreFunction(search);
-        return function(item) {
-          if (item.value === ADD_VAL) return 1;
-          return score(item);
-        };
-      },
-      render: {
-        option: function(data, escape) {
-          if (data.value === ADD_VAL) {
-            return `<div>${escape(data.text)}</div>`;
-          }
-          return `<div>${escape(data.text)}</div>`;
-        }
-      },
-      onChange: function(value) {
-        if (value === ADD_VAL) {
-          ts.clear(true);
-          addAction(ts);
-        }
-      }
+
+    function hide() { dd.style.display = 'none'; active = -1; }
+
+    function setActive(i) {
+      const items = dd.querySelectorAll('.customer-ac-item');
+      items.forEach(function(el, idx) { el.classList.toggle('customer-ac-item--active', idx === i); });
+      active = i;
+    }
+
+    input.addEventListener('input', function() { render(this.value.trim()); });
+    input.addEventListener('focus', function() { render(this.value.trim()); });
+    input.addEventListener('blur', function() { setTimeout(hide, 150); });
+    input.addEventListener('keydown', function(e) {
+      if (dd.style.display === 'none') return;
+      const items = dd.querySelectorAll('.customer-ac-item');
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(active + 1, items.length - 1)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(active - 1, 0)); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (active >= 0 && items[active]) items[active].dispatchEvent(new MouseEvent('mousedown'));
+      } else if (e.key === 'Escape') { hide(); }
     });
-    return ts;
   }
 
-  function initProductTomSelect(el) {
-    makeTomSelect(el, '+ Add new service', function() { window.open('/product/add', '_blank'); });
-  }
+  // ── Tender autocomplete ────────────────────────────────────────────────
 
-  function initTenderTomSelect(el) {
-    makeTomSelect(el, '+ Add new tender', function() { window.open('/tender/add', '_blank'); });
+  function initTenderAutocomplete(input) {
+    if (!input || input.readOnly) return;
+    const hiddenInput = input.nextElementSibling;
+    const wrap = input.parentNode;
+    const dd = document.createElement('div');
+    dd.className = 'customer-ac-dropdown';
+    wrap.appendChild(dd);
+    let active = -1;
+
+    function getMatches(q) {
+      const opts = TENDER_OPTIONS.filter(function(o) { return o.value; });
+      if (!q) return opts;
+      const lq = q.toLowerCase();
+      return opts.filter(function(o) { return o.label.toLowerCase().includes(lq); });
+    }
+
+    function hl(text, q) {
+      if (!q) return text;
+      const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return text.replace(re, '<strong style="font-weight:700;color:var(--thc-accent)">$1</strong>');
+    }
+
+    function render(q) {
+      const matches = getMatches(q);
+      dd.innerHTML = '';
+      active = -1;
+
+      const addEl = document.createElement('div');
+      addEl.className = 'customer-ac-item customer-ac-add';
+      addEl.textContent = '+ Add new tender';
+      addEl.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        window.open('{{ url_for("tender.add", popup=1) }}', 'add_tender', 'width=640,height=400,resizable=yes,scrollbars=yes');
+        hide();
+      });
+      dd.appendChild(addEl);
+
+      matches.forEach(function(opt) {
+        const item = document.createElement('div');
+        item.className = 'customer-ac-item';
+        item.innerHTML = hl(opt.label, q);
+        item.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          input.value = opt.label;
+          hiddenInput.value = opt.value;
+          hide();
+        });
+        dd.appendChild(item);
+      });
+
+      dd.style.display = 'block';
+    }
+
+    function hide() { dd.style.display = 'none'; active = -1; }
+
+    function setActive(i) {
+      const items = dd.querySelectorAll('.customer-ac-item');
+      items.forEach(function(el, idx) { el.classList.toggle('customer-ac-item--active', idx === i); });
+      active = i;
+    }
+
+    input.addEventListener('input', function() { render(this.value.trim()); });
+    input.addEventListener('focus', function() { render(this.value.trim()); });
+    input.addEventListener('blur', function() { setTimeout(hide, 150); });
+    input.addEventListener('keydown', function(e) {
+      if (dd.style.display === 'none') return;
+      const items = dd.querySelectorAll('.customer-ac-item');
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(active + 1, items.length - 1)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(active - 1, 0)); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (active >= 0 && items[active]) items[active].dispatchEvent(new MouseEvent('mousedown'));
+      } else if (e.key === 'Escape') { hide(); }
+    });
   }
 
 
@@ -1341,7 +1375,7 @@
 
   // ── Add rows ───────────────────────────────────────────────────────────
 
-  function addDetailRow(productId = '', amount = '0.00', discount = '0.00', note = '') {
+  function addDetailRow(productId = '', productLabel = '', amount = '0.00', discount = '0.00', note = '') {
 
     const container = document.getElementById('transaction-details');
 
@@ -1350,24 +1384,20 @@
     div.className = 'detail-row';
 
     div.innerHTML = `
-
-      ${buildProductSelect(productId)}
-
+      <div style="position:relative;">
+        <input type="text" class="form-control service-ac-display" placeholder="— Select service —" autocomplete="off" value="${productLabel}">
+        <input type="hidden" name="product_id[]" value="${productId}">
+      </div>
       <input type="text" name="amount[]" class="form-control num-input" placeholder="0.00" value="${fmt(amount)}">
-
       <input type="text" name="detail_discount[]" class="form-control num-input" placeholder="0.00" value="${fmt(discount)}">
-
-      <input type="text" name="side_note[]" class="form-control" placeholder="Optional" value="${note}">
-
+      <input type="hidden" name="side_note[]" value="${note}">
       <input type="text" class="form-control num-input line-net" readonly value="0.00">
-
       <button type="button" class="btn-remove-row" onclick="removeRow(this, 'transaction-details', 'detail-row')" title="Remove">✕</button>
-
     `;
 
     container.appendChild(div);
 
-    initProductTomSelect(div.querySelector('select[name="product_id[]"]'));
+    initServiceAutocomplete(div.querySelector('.service-ac-display'));
 
     recalcTotals();
 
@@ -1375,7 +1405,7 @@
 
 
 
-  function addTenderRow(tenderId = '', amount = '0.00', note = '') {
+  function addTenderRow(tenderId = '', tenderLabel = '', amount = '0.00', note = '') {
 
     const container = document.getElementById('transaction-tenders');
 
@@ -1384,20 +1414,18 @@
     div.className = 'tender-row';
 
     div.innerHTML = `
-
-      ${buildTenderSelect(tenderId)}
-
-      <input type="text" name="tender_note[]" class="form-control" placeholder="Optional" value="${note}">
-
+      <div style="position:relative;">
+        <input type="text" class="form-control tender-ac-display" placeholder="— Select tender —" autocomplete="off" value="${tenderLabel}">
+        <input type="hidden" name="tender_id[]" value="${tenderId}">
+      </div>
+      <input type="hidden" name="tender_note[]" value="${note}">
       <input type="text" name="tender_amount[]" class="form-control num-input" placeholder="0.00" value="${fmt(amount)}">
-
       <button type="button" class="btn-remove-row" onclick="removeRow(this, 'transaction-tenders', 'tender-row')" title="Remove">✕</button>
-
     `;
 
     container.appendChild(div);
 
-    initTenderTomSelect(div.querySelector('select[name="tender_id[]"]'));
+    initTenderAutocomplete(div.querySelector('.tender-ac-display'));
 
   }
 
@@ -1601,7 +1629,7 @@
       addEl.textContent = '+ Add Customer';
       addEl.addEventListener('mousedown', function(e) {
         e.preventDefault();
-        openNewCustomerModal(input.value.trim());
+        window.open('{{ url_for("customer.add", popup=1) }}', 'add_customer', 'width=640,height=700,resizable=yes,scrollbars=yes');
         hide();
       });
       dd.appendChild(addEl);
@@ -1670,9 +1698,9 @@
 
 
 
-    // Init Tom Select on Jinja-rendered product/tender selects
-    document.querySelectorAll('select[name="product_id[]"]').forEach(initProductTomSelect);
-    document.querySelectorAll('select[name="tender_id[]"]').forEach(initTenderTomSelect);
+    // Init service and tender autocompletes on Jinja-rendered rows
+    document.querySelectorAll('.service-ac-display').forEach(initServiceAutocomplete);
+    document.querySelectorAll('.tender-ac-display').forEach(initTenderAutocomplete);
 
     // Init customer autocomplete
     {% if not form._locked_ %}
@@ -1747,6 +1775,19 @@
 
     var cancelBtn = document.getElementById('nc-cancel-btn');
     if (cancelBtn) cancelBtn.addEventListener('click', function () { _ncModal.hide(); });
+  });
+
+  window.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'customer_added') {
+      var name = e.data.customer_name;
+      CUSTOMER_OPTIONS.push(name);
+      var inp = document.getElementById('customer-name-input');
+      if (inp) inp.value = name;
+    } else if (e.data && e.data.type === 'product_added') {
+      PRODUCT_OPTIONS.push({ value: String(e.data.product_id), label: e.data.product_name, group: e.data.product_type_name });
+    } else if (e.data && e.data.type === 'tender_added') {
+      TENDER_OPTIONS.push({ value: String(e.data.tender_id), label: e.data.tender_name });
+    }
   });
 
   function openNewCustomerModal(prefillName) {

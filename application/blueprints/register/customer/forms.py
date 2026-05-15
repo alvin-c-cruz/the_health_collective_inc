@@ -51,7 +51,7 @@ class Form:
        
     def _populate(self, row):
         for attribute in get_attributes(self):
-            if attribute in ["errors"]:
+            if attribute in ["errors", "sex_name"]:
                 continue
             elif attribute in ["sex_id"]:
                 sex = Sex.query.get(getattr(row, "sex_id"))

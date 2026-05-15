@@ -11,7 +11,7 @@
         <input type="number" name="record_id" value="{{ form.id }}" hidden>
         {% else %}
     <h1 class="mb-4">Add Customer</h1>
-    <form action="{{ url_for('customer.add') }}" method="post">
+    <form action="{{ url_for('customer.add', popup=1) if popup else url_for('customer.add') }}" method="post">
         {% endif %}
     
         {{ text_box(form, "Customer Name", "customer_name", form.customer_name, autofocus=True) }}

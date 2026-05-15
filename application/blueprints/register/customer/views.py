@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, Response, send_file, current_app
+from flask import Blueprint, render_template, render_template_string, request, redirect, url_for, flash, Response, send_file, current_app
 import os
 import json
 import openpyxl
@@ -37,18 +37,33 @@ def home():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def add():
+    popup = request.args.get('popup') == '1'
     if request.method == "POST":
         form = Form()
         form._post(request.form, current_user.id)
 
         if form._validate_on_submit():
             form._save()
+            if popup:
+                return render_template_string(
+                    '<!doctype html><html><head><meta charset="utf-8"></head><body>'
+                    '<script>'
+                    'if(window.opener){'
+                    'window.opener.postMessage({type:"customer_added",customer_name:{{ name | tojson }}},"*");'
+                    '}'
+                    'window.close();'
+                    '</script>'
+                    '<p style="font-family:sans-serif;padding:2rem;">Customer saved. This window will close automatically.</p>'
+                    '</body></html>',
+                    name=form.customer_name
+                )
             return redirect(url_for(f'{app_name}.home'))
     else:
         form = Form()
 
     context = {
         "form": form,
+        "popup": popup,
     }
 
     return render_template(f"{app_name}/form.html", **context)
