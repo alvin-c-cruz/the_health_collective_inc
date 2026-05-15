@@ -2,85 +2,86 @@
 {% block title %}Daily Sales — The Health Collective Inc.{% endblock %}
 
 {% block styles %}
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   /* ── layout ── */
   .thc-wrap { max-width: 960px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
 
   /* ── top bar ── */
   .thc-topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: .75rem; }
-  .thc-brand-name { font-size: 1rem; font-weight: 600; color: #1a1714; margin: 0; }
-  .thc-brand-sub { font-size: .75rem; color: #888480; margin: 2px 0 0; }
-  .thc-date-badge { display: flex; align-items: center; gap: 8px; font-size: .8rem; color: #555; background: #f5f2ec; border: 1px solid #ccc8c0; border-radius: 6px; padding: 6px 14px; white-space: nowrap; }
-  .thc-date-badge i { color: #888; }
+  .thc-brand-name { font-family: var(--thc-font-heading); font-size: 1.05rem; font-weight: 600; color: var(--thc-text); margin: 0; }
+  .thc-brand-sub { font-size: .75rem; color: var(--thc-text-muted); margin: 2px 0 0; }
+  .thc-date-badge { display: flex; align-items: center; gap: 8px; font-size: .8rem; color: var(--thc-text-muted); background: #fff; border: 1px solid var(--thc-border); border-radius: 6px; padding: 6px 14px; white-space: nowrap; }
+  .thc-date-badge i { color: var(--thc-primary); }
 
   /* ── summary metrics ── */
   .thc-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.75rem; }
-  .thc-metric { background: #f5f2ec; border-radius: 8px; padding: 14px 16px; }
-  .thc-metric-lbl { font-size: .7rem; color: #888480; margin-bottom: 4px; }
-  .thc-metric-val { font-size: 1.35rem; font-weight: 600; color: #1a1714; font-family: 'DM Mono', monospace; }
-  .thc-metric-val.accent { color: #185FA5; }
+  .thc-metric { background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; padding: 14px 16px; }
+  .thc-metric-lbl { font-size: .7rem; color: var(--thc-text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .05em; }
+  .thc-metric-val { font-size: 1.35rem; font-weight: 600; color: var(--thc-text); font-family: 'DM Mono', monospace; }
+  .thc-metric-val.accent { color: var(--thc-primary); }
 
   /* ── section label ── */
-  .thc-sec-lbl { font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #888480; margin-bottom: .6rem; }
+  .thc-sec-lbl { font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--thc-text-muted); margin-bottom: .6rem; }
 
   /* ── transaction cards ── */
   .thc-txn-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1.5rem; }
-  .thc-txn-card { background: #fff; border: 1px solid #e0ddd6; border-radius: 12px; padding: 16px; cursor: pointer; transition: border-color .15s, background .15s; text-decoration: none; display: flex; align-items: center; gap: 14px; color: inherit; }
-  .thc-txn-card:hover { border-color: #aaa8a2; background: #fafaf8; text-decoration: none; color: inherit; }
-  .thc-txn-card.featured { border: 1.5px solid #378ADD; background: #fff; }
-  .thc-txn-card.featured:hover { background: #E6F1FB; }
+  .thc-txn-card { background: #fff; border: 1px solid var(--thc-border); border-radius: 10px; padding: 16px; cursor: pointer; transition: border-color .15s, background .15s; display: flex; align-items: center; gap: 14px; color: inherit; }
+  .thc-txn-card:hover { border-color: #a0b4b8; background: var(--thc-primary-light); color: inherit; }
+  .thc-txn-card.featured { border: 1.5px solid var(--thc-primary); background: #fff; }
+  .thc-txn-card.featured:hover { background: var(--thc-primary-light); }
 
   .thc-txn-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
-  .ic-blue   { background: #E6F1FB; color: #185FA5; }
-  .ic-green  { background: #EAF3DE; color: #3B6D11; }
-  .ic-purple { background: #EEEDFE; color: #3C3489; }
-  .ic-coral  { background: #FAECE7; color: #993C1D; }
-  .ic-amber  { background: #FAEEDA; color: #854F0B; }
-  .ic-teal   { background: #E1F5EE; color: #0F6E56; }
+  .ic-blue   { background: var(--thc-primary-light); color: var(--thc-primary); }
+  .ic-green  { background: #e6f3f0; color: #0f6e56; }
+  .ic-purple { background: #eeedfe; color: #3c3489; }
+  .ic-coral  { background: #faece7; color: #993c1d; }
+  .ic-amber  { background: #faeeda; color: #854f0b; }
+  .ic-teal   { background: var(--thc-primary-light); color: var(--thc-primary); }
 
   .thc-txn-info { flex: 1; min-width: 0; }
-  .thc-txn-title { font-size: .875rem; font-weight: 600; color: #1a1714; margin: 0 0 2px; }
-  .thc-txn-desc  { font-size: .75rem; color: #888480; margin: 0 0 8px; line-height: 1.45; }
+  .thc-txn-title { font-family: var(--thc-font-heading); font-size: .9rem; font-weight: 600; color: var(--thc-text); margin: 0 0 2px; }
+  .thc-txn-desc  { font-size: .75rem; color: var(--thc-text-muted); margin: 0 0 8px; line-height: 1.45; }
 
   .thc-badges { display: flex; flex-wrap: wrap; gap: 5px; }
-  .thc-badge { font-size: .65rem; padding: 2px 9px; border-radius: 99px; font-weight: 500; text-decoration: none; display: inline-block; }
+  .thc-badge { font-size: .65rem; padding: 2px 9px; border-radius: 4px; font-weight: 600; text-decoration: none; display: inline-block; letter-spacing: .03em; }
   .thc-badge:hover { opacity: .8; text-decoration: none; }
-  .thc-badge-blue   { background: #B5D4F4; color: #0C447C; }
-  .thc-badge-green  { background: #C0DD97; color: #27500A; }
-  .thc-badge-purple { background: #CECBF6; color: #3C3489; }
-  .thc-badge-coral  { background: #F5C4B3; color: #993C1D; }
+  .thc-badge-blue   { background: var(--thc-primary); color: #fff; }
+  .thc-badge-green  { background: #1a7a60; color: #fff; }
+  .thc-badge-purple { background: #3c3489; color: #fff; }
+  .thc-badge-coral  { background: #993c1d; color: #fff; }
 
   /* ── cash management ── */
   .thc-cash-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1.5rem; }
-  .thc-cash-card { background: #fff; border: 1px solid #e0ddd6; border-radius: 12px; padding: 14px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; transition: border-color .15s, background .15s; }
-  .thc-cash-card:hover { border-color: #aaa8a2; background: #fafaf8; text-decoration: none; color: inherit; }
-  .thc-cash-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: .9rem; flex-shrink: 0; }
+  .thc-cash-card { background: #fff; border: 1px solid var(--thc-border); border-radius: 10px; padding: 14px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; transition: border-color .15s, background .15s; }
+  .thc-cash-card:hover { border-color: #a0b4b8; background: var(--thc-primary-light); text-decoration: none; color: inherit; }
+  .thc-cash-icon { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: .9rem; flex-shrink: 0; }
   .thc-cash-info { flex: 1; }
-  .thc-cash-title { font-size: .8rem; font-weight: 600; color: #1a1714; margin: 0; }
-  .thc-cash-desc  { font-size: .7rem; color: #888480; margin: 2px 0 0; }
-  .thc-cash-chev  { color: #aaa; font-size: .85rem; }
+  .thc-cash-title { font-size: .8rem; font-weight: 600; color: var(--thc-text); margin: 0; }
+  .thc-cash-desc  { font-size: .7rem; color: var(--thc-text-muted); margin: 2px 0 0; }
+  .thc-cash-chev  { color: var(--thc-text-muted); font-size: .85rem; }
 
   /* ── footer ── */
-  .thc-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 1px solid #e0ddd6; flex-wrap: wrap; gap: .75rem; }
+  .thc-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 1px solid var(--thc-border); flex-wrap: wrap; gap: .75rem; }
   .thc-cashier { display: flex; align-items: center; gap: 10px; }
-  .thc-avatar { width: 32px; height: 32px; border-radius: 50%; background: #B5D4F4; display: flex; align-items: center; justify-content: center; font-size: .7rem; font-weight: 600; color: #0C447C; flex-shrink: 0; }
-  .thc-cashier-name { font-size: .8rem; font-weight: 600; color: #1a1714; margin: 0; }
-  .thc-cashier-role { font-size: .7rem; color: #888480; margin: 1px 0 0; }
+  .thc-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--thc-primary); display: flex; align-items: center; justify-content: center; font-size: .7rem; font-weight: 600; color: #fff; flex-shrink: 0; }
+  .thc-cashier-name { font-size: .8rem; font-weight: 600; color: var(--thc-text); margin: 0; }
+  .thc-cashier-role { font-size: .7rem; color: var(--thc-text-muted); margin: 1px 0 0; }
 
   /* ── today's transactions list ── */
   .thc-txn-list { margin-bottom: 1.5rem; }
-  .thc-rec-row { background: #fff; border: 1px solid #e0ddd6; border-radius: 10px; padding: 11px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 6px; text-decoration: none; color: inherit; transition: border-color .15s, background .15s; }
-  .thc-rec-row:hover { border-color: #aaa8a2; background: #fafaf8; text-decoration: none; color: inherit; }
+  .thc-rec-row { background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; padding: 11px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 6px; text-decoration: none; color: inherit; transition: border-color .15s, background .15s; }
+  .thc-rec-row:hover { border-color: #a0b4b8; background: var(--thc-primary-light); text-decoration: none; color: inherit; }
   .thc-rec-info { flex: 1; min-width: 0; }
-  .thc-rec-num { font-size: .68rem; color: #888480; font-family: 'DM Mono', monospace; }
-  .thc-rec-customer { font-size: .85rem; font-weight: 600; color: #1a1714; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .thc-rec-type { font-size: .7rem; color: #888480; margin-top: 1px; }
-  .thc-rec-amount { font-family: 'DM Mono', monospace; font-size: .88rem; font-weight: 600; color: #1a1714; text-align: right; flex-shrink: 0; }
-  .thc-rec-badge { flex-shrink: 0; font-size: .62rem; font-weight: 600; padding: 2px 8px; border-radius: 99px; text-transform: uppercase; letter-spacing: .04em; }
-  .badge-draft     { background: #f0ede7; color: #888480; }
-  .badge-submitted { background: #EAF3DE; color: #3B6D11; }
-  .badge-cancelled { background: #FAECE7; color: #993C1D; }
-  .thc-empty { text-align: center; padding: 1.25rem; color: #888480; font-size: .8rem; background: #f5f2ec; border-radius: 10px; }
+  .thc-rec-num { font-size: .68rem; color: var(--thc-text-muted); font-family: 'DM Mono', monospace; }
+  .thc-rec-customer { font-size: .85rem; font-weight: 600; color: var(--thc-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .thc-rec-type { font-size: .7rem; color: var(--thc-text-muted); margin-top: 1px; }
+  .thc-rec-amount { font-family: 'DM Mono', monospace; font-size: .88rem; font-weight: 600; color: var(--thc-text); text-align: right; flex-shrink: 0; }
+  .thc-rec-badge { flex-shrink: 0; font-size: .62rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: .04em; }
+  .badge-draft     { background: #f0f0f0; color: var(--thc-text-muted); }
+  .badge-submitted { background: #d4edda; color: #155724; }
+  .badge-cancelled { background: #faece7; color: #993c1d; }
+  .thc-empty { text-align: center; padding: 1.25rem; color: var(--thc-text-muted); font-size: .8rem; background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; }
 
   @media (max-width: 600px) {
     .thc-txn-grid, .thc-cash-grid, .thc-metrics { grid-template-columns: 1fr; }
@@ -103,7 +104,7 @@
         {{ today.strftime("%A, %B %d, %Y") }}
       </div>
       <button
-        class="btn btn-warning btn-sm" type="button"
+        class="btn btn-sm" style="background:var(--thc-primary);color:#fff;font-weight:600;border:none;" type="button"
         data-url="{{ url_for('daily_sales.daily_report') }}"
         onclick="window.open(this.dataset.url,'_blank','width=1200,height=700,scrollbars=yes,resizable=yes')">
         <i class="bi bi-file-earmark-text me-1"></i> Generate report

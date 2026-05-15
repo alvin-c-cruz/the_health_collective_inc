@@ -2,28 +2,28 @@
 {% block title %}Transaction #{{ record.id }}{% endblock %}
 
 {% block styles %}
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --thc-bg: #f5f3ee;
+    --thc-bg: #f8f9fa;
     --thc-surface: #ffffff;
-    --thc-border: #e4e0d8;
-    --thc-border-focus: #6a8f7a;
-    --thc-text: #1a1a1a;
-    --thc-text-muted: #7a7670;
-    --thc-accent: #6a8f7a;
-    --thc-accent-light: #eef3f0;
-    --thc-accent-hover: #557a68;
+    --thc-border: #e2e8f0;
+    --thc-border-focus: #1a6473;
+    --thc-text: #1a2a2a;
+    --thc-text-muted: #6b7280;
+    --thc-accent: #1a6473;
+    --thc-accent-light: #e6f3f5;
+    --thc-accent-hover: #135260;
     --thc-danger: #c0392b;
     --thc-danger-light: #fdf0ee;
-    --thc-badge-bg: #e8f0eb;
-    --thc-badge-text: #3d6b51;
+    --thc-badge-bg: #e6f3f5;
+    --thc-badge-text: #1a6473;
     --thc-shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
     --thc-radius: 10px;
     --thc-radius-sm: 6px;
   }
 
-  body { font-family: 'DM Sans', sans-serif; background-color: var(--thc-bg); color: var(--thc-text); }
+  body { font-family: var(--thc-font-body, 'Inter', sans-serif); background-color: var(--thc-bg); color: var(--thc-text); }
 
   .txn-wrapper { max-width: 960px; margin: 0 auto; padding: 2rem 1rem 4rem; }
 
@@ -41,18 +41,18 @@
   .vt-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   .vt-table th { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--thc-text-muted); padding: 0 0.5rem 0.6rem; border-bottom: 1px solid var(--thc-border); text-align: left; }
   .vt-table th.num { text-align: right; }
-  .vt-table td { padding: 0.45rem 0.5rem; border-bottom: 1px solid #f0ede7; vertical-align: middle; }
+  .vt-table td { padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--thc-border); vertical-align: middle; }
   .vt-table td.num { text-align: right; font-family: 'DM Mono', monospace; font-size: 0.85rem; }
   .vt-table td.name { color: var(--thc-accent); font-weight: 500; }
-  .vt-table tr.total-row td { font-weight: 600; border-top: 1px solid var(--thc-border); border-bottom: none; background: #f9f7f3; font-family: 'DM Mono', monospace; font-size: 0.85rem; }
+  .vt-table tr.total-row td { font-weight: 600; border-top: 1px solid var(--thc-border); border-bottom: none; background: var(--thc-accent-light); font-family: 'DM Mono', monospace; font-size: 0.85rem; }
 
-  /* Summary box — mirrors .items-summary in new_transaction */
+  /* Summary box */
   .items-summary { margin-top: 1rem; margin-left: auto; width: 320px; border: 1px solid var(--thc-border); border-radius: var(--thc-radius-sm); overflow: hidden; }
-  .items-summary-row { display: flex; justify-content: space-between; align-items: center; padding: 0.45rem 0.85rem; border-bottom: 1px solid var(--thc-border); background: #faf8f4; gap: 0.75rem; }
+  .items-summary-row { display: flex; justify-content: space-between; align-items: center; padding: 0.45rem 0.85rem; border-bottom: 1px solid var(--thc-border); background: #f8f9fa; gap: 0.75rem; }
   .items-summary-row:last-child { border-bottom: none; }
   .is-label { font-size: 0.78rem; color: var(--thc-text-muted); flex: 1; }
   .is-value { font-family: 'DM Mono', monospace; font-size: 0.85rem; color: var(--thc-text); text-align: right; min-width: 90px; }
-  .is-total-row { background: #f0ede7; }
+  .is-total-row { background: var(--thc-accent-light); }
   .is-total-row .is-label { font-size: 0.78rem; font-weight: 700; color: var(--thc-text); text-transform: uppercase; letter-spacing: 0.05em; }
   .is-total-row .is-value { font-size: 1rem; font-weight: 700; }
   .balance-zero { background: #e8f5e9 !important; }
@@ -67,11 +67,11 @@
 
   /* Action buttons */
   .txn-actions { display: flex; gap: 0.75rem; padding-top: 0.25rem; flex-wrap: wrap; }
-  .btn-edit { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 600; background: var(--thc-accent); color: #fff; border: none; border-radius: var(--thc-radius-sm); padding: 0.6rem 1.5rem; text-decoration: none; display: inline-flex; align-items: center; transition: background 0.15s; }
+  .btn-edit { font-family: var(--thc-font-body, 'Inter', sans-serif); font-size: 0.875rem; font-weight: 600; background: var(--thc-accent); color: #fff; border: none; border-radius: var(--thc-radius-sm); padding: 0.6rem 1.5rem; text-decoration: none; display: inline-flex; align-items: center; transition: background 0.15s; }
   .btn-edit:hover { background: var(--thc-accent-hover); color: #fff; text-decoration: none; }
-  .btn-back { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 500; background: transparent; color: var(--thc-text-muted); border: 1px solid var(--thc-border); border-radius: var(--thc-radius-sm); padding: 0.6rem 1.25rem; text-decoration: none; display: inline-flex; align-items: center; transition: border-color 0.15s, color 0.15s; }
+  .btn-back { font-family: var(--thc-font-body, 'Inter', sans-serif); font-size: 0.875rem; font-weight: 500; background: transparent; color: var(--thc-text-muted); border: 1px solid var(--thc-border); border-radius: var(--thc-radius-sm); padding: 0.6rem 1.25rem; text-decoration: none; display: inline-flex; align-items: center; transition: border-color 0.15s, color 0.15s; }
   .btn-back:hover { border-color: var(--thc-text-muted); color: var(--thc-text); text-decoration: none; }
-  .btn-danger-outline { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 500; background: transparent; color: var(--thc-danger); border: 1px solid var(--thc-danger); border-radius: var(--thc-radius-sm); padding: 0.6rem 1.25rem; cursor: pointer; margin-left: auto; transition: background 0.15s; }
+  .btn-danger-outline { font-family: var(--thc-font-body, 'Inter', sans-serif); font-size: 0.875rem; font-weight: 500; background: transparent; color: var(--thc-danger); border: 1px solid var(--thc-danger); border-radius: var(--thc-radius-sm); padding: 0.6rem 1.25rem; cursor: pointer; margin-left: auto; transition: background 0.15s; }
   .btn-danger-outline:hover { background: var(--thc-danger-light); }
 </style>
 {% endblock %}
