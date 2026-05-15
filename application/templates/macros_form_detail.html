@@ -5,50 +5,50 @@
 {% endmacro %}
 
 {% macro detail_number_float(i, form, form_detail, field_name, field_value) %}
-    <input 
-        type="number" 
-        name="{{ field_name }}-{{ i }}" 
-        step="any" 
-        value="{{ field_value }}" 
-        class="form-control currency" 
+    <input
+        type="number"
+        name="{{ field_name }}-{{ i }}"
+        step="any"
+        value="{{ field_value }}"
+        class="form-control currency{% if form_detail.errors.get(field_name) %} is-invalid{% endif %}"
         {% if form.submitted %}readonly{% endif %}
     >
     {% if form_detail.errors.get(field_name) %}
-        <p class="text-danger">{{ form_detail.errors.get(field_name) }}</p>
+    <div class="invalid-feedback">{{ form_detail.errors.get(field_name) }}</div>
     {% endif %}
 {% endmacro %}
 
 {% macro detail_select_box(i, form, form_detail, field_name, field_value, options, autofocus=False) %}
-    <select name="{{ field_name }}-{{ i }}" class="form-select" {% if form.submitted %}disabled{% endif %}>
-        <option value="0"></option>
+    <select name="{{ field_name }}-{{ i }}"
+        class="form-select{% if form_detail.errors.get(field_name) %} is-invalid{% endif %}"
+        {% if form.submitted %}disabled{% endif %}>
+        <option value="0">— Select —</option>
         {% for option in options %}
-            {% if option['id'] == field_value %}
-            <option value="{{ option['id'] }}" selected>{{ option['dropdown_name'] }}</option>
-            {% else %}
-            <option value="{{ option['id'] }}">{{ option['dropdown_name'] }}</option>
-            {% endif %}
+            <option value="{{ option['id'] }}" {% if option['id'] == field_value %}selected{% endif %}>
+                {{ option['dropdown_name'] }}
+            </option>
         {% endfor %}
     </select>
     {% if form_detail.errors.get(field_name) %}
-    <p class="text-danger">{{ form_detail.errors.get(field_name) }}</p>
+    <div class="invalid-feedback">{{ form_detail.errors.get(field_name) }}</div>
     {% endif %}
 {% endmacro %}
 
 {% macro detail_textbox(i, form, form_detail, field_name, field_value, autofocus=False) %}
-    <input type="text" name="{{ field_name }}-{{ i }}" value="{{ field_value }}" class="form-control upper-case" {% if form.submitted %}readonly{% endif %}>
+    <input type="text" name="{{ field_name }}-{{ i }}" value="{{ field_value }}"
+        class="form-control upper-case{% if form_detail.errors.get(field_name) %} is-invalid{% endif %}"
+        {% if form.submitted %}readonly{% endif %}>
     {% if form_detail.errors.get(field_name) %}
-    <p class="text-danger">{{ form_detail.errors.get(field_name) }}</p>
+    <div class="invalid-feedback">{{ form_detail.errors.get(field_name) }}</div>
     {% endif %}
 {% endmacro %}
 
 {% macro detail_searchbox(i, form, form_detail, field_name, field_value, autosearch, autofocus=False) %}
-<input type="text" id="{{ field_name }}-{{ i }}" name="{{ field_name }}-{{ i }}" value="{{ field_value }}" 
-    class="form-control upper-case ui-autocomplete-input" 
-    {% if form.submitted %} readonly {% else %} autocomplete="off" {% endif %} 
-    spellcheck="false" data-ms-editor="true">
-
+    <input type="text" id="{{ field_name }}-{{ i }}" name="{{ field_name }}-{{ i }}" value="{{ field_value }}"
+        class="form-control upper-case ui-autocomplete-input{% if form_detail.errors.get(field_name) %} is-invalid{% endif %}"
+        {% if form.submitted %}readonly{% else %}autocomplete="off"{% endif %}
+        spellcheck="false">
     {% if form_detail.errors.get(field_name) %}
-        <p class="text-danger">{{ form_detail.errors.get(field_name) }}</p>
+    <div class="invalid-feedback">{{ form_detail.errors.get(field_name) }}</div>
     {% endif %}
-
 {% endmacro %}

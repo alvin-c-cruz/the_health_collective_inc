@@ -137,6 +137,89 @@
       .btn-secondary:hover, .btn-secondary:focus { background: transparent !important; border-color: #6b7280 !important; color: #374151 !important; }
       .btn-outline-secondary { background: transparent !important; border-color: #d1d5db !important; color: #6b7280 !important; }
       .btn-outline-secondary:hover { background: transparent !important; border-color: #6b7280 !important; color: #374151 !important; }
+
+      /* ── THC Global Form Styles ── */
+      .form-label, .col-form-label {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--thc-text-muted);
+        margin-bottom: 0.3rem;
+      }
+      .form-control, .form-select {
+        font-family: var(--thc-font-body);
+        font-size: 0.875rem;
+        border-color: #d1d5db;
+        border-radius: 6px;
+        transition: border-color 0.15s, box-shadow 0.15s;
+      }
+      .form-control:focus, .form-select:focus {
+        border-color: var(--thc-primary);
+        box-shadow: 0 0 0 3px rgba(26,100,115,0.12);
+        outline: none;
+      }
+      .form-control.is-invalid, .form-select.is-invalid { border-color: #c0392b; }
+      .invalid-feedback, .thc-field-error {
+        display: block;
+        font-size: 0.75rem;
+        color: #c0392b;
+        margin-top: 0.2rem;
+      }
+
+      /* ── Page + Card pattern (matches daily sales) ── */
+      .thc-page { max-width: 960px; margin: 2rem auto; padding: 0 1rem 4rem; }
+      .thc-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        padding: 1.5rem;
+        margin-bottom: 1.25rem;
+      }
+      .thc-card-title {
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--thc-text-muted);
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.6rem;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .thc-page-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.75rem;
+        flex-wrap: wrap;
+      }
+      .thc-page-header h4 {
+        font-family: var(--thc-font-heading);
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin: 0;
+      }
+
+      /* ── List / table pattern ── */
+      .thc-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+      .thc-table th {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--thc-text-muted);
+        padding: 0.5rem 0.75rem;
+        border-bottom: 2px solid #e2e8f0;
+        text-align: left;
+        background: #f8f9fa;
+      }
+      .thc-table td {
+        padding: 0.55rem 0.75rem;
+        border-bottom: 1px solid #f0f2f5;
+        vertical-align: middle;
+        color: var(--thc-text);
+      }
+      .thc-table tbody tr:hover { background: #f0f8fa; }
+      .thc-table td.num { text-align: right; font-family: 'DM Mono', 'Courier New', monospace; }
     </style>
 
 
