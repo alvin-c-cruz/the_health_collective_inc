@@ -136,3 +136,6 @@ dmypy.json
 
 
 /instance
+
+# Claude Code
+.claude/settings.local.json
