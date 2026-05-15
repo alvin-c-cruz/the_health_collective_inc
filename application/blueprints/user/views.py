@@ -15,15 +15,15 @@ _ROLE_CATEGORIES = {
     'Account Class':          'Accounts',
     'Account Type':           'Accounts',
     'Accounts Payable':       'Books of Accounts',
-    'Accounts Payable Extra': 'Books of Accounts',
+    'Accounts Payable Extra': 'Books of Accounts Extra',
     'Disbursement':           'Books of Accounts',
-    'Disbursement Extra':     'Books of Accounts',
+    'Disbursement Extra':     'Books of Accounts Extra',
     'General':                'Books of Accounts',
-    'General Extra':          'Books of Accounts',
+    'General Extra':          'Books of Accounts Extra',
     'Receipt':                'Books of Accounts',
-    'Receipt Extra':          'Books of Accounts',
+    'Receipt Extra':          'Books of Accounts Extra',
     'Sales':                  'Books of Accounts',
-    'Sales Extra':            'Books of Accounts',
+    'Sales Extra':            'Books of Accounts Extra',
     'Customer':               'Register',
     'Measure':                'Register',
     'Product':                'Register',
@@ -36,7 +36,7 @@ _ROLE_CATEGORIES = {
     'user':                   'System',
 }
 
-_CATEGORY_ORDER = ['Operations', 'Books of Accounts', 'Register', 'Accounts', 'Reports', 'System', 'Other']
+_CATEGORY_ORDER = ['Operations', 'Books of Accounts', 'Books of Accounts Extra', 'Register', 'Accounts', 'Reports', 'System', 'Other']
 
 
 def _group_roles(roles):
