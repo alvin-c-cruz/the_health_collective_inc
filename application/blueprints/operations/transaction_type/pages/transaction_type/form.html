@@ -123,15 +123,44 @@
 <script src="{{ url_for('static', filename='vendor/js/tom-select.complete.min.js') }}"></script>
 <script>
   const ICONS = [
-    'bi-tag','bi-person-walking','bi-house-heart','bi-hospital','bi-droplet-half',
-    'bi-heart-pulse','bi-clipboard2-pulse','bi-stethoscope','bi-capsule','bi-bandaid',
-    'bi-activity','bi-people','bi-person','bi-person-check','bi-person-plus',
-    'bi-truck','bi-telephone','bi-camera-video','bi-building','bi-building-add',
-    'bi-briefcase','bi-cash','bi-credit-card','bi-wallet2','bi-receipt',
-    'bi-file-medical','bi-file-earmark-text','bi-clipboard','bi-journal-medical',
-    'bi-shield-plus','bi-shield-check','bi-eye','bi-ear','bi-lungs',
-    'bi-thermometer-half','bi-syringe','bi-virus','bi-wheelchair','bi-bicycle',
-    'bi-car-front','bi-geo-alt','bi-clock','bi-calendar-check','bi-stars',
+    // General
+    'bi-tag','bi-activity',
+    // Heart / Cardiovascular
+    'bi-heart','bi-heart-fill','bi-heart-pulse','bi-heart-pulse-fill',
+    'bi-heart-arrow','bi-heart-half','bi-heartbreak',
+    // Lungs / Respiratory
+    'bi-lungs','bi-lungs-fill',
+    // Eyes / ENT
+    'bi-eye','bi-eye-fill','bi-eyeglasses','bi-ear','bi-ear-fill',
+    // Fluids / Blood
+    'bi-droplet','bi-droplet-fill','bi-droplet-half',
+    // Infection / Contagion
+    'bi-virus','bi-virus2','bi-radioactive',
+    // Medication / Treatment
+    'bi-capsule','bi-capsule-pill','bi-bandaid','bi-bandaid-fill',
+    'bi-prescription','bi-prescription2',
+    // Temperature
+    'bi-thermometer','bi-thermometer-half','bi-thermometer-high',
+    'bi-thermometer-low','bi-thermometer-snow','bi-thermometer-sun',
+    // Records / Charts
+    'bi-clipboard-pulse','bi-clipboard2-pulse','bi-clipboard2-pulse-fill',
+    'bi-clipboard-heart','bi-clipboard2-heart','bi-clipboard2-heart-fill',
+    'bi-file-medical','bi-file-medical-fill',
+    'bi-file-earmark-medical','bi-file-earmark-medical-fill',
+    'bi-journal-medical',
+    // Patients / People
+    'bi-person','bi-person-fill','bi-person-walking','bi-person-wheelchair',
+    'bi-person-heart','bi-person-hearts','bi-person-check','bi-person-plus',
+    'bi-people','bi-people-fill',
+    // Facilities / Service
+    'bi-hospital','bi-hospital-fill',
+    'bi-house-heart','bi-house-heart-fill',
+    'bi-building','bi-geo-alt',
+    // Remote / Mobile
+    'bi-telephone','bi-camera-video','bi-person-video','bi-person-video2',
+    'bi-truck',
+    // Insurance / Protection
+    'bi-shield-plus','bi-shield-check','bi-shield-heart',
   ];
 
   const current = document.getElementById('icon-value').value || 'bi-tag';
