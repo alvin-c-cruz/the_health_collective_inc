@@ -1,27 +1,51 @@
 {% macro add_button(url) %}
-<a href="{{ url }}" class="btn btn-primary btn-sm">Add</a>
+<a href="{{ url }}" class="btn btn-primary btn-sm">
+  <i class="bi bi-plus-lg"></i> Add
+</a>
 {% endmacro %}
 
 {% macro edit_button(url) %}
-<a href="{{ url }}" class="btn btn-warning btn-sm">Edit</a>
+<a href="{{ url }}" class="btn btn-outline-secondary btn-sm" title="Edit">
+  <i class="bi bi-pencil"></i>
+</a>
 {% endmacro %}
 
 {% macro delete_button(url) %}
-<a href="{{ url }}" class="btn btn-danger btn-sm" onclick="return confirmMessage('Type YES to delete this record.');" oncontextmenu="event.preventDefault();">Delete</a>
+<a href="{{ url }}" class="btn btn-outline-danger btn-sm" title="Delete"
+   onclick="return confirmMessage('Type YES to delete this record.');"
+   oncontextmenu="event.preventDefault();">
+  <i class="bi bi-trash"></i>
+</a>
 {% endmacro %}
 
 {% macro approve_button(url) %}
-<a href="{{ url }}" class="btn btn-success btn-sm" onclick="return confirmMessage('Type YES to approve this record.');" oncontextmenu="event.preventDefault();">Approve</a>
+<a href="{{ url }}" class="btn btn-outline-success btn-sm" title="Approve"
+   onclick="return confirmMessage('Type YES to approve this record.');"
+   oncontextmenu="event.preventDefault();">
+  <i class="bi bi-check-lg"></i>
+</a>
 {% endmacro %}
 
 {% macro unlock_button(url) %}
-<a href="{{ url }}" class="btn btn-warning btn-sm" onclick="return confirmMessage('Type YES to unlock this record.');" oncontextmenu="event.preventDefault();">Unlock</a>
+<a href="{{ url }}" class="btn btn-outline-warning btn-sm" title="Unlock"
+   onclick="return confirmMessage('Type YES to unlock this record.');"
+   oncontextmenu="event.preventDefault();">
+  <i class="bi bi-unlock"></i>
+</a>
 {% endmacro %}
 
 {% macro activate_button(url) %}
-<a href="{{ url }}" class="btn btn-info btn-sm" onclick="return confirmMessage('Type YES to activate this record.');" oncontextmenu="event.preventDefault();">Active</a>
+<a href="{{ url }}" class="btn btn-outline-success btn-sm" title="Activate"
+   onclick="return confirmMessage('Type YES to activate this record.');"
+   oncontextmenu="event.preventDefault();">
+  <i class="bi bi-toggle-off"></i>
+</a>
 {% endmacro %}
 
 {% macro deactivate_button(url) %}
-<a href="{{ url }}" class="btn btn-secondary btn-sm" onclick="return confirmMessage('Type YES to deactivate this record.');" oncontextmenu="event.preventDefault();">Inactive</a>
+<a href="{{ url }}" class="btn btn-outline-secondary btn-sm" title="Deactivate"
+   onclick="return confirmMessage('Type YES to deactivate this record.');"
+   oncontextmenu="event.preventDefault();">
+  <i class="bi bi-toggle-on"></i>
+</a>
 {% endmacro %}
