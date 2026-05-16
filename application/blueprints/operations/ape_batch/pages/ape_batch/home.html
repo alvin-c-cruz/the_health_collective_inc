@@ -6,7 +6,10 @@
 <div class="thc-page">
     <div class="thc-page-header">
         <h4>APE Batches</h4>
-        <a href="{{ url_for('ape_batch.new_batch') }}" class="thc-btn thc-btn-primary">New Batch</a>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('ape_batch.guide') }}" class="thc-btn thc-btn-secondary">How to Record APE</a>
+            <a href="{{ url_for('ape_batch.new_batch') }}" class="thc-btn thc-btn-primary">New Batch</a>
+        </div>
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}

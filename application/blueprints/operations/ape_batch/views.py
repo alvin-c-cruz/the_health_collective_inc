@@ -106,6 +106,13 @@ def delete_batch(batch_id):
     return redirect(url_for(f"{app_name}.home"))
 
 
+@bp.route("/guide")
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def guide():
+    return render_template(f"{app_name}/guide.html")
+
+
 # AJAX — return batch details (package_amount) for the daily_sales form
 @bp.route("/api/<int:batch_id>")
 @login_required
