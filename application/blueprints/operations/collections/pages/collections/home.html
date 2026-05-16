@@ -39,9 +39,15 @@
     {# Toggle settled #}
     <div class="mb-3">
         {% if show_settled %}
-            <a href="{{ request.path }}{% if selected_tender_id %}?tender_id={{ selected_tender_id }}{% endif %}" class="small text-muted">Hide settled</a>
+            <a href="{{ request.path }}{% if selected_tender_id %}?tender_id={{ selected_tender_id }}{% endif %}"
+               class="thc-pill-toggle thc-pill-toggle--on">
+                <i class="bi bi-check-circle-fill"></i> Settled
+            </a>
         {% else %}
-            <a href="{{ request.path }}?{% if selected_tender_id %}tender_id={{ selected_tender_id }}&{% endif %}show_settled=1" class="small text-muted">Show settled</a>
+            <a href="{{ request.path }}?{% if selected_tender_id %}tender_id={{ selected_tender_id }}&{% endif %}show_settled=1"
+               class="thc-pill-toggle thc-pill-toggle--off">
+                <i class="bi bi-circle"></i> Settled
+            </a>
         {% endif %}
     </div>
 
@@ -125,5 +131,30 @@
     .thc-toggle--on  { background: var(--thc-primary); color: #fff; }
     .thc-toggle--off { background: #fff; color: var(--thc-text-muted); }
     .thc-toggle--off:hover { background: var(--thc-primary-light); color: var(--thc-primary); }
+
+    .thc-pill-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.22rem 0.7rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 20px;
+        border: 1.5px solid;
+        text-decoration: none;
+        transition: background 0.1s, color 0.1s;
+    }
+    .thc-pill-toggle--off {
+        background: #fff;
+        color: #94a3b8;
+        border-color: #cbd5e1;
+    }
+    .thc-pill-toggle--off:hover { background: #f1f5f9; color: #64748b; border-color: #94a3b8; }
+    .thc-pill-toggle--on {
+        background: #dcfce7;
+        color: #166534;
+        border-color: #86efac;
+    }
+    .thc-pill-toggle--on:hover { background: #bbf7d0; color: #166534; }
 </style>
 {% endblock %}
