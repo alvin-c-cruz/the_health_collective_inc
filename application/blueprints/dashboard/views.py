@@ -16,6 +16,12 @@ def home():
     return render_template("dashboard/home.html", **context)
 
 
+@bp.route("/about")
+@login_required
+def about():
+    return render_template("dashboard/about.html")
+
+
 @bp.before_app_request
 def set_g():
     g.company_name = current_app.config["COMPANY_NAME"]
