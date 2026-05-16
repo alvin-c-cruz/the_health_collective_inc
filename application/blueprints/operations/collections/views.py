@@ -1,5 +1,7 @@
+import glob
+import os
 from datetime import date, datetime
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 import openpyxl
 from flask_login import current_user
 
@@ -370,39 +372,55 @@ def _match_row(row):
 
 
 # ---------------------------------------------------------------------------
-# DSR Upload routes
+# DSR import routes (reads Excel from instance/uploads/ — no file upload)
 # ---------------------------------------------------------------------------
 
-@bp.route("/upload-dsr", methods=["GET", "POST"])
+def _dsr_excel_files():
+    uploads = os.path.join(current_app.instance_path, "uploads")
+    return sorted(glob.glob(os.path.join(uploads, "*.xlsx")))
+
+
+@bp.route("/import-dsr", methods=["GET", "POST"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def upload_dsr():
     bank_accounts = BankAccount.query.filter_by(active=True).order_by(BankAccount.bank_name).all()
+    excel_files = [os.path.basename(f) for f in _dsr_excel_files()]
 
     if request.method == "GET":
         return render_template("collections/upload_dsr.html",
-                               app_label=app_label, bank_accounts=bank_accounts)
-
-    uploaded = request.files.get("xlsx_file")
-    if not uploaded or not uploaded.filename.endswith(".xlsx"):
-        flash("Please upload a valid .xlsx file.", "danger")
-        return render_template("collections/upload_dsr.html",
-                               app_label=app_label, bank_accounts=bank_accounts)
+                               app_label=app_label,
+                               bank_accounts=bank_accounts,
+                               excel_files=excel_files)
 
     bank_account_id = request.form.get("bank_account_id", type=int) or None
+    filename = request.form.get("filename", "")
+    uploads_dir = os.path.join(current_app.instance_path, "uploads")
+    filepath = os.path.join(uploads_dir, os.path.basename(filename))
+
+    if not filepath.startswith(uploads_dir) or not os.path.isfile(filepath):
+        flash("File not found in the uploads folder.", "danger")
+        return render_template("collections/upload_dsr.html",
+                               app_label=app_label,
+                               bank_accounts=bank_accounts,
+                               excel_files=excel_files)
 
     try:
-        wb = openpyxl.load_workbook(uploaded, data_only=True)
+        wb = openpyxl.load_workbook(filepath, data_only=True)
     except Exception as e:
         flash(f"Could not read file: {e}", "danger")
         return render_template("collections/upload_dsr.html",
-                               app_label=app_label, bank_accounts=bank_accounts)
+                               app_label=app_label,
+                               bank_accounts=bank_accounts,
+                               excel_files=excel_files)
 
     parsed = _parse_dsr_excel(wb)
     if not parsed:
-        flash("No collection entries found. Fill in Collection Date and Amount in the DSR file.", "warning")
+        flash("No collection entries found in this file.", "warning")
         return render_template("collections/upload_dsr.html",
-                               app_label=app_label, bank_accounts=bank_accounts)
+                               app_label=app_label,
+                               bank_accounts=bank_accounts,
+                               excel_files=excel_files)
 
     matched, unmatched = [], []
     for row in parsed:
