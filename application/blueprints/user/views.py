@@ -362,3 +362,12 @@ def check_roles():
             db.session.delete(role)
 
     db.session.commit()
+
+    # Assign all roles to the super admin
+    admin = User.query.filter_by(user_name='admin').first()
+    if admin:
+        assigned_role_ids = {ur.role_id for ur in admin.roles}
+        for role in Role.query.all():
+            if role.id not in assigned_role_ids:
+                db.session.add(UserRole(user_id=admin.id, role_id=role.id))
+        db.session.commit()
