@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Upload DSR — Collections{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+    <div class="thc-page-header">
+        <h4>Upload DSR — Record Collections</h4>
+        <a href="{{ url_for('collections.home') }}" class="thc-btn thc-btn-secondary">Back</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="thc-card">
+        <p class="text-muted small mb-3">
+            Upload your <strong>THCI-DSR</strong> Excel file. The app will scan the
+            <strong>Collection</strong> columns across all sheets (Walk-ins, Teleconsult,
+            Home Service, HMO-PHIC, Medipad, APE), match each filled-in row to an
+            existing transaction, and show you a preview before anything is saved.
+        </p>
+        <form method="post" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Bank Account <span class="text-muted fw-normal">(where payment was deposited)</span></label>
+                <select class="form-select" name="bank_account_id" style="max-width:380px">
+                    <option value="">— None / Not applicable —</option>
+                    {% for b in bank_accounts %}
+                    <option value="{{ b.id }}">{{ b.bank_name }}{% if b.account_number %} ({{ b.account_number }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">DSR Excel File</label>
+                <input type="file" class="form-control" name="xlsx_file" accept=".xlsx" required style="max-width:420px">
+            </div>
+            <button type="submit" class="thc-btn thc-btn-primary">Preview Collections</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
