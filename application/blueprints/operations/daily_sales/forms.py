@@ -1,6 +1,6 @@
-from dataclasses import dataclass, field
+﻿from dataclasses import dataclass, field
 from sqlalchemy import func
-from application.extensions import db
+from application.extensions import db, ph_today
 from .models import Transaction as Obj
 from .models import TransactionDetail as ObjDetail
 from .models import TransactionTender as ObjTender
@@ -369,13 +369,13 @@ class Form:
 
     def _submit(self):
         record = Obj.query.get(self.id)
-        record.submitted = str(datetime.today())[:10]
+        record.submitted = str(ph_today())
         self.submitted = record.submitted
         db.session.commit()
 
     def _cancel(self):
         record = Obj.query.get(self.id)
-        record.cancelled = str(datetime.today())[:10]
+        record.cancelled = str(ph_today())
         self.cancelled = record.cancelled
         db.session.commit()
 

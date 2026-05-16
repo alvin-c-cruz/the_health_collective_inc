@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 
 from application import db
+from application.extensions import ph_today
 from .extensions import create_ledger, create_ledger_all
 
 from .. account import Account
@@ -37,7 +38,7 @@ def home():
     else:
         account_number = ""
 
-        today = datetime.today()
+        today = ph_today()
         first_day = datetime(today.year, today.month, 1)
         last_day = datetime(today.year, today.month + 1, 1) if today.month != 12 else datetime(today.year + 1, 1, 1)
         last_day -= timedelta(days=1)

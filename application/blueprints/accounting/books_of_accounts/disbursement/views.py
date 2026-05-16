@@ -1,11 +1,11 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, send_file
+﻿from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, send_file
 from flask_login import current_user
 import datetime
 from sqlalchemy.exc import IntegrityError
 from .models import Disbursement as Obj
 from .models import DisbursementDetail as ObjDetail
 from .forms import Form
-from application.extensions import db, year_first_day, month_first_day, month_last_day, next_control_number 
+from application.extensions import db, year_first_day, month_first_day, month_last_day, next_control_number , ph_today
 from .extensions import create_journal
 from .... user import login_required, roles_accepted
 from . import app_name, app_label
@@ -71,7 +71,7 @@ def add():
 
     else:
         form = Form()
-        today = str(datetime.date.today())[:10]
+        today = str(ph_today())[:10]
         form.record_date = today
 
         form.record_number = next_control_number(
@@ -198,7 +198,7 @@ def unlock(record_id):
 @roles_accepted([ROLES_ACCEPTED])
 def cancel(record_id):   
     obj = Obj.query.get_or_404(record_id)
-    obj.cancelled = str(datetime.datetime.today())[:10]
+    obj.cancelled = str(ph_today())
     db.session.commit()
     flash(f"{getattr(obj, f'record_number')} has been cancelled.", category="success")
 
@@ -238,4 +238,7 @@ def download():
                     download_name=f"{app_name}_journal_{date_from}_to_{date_to}.xlsx",
                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
+
+
+
 

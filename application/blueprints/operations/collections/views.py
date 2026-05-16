@@ -1,9 +1,8 @@
-from datetime import date
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
 
 from application.blueprints.user import login_required, roles_accepted
-from application.extensions import db
+from application.extensions import db, ph_today
 
 from . import app_name, app_label
 from .models import Collection, CollectionDetail
@@ -106,7 +105,7 @@ def new_collection():
     if request.method == "POST":
         f = request.form
 
-        collection_date = f.get("collection_date", str(date.today()))
+        collection_date = f.get("collection_date", str(ph_today()))
         tender_id       = f.get("tender_id", type=int)
         bank_account_id = f.get("bank_account_id", type=int) or None
         reference       = (f.get("reference") or "").strip()
@@ -127,7 +126,7 @@ def new_collection():
                 reference=reference,
                 notes=notes,
                 recorded_by=current_user.id,
-                created_at=str(date.today()),
+                created_at=str(ph_today()),
             )
             db.session.add(col)
             db.session.flush()
@@ -165,7 +164,7 @@ def new_collection():
         "bank_accounts": bank_accounts,
         "outstanding_rows": outstanding_rows,
         "selected_tender_id": tender_id_pre,
-        "today": str(date.today()),
+        "today": str(ph_today()),
     }
     return render_template("collections/new_collection.html", **context)
 

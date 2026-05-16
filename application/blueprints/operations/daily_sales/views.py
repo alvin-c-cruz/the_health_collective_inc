@@ -4,6 +4,7 @@ from sqlalchemy import func
 
 from ...user import login_required, roles_accepted, current_user
 from ...register.customer import Customer
+from application.extensions import ph_today
 
 from . import app_label, app_name
 from .models import Transaction, TransactionDetail, TransactionTender, TransactionType
@@ -50,7 +51,7 @@ def _generate_record_number():
 def home():
     from datetime import timedelta
 
-    today = date.today()
+    today = ph_today()
     date_str = request.args.get('date', str(today))
     try:
         selected_date = date.fromisoformat(date_str)
@@ -126,7 +127,7 @@ def new_transaction():
     transaction_type = TransactionType.query.get(type_id) if type_id else TransactionType.query.order_by(TransactionType.sort_order).first()
     form = Form()
     form.user_prepare_id = current_user.id
-    form.record_date = str(date.today())  # default to today
+    form.record_date = str(ph_today())  # default to today
     form.record_number = _generate_record_number()
     form.transaction_type_id = transaction_type.id if transaction_type else None
 
@@ -456,11 +457,11 @@ def record_deposit():
 def daily_report():
     from datetime import timedelta
 
-    report_date_str = request.args.get('date', str(date.today()))
+    report_date_str = request.args.get('date', str(ph_today()))
     try:
         curr_date = date.fromisoformat(report_date_str)
     except ValueError:
-        curr_date = date.today()
+        curr_date = ph_today()
 
     prev_date = curr_date - timedelta(days=1)
 
@@ -558,7 +559,7 @@ def daily_report():
 
 class _Report:
     def __init__(self):
-        self.report_date: date = date.today()
+        self.report_date: date = ph_today()
         self.sales: dict = {}  # {type_code: {tender_name: amount}}
 
     @property
