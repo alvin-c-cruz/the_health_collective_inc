@@ -38,9 +38,15 @@
                              {% if user.active %}background:#dcfce7;color:#166534;{% else %}background:#fee2e2;color:#c0392b;{% endif %}">
                     {% if user.active %}Active{% else %}Inactive{% endif %}
                 </span>
-                {% if user.admin %}
+                {% if user.superuser %}
+                <span style="font-size:0.78rem;font-weight:600;padding:0.25rem 0.6rem;border-radius:20px;
+                             background:#1a6473;color:#fff;">SuperAdmin</span>
+                {% elif user.admin %}
                 <span style="font-size:0.78rem;font-weight:600;padding:0.25rem 0.6rem;border-radius:20px;
                              background:#e0f2fe;color:#0369a1;">Admin</span>
+                {% elif user.staff %}
+                <span style="font-size:0.78rem;font-weight:600;padding:0.25rem 0.6rem;border-radius:20px;
+                             background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;">Staff</span>
                 {% endif %}
             </div>
         </div>
@@ -51,14 +57,38 @@
         <div class="thc-card-title">Access Flags</div>
         <div class="d-flex gap-3 flex-wrap">
 
+            {# SuperAdmin toggle — only current superusers may change this #}
+            {% if current_user.superuser %}
+            <div style="display:flex;flex-direction:column;gap:0.35rem;align-items:flex-start;">
+                <span style="font-size:0.7rem;font-weight:600;letter-spacing:0.06em;
+                             text-transform:uppercase;color:var(--thc-text-muted);">SuperAdmin</span>
+                <a href="{{ url_for('user.user_superuser', user_id=user.id, value=0 if user.superuser else 1) }}"
+                   {% if is_super %}onclick="return false;" style="pointer-events:none;opacity:0.5;"{% endif %}
+                   class="btn btn-sm {% if user.superuser %}btn-dark{% else %}btn-secondary{% endif %}">
+                    {% if user.superuser %}<i class="bi bi-shield-fill-check me-1"></i>ON{% else %}<i class="bi bi-shield me-1"></i>OFF{% endif %}
+                </a>
+            </div>
+            {% endif %}
+
             {# Admin toggle #}
             <div style="display:flex;flex-direction:column;gap:0.35rem;align-items:flex-start;">
                 <span style="font-size:0.7rem;font-weight:600;letter-spacing:0.06em;
-                             text-transform:uppercase;color:var(--thc-text-muted);">Administrator</span>
+                             text-transform:uppercase;color:var(--thc-text-muted);">Admin</span>
                 <a href="{{ url_for('user.user_admin', user_id=user.id, value=0 if user.admin else 1) }}"
                    {% if is_super %}onclick="return false;" style="pointer-events:none;opacity:0.5;"{% endif %}
-                   class="btn btn-sm {% if user.admin %}btn-success{% else %}btn-secondary{% endif %}">
+                   class="btn btn-sm {% if user.admin %}btn-primary{% else %}btn-secondary{% endif %}">
                     {% if user.admin %}<i class="bi bi-shield-check me-1"></i>ON{% else %}<i class="bi bi-shield me-1"></i>OFF{% endif %}
+                </a>
+            </div>
+
+            {# Staff toggle #}
+            <div style="display:flex;flex-direction:column;gap:0.35rem;align-items:flex-start;">
+                <span style="font-size:0.7rem;font-weight:600;letter-spacing:0.06em;
+                             text-transform:uppercase;color:var(--thc-text-muted);">Staff</span>
+                <a href="{{ url_for('user.user_staff', user_id=user.id, value=0 if user.staff else 1) }}"
+                   {% if is_super %}onclick="return false;" style="pointer-events:none;opacity:0.5;"{% endif %}
+                   class="btn btn-sm {% if user.staff %}btn-success{% else %}btn-secondary{% endif %}">
+                    {% if user.staff %}<i class="bi bi-person-badge me-1"></i>ON{% else %}<i class="bi bi-person me-1"></i>OFF{% endif %}
                 </a>
             </div>
 
@@ -76,9 +106,15 @@
         </div>
         {% if is_super %}
         <div style="font-size:0.75rem;color:var(--thc-text-muted);margin-top:0.75rem;">
-            <i class="bi bi-lock me-1"></i>Super admin flags cannot be changed.
+            <i class="bi bi-lock me-1"></i>Master admin account flags cannot be changed.
         </div>
         {% endif %}
+        <div style="font-size:0.72rem;color:var(--thc-text-muted);margin-top:0.6rem;line-height:1.6;">
+            <strong style="color:var(--thc-text);">SuperAdmin</strong> — approve &amp; unlock transactions &nbsp;·&nbsp;
+            <strong style="color:var(--thc-text);">Admin</strong> — approve transactions &nbsp;·&nbsp;
+            <strong style="color:var(--thc-text);">Staff</strong> — add &amp; edit transactions &nbsp;·&nbsp;
+            <em>No flag</em> — view reports only
+        </div>
     </div>
 
     {# ── Roles by group ── #}

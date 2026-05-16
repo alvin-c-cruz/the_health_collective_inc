@@ -226,7 +226,7 @@
   <div class="txn-actions">
     <a href="{{ url_for('daily_sales.home') }}" class="btn-back">← Back to Daily Sales</a>
 
-    {% if not record.submitted and not record.cancelled %}
+    {% if not record.submitted and not record.cancelled and (current_user.superuser or current_user.admin or current_user.staff) %}
     <a href="{{ url_for('daily_sales.edit_transaction', transaction_id=record.id) }}" class="btn-edit">✏ Edit</a>
 
     <form method="POST" action="{{ url_for('daily_sales.delete_transaction', transaction_id=record.id) }}"

@@ -181,8 +181,9 @@
     </div>
   </div>
 
-  {# ── New transaction — only shown for today ── #}
-  {% if is_today %}
+  {# ── New transaction — only shown for today, and only for staff/admin/superuser ── #}
+  {% set can_transact = current_user.superuser or current_user.admin or current_user.staff %}
+  {% if is_today and can_transact  %}
   <div class="thc-sec-lbl">New transaction</div>
   <div class="thc-txn-grid">
     {% for txn_type in transaction_types %}
@@ -251,7 +252,7 @@
         {% for d in t.transaction_details %}{% set net.val = net.val + d.amount - d.discount %}{% endfor %}
         {% set net.val = net.val - (t.discount or 0) %}
         {% set tt = t.transaction_type %}
-        <a href="{{ url_for('daily_sales.edit_transaction', transaction_id=t.id) if not t.submitted and not t.cancelled else url_for('daily_sales.view_transaction', transaction_id=t.id) }}"
+        <a href="{{ url_for('daily_sales.edit_transaction', transaction_id=t.id) if (not t.submitted and not t.cancelled and can_transact) else url_for('daily_sales.view_transaction', transaction_id=t.id) }}"
            class="thc-rec-row">
           <div class="thc-rec-icon {{ tt.icon_color if tt else 'ic-slate' }}">
             <i class="bi {{ tt.icon if tt else 'bi-tag' }}"></i>

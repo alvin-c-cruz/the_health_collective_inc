@@ -16,6 +16,11 @@ bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_n
 ROLES_ACCEPTED = app_label
 
 
+def _can_transact():
+    """True for SuperAdmin, Admin, and Staff — the levels that may create/edit transactions."""
+    return bool(current_user.superuser or current_user.admin or current_user.staff)
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -115,6 +120,8 @@ def home():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def new_transaction():
+    if not _can_transact():
+        abort(403)
     type_id = request.args.get('type_id', type=int)
     transaction_type = TransactionType.query.get(type_id) if type_id else TransactionType.query.order_by(TransactionType.sort_order).first()
     form = Form()
@@ -177,6 +184,8 @@ def new_transaction():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def edit_transaction(transaction_id):
+    if not _can_transact():
+        abort(403)
     record = Transaction.query.get_or_404(transaction_id)
     form = Form()
     form.user_prepare_id = current_user.id
@@ -264,6 +273,8 @@ def view_transaction(transaction_id):
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def cancel_transaction(transaction_id):
+    if not _can_transact():
+        abort(403)
     record = Transaction.query.get_or_404(transaction_id)
 
     if record.cancelled:
@@ -288,6 +299,8 @@ def cancel_transaction(transaction_id):
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def delete_transaction(transaction_id):
+    if not _can_transact():
+        abort(403)
     record = Transaction.query.get_or_404(transaction_id)
 
     if record.submitted or record.cancelled:
@@ -423,6 +436,8 @@ def customer_search():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def record_deposit():
+    if not _can_transact():
+        abort(403)
     if request.method == 'POST':
         # Placeholder: wire to a Deposit model when ready
         flash('Deposit recorded (not yet persisted â€" model pending).', 'info')
