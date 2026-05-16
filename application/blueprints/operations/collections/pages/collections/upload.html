@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Collections{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+    <div class="thc-page-header">
+        <h4>Upload Collections from Excel</h4>
+        <a href="{{ url_for('collections.home') }}" class="thc-btn thc-btn-secondary">Back</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="thc-card mb-3">
+        <h6 class="fw-semibold mb-2">Step 1 — Download the template</h6>
+        <p class="text-muted small mb-3">
+            The template is pre-filled with all outstanding receivable lines.
+            Fill in <strong>Collection Date</strong>, <strong>Reference</strong>, and
+            <strong>Amount Applied</strong> for each line being settled. Leave blank to skip a line.
+        </p>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('collections.download_template') }}" class="thc-btn thc-btn-secondary">
+                Download All Outstanding Lines
+            </a>
+        </div>
+    </div>
+
+    <div class="thc-card">
+        <h6 class="fw-semibold mb-3">Step 2 — Upload the filled template</h6>
+        <form method="post" action="{{ url_for('collections.upload_collections') }}" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Bank Account (where payment was deposited)</label>
+                <select class="form-select" name="bank_account_id" style="max-width:360px">
+                    <option value="">— None / Not applicable —</option>
+                    {% for b in bank_accounts %}
+                    <option value="{{ b.id }}">{{ b.bank_name }}{% if b.account_number %} ({{ b.account_number }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Excel File</label>
+                <input type="file" class="form-control" name="xlsx_file" accept=".xlsx" required style="max-width:400px">
+                <div class="form-text">Use the template downloaded above. Other formats will not be accepted.</div>
+            </div>
+
+            <input type="hidden" name="action" value="preview">
+            <button type="submit" class="thc-btn thc-btn-primary">Preview Import</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
