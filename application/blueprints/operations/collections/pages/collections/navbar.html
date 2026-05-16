@@ -1,0 +1,5 @@
+            {% if ("Collections" in current_user.user_roles) %}
+            <li class="nav-item">
+              <a class="dropdown-item" href="{{ url_for('collections.home') }}">Collections</a>
+            </li>
+            {% endif %}

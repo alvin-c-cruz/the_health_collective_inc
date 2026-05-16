@@ -1,0 +1,5 @@
+            {% if ("Bank Account" in current_user.user_roles) %}
+            <li class="nav-item">
+              <a class="dropdown-item" href="{{ url_for('bank_account.home') }}">Bank Account</a>
+            </li>
+            {% endif %}
