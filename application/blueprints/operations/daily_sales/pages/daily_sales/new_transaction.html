@@ -8,10 +8,8 @@
 
 {% block styles %}
 
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-
-<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<link href="{{ url_for('static', filename='vendor/css/tom-select.bootstrap5.min.css') }}" rel="stylesheet">
+<script src="{{ url_for('static', filename='vendor/js/tom-select.complete.min.js') }}"></script>
 
 <style>
 
@@ -57,7 +55,7 @@
 
 
 
-  body { font-family: var(--thc-font-body, 'Inter', 'DM Sans', sans-serif); background-color: var(--thc-bg); color: var(--thc-text); }
+  body { font-family: var(--thc-font-body, 'Inter', sans-serif); background-color: var(--thc-bg); color: var(--thc-text); }
 
 
 
@@ -86,7 +84,7 @@
 
   .form-label { font-size: 0.78rem; font-weight: 500; color: var(--thc-text-muted); margin-bottom: 0.35rem; }
 
-  .form-control, .form-select { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; border: 1px solid var(--thc-border); border-radius: var(--thc-radius-sm); padding: 0.5rem 0.75rem; transition: border-color 0.15s, box-shadow 0.15s; }
+  .form-control, .form-select { font-family: 'Inter', sans-serif; font-size: 0.875rem; border: 1px solid var(--thc-border); border-radius: var(--thc-radius-sm); padding: 0.5rem 0.75rem; transition: border-color 0.15s, box-shadow 0.15s; }
 
   .form-control:focus, .form-select:focus { border-color: var(--thc-border-focus); box-shadow: 0 0 0 3px rgba(106,143,122,0.12); outline: none; }
 
@@ -96,7 +94,7 @@
 
   textarea.form-control { resize: vertical; min-height: 70px; }
 
-  input[type="number"] { font-family: 'DM Mono', monospace; font-size: 0.85rem; }
+  input[type="number"] { font-family: monospace; font-size: 0.85rem; }
 
 
 

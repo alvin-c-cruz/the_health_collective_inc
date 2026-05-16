@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}{{ "Add" if is_new else "Edit" }} Transaction Type — {{ app_label }}{% endblock %}
+
+{% block content %}
+<div class="thc-page" style="max-width:680px;margin:0 auto;">
+  <div class="thc-page-header">
+    <a href="{{ url_for('daily_sales.transaction_type_list') }}" class="btn btn-sm btn-outline-secondary me-2">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h4>{{ "Add" if is_new else "Edit" }} Transaction Type</h4>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endwith %}
+
+  <form method="POST">
+    <div class="thc-card">
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label">Type Name <span class="text-danger">*</span></label>
+          <input type="text" name="type_name" class="form-control {{ 'is-invalid' if errors.type_name }}"
+                 value="{{ obj.type_name or '' }}" required>
+          {% if errors.type_name %}
+          <div class="invalid-feedback">{{ errors.type_name }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Type Code <span class="text-danger">*</span>
+            <small class="text-muted">(lowercase, underscores)</small>
+          </label>
+          <input type="text" name="type_code" class="form-control font-monospace {{ 'is-invalid' if errors.type_code }}"
+                 value="{{ obj.type_code or '' }}" required>
+          {% if errors.type_code %}
+          <div class="invalid-feedback">{{ errors.type_code }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Description</label>
+        <input type="text" name="description" class="form-control" value="{{ obj.description or '' }}">
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <label class="form-label">Icon <small class="text-muted">(Bootstrap Icon class)</small></label>
+          <div class="input-group">
+            <span class="input-group-text"><i id="icon-preview" class="bi {{ obj.icon or 'bi-tag' }}"></i></span>
+            <input type="text" name="icon" id="icon-input" class="form-control font-monospace"
+                   value="{{ obj.icon or 'bi-tag' }}">
+          </div>
+          <div style="font-size:.75rem;color:var(--thc-text-muted);margin-top:.25rem;">
+            e.g. bi-person-walking, bi-house-heart, bi-hospital
+          </div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Icon Color</label>
+          <select name="icon_color" class="form-select">
+            {% for val, label in [('ic-blue','Blue'),('ic-green','Green'),('ic-purple','Purple'),('ic-coral','Coral'),('ic-amber','Amber'),('ic-rose','Rose'),('ic-slate','Slate')] %}
+            <option value="{{ val }}" {{ 'selected' if (obj.icon_color or 'ic-blue') == val }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Badge Color</label>
+          <select name="badge_color" class="form-select">
+            {% for val, label in [('thc-badge-blue','Blue'),('thc-badge-green','Green'),('thc-badge-purple','Purple'),('thc-badge-coral','Coral'),('thc-badge-amber','Amber'),('thc-badge-rose','Rose'),('thc-badge-slate','Slate')] %}
+            <option value="{{ val }}" {{ 'selected' if (obj.badge_color or 'thc-badge-blue') == val }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label">Report Category</label>
+          <select name="report_category" class="form-select">
+            {% for val, label in [('walk_in','Walk-In'),('home_service','Home Service'),('hmo_ape','HMO / APE'),('dialysis','Dialysis')] %}
+            <option value="{{ val }}" {{ 'selected' if (obj.report_category or 'walk_in') == val }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <div style="font-size:.75rem;color:var(--thc-text-muted);margin-top:.25rem;">
+            Groups this type in the daily report.
+          </div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Sort Order</label>
+          <input type="number" name="sort_order" class="form-control" value="{{ obj.sort_order or 99 }}" min="1" max="999">
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" name="active" id="activeCheck"
+                   {{ 'checked' if obj.active is not false and obj.active != False }}>
+            <label class="form-check-label" for="activeCheck">Active</label>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">
+        {{ "Add Type" if is_new else "Save Changes" }}
+      </button>
+      <a href="{{ url_for('daily_sales.transaction_type_list') }}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.getElementById('icon-input').addEventListener('input', function() {
+    var preview = document.getElementById('icon-preview');
+    preview.className = 'bi ' + this.value.trim();
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Transaction Types — {{ app_label }}{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+  <div class="thc-page-header">
+    <h4>Transaction Types</h4>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ 'success' if category == 'success' else 'warning' if category == 'warning' else 'danger' }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="mb-3">
+    <a href="{{ url_for('daily_sales.transaction_type_add') }}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-lg"></i> Add Transaction Type
+    </a>
+  </div>
+
+  <div class="thc-card">
+    <div class="table-responsive">
+      <table class="thc-table">
+        <thead>
+          <tr>
+            <th style="width:48px;"></th>
+            <th>Name</th>
+            <th>Code</th>
+            <th>Report Category</th>
+            <th class="text-center">Sort</th>
+            <th class="text-center">Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in types %}
+          <tr>
+            <td>
+              <div style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;" class="{{ t.icon_color }}">
+                <i class="bi {{ t.icon }}"></i>
+              </div>
+            </td>
+            <td>
+              <span style="font-weight:600;">{{ t.type_name }}</span>
+              {% if t.description %}
+              <div style="font-size:.75rem;color:var(--thc-text-muted);">{{ t.description }}</div>
+              {% endif %}
+            </td>
+            <td><code style="font-size:.8rem;">{{ t.type_code }}</code></td>
+            <td style="font-size:.85rem;">{{ t.report_category | replace('_', ' ') | title }}</td>
+            <td class="text-center" style="font-size:.85rem;">{{ t.sort_order }}</td>
+            <td class="text-center">
+              {% if t.active %}
+              <span class="badge bg-success">Active</span>
+              {% else %}
+              <span class="badge bg-secondary">Inactive</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="d-flex gap-1">
+                <a href="{{ url_for('daily_sales.transaction_type_edit', type_id=t.id) }}"
+                   class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <form method="POST" action="{{ url_for('daily_sales.transaction_type_toggle', type_id=t.id) }}" style="display:inline;">
+                  <button type="submit" class="btn btn-sm {{ 'btn-outline-warning' if t.active else 'btn-outline-success' }}"
+                          title="{{ 'Disable' if t.active else 'Enable' }}">
+                    <i class="bi {{ 'bi-toggle-on' if t.active else 'bi-toggle-off' }}"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">No transaction types found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
