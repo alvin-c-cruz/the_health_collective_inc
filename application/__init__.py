@@ -59,5 +59,10 @@ def create_app(test=False):
     mail.init_app(app)
     db.init_app(app)
     migrate.init_app(app=app, db=db)
-    
+
+    # Sync roles from registered modules on every startup
+    with app.app_context():
+        from .blueprints.user.views import check_roles
+        check_roles()
+
     return app
