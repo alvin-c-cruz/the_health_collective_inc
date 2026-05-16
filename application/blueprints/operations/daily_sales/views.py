@@ -123,6 +123,10 @@ def new_transaction():
     form.record_number = _generate_record_number()
     form.transaction_type_id = transaction_type.id if transaction_type else None
 
+    prefill_tender_id = request.args.get('prefill_tender_id', type=int)
+    if prefill_tender_id:
+        form.tenders[0][1].tender_id = prefill_tender_id
+
     if request.method == 'POST':
         form._post(request.form)
         transaction_type = TransactionType.query.get(form.transaction_type_id) if form.transaction_type_id else None
