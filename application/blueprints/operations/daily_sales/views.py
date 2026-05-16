@@ -151,6 +151,8 @@ def new_transaction():
     sexes = Sex.query.order_by(Sex.sex_name).all()
     customers = Customer.query.order_by(Customer.customer_name).all()
     transaction_types = TransactionType.query.filter_by(active=True).order_by(TransactionType.sort_order).all()
+    from ..ape_batch.models import ApeBatch
+    ape_batches = ApeBatch.query.order_by(ApeBatch.batch_date.desc()).all()
 
     context = {
         "form": form,
@@ -160,6 +162,7 @@ def new_transaction():
         "tenders": tenders,
         "sexes": sexes,
         "customers": customers,
+        "ape_batches": ape_batches,
         "app_label": app_label,
         "is_new": True,
     }
@@ -207,6 +210,8 @@ def edit_transaction(transaction_id):
     sexes = Sex.query.order_by(Sex.sex_name).all()
     customers = Customer.query.order_by(Customer.customer_name).all()
     transaction_types = TransactionType.query.filter_by(active=True).order_by(TransactionType.sort_order).all()
+    from ..ape_batch.models import ApeBatch
+    ape_batches = ApeBatch.query.order_by(ApeBatch.batch_date.desc()).all()
 
     context = {
         "form": form,
@@ -216,6 +221,7 @@ def edit_transaction(transaction_id):
         "tenders": tenders,
         "sexes": sexes,
         "customers": customers,
+        "ape_batches": ape_batches,
         "app_label": app_label,
         "is_new": False,
         "record": record,

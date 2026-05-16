@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% from "macros_button.html" import edit_button, delete_button, approve_button, unlock_button %}
+
+{% block title %}Company{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+    <div class="thc-page-header">
+        <h4>Company</h4>
+        <a href="{{ url_for('company.add') }}" class="thc-btn thc-btn-primary">Add Company</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="thc-card">
+        <div class="table-responsive">
+            <table class="thc-table">
+                <thead>
+                    <tr>
+                        <th>Company Name</th>
+                        <th>Contact Person</th>
+                        <th>Contact Number</th>
+                        <th>Address</th>
+                        <th>Active</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <td>{{ row.company_name }}</td>
+                        <td>{{ row.contact_person or '—' }}</td>
+                        <td>{{ row.contact_number or '—' }}</td>
+                        <td>{{ row.address or '—' }}</td>
+                        <td>{{ 'Yes' if row.active else 'No' }}</td>
+                        <td>
+                            {% if not row.approved %}
+                                {{ edit_button(url_for('company.edit', record_id=row.id)) }}
+                                {{ delete_button(url_for('company.delete', record_id=row.id)) }}
+                                {% if current_user.admin %}
+                                    {{ approve_button(url_for('company.approve', record_id=row.id)) }}
+                                {% endif %}
+                            {% else %}
+                                <span style="font-size:0.8rem;color:var(--thc-text-muted);">Approved — editing locked.</span>
+                                {% if current_user.admin %}
+                                    {{ unlock_button(url_for('company.unlock', record_id=row.id)) }}
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">No companies found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

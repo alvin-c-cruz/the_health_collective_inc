@@ -8,6 +8,7 @@ from .register import product
 from .register import product_type
 from .register import tender
 from .register import sex
+from .register import company
 
 from .accounting import account
 from .accounting import account_class
@@ -32,4 +33,5 @@ from .operations import daily_sales
 from .operations import transaction_type
 from .operations import bank_account
 from .operations import collections
+from .operations import ape_batch
 

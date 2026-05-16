@@ -30,6 +30,7 @@
               or "Service Types" in current_user.user_roles
               or "Collections" in current_user.user_roles
               or "Bank Account" in current_user.user_roles
+              or "APE Batch" in current_user.user_roles
               ) %}
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -40,6 +41,7 @@
               {% include "transaction_type/navbar.html" %}
               {% include "collections/navbar.html" %}
               {% include "bank_account/navbar.html" %}
+              {% include "ape_batch/navbar.html" %}
               </ul>
             </li>
             {% endif %}
@@ -138,6 +140,7 @@
 
                   {% include "measure/navbar.html" %}
                   {% include "tender/navbar.html" %}
+                  {% include "company/navbar.html" %}
               </ul>
           </li>
             <!-- End of Options Menu -->

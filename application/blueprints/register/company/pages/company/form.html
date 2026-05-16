@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "macros_simple_form.html" import text_box, text_area, save_button %}
+
+{% block title %}{{ 'Edit' if form.id else 'Add' }} Company{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+    <div class="thc-page-header">
+        <h4>{{ 'Edit' if form.id else 'Add' }} Company</h4>
+    </div>
+
+    <form action="{{ url_for('company.edit', record_id=form.id) if form.id else url_for('company.add') }}" method="post">
+        {% if form.id %}
+            <input type="hidden" name="record_id" value="{{ form.id }}">
+        {% endif %}
+
+        <div class="thc-card">
+            {{ text_box(form, "Company Name", "company_name", form.company_name, autofocus=True) }}
+            {{ text_box(form, "Contact Person", "contact_person", form.contact_person) }}
+            {{ text_box(form, "Contact Number", "contact_number", form.contact_number) }}
+            {{ text_box(form, "Address", "address", form.address) }}
+
+            <div class="mb-3 row">
+                <label class="col-sm-3 col-form-label fw-semibold">Active</label>
+                <div class="col-sm-9 d-flex gap-3 align-items-center pt-2">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="active" value="1" id="active_yes"
+                               {{ 'checked' if form.active }}>
+                        <label class="form-check-label" for="active_yes">Yes</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="active" value="0" id="active_no"
+                               {{ 'checked' if not form.active }}>
+                        <label class="form-check-label" for="active_no">No</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{ save_button() }}
+    </form>
+</div>
+{% endblock %}

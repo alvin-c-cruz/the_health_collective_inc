@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}APE Batch — {{ batch.company.company_name }}{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+    <div class="thc-page-header">
+        <div>
+            <h4>{{ batch.company.company_name }}</h4>
+            <div class="text-muted small">APE Batch &mdash; {{ batch.batch_date }}</div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('ape_batch.home') }}" class="thc-btn thc-btn-secondary">Back</a>
+            <a href="{{ url_for('ape_batch.edit_batch', batch_id=batch.id) }}" class="thc-btn thc-btn-secondary">Edit</a>
+            <form action="{{ url_for('ape_batch.delete_batch', batch_id=batch.id) }}" method="post" class="d-inline"
+                  onsubmit="return confirm('Delete this APE Batch? This cannot be undone.')">
+                <button type="submit" class="thc-btn thc-btn-sm thc-btn-danger">Delete</button>
+            </form>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-8">
+            <div class="thc-card">
+                <div class="row g-2">
+                    <div class="col-sm-4">
+                        <div class="text-muted small">Company</div>
+                        <div class="fw-semibold">{{ batch.company.company_name }}</div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="text-muted small">Batch Date</div>
+                        <div>{{ batch.batch_date }}</div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="text-muted small">LOA / SOA #</div>
+                        <div class="font-monospace">{{ batch.loa_soa_number or '—' }}</div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="text-muted small">Package Amount</div>
+                        <div class="font-monospace">{{ '{:,.2f}'.format(batch.package_amount) }}</div>
+                    </div>
+                    {% if batch.notes %}
+                    <div class="col-12">
+                        <div class="text-muted small">Notes</div>
+                        <div>{{ batch.notes }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="thc-card text-center">
+                <div class="text-muted small mb-1">Employees</div>
+                <div class="fs-3 fw-bold">{{ batch.employee_count }}</div>
+                <div class="text-muted small mt-2 mb-1">Total Sales</div>
+                <div class="fs-5 fw-semibold font-monospace">{{ '{:,.2f}'.format(batch.total_amount) }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="thc-page-header" style="margin-bottom:0.5rem;">
+        <h4 class="fs-6 fw-semibold mb-0">Transactions</h4>
+        <a href="{{ url_for('daily_sales.new_transaction') }}" class="thc-btn thc-btn-sm thc-btn-primary">
+            Add Transaction
+        </a>
+    </div>
+
+    <div class="thc-card">
+        <table class="table table-sm table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Sales #</th>
+                    <th>Patient</th>
+                    <th class="text-end">Amount</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transactions %}
+                <tr>
+                    <td class="text-nowrap">{{ t.formatted_record_date or t.record_date }}</td>
+                    <td class="font-monospace small">{{ t.record_number or '—' }}</td>
+                    <td>{{ t.customer.customer_name if t.customer else '—' }}</td>
+                    <td class="text-end font-monospace">
+                        {{ '{:,.2f}'.format(t.transaction_details | sum(attribute='amount')) }}
+                    </td>
+                    <td>
+                        {% if t.status == 'submitted' %}
+                            <span class="badge bg-success">Submitted</span>
+                        {% elif t.status == 'cancelled' %}
+                            <span class="badge bg-danger">Cancelled</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Draft</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{{ url_for('daily_sales.view_transaction', record_id=t.id) }}"
+                           class="thc-btn thc-btn-sm thc-btn-secondary">View</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">No transactions linked to this batch yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

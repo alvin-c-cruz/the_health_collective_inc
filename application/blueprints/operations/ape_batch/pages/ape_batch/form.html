@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% from "macros_simple_form.html" import text_box, text_area, save_button %}
+
+{% block title %}{{ 'Edit' if batch else 'New' }} APE Batch{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+    <div class="thc-page-header">
+        <h4>{{ 'Edit' if batch else 'New' }} APE Batch</h4>
+        {% if batch %}
+        <a href="{{ url_for('ape_batch.view_batch', batch_id=batch.id) }}" class="thc-btn thc-btn-secondary">Cancel</a>
+        {% else %}
+        <a href="{{ url_for('ape_batch.home') }}" class="thc-btn thc-btn-secondary">Cancel</a>
+        {% endif %}
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endwith %}
+
+    <form action="{{ url_for('ape_batch.edit_batch', batch_id=batch.id) if batch else url_for('ape_batch.new_batch') }}" method="post">
+        <div class="thc-card">
+            <div class="mb-3 row">
+                <label class="col-sm-3 col-form-label fw-semibold">Company <span class="text-danger">*</span></label>
+                <div class="col-sm-9">
+                    <select name="company_id" class="form-select form-select-sm" required>
+                        <option value="">— Select Company —</option>
+                        {% for c in companies %}
+                        <option value="{{ c.id }}" {{ 'selected' if batch and batch.company_id == c.id }}>
+                            {{ c.company_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-3 row">
+                <label class="col-sm-3 col-form-label fw-semibold">Batch Date</label>
+                <div class="col-sm-9">
+                    <input type="date" name="batch_date" class="form-control form-control-sm"
+                           value="{{ today }}">
+                </div>
+            </div>
+
+            <div class="mb-3 row">
+                <label class="col-sm-3 col-form-label fw-semibold">LOA / SOA #</label>
+                <div class="col-sm-9">
+                    <input type="text" name="loa_soa_number" class="form-control form-control-sm"
+                           value="{{ batch.loa_soa_number if batch else '' }}"
+                           placeholder="Reference number">
+                </div>
+            </div>
+
+            <div class="mb-3 row">
+                <label class="col-sm-3 col-form-label fw-semibold">Package Amount</label>
+                <div class="col-sm-5">
+                    <input type="number" name="package_amount" class="form-control form-control-sm text-end"
+                           step="0.01" min="0"
+                           value="{{ batch.package_amount if batch else '0.00' }}"
+                           placeholder="0.00">
+                    <div class="form-text">Standard per-employee package price billed to the company.</div>
+                </div>
+            </div>
+
+            <div class="mb-3 row">
+                <label class="col-sm-3 col-form-label fw-semibold">Notes</label>
+                <div class="col-sm-9">
+                    <textarea name="notes" class="form-control form-control-sm" rows="3"
+                              placeholder="Optional notes">{{ batch.notes if batch else '' }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        {{ save_button() }}
+    </form>
+</div>
+{% endblock %}

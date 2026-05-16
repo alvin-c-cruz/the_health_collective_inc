@@ -23,6 +23,9 @@ class Transaction(db.Model):
     transaction_type_id = db.Column(db.Integer, db.ForeignKey('transaction_type.id'), nullable=True)
     transaction_type = db.relationship('TransactionType', lazy=True)
 
+    ape_batch_id = db.Column(db.Integer, db.ForeignKey('ape_batch.id'), nullable=True)
+    ape_batch = db.relationship('ApeBatch', lazy=True, foreign_keys=[ape_batch_id])
+
     submitted = db.Column(db.String())
     cancelled = db.Column(db.String())
 

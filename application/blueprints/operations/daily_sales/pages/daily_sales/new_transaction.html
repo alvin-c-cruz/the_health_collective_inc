@@ -715,15 +715,39 @@
               value="{{ transaction_type.type_name if transaction_type else '—' }}" readonly>
             <input type="hidden" name="transaction_type_id" value="{{ form.transaction_type_id or '' }}">
           {% else %}
-            <select name="transaction_type_id" class="form-select">
+            <select id="transaction-type-select" name="transaction_type_id" class="form-select">
               {% for tt in transaction_types %}
-              <option value="{{ tt.id }}" {{ 'selected' if form.transaction_type_id == tt.id }}>{{ tt.type_name }}</option>
+              <option value="{{ tt.id }}" data-code="{{ tt.type_code }}" {{ 'selected' if form.transaction_type_id == tt.id }}>{{ tt.type_name }}</option>
               {% endfor %}
             </select>
           {% endif %}
 
         </div>
 
+      </div>
+
+      {# APE Batch row — shown only when transaction type code is APE #}
+      <div id="ape-batch-row" class="row g-3 mb-3" style="display:none;">
+        <div class="col-md-8">
+          <label class="form-label">APE Batch</label>
+          {% if form._locked_ %}
+            <input type="text" class="form-control input-readonly"
+              value="{% for b in ape_batches %}{% if b.id == form.ape_batch_id %}{{ b.company.company_name }} — {{ b.batch_date }}{% endif %}{% endfor %}" readonly>
+            <input type="hidden" name="ape_batch_id" value="{{ form.ape_batch_id or '' }}">
+          {% else %}
+            <select id="ape-batch-select" name="ape_batch_id" class="form-select">
+              <option value="">— Select APE Batch —</option>
+              {% for b in ape_batches %}
+              <option value="{{ b.id }}"
+                      data-package="{{ b.package_amount }}"
+                      {{ 'selected' if form.ape_batch_id == b.id }}>
+                {{ b.company.company_name }} — {{ b.batch_date }}{% if b.loa_soa_number %} ({{ b.loa_soa_number }}){% endif %}
+              </option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Selecting a batch pre-fills the Credit tender with the package amount.</div>
+          {% endif %}
+        </div>
       </div>
 
       {# Row 1b: DashLabs No. · POS No. #}
@@ -1696,6 +1720,52 @@
     });
   }
 
+  // ── APE Batch visibility ───────────────────────────────────────────────
+
+  function getSelectedTypeCode() {
+    var sel = document.getElementById('transaction-type-select');
+    if (!sel) return '';
+    var opt = sel.options[sel.selectedIndex];
+    return opt ? (opt.getAttribute('data-code') || '') : '';
+  }
+
+  function toggleApeBatchRow() {
+    var row = document.getElementById('ape-batch-row');
+    if (!row) return;
+    row.style.display = getSelectedTypeCode() === 'APE' ? '' : 'none';
+  }
+
+  function applyApeBatchPrefill(packageAmount) {
+    var creditOpt = TENDER_OPTIONS.find(function(o) {
+      return o.label && o.label.toLowerCase().indexOf('credit') !== -1;
+    });
+    if (!creditOpt) return;
+    var tenderContainer = document.getElementById('transaction-tenders');
+    if (!tenderContainer) return;
+    var rows = tenderContainer.querySelectorAll('.tender-row');
+    var filled = false;
+    rows.forEach(function(row) {
+      if (!filled) {
+        var hiddenInput = row.querySelector('input[name="tender_id[]"]');
+        var displayInput = row.querySelector('.tender-ac-display');
+        var amountInput = row.querySelector('input[name="tender_amount[]"]');
+        if (hiddenInput && (!hiddenInput.value || hiddenInput.value === creditOpt.value)) {
+          if (displayInput) displayInput.value = creditOpt.label;
+          hiddenInput.value = creditOpt.value;
+          if (amountInput) {
+            amountInput.value = parseFloat(packageAmount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            formatInput(amountInput);
+          }
+          filled = true;
+        }
+      }
+    });
+    if (!filled) {
+      addTenderRow(creditOpt.value, creditOpt.label, packageAmount);
+    }
+    recalcTotals();
+  }
+
   // ── On load ────────────────────────────────────────────────────────────
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -1729,6 +1799,25 @@
     }
 
 
+
+    // APE Batch visibility
+    toggleApeBatchRow();
+    var typeSelect = document.getElementById('transaction-type-select');
+    if (typeSelect) {
+      typeSelect.addEventListener('change', function() {
+        toggleApeBatchRow();
+        var batchSel = document.getElementById('ape-batch-select');
+        if (batchSel) batchSel.value = '';
+      });
+    }
+    var batchSelect = document.getElementById('ape-batch-select');
+    if (batchSelect) {
+      batchSelect.addEventListener('change', function() {
+        var opt = this.options[this.selectedIndex];
+        var pkg = opt ? parseFloat(opt.getAttribute('data-package') || 0) : 0;
+        if (pkg > 0) applyApeBatchPrefill(pkg);
+      });
+    }
 
     // Init service and tender autocompletes on Jinja-rendered rows
     document.querySelectorAll('.service-ac-display').forEach(initServiceAutocomplete);
