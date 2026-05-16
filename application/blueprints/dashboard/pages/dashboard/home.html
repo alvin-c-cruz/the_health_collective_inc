@@ -10,8 +10,8 @@
         <span style="font-size:0.82rem;color:var(--thc-text-muted);">
             {{ today.strftime("%B %d, %Y") }}
         </span>
-        {% if "Daily Sales" in current_user.user_roles %}
-        <div style="margin-left:auto;display:flex;gap:0.5rem;">
+        <div style="margin-left:auto;display:flex;gap:0.5rem;flex-wrap:wrap;">
+            {% if "Daily Sales" in current_user.user_roles %}
             <a href="{{ url_for('daily_sales.home') }}" class="dash-ql-btn">
                 <i class="bi bi-journal-text"></i> Daily Sales
             </a>
@@ -19,8 +19,13 @@
                onclick="window.open('{{ url_for('daily_sales.daily_report') }}','_blank','width=1200,height=700,scrollbars=yes,resizable=yes');return false;">
                 <i class="bi bi-file-earmark-bar-graph"></i> Today's Report
             </a>
+            {% endif %}
+            {% if "Collections" in current_user.user_roles %}
+            <a href="{{ url_for('collections.home') }}" class="dash-ql-btn">
+                <i class="bi bi-cash-coin"></i> Collections
+            </a>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 
     {# ── Today ── #}
