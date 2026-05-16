@@ -243,7 +243,8 @@ def register():
             
             if form.user_name == "admin":
                 user.active = True
-                user.admin = True                
+                user.superuser = True
+                user.admin = True
                 
             user.set_pass_word(form.pass_word)
             
