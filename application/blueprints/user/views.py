@@ -9,45 +9,66 @@ from .forms import LoginForm, UserForm
 
 from application.extensions import db
 
-# Maps role name -> display group. Anything not listed falls into "Other".
+# Maps role name -> (parent_group, sub_group). '' sub_group = no sub-header.
 _ROLE_CATEGORIES = {
-    'Account':                'Accounts',
-    'Account Class':          'Accounts',
-    'Account Type':           'Accounts',
-    'Accounts Payable':       'Books of Accounts',
-    'Accounts Payable Extra': 'Books of Accounts Extra',
-    'Disbursement':           'Books of Accounts',
-    'Disbursement Extra':     'Books of Accounts Extra',
-    'General':                'Books of Accounts',
-    'General Extra':          'Books of Accounts Extra',
-    'Receipt':                'Books of Accounts',
-    'Receipt Extra':          'Books of Accounts Extra',
-    'Sales':                  'Books of Accounts',
-    'Sales Extra':            'Books of Accounts Extra',
-    'Customer':               'Register',
-    'Measure':                'Register',
-    'Product':                'Register',
-    'Product Type':           'Register',
-    'Sex':                    'Register',
-    'Tender':                 'Register',
-    'Vendor':                 'Register',
-    'Daily Sales':            'Operations',
-    'Transaction Type':       'Operations',
-    'Trial Balance':          'Reports',
-    'user':                   'System',
+    'Daily Sales':            ('Operations', ''),
+    'Transaction Type':       ('Operations', ''),
+    'Bank Account':           ('Operations', ''),
+    'Collections':            ('Operations', ''),
+
+    'Accounts Payable':       ('Accounting', 'Books of Accounts'),
+    'Disbursement':           ('Accounting', 'Books of Accounts'),
+    'General':                ('Accounting', 'Books of Accounts'),
+    'Receipt':                ('Accounting', 'Books of Accounts'),
+    'Sales':                  ('Accounting', 'Books of Accounts'),
+    'Accounts Payable Extra': ('Accounting', 'Books of Accounts Extra'),
+    'Disbursement Extra':     ('Accounting', 'Books of Accounts Extra'),
+    'General Extra':          ('Accounting', 'Books of Accounts Extra'),
+    'Receipt Extra':          ('Accounting', 'Books of Accounts Extra'),
+    'Sales Extra':            ('Accounting', 'Books of Accounts Extra'),
+    'Account':                ('Accounting', 'Accounts'),
+    'Account Class':          ('Accounting', 'Accounts'),
+    'Account Type':           ('Accounting', 'Accounts'),
+    'Trial Balance':          ('Accounting', 'Reports'),
+    'Ledger':                 ('Accounting', 'Reports'),
+
+    'Customer':               ('Register', ''),
+    'Measure':                ('Register', ''),
+    'Product':                ('Register', ''),
+    'Product Type':           ('Register', ''),
+    'Sex':                    ('Register', ''),
+    'Tender':                 ('Register', ''),
+    'Vendor':                 ('Register', ''),
+
+    'user':                   ('System', ''),
 }
 
-_CATEGORY_ORDER = ['Operations', 'Books of Accounts', 'Books of Accounts Extra', 'Register', 'Accounts', 'Reports', 'System', 'Other']
+_PARENT_ORDER = ['Operations', 'Accounting', 'Register', 'System', 'Other']
+_SUB_ORDER    = ['Books of Accounts', 'Books of Accounts Extra', 'Accounts', 'Reports', '']
 
 
 def _group_roles(roles):
-    buckets = defaultdict(list)
+    """Return nested structure: [(parent, [(subgroup, [roles])])]."""
+    # bucket: parent -> subgroup -> [roles]
+    buckets = defaultdict(lambda: defaultdict(list))
     for role in roles:
-        buckets[_ROLE_CATEGORIES.get(role.role_name, 'Other')].append(role)
+        parent, sub = _ROLE_CATEGORIES.get(role.role_name, ('Other', ''))
+        buckets[parent][sub].append(role)
+
     result = []
-    for cat in _CATEGORY_ORDER:
-        if cat in buckets:
-            result.append((cat, sorted(buckets[cat], key=lambda r: r.role_name)))
+    for parent in _PARENT_ORDER:
+        if parent not in buckets:
+            continue
+        subs = buckets[parent]
+        sub_list = []
+        for sub in _SUB_ORDER:
+            if sub in subs:
+                sub_list.append((sub, sorted(subs[sub], key=lambda r: r.role_name)))
+        # Any subs not in _SUB_ORDER (shouldn't happen, but safe fallback)
+        for sub, sub_roles in subs.items():
+            if sub not in _SUB_ORDER:
+                sub_list.append((sub, sorted(sub_roles, key=lambda r: r.role_name)))
+        result.append((parent, sub_list))
     return result
 
 

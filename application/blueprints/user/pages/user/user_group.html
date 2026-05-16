@@ -85,31 +85,43 @@
     <div class="thc-card">
         <div class="thc-card-title">Roles</div>
 
-        {% for group_name, group_roles in role_groups %}
-        <div style="margin-bottom:1.25rem;">
-            <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
-                        color:var(--thc-text-muted);margin-bottom:0.5rem;padding-bottom:0.4rem;
-                        border-bottom:1px solid #f0f2f5;">
-                {{ group_name }}
+        {% for parent_name, sub_groups in role_groups %}
+        <div style="margin-bottom:1.5rem;">
+            <div style="font-size:0.72rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;
+                        color:var(--thc-primary);margin-bottom:0.75rem;padding-bottom:0.4rem;
+                        border-bottom:2px solid var(--thc-primary-light);">
+                {{ parent_name }}
             </div>
-            <div class="d-flex flex-wrap gap-2">
-                {% for role in group_roles %}
-                    {% set assigned = role.role_name in user.user_roles %}
-                    {% if assigned %}
-                    <a href="{{ url_for('user.remove_role', user_id=user.id, role_id=role.id) }}"
-                       class="role-btn role-btn--on"
-                       title="Click to remove {{ role.role_name }}">
-                        <i class="bi bi-check2"></i> {{ role.role_name }}
-                    </a>
-                    {% else %}
-                    <a href="{{ url_for('user.add_role', user_id=user.id, role_id=role.id) }}"
-                       class="role-btn role-btn--off"
-                       title="Click to assign {{ role.role_name }}">
-                        <i class="bi bi-plus"></i> {{ role.role_name }}
-                    </a>
-                    {% endif %}
-                {% endfor %}
+
+            {% for sub_name, roles in sub_groups %}
+            <div style="margin-bottom:0.9rem;{% if not loop.last %}padding-bottom:0.75rem;border-bottom:1px solid #f0f2f5;{% endif %}">
+                {% if sub_name %}
+                <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
+                            color:var(--thc-text-muted);margin-bottom:0.45rem;">
+                    {{ sub_name }}
+                </div>
+                {% endif %}
+                <div class="d-flex flex-wrap gap-2">
+                    {% for role in roles %}
+                        {% set assigned = role.role_name in user.user_roles %}
+                        {% if assigned %}
+                        <a href="{{ url_for('user.remove_role', user_id=user.id, role_id=role.id) }}"
+                           class="role-btn role-btn--on"
+                           title="Click to remove {{ role.role_name }}">
+                            <i class="bi bi-check2"></i> {{ role.role_name }}
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('user.add_role', user_id=user.id, role_id=role.id) }}"
+                           class="role-btn role-btn--off"
+                           title="Click to assign {{ role.role_name }}">
+                            <i class="bi bi-plus"></i> {{ role.role_name }}
+                        </a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
             </div>
+            {% endfor %}
+
         </div>
         {% endfor %}
     </div>
