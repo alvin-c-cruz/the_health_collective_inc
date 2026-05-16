@@ -1,233 +1,314 @@
-{% extends "base.html" %}
-
-{% block title %}How to Record APE{% endblock %}
-
-{% block styles %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Record APE — The Health Collective Inc.</title>
 <style>
-    .guide-wrapper { max-width: 780px; }
-    .guide-section { margin-bottom: 2rem; }
-    .guide-step-label {
-        display: inline-flex; align-items: center; justify-content: center;
-        width: 1.6rem; height: 1.6rem; border-radius: 50%;
-        background: var(--thc-primary); color: #fff;
-        font-size: 0.75rem; font-weight: 700; flex-shrink: 0;
-        margin-top: 0.1rem;
-    }
-    .guide-step { display: flex; gap: 0.85rem; margin-bottom: 1.5rem; }
-    .guide-step-body { flex: 1; }
-    .guide-step-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.35rem; }
-    .guide-step-body ul { margin: 0.35rem 0 0 0; padding-left: 1.2rem; }
-    .guide-step-body li { font-size: 0.875rem; color: var(--thc-text-muted, #444); margin-bottom: 0.2rem; line-height: 1.5; }
-    .guide-step-body li strong { color: var(--thc-text, #1a2a2a); }
-    .guide-note {
-        background: #e6f3f5; border-left: 3px solid var(--thc-primary);
-        border-radius: 0 6px 6px 0; padding: 0.7rem 1rem;
-        font-size: 0.82rem; color: var(--thc-text-muted, #444);
-        margin-top: 0.5rem;
-    }
-    .guide-note strong { color: var(--thc-primary); }
-    .guide-divider { border: none; border-top: 1px solid #e2e8f0; margin: 1.75rem 0; }
-    .guide-section-heading {
-        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em;
-        text-transform: uppercase; color: var(--thc-text-muted, #6b7280);
-        margin-bottom: 1rem; padding-bottom: 0.4rem;
-        border-bottom: 1px solid #e2e8f0;
-    }
-    .guide-badge {
-        display: inline-block; padding: 0.15rem 0.55rem; border-radius: 4px;
-        font-size: 0.72rem; font-weight: 600; background: #e6f3f5;
-        color: var(--thc-primary); font-family: monospace;
-    }
+  :root {
+    --primary: #1a6473;
+    --primary-dark: #135260;
+    --primary-light: #e6f3f5;
+    --text: #1a2a2a;
+    --muted: #6b7280;
+    --border: #e2e8f0;
+    --surface: #ffffff;
+    --bg: #f8f9fa;
+    --sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    font-size: 9pt;
+    background: var(--bg);
+    color: var(--text);
+    padding: 1.5rem 1.25rem 3rem;
+  }
+
+  .page {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .guide-header {
+    border-top: 3px solid var(--primary);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 0 8px;
+    margin-bottom: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .guide-header-title { font-size: 12pt; font-weight: 700; color: var(--text); }
+  .guide-header-sub { font-size: 7pt; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+  .guide-header-org { font-size: 7pt; color: var(--muted); text-align: right; }
+
+  /* Section */
+  .section { margin-bottom: 1.5rem; }
+  .section-heading {
+    font-size: 6.5pt; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px; margin-bottom: 10px;
+  }
+
+  /* Steps */
+  .step { display: flex; gap: 10px; margin-bottom: 12px; }
+  .step-num {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    font-size: 7.5pt; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .step-check {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 1.5px solid var(--primary); color: var(--primary);
+    font-size: 8pt; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .step-body { flex: 1; }
+  .step-title { font-weight: 700; font-size: 9pt; margin-bottom: 4px; color: var(--text); }
+  .step-body ul { padding-left: 14px; margin: 2px 0 0; }
+  .step-body li { font-size: 8.5pt; color: var(--muted); margin-bottom: 2px; line-height: 1.55; }
+  .step-body li strong { color: var(--text); }
+
+  /* Note box */
+  .note {
+    background: var(--primary-light);
+    border-left: 3px solid var(--primary);
+    border-radius: 0 5px 5px 0;
+    padding: 7px 10px;
+    font-size: 8pt;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .note strong { color: var(--primary); }
+
+  /* Overview box */
+  .overview {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 8.5pt;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+  }
+  .overview strong { color: var(--text); }
+
+  /* Code badge */
+  .badge {
+    display: inline-block;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-family: monospace;
+    font-size: 8pt;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 3px;
+  }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .no-print { display: none !important; }
+  }
 </style>
-{% endblock %}
+</head>
+<body>
+<div class="page">
 
-{% block content %}
-<div class="thc-page guide-wrapper">
-    <div class="thc-page-header">
-        <h4>How to Record APE</h4>
-        <a href="{{ url_for('ape_batch.home') }}" class="thc-btn thc-btn-secondary">Back to APE Batches</a>
+  <div class="guide-header">
+    <div>
+      <div class="guide-header-title">How to Record APE</div>
+      <div class="guide-header-sub">Annual Physical Examination</div>
     </div>
+    <div class="guide-header-org">The Health Collective Inc.</div>
+  </div>
 
-    <div class="thc-card guide-section">
-        <div class="guide-section-heading">Overview</div>
-        <p style="font-size:0.875rem; color:var(--thc-text-muted,#444); margin-bottom:0;">
-            APE (Annual Physical Examination) transactions are recorded in two stages.
-            First, open a <strong>Batch</strong> for the company — one batch covers the entire engagement
-            and holds the LOA/SOA reference and per-employee package price.
-            Then record a <strong>Transaction</strong> for each employee, linked to that batch.
-        </p>
-    </div>
+  <div class="overview">
+    APE transactions are recorded in two stages. First, open a <strong>Batch</strong> for the company —
+    one batch covers the entire engagement and holds the LOA/SOA reference and per-employee package price.
+    Then record a <strong>Transaction</strong> for each employee, linked to that batch.
+  </div>
 
-    <div class="thc-card guide-section">
-        <div class="guide-section-heading">Before You Start</div>
-        <div class="guide-step">
-            <span class="guide-step-label">✓</span>
-            <div class="guide-step-body">
-                <div class="guide-step-title">Add the Company (first time only)</div>
-                <ul>
-                    <li>Go to <strong>Options → Company</strong></li>
-                    <li>Click <strong>Add Company</strong>, enter the company name, contact person, and contact number</li>
-                    <li>Save. The company will now appear in the APE Batch form.</li>
-                </ul>
-            </div>
-        </div>
-        <div class="guide-step">
-            <span class="guide-step-label">✓</span>
-            <div class="guide-step-body">
-                <div class="guide-step-title">Verify the APE service type exists</div>
-                <ul>
-                    <li>Go to <strong>Operations → Service Types</strong></li>
-                    <li>Confirm there is a service type with code <span class="guide-badge">APE</span></li>
-                    <li>If not, add one with that exact code — the transaction form uses it to show the batch selector.</li>
-                </ul>
-            </div>
-        </div>
-    </div>
+  <!-- BEFORE YOU START -->
+  <div class="section">
+    <div class="section-heading">Before You Start</div>
 
-    <hr class="guide-divider">
-
-    <div class="thc-card guide-section">
-        <div class="guide-section-heading">Step 1 — Create an APE Batch</div>
-        <p style="font-size:0.82rem; color:var(--thc-text-muted,#444); margin-bottom:1rem;">
-            One batch = one company engagement. Create it once, then link every employee transaction to it.
-        </p>
-
-        <div class="guide-step">
-            <span class="guide-step-label">1</span>
-            <div class="guide-step-body">
-                <div class="guide-step-title">Open a new batch</div>
-                <ul>
-                    <li>Click <strong>New Batch</strong> on this page, or go to <strong>Operations → APE Batch → New Batch</strong></li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="guide-step">
-            <span class="guide-step-label">2</span>
-            <div class="guide-step-body">
-                <div class="guide-step-title">Fill in the batch details</div>
-                <ul>
-                    <li><strong>Company</strong> — select the corporate client</li>
-                    <li><strong>Batch Date</strong> — date of the engagement (defaults to today)</li>
-                    <li><strong>LOA / SOA #</strong> — the reference number from the company's letter of authorization or statement of account</li>
-                    <li><strong>Package Amount</strong> — the standard per-employee price billed to the company (e.g., 1,500.00). This will auto-fill the Credit tender when recording each employee.</li>
-                    <li><strong>Notes</strong> — optional remarks</li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="guide-step">
-            <span class="guide-step-label">3</span>
-            <div class="guide-step-body">
-                <div class="guide-step-title">Save</div>
-                <ul>
-                    <li>You'll land on the batch detail page showing 0 employees and 0 total sales.</li>
-                    <li>Keep this page open — you'll return here to monitor progress as employees come in.</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <hr class="guide-divider">
-
-    <div class="thc-card guide-section">
-        <div class="guide-section-heading">Step 2 — Record Each Employee Transaction</div>
-        <p style="font-size:0.82rem; color:var(--thc-text-muted,#444); margin-bottom:1rem;">
-            Repeat for every employee who comes in for APE.
-        </p>
-
-        <div class="guide-step">
-            <span class="guide-step-label">1</span>
-            <div class="guide-step-body">
-                <div class="guide-step-title">Start a new transaction</div>
-                <ul>
-                    <li>Go to <strong>Operations → Daily Sales → New Transaction</strong></li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="guide-step">
-            <span class="guide-step-label">2</span>
-            <div class="guide-step-body">
-                <div class="guide-step-title">Set the transaction type to APE</div>
-                <ul>
-                    <li>In the <strong>Transaction Type</strong> field, select <strong>APE</strong></li>
-                    <li>The <strong>APE Batch</strong> selector will appear below it</li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="guide-step">
-            <span class="guide-step-label">3</span>
-            <div class="guide-step-body">
-                <div class="guide-step-title">Select the APE Batch</div>
-                <ul>
-                    <li>Choose the batch created in Step 1</li>
-                    <li>The <strong>Credit</strong> tender is automatically filled with the package amount</li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="guide-step">
-            <span class="guide-step-label">4</span>
-            <div class="guide-step-body">
-                <div class="guide-step-title">Enter the patient and services</div>
-                <ul>
-                    <li><strong>Patient</strong> — enter the employee's name</li>
-                    <li><strong>Services</strong> — add the specific tests performed (CBC, X-ray, Urinalysis, etc.) with their individual amounts</li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="guide-step">
-            <span class="guide-step-label">5</span>
-            <div class="guide-step-body">
-                <div class="guide-step-title">Review the tender section</div>
-                <ul>
-                    <li>The <strong>Credit</strong> tender (pre-filled) covers the package amount — the company's share</li>
-                    <li>If the employee is paying for add-on tests out of pocket, add a <strong>Cash</strong> tender row for the extra amount</li>
-                    <li>Total tendered must equal total services charged</li>
-                </ul>
-                <div class="guide-note">
-                    <strong>Example:</strong> Package is ₱1,500. Employee also paid ₱300 for an add-on test.
-                    Services total ₱1,800. Tenders: Credit ₱1,500 + Cash ₱300 = ₱1,800.
-                </div>
-            </div>
-        </div>
-
-        <div class="guide-step">
-            <span class="guide-step-label">6</span>
-            <div class="guide-step-body">
-                <div class="guide-step-title">Save and Submit</div>
-                <ul>
-                    <li>Click <strong>Save &amp; Submit</strong> to finalize, or <strong>Save</strong> to keep as draft</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <hr class="guide-divider">
-
-    <div class="thc-card guide-section">
-        <div class="guide-section-heading">Monitoring the Batch</div>
-        <p style="font-size:0.875rem; color:var(--thc-text-muted,#444); margin-bottom:0.75rem;">
-            Go to <strong>Operations → APE Batch</strong> and click <strong>View</strong> on the batch to see:
-        </p>
-        <ul style="font-size:0.875rem; color:var(--thc-text-muted,#444); padding-left:1.2rem; margin:0;">
-            <li>All linked employee transactions</li>
-            <li>Total employee count</li>
-            <li>Total sales amount across the entire batch</li>
+    <div class="step">
+      <div class="step-check">✓</div>
+      <div class="step-body">
+        <div class="step-title">Add the Company (first time only)</div>
+        <ul>
+          <li>Go to <strong>Options → Company</strong></li>
+          <li>Click <strong>Add Company</strong>, enter the company name, contact person, and contact number</li>
+          <li>Save — the company will now appear in the APE Batch form</li>
         </ul>
+      </div>
     </div>
 
-    <div class="thc-card guide-section">
-        <div class="guide-section-heading">Collections</div>
-        <p style="font-size:0.875rem; color:var(--thc-text-muted,#444); margin-bottom:0;">
-            The <strong>Credit</strong> tender on each APE transaction represents a receivable from the company.
-            These appear in <strong>Collections</strong> under the Credit tender group and can be settled
-            once the company pays against the SOA.
-            Cash amounts paid by employees are collected upfront and require no follow-up.
-        </p>
+    <div class="step">
+      <div class="step-check">✓</div>
+      <div class="step-body">
+        <div class="step-title">Verify the APE service type exists</div>
+        <ul>
+          <li>Go to <strong>Operations → Service Types</strong></li>
+          <li>Confirm there is a service type with code <span class="badge">APE</span></li>
+          <li>If not, add one with that exact code — the transaction form uses it to show the batch selector</li>
+        </ul>
+      </div>
     </div>
+  </div>
+
+  <hr>
+
+  <!-- STEP 1 -->
+  <div class="section">
+    <div class="section-heading">Step 1 — Create an APE Batch</div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">Open a new batch</div>
+        <ul>
+          <li>Go to <strong>Operations → APE Batch</strong> and click <strong>New Batch</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">Fill in the batch details</div>
+        <ul>
+          <li><strong>Company</strong> — select the corporate client</li>
+          <li><strong>Batch Date</strong> — date of the engagement (defaults to today)</li>
+          <li><strong>LOA / SOA #</strong> — reference number from the company's letter of authorization or statement of account</li>
+          <li><strong>Package Amount</strong> — standard per-employee price billed to the company (e.g., 1,500.00); this auto-fills the Credit tender when recording each employee</li>
+          <li><strong>Notes</strong> — optional remarks</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">Save</div>
+        <ul>
+          <li>You'll land on the batch detail page showing 0 employees and 0 total sales</li>
+          <li>Return here to monitor progress as employees come in</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- STEP 2 -->
+  <div class="section">
+    <div class="section-heading">Step 2 — Record Each Employee Transaction</div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">Start a new transaction</div>
+        <ul>
+          <li>Go to <strong>Operations → Daily Sales → New Transaction</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">Set Transaction Type to APE</div>
+        <ul>
+          <li>Select <strong>APE</strong> in the Transaction Type field</li>
+          <li>The <strong>APE Batch</strong> selector will appear below it</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">Select the APE Batch</div>
+        <ul>
+          <li>Choose the batch created in Step 1</li>
+          <li>The <strong>Credit</strong> tender is automatically filled with the package amount</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <div class="step-title">Enter the patient and services</div>
+        <ul>
+          <li><strong>Patient</strong> — enter the employee's name</li>
+          <li><strong>Services</strong> — add the specific tests performed (CBC, X-ray, Urinalysis, etc.) with their individual amounts</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <div class="step-title">Review the tender section</div>
+        <ul>
+          <li>The <strong>Credit</strong> tender (pre-filled) covers the package amount — the company's share</li>
+          <li>If the employee is paying for add-on tests out of pocket, add a <strong>Cash</strong> tender row for the extra amount</li>
+          <li>Total tendered must equal total services charged</li>
+        </ul>
+        <div class="note">
+          <strong>Example:</strong> Package is ₱1,500. Employee also paid ₱300 for an add-on test.
+          Services total ₱1,800. Tenders: Credit ₱1,500 + Cash ₱300 = ₱1,800.
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <div class="step-title">Save and Submit</div>
+        <ul>
+          <li>Click <strong>Save &amp; Submit</strong> to finalize, or <strong>Save</strong> to keep as draft</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- MONITORING & COLLECTIONS -->
+  <div class="section">
+    <div class="section-heading">Monitoring &amp; Collections</div>
+    <ul style="padding-left:14px;">
+      <li style="font-size:8.5pt;color:var(--muted);margin-bottom:4px;line-height:1.55;">
+        Go to <strong style="color:var(--text);">Operations → APE Batch → View</strong> to see all linked employee transactions, total employee count, and total sales for the batch.
+      </li>
+      <li style="font-size:8.5pt;color:var(--muted);margin-bottom:4px;line-height:1.55;">
+        The <strong style="color:var(--text);">Credit</strong> tender on each APE transaction is a receivable from the company. It appears in <strong style="color:var(--text);">Collections</strong> under the Credit tender group and can be settled when the company pays the SOA.
+      </li>
+      <li style="font-size:8.5pt;color:var(--muted);line-height:1.55;">
+        <strong style="color:var(--text);">Cash</strong> amounts paid by employees are collected upfront and require no follow-up.
+      </li>
+    </ul>
+  </div>
+
 </div>
-{% endblock %}
+
+<div class="no-print" style="text-align:center;margin-top:1rem;">
+  <button onclick="window.print()" style="font-family:var(--sans);font-size:8pt;letter-spacing:0.08em;text-transform:uppercase;background:var(--primary);color:#fff;border:none;border-radius:4px;padding:5px 16px;cursor:pointer;">
+    ⎙ Print
+  </button>
+</div>
+</body>
+</html>

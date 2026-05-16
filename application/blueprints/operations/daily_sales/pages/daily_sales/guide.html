@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Record a Transaction — The Health Collective Inc.</title>
+<style>
+  :root {
+    --primary: #1a6473;
+    --primary-dark: #135260;
+    --primary-light: #e6f3f5;
+    --text: #1a2a2a;
+    --muted: #6b7280;
+    --border: #e2e8f0;
+    --surface: #ffffff;
+    --bg: #f8f9fa;
+    --sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    font-size: 9pt;
+    background: var(--bg);
+    color: var(--text);
+    padding: 1.5rem 1.25rem 3rem;
+  }
+
+  .page { max-width: 720px; margin: 0 auto; }
+
+  /* Header */
+  .guide-header {
+    border-top: 3px solid var(--primary);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 0 8px;
+    margin-bottom: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .guide-header-title { font-size: 12pt; font-weight: 700; color: var(--text); }
+  .guide-header-sub   { font-size: 7pt; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+  .guide-header-org   { font-size: 7pt; color: var(--muted); text-align: right; }
+
+  /* Overview */
+  .overview {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 8.5pt;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+  }
+  .overview strong { color: var(--text); }
+
+  /* Section */
+  .section { margin-bottom: 1.5rem; }
+  .section-heading {
+    font-size: 6.5pt; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px; margin-bottom: 10px;
+  }
+
+  /* Steps */
+  .step { display: flex; gap: 10px; margin-bottom: 12px; }
+  .step-num {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    font-size: 7.5pt; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .step-body { flex: 1; }
+  .step-title { font-weight: 700; font-size: 9pt; margin-bottom: 4px; color: var(--text); }
+  .step-body ul { padding-left: 14px; margin: 2px 0 0; }
+  .step-body li { font-size: 8.5pt; color: var(--muted); margin-bottom: 3px; line-height: 1.55; }
+  .step-body li strong { color: var(--text); }
+  .step-body p { font-size: 8.5pt; color: var(--muted); line-height: 1.55; }
+
+  /* Note / warning boxes */
+  .note {
+    background: var(--primary-light);
+    border-left: 3px solid var(--primary);
+    border-radius: 0 5px 5px 0;
+    padding: 7px 10px; font-size: 8pt;
+    color: var(--muted); margin-top: 6px;
+  }
+  .note strong { color: var(--primary); }
+  .warn {
+    background: #fff8e1;
+    border-left: 3px solid #d4930a;
+    border-radius: 0 5px 5px 0;
+    padding: 7px 10px; font-size: 8pt;
+    color: #6b5a1a; margin-top: 6px;
+  }
+  .warn strong { color: #9e7d00; }
+
+  /* Two-col comparison */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+  .compare-box {
+    border: 1px solid var(--border);
+    border-radius: 5px; padding: 8px 10px;
+    background: var(--surface);
+  }
+  .compare-box-title { font-size: 8pt; font-weight: 700; margin-bottom: 4px; }
+  .compare-box ul { padding-left: 12px; }
+  .compare-box li { font-size: 8pt; color: var(--muted); margin-bottom: 2px; line-height: 1.5; }
+  .compare-box.good .compare-box-title { color: #2e7d32; }
+  .compare-box.good { border-color: #a5d6a7; }
+  .compare-box.warn-box .compare-box-title { color: #9e7d00; }
+  .compare-box.warn-box { border-color: #ffe082; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .no-print { display: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="guide-header">
+    <div>
+      <div class="guide-header-title">How to Record a Transaction</div>
+      <div class="guide-header-sub">Daily Sales</div>
+    </div>
+    <div class="guide-header-org">The Health Collective Inc.</div>
+  </div>
+
+  <div class="overview">
+    Every patient visit is recorded as a <strong>Transaction</strong>. A transaction has three parts:
+    the <strong>patient</strong> (who came in), the <strong>services</strong> (what was done),
+    and the <strong>tenders</strong> (how payment was made). All three must balance before a
+    transaction can be submitted.
+  </div>
+
+  <!-- RECORDING A TRANSACTION -->
+  <div class="section">
+    <div class="section-heading">Recording a Transaction</div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">Open a new transaction</div>
+        <ul>
+          <li>From the Daily Sales home page, click the service type card for the patient's visit type (e.g., <strong>OPD</strong>, <strong>APE</strong>)</li>
+          <li>Or go to <strong>Operations → Daily Sales</strong> and click the card directly</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">Fill in the header fields</div>
+        <ul>
+          <li><strong>Record Date</strong> — defaults to today; change only if recording a past visit</li>
+          <li><strong>Record Number</strong> — auto-generated; do not edit</li>
+          <li><strong>Transaction Type</strong> — select the service category (OPD, APE, etc.)</li>
+          <li><strong>DashLabs Number</strong> — internal lab reference number, if applicable</li>
+          <li><strong>POS / Storehub Number</strong> — POS receipt number, if applicable</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">Enter the patient</div>
+        <ul>
+          <li>Type the patient's name in the <strong>Patient</strong> field — it will autocomplete from existing records</li>
+          <li>If the patient is new, click <strong>+ New Patient</strong> beside the field, fill in the name and sex, then save — the name is inserted automatically</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <div class="step-title">Add services</div>
+        <ul>
+          <li>In the <strong>Services</strong> section, type the service name — it will autocomplete</li>
+          <li>Enter the <strong>Amount</strong> for each service</li>
+          <li>Add a <strong>Discount</strong> on a line if applicable (must not exceed the line amount)</li>
+          <li>Click <strong>+ Add Row</strong> for each additional service</li>
+          <li>A <strong>Transaction Discount</strong> field at the bottom applies an overall discount on top of any line discounts</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <div class="step-title">Add tenders (payment)</div>
+        <ul>
+          <li>In the <strong>Tenders</strong> section, select how the patient paid (Cash, GCash, Credit, HMO, etc.)</li>
+          <li>Enter the amount for each tender</li>
+          <li>Add multiple rows if the patient paid using more than one method</li>
+        </ul>
+        <div class="warn">
+          <strong>Balance rule:</strong> Total tenders must exactly equal total services minus all discounts.
+          The form will not let you submit until they match.
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <div class="step-title">Save or Submit</div>
+        <div class="compare">
+          <div class="compare-box good">
+            <div class="compare-box-title">Save &amp; Submit</div>
+            <ul>
+              <li>Finalizes the transaction</li>
+              <li>Appears in daily totals and reports</li>
+              <li>Cannot be edited after submitting</li>
+              <li>Use this when the visit is complete and payment is confirmed</li>
+            </ul>
+          </div>
+          <div class="compare-box warn-box">
+            <div class="compare-box-title">Save (Draft)</div>
+            <ul>
+              <li>Saves the transaction without finalizing</li>
+              <li>Does not appear in totals or reports</li>
+              <li>Can still be edited or deleted</li>
+              <li>Use when information is incomplete or pending</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <hr>
+
+  <!-- EDITING & CANCELLING -->
+  <div class="section">
+    <div class="section-heading">Editing &amp; Cancelling</div>
+
+    <div class="step">
+      <div class="step-num" style="background:#6b7280;">!</div>
+      <div class="step-body">
+        <div class="step-title">Draft transactions</div>
+        <p>Drafts can be edited freely. Open the transaction from the daily list and make changes, then save or submit.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num" style="background:#6b7280;">!</div>
+      <div class="step-body">
+        <div class="step-title">Submitted transactions</div>
+        <p>Submitted transactions are locked and cannot be edited. If a correction is needed, open the transaction and use the <strong>Cancel</strong> button, then record a new transaction with the correct information.</p>
+        <div class="note">
+          <strong>Note:</strong> Only users with admin rights can cancel a submitted transaction.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- APE NOTE -->
+  <div class="section">
+    <div class="section-heading">APE Transactions</div>
+    <p style="font-size:8.5pt;color:var(--muted);line-height:1.6;">
+      APE (Annual Physical Examination) transactions require an additional step before recording individual employees —
+      a <strong style="color:var(--text);">Batch</strong> must first be created for the company.
+      When the Transaction Type is set to <strong style="color:var(--text);">APE</strong>, a batch selector appears
+      and automatically fills the Credit tender with the package amount.
+      See the <strong style="color:var(--text);">How to Record APE</strong> guide for the full workflow.
+    </p>
+  </div>
+
+</div>
+
+<div class="no-print" style="text-align:center;margin-top:1rem;">
+  <button onclick="window.print()" style="font-family:var(--sans);font-size:8pt;letter-spacing:0.08em;text-transform:uppercase;background:var(--primary);color:#fff;border:none;border-radius:4px;padding:5px 16px;cursor:pointer;">
+    ⎙ Print
+  </button>
+</div>
+</body>
+</html>
