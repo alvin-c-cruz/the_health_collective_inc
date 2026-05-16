@@ -124,9 +124,10 @@
         </a>
 
         <div class="thc-date-input-wrap">
-          <div class="thc-date-display {{ 'is-today' if is_today }}">
+          <div class="thc-date-display {{ 'is-today' if is_today }}" title="Click to pick a date">
             <i class="bi bi-calendar3"></i>
             {% if is_today %}Today — {% endif %}{{ selected_date.strftime("%b %d, %Y") }}
+            <i class="bi bi-pencil-fill" style="font-size:.6rem;opacity:.5;margin-left:4px;"></i>
           </div>
           <input type="date" class="thc-date-hidden"
                  value="{{ selected_date.isoformat() }}"
