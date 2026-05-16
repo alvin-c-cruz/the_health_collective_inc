@@ -134,9 +134,9 @@
 
   <div class="overview">
     Every patient visit is recorded as a <strong>Transaction</strong>. A transaction has three parts:
-    the <strong>patient</strong> (who came in), the <strong>services</strong> (what was done),
-    and the <strong>tenders</strong> (how payment was made). All three must balance before a
-    transaction can be submitted.
+    the <strong>customer</strong> (who came in), the <strong>services</strong> (what was done),
+    and the <strong>tenders</strong> (how payment was made). The total tenders must equal the total
+    services minus all discounts before a transaction can be submitted.
   </div>
 
   <!-- RECORDING A TRANSACTION -->
@@ -148,8 +148,8 @@
       <div class="step-body">
         <div class="step-title">Open a new transaction</div>
         <ul>
-          <li>From the Daily Sales home page, click the service type card for the patient's visit type (e.g., <strong>OPD</strong>, <strong>APE</strong>)</li>
-          <li>Or go to <strong>Operations → Daily Sales</strong> and click the card directly</li>
+          <li>Go to <strong>Operations → Daily Sales</strong> — the service type cards appear only when viewing <strong>today</strong></li>
+          <li>Click the card for the patient's visit type (e.g., <strong>OPD</strong>, <strong>APE</strong>) to open a pre-typed new transaction form</li>
         </ul>
       </div>
     </div>
@@ -171,10 +171,10 @@
     <div class="step">
       <div class="step-num">3</div>
       <div class="step-body">
-        <div class="step-title">Enter the patient</div>
+        <div class="step-title">Enter the customer</div>
         <ul>
-          <li>Type the patient's name in the <strong>Patient</strong> field — it will autocomplete from existing records</li>
-          <li>If the patient is new, click <strong>+ New Patient</strong> beside the field, fill in the name and sex, then save — the name is inserted automatically</li>
+          <li>Type the patient's name in the <strong>Customer</strong> field — it will autocomplete from existing records</li>
+          <li>If the patient is new, keep typing the name until the dropdown shows <strong>+ Add Customer</strong>, click it to open the registration form, fill in the name and sex, then save — the name is inserted automatically</li>
         </ul>
       </div>
     </div>
@@ -187,8 +187,8 @@
           <li>In the <strong>Services</strong> section, type the service name — it will autocomplete</li>
           <li>Enter the <strong>Amount</strong> for each service</li>
           <li>Add a <strong>Discount</strong> on a line if applicable (must not exceed the line amount)</li>
-          <li>Click <strong>+ Add Row</strong> for each additional service</li>
-          <li>A <strong>Transaction Discount</strong> field at the bottom applies an overall discount on top of any line discounts</li>
+          <li>Click <strong>+ Add service</strong> for each additional service</li>
+          <li>A <strong>Less: Discount</strong> field in the totals summary applies an overall discount on top of any line discounts</li>
         </ul>
       </div>
     </div>
@@ -200,7 +200,7 @@
         <ul>
           <li>In the <strong>Tenders</strong> section, select how the patient paid (Cash, GCash, Credit, HMO, etc.)</li>
           <li>Enter the amount for each tender</li>
-          <li>Add multiple rows if the patient paid using more than one method</li>
+          <li>Click <strong>+ Add tender</strong> if the patient paid using more than one method</li>
         </ul>
         <div class="warn">
           <strong>Balance rule:</strong> Total tenders must exactly equal total services minus all discounts.
@@ -224,7 +224,7 @@
             </ul>
           </div>
           <div class="compare-box warn-box">
-            <div class="compare-box-title">Save (Draft)</div>
+            <div class="compare-box-title">Save Draft</div>
             <ul>
               <li>Saves the transaction without finalizing</li>
               <li>Does not appear in totals or reports</li>
