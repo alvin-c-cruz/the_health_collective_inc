@@ -353,34 +353,20 @@ def daily_report():
         report.report_date = target_date
 
         for t in transactions:
-            gross = sum(d.amount - d.discount for d in t.transaction_details)
-            net = gross - (t.discount or 0)
-
             tx_type = t.transaction_type.type_code if t.transaction_type else 'walk_in'
-
+            if tx_type not in report.sales:
+                report.sales[tx_type] = {}
             for tender in t.transaction_tenders:
                 t_name = tender.tender.tender_name if tender.tender else 'Unknown'
-                amount = tender.amount
+                report.sales[tx_type][t_name] = report.sales[tx_type].get(t_name, 0) + tender.amount
 
-                if tx_type == 'hmo_ape':
-                    report.ape_sales[t_name] = report.ape_sales.get(t_name, 0) + amount
-                elif tx_type == 'home_service':
-                    report.home_service_sales[t_name] = report.home_service_sales.get(t_name, 0) + amount
-                elif tx_type == 'dialysis':
-                    report.dialysis_sales[t_name] = report.dialysis_sales.get(t_name, 0) + amount
-                else:
-                    report.walk_in_sales[t_name] = report.walk_in_sales.get(t_name, 0) + amount
-
-        report.total_diagnostic_sales = (
-            sum(report.ape_sales.values()) +
-            sum(report.home_service_sales.values()) +
-            sum(report.walk_in_sales.values())
-        )
-        report.total_dialysis_sales = sum(report.dialysis_sales.values())
         return report
 
     prev_report = build_report(prev_date)
     curr_report = build_report(curr_date)
+
+    # Load all active transaction types in display order
+    transaction_types = TransactionType.query.filter_by(active=True).order_by(TransactionType.sort_order).all()
 
     all_tenders = Tender.query.order_by(Tender.sort_order.desc()).all()
     tender_order = {t.tender_name: t.sort_order for t in all_tenders}
@@ -398,17 +384,32 @@ def daily_report():
             keys.update(static)
         return sorted(keys, key=lambda k: tender_order.get(k, 0), reverse=True)
 
+    # Build one section entry per active transaction type
+    report_sections = []
+    for tt in transaction_types:
+        prev_sales = prev_report.sales.get(tt.type_code, {})
+        curr_sales = curr_report.sales.get(tt.type_code, {})
+        tenders = ordered_keys(prev_sales, curr_sales, static=static_for(tt.type_code))
+        report_sections.append({
+            'type_code': tt.type_code,
+            'type_name': tt.type_name,
+            'tenders': tenders,
+            'is_dialysis': tt.type_code == 'dialysis',
+        })
+
+    # Cash on hand = CASH tender across all non-dialysis sections
+    def cash_total(report):
+        return sum(
+            sales.get('Cash', 0.0)
+            for code, sales in report.sales.items()
+        )
+
     context = {
         "prev_report": prev_report,
         "curr_report": curr_report,
-        "ape_tenders": ordered_keys(prev_report.ape_sales, curr_report.ape_sales,
-                                    static=static_for('hmo_ape')),
-        "home_service_tenders": ordered_keys(prev_report.home_service_sales, curr_report.home_service_sales,
-                                             static=static_for('home_service')),
-        "walk_in_tenders": ordered_keys(prev_report.walk_in_sales, curr_report.walk_in_sales,
-                                        static=static_for('walk_in')),
-        "dialysis_tenders": ordered_keys(prev_report.dialysis_sales, curr_report.dialysis_sales,
-                                         static=static_for('dialysis')),
+        "report_sections": report_sections,
+        "prev_cash": cash_total(prev_report),
+        "curr_cash": cash_total(curr_report),
         "app_label": app_label,
         "report_date": curr_date,
     }
@@ -422,14 +423,19 @@ def daily_report():
 class _Report:
     def __init__(self):
         self.report_date: date = date.today()
-        self.ape_sales: dict = {}
-        self.home_service_sales: dict = {}
-        self.walk_in_sales: dict = {}
-        self.dialysis_sales: dict = {}
-        self.total_diagnostic_sales: float = 0.0
-        self.total_dialysis_sales: float = 0.0
+        self.sales: dict = {}  # {type_code: {tender_name: amount}}
 
     @property
     def total_sales(self):
-        return self.total_diagnostic_sales + self.total_dialysis_sales
+        return sum(sum(v.values()) for v in self.sales.values())
+
+    @property
+    def total_diagnostic_sales(self):
+        return sum(
+            sum(v.values()) for code, v in self.sales.items() if code != 'dialysis'
+        )
+
+    @property
+    def total_dialysis_sales(self):
+        return sum(self.sales.get('dialysis', {}).values())
 

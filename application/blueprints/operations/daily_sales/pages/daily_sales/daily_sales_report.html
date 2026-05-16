@@ -167,43 +167,19 @@
         </tr>
       </thead>
       <tbody>
-
-        <tr class="sub-hdr"><td colspan="4">APE</td></tr>
-        {% for t in ape_tenders %}
+        {% for section in report_sections if not section.is_dialysis %}
+        <tr class="sub-hdr"><td colspan="4">{{ section.type_name }}</td></tr>
+        {% for t in section.tenders %}
+        {% set prev_amt = prev_report.sales.get(section.type_code, {}).get(t, 0.0) %}
+        {% set curr_amt = curr_report.sales.get(section.type_code, {}).get(t, 0.0) %}
         <tr>
           <td class="lbl2">{{ t }}</td>
           <td class="num"></td>
-          <td class="num">{{ "{:,.2f}".format(prev_report.ape_sales.get(t, 0.0)) }}</td>
-          <td class="num">{{ "{:,.2f}".format(curr_report.ape_sales.get(t, 0.0)) }}</td>
+          <td class="num">{{ "{:,.2f}".format(prev_amt) }}</td>
+          <td class="num">{{ "{:,.2f}".format(curr_amt) }}</td>
         </tr>
-        {% else %}
-        <tr><td class="lbl2" colspan="4" style="color:var(--muted);font-style:italic;padding-top:3px;padding-bottom:3px;">No APE transactions</td></tr>
         {% endfor %}
-
-        <tr class="sub-hdr"><td colspan="4">Home Service</td></tr>
-        {% for t in home_service_tenders %}
-        <tr>
-          <td class="lbl2">{{ t }}</td>
-          <td class="num"></td>
-          <td class="num">{{ "{:,.2f}".format(prev_report.home_service_sales.get(t, 0.0)) }}</td>
-          <td class="num">{{ "{:,.2f}".format(curr_report.home_service_sales.get(t, 0.0)) }}</td>
-        </tr>
-        {% else %}
-        <tr><td class="lbl2" colspan="4" style="color:var(--muted);font-style:italic;padding-top:3px;padding-bottom:3px;">No Home Service transactions</td></tr>
         {% endfor %}
-
-        <tr class="sub-hdr"><td colspan="4">Walk-in</td></tr>
-        {% for t in walk_in_tenders %}
-        <tr>
-          <td class="lbl2">{{ t }}</td>
-          <td class="num">{% if t == 'A/R-DGO' %}{{ "{:,.2f}".format(curr_report.walk_in_sales.get(t, 0.0)) }}{% endif %}</td>
-          <td class="num">{{ "{:,.2f}".format(prev_report.walk_in_sales.get(t, 0.0)) }}</td>
-          <td class="num">{{ "{:,.2f}".format(curr_report.walk_in_sales.get(t, 0.0)) }}</td>
-        </tr>
-        {% else %}
-        <tr><td class="lbl2" colspan="4" style="color:var(--muted);font-style:italic;padding-top:3px;padding-bottom:3px;">No Walk-in transactions</td></tr>
-        {% endfor %}
-
         <tr class="total-row">
           <td style="padding-left:5px">Total Diagnostics Sales</td>
           <td class="num"></td>
@@ -215,8 +191,9 @@
   </div>
 
   <!-- DIALYSIS -->
+  {% for section in report_sections if section.is_dialysis %}
   <div class="sec">
-    <div class="sec-title">Dialysis</div>
+    <div class="sec-title">{{ section.type_name }}</div>
     <table class="tbl">
       <thead>
         <tr>
@@ -227,18 +204,18 @@
         </tr>
       </thead>
       <tbody>
-        {% for t in dialysis_tenders %}
+        {% for t in section.tenders %}
+        {% set prev_amt = prev_report.sales.get(section.type_code, {}).get(t, 0.0) %}
+        {% set curr_amt = curr_report.sales.get(section.type_code, {}).get(t, 0.0) %}
         <tr>
           <td class="lbl2">{{ t }}</td>
-          <td class="num">{% if t == 'PHILHEALTH' %}{{ "{:,.2f}".format(curr_report.dialysis_sales.get(t, 0.0)) }}{% else %}—{% endif %}</td>
-          <td class="num">{{ "{:,.2f}".format(prev_report.dialysis_sales.get(t, 0.0)) }}</td>
-          <td class="num">{{ "{:,.2f}".format(curr_report.dialysis_sales.get(t, 0.0)) }}</td>
+          <td class="num">{% if t == 'Philhealth' %}{{ "{:,.2f}".format(curr_amt) }}{% endif %}</td>
+          <td class="num">{{ "{:,.2f}".format(prev_amt) }}</td>
+          <td class="num">{{ "{:,.2f}".format(curr_amt) }}</td>
         </tr>
-        {% else %}
-        <tr><td class="lbl2" colspan="4" style="color:var(--muted);font-style:italic;padding-top:3px;padding-bottom:3px;">No Dialysis transactions</td></tr>
         {% endfor %}
         <tr class="total-row">
-          <td style="padding-left:5px">Total Dialysis Sales</td>
+          <td style="padding-left:5px">Total {{ section.type_name }} Sales</td>
           <td class="num">{{ "{:,.2f}".format(curr_report.total_dialysis_sales) }}</td>
           <td class="num">{{ "{:,.2f}".format(prev_report.total_dialysis_sales) }}</td>
           <td class="num">{{ "{:,.2f}".format(curr_report.total_dialysis_sales) }}</td>
@@ -246,10 +223,11 @@
       </tbody>
     </table>
   </div>
+  {% endfor %}
 
   <!-- LOWER: Cash on Hand + Accountabilities -->
-  {% set prev_cash_sales = prev_report.walk_in_sales.get('CASH', 0.0) + prev_report.home_service_sales.get('CASH', 0.0) + prev_report.ape_sales.get('CASH', 0.0) %}
-  {% set curr_cash_sales = curr_report.walk_in_sales.get('CASH', 0.0) + curr_report.home_service_sales.get('CASH', 0.0) + curr_report.ape_sales.get('CASH', 0.0) %}
+  {% set prev_cash_sales = prev_cash %}
+  {% set curr_cash_sales = curr_cash %}
   <div class="lower-grid">
     <div class="sec">
       <div class="sec-title">Cash on Hand</div>
