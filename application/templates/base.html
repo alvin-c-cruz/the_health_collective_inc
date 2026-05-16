@@ -224,6 +224,35 @@
       .thc-table tbody tr:hover { background: #f0f8fa; }
       .thc-table td.num { text-align: right; font-family: 'DM Mono', 'Courier New', monospace; }
 
+      /* ── Buttons ── */
+      .thc-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.4rem 0.9rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        border-radius: 6px;
+        border: 1px solid transparent;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background 0.12s, color 0.12s, border-color 0.12s;
+        white-space: nowrap;
+      }
+      .thc-btn-sm { padding: 0.25rem 0.65rem; font-size: 0.75rem; border-radius: 5px; }
+      .thc-btn-primary {
+        background: var(--thc-primary);
+        color: #fff;
+        border-color: var(--thc-primary);
+      }
+      .thc-btn-primary:hover { background: var(--thc-primary-dark); border-color: var(--thc-primary-dark); color: #fff; }
+      .thc-btn-secondary {
+        background: #fff;
+        color: var(--thc-primary);
+        border-color: #c6dde1;
+      }
+      .thc-btn-secondary:hover { background: var(--thc-primary-light); border-color: var(--thc-primary); color: var(--thc-primary); }
+
       /* ── Responsive breakpoints ── */
       @media (max-width: 768px) {
         .thc-page { padding: 0 0.75rem 3rem; margin: 1rem auto; }
