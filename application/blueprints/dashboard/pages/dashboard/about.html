@@ -30,11 +30,7 @@
     {% set groups = [
         ("Operations", "bi-activity", [
             ("Daily Sales", "Record walk-in, HMO, dialysis, and APE patient transactions with itemised services and tender breakdown."),
-            ("Pending Approval", "Submitted transactions queue for Admin review; SuperAdmin can unlock approved records."),
-            ("APE Batch", "Group annual physical exam transactions under a company batch with package pricing."),
             ("Collections", "Apply payments against receivable tender lines (HMO, PhilHealth, AR) and track outstanding balances."),
-            ("Bank Account", "Maintain the list of bank accounts used in deposit and collection entries."),
-            ("Service Types", "Configure transaction types (Walk-in, HMO, Dialysis, APE) that drive the daily sales form."),
         ]),
         ("Books of Accounts", "bi-journal-text", [
             ("Sales Journal", "Record and print official sales vouchers with account distribution."),
@@ -42,7 +38,6 @@
             ("Accounts Payable Journal", "Log supplier invoices and payable entries."),
             ("Disbursement Journal", "Record cash and cheque disbursements."),
             ("General Journal", "Free-form journal entries for adjustments and non-routine transactions."),
-            ("Extra Books", "Parallel set of Sales, Receipt, AP, Disbursement, and General journals for supplementary recording."),
         ]),
         ("Accounting Reports", "bi-bar-chart-line", [
             ("Trial Balance", "Generate a trial balance for any date range across all books."),
@@ -54,18 +49,14 @@
             ("Vendors", "Supplier directory for accounts-payable entries."),
             ("Tender Types", "Payment methods (Cash, GCash, PhilHealth, AR, etc.) with receivable and report flags."),
             ("Companies", "Corporate clients linked to APE batches."),
-            ("Supporting Registers", "Product types, account measures, sex/gender options."),
         ]),
         ("Accounts", "bi-diagram-3", [
             ("Chart of Accounts", "Full account tree with account number, name, type, and class."),
-            ("Account Types", "Define normal balance (debit/credit) and financial-statement category."),
-            ("Account Classes", "Group accounts into Assets, Liabilities, Equity, Income, and Expenses."),
         ]),
         ("System", "bi-gear", [
             ("User Management", "Create users and manage access via role assignment."),
             ("User Tiers", "SuperAdmin (approve & unlock), Admin (approve), Staff (add & edit), Viewer (reports only)."),
             ("Role Delegation", "Grant or revoke module-level roles per user from the User Delegations page."),
-            ("Philippine Timezone", "All dates resolved in Asia/Manila (UTC+8) regardless of server location."),
         ]),
     ] %}
 

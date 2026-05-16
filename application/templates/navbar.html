@@ -141,6 +141,10 @@
                   {% include "measure/navbar.html" %}
                   {% include "tender/navbar.html" %}
                   {% include "company/navbar.html" %}
+                  <li><hr class="dropdown-divider"></li>
+                  <li class="nav-item">
+                      <a class="dropdown-item" href="{{ url_for('dashboard.about') }}">About</a>
+                  </li>
               </ul>
           </li>
             <!-- End of Options Menu -->
