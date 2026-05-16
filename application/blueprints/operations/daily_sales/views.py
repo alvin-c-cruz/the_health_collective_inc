@@ -365,8 +365,8 @@ def daily_report():
     prev_report = build_report(prev_date)
     curr_report = build_report(curr_date)
 
-    # Load all active transaction types in display order
-    transaction_types = TransactionType.query.filter_by(active=True).order_by(TransactionType.sort_order).all()
+    # Load all active transaction types — highest sort_order first (newest = top)
+    transaction_types = TransactionType.query.filter_by(active=True).order_by(TransactionType.sort_order.desc()).all()
 
     all_tenders = Tender.query.order_by(Tender.sort_order.desc()).all()
     tender_order = {t.tender_name: t.sort_order for t in all_tenders}
