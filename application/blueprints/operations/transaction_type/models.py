@@ -10,7 +10,6 @@ class TransactionType(db.Model):
     icon = db.Column(db.String(), default='bi-tag')
     icon_color = db.Column(db.String(), default='ic-blue')
     badge_color = db.Column(db.String(), default='thc-badge-blue')
-    report_category = db.Column(db.String(), default='walk_in')
     active = db.Column(db.Boolean(), default=True)
     sort_order = db.Column(db.Integer(), default=99)
 

@@ -33,7 +33,6 @@ def add():
         obj.icon = request.form.get('icon', 'bi-tag').strip()
         obj.icon_color = request.form.get('icon_color', 'ic-blue').strip()
         obj.badge_color = request.form.get('badge_color', 'thc-badge-blue').strip()
-        obj.report_category = request.form.get('report_category', 'walk_in').strip()
         obj.sort_order = int(request.form.get('sort_order') or 99)
         obj.active = 'active' in request.form
 
@@ -68,7 +67,6 @@ def edit(record_id):
         obj.icon = request.form.get('icon', 'bi-tag').strip()
         obj.icon_color = request.form.get('icon_color', 'ic-blue').strip()
         obj.badge_color = request.form.get('badge_color', 'thc-badge-blue').strip()
-        obj.report_category = request.form.get('report_category', 'walk_in').strip()
         obj.sort_order = int(request.form.get('sort_order') or 99)
         obj.active = 'active' in request.form
 
