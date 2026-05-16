@@ -17,7 +17,7 @@
   {% endwith %}
 
   <div class="mb-3">
-    <a href="{{ url_for('daily_sales.transaction_type_add') }}" class="btn btn-primary btn-sm">
+    <a href="{{ url_for('transaction_type.add') }}" class="btn btn-primary btn-sm">
       <i class="bi bi-plus-lg"></i> Add Transaction Type
     </a>
   </div>
@@ -62,11 +62,11 @@
             </td>
             <td>
               <div class="d-flex gap-1">
-                <a href="{{ url_for('daily_sales.transaction_type_edit', type_id=t.id) }}"
+                <a href="{{ url_for('transaction_type.edit', record_id=t.id) }}"
                    class="btn btn-outline-secondary btn-sm">
                   <i class="bi bi-pencil"></i>
                 </a>
-                <form method="POST" action="{{ url_for('daily_sales.transaction_type_toggle', type_id=t.id) }}" style="display:inline;">
+                <form method="POST" action="{{ url_for('transaction_type.toggle', record_id=t.id) }}" style="display:inline;">
                   <button type="submit" class="btn btn-sm {{ 'btn-outline-warning' if t.active else 'btn-outline-success' }}"
                           title="{{ 'Disable' if t.active else 'Enable' }}">
                     <i class="bi {{ 'bi-toggle-on' if t.active else 'bi-toggle-off' }}"></i>

@@ -4,7 +4,7 @@
 {% block content %}
 <div class="thc-page" style="max-width:680px;margin:0 auto;">
   <div class="thc-page-header">
-    <a href="{{ url_for('daily_sales.transaction_type_list') }}" class="btn btn-sm btn-outline-secondary me-2">
+    <a href="{{ url_for('transaction_type.home') }}" class="btn btn-sm btn-outline-secondary me-2">
       <i class="bi bi-arrow-left"></i>
     </a>
     <h4>{{ "Add" if is_new else "Edit" }} Transaction Type</h4>
@@ -97,7 +97,7 @@
         <div class="col-md-3 d-flex align-items-end">
           <div class="form-check mb-2">
             <input class="form-check-input" type="checkbox" name="active" id="activeCheck"
-                   {{ 'checked' if obj.active is not false and obj.active != False }}>
+                   {{ 'checked' if obj.active }}>
             <label class="form-check-label" for="activeCheck">Active</label>
           </div>
         </div>
@@ -109,7 +109,7 @@
       <button type="submit" class="btn btn-primary">
         {{ "Add Type" if is_new else "Save Changes" }}
       </button>
-      <a href="{{ url_for('daily_sales.transaction_type_list') }}" class="btn btn-outline-secondary">Cancel</a>
+      <a href="{{ url_for('transaction_type.home') }}" class="btn btn-outline-secondary">Cancel</a>
     </div>
   </form>
 </div>

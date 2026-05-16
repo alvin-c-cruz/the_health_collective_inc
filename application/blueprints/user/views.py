@@ -32,6 +32,7 @@ _ROLE_CATEGORIES = {
     'Tender':                 'Register',
     'Vendor':                 'Register',
     'Daily Sales':            'Operations',
+    'Transaction Type':       'Operations',
     'Trial Balance':          'Reports',
     'user':                   'System',
 }

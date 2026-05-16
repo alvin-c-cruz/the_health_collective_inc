@@ -29,4 +29,5 @@ from . import trial_balance
 from . import ledger
 
 from .operations import daily_sales
+from .operations import transaction_type
 
