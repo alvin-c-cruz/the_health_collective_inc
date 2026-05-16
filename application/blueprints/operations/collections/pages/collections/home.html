@@ -41,12 +41,12 @@
         {% if show_settled %}
             <a href="{{ request.path }}{% if selected_tender_id %}?tender_id={{ selected_tender_id }}{% endif %}"
                class="thc-pill-toggle thc-pill-toggle--on">
-                <i class="bi bi-check-circle-fill"></i> Settled
+                <i class="bi bi-check-circle-fill"></i> Hide settled
             </a>
         {% else %}
             <a href="{{ request.path }}?{% if selected_tender_id %}tender_id={{ selected_tender_id }}&{% endif %}show_settled=1"
                class="thc-pill-toggle thc-pill-toggle--off">
-                <i class="bi bi-circle"></i> Settled
+                <i class="bi bi-circle"></i> Show settled
             </a>
         {% endif %}
     </div>
