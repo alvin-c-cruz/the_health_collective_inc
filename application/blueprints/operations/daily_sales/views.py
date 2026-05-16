@@ -6,7 +6,7 @@ from ...user import login_required, roles_accepted, current_user
 from ...register.customer import Customer
 
 from . import app_label, app_name
-from .models import Transaction, TransactionDetail, TransactionTender
+from .models import Transaction, TransactionDetail, TransactionTender, TransactionType
 from .forms import Form
 from ...register.product_type import ProductType
 from ...register.tender import Tender
@@ -43,10 +43,17 @@ def _generate_record_number():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def home():
-    today_str = str(date.today())
+    from datetime import timedelta
+
+    today = date.today()
+    date_str = request.args.get('date', str(today))
+    try:
+        selected_date = date.fromisoformat(date_str)
+    except ValueError:
+        selected_date = today
 
     transactions = Transaction.query.filter(
-        Transaction.record_date == today_str
+        Transaction.record_date == str(selected_date)
     ).order_by(Transaction.id.desc()).all()
 
     total_sales = sum(
@@ -79,12 +86,23 @@ def home():
                 if tt:
                     txn_type_tenders.setdefault(tt, []).append(t)
 
+    transaction_types = TransactionType.query.filter_by(active=True).order_by(TransactionType.sort_order).all()
+
+    # Build a lookup dict: type_code -> TransactionType for template use
+    type_lookup = {tt.type_code: tt for tt in transaction_types}
+
     context = {
         "app_label": app_label,
-        "today": date.today(),
+        "today": today,
+        "selected_date": selected_date,
+        "is_today": selected_date == today,
+        "prev_date": selected_date - timedelta(days=1),
+        "next_date": selected_date + timedelta(days=1),
         "summary": summary,
         "transactions": transactions,
         "txn_type_tenders": txn_type_tenders,
+        "transaction_types": transaction_types,
+        "type_lookup": type_lookup,
     }
     return render_template("daily_sales/home.html", **context)
 

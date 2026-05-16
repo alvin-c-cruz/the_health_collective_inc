@@ -4,15 +4,25 @@
 {% block styles %}
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  /* ── layout ── */
   .thc-wrap { max-width: 960px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
 
   /* ── top bar ── */
   .thc-topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: .75rem; }
   .thc-brand-name { font-family: var(--thc-font-heading); font-size: 1.05rem; font-weight: 600; color: var(--thc-text); margin: 0; }
   .thc-brand-sub { font-size: .75rem; color: var(--thc-text-muted); margin: 2px 0 0; }
-  .thc-date-badge { display: flex; align-items: center; gap: 8px; font-size: .8rem; color: var(--thc-text-muted); background: #fff; border: 1px solid var(--thc-border); border-radius: 6px; padding: 6px 14px; white-space: nowrap; }
-  .thc-date-badge i { color: var(--thc-primary); }
+
+  /* ── date navigation ── */
+  .thc-date-nav { display: flex; align-items: center; gap: 6px; }
+  .thc-date-nav-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--thc-border); background: #fff; color: var(--thc-text-muted); text-decoration: none; font-size: .85rem; transition: border-color .15s, background .15s; }
+  .thc-date-nav-btn:hover { border-color: var(--thc-primary); color: var(--thc-primary); background: var(--thc-primary-light); text-decoration: none; }
+  .thc-date-nav-btn.disabled { pointer-events: none; opacity: .35; }
+  .thc-date-input-wrap { position: relative; }
+  .thc-date-display { display: flex; align-items: center; gap: 8px; font-size: .82rem; font-weight: 600; color: var(--thc-text); background: #fff; border: 1px solid var(--thc-border); border-radius: 6px; padding: 5px 12px; cursor: pointer; white-space: nowrap; user-select: none; min-width: 170px; justify-content: center; }
+  .thc-date-display i { color: var(--thc-primary); }
+  .thc-date-display.is-today { background: var(--thc-primary-light); border-color: var(--thc-primary); color: var(--thc-primary); }
+  .thc-date-hidden { position: absolute; opacity: 0; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer; }
+  .thc-today-btn { font-size: .72rem; font-weight: 600; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--thc-primary); color: var(--thc-primary); background: #fff; text-decoration: none; white-space: nowrap; }
+  .thc-today-btn:hover { background: var(--thc-primary-light); text-decoration: none; }
 
   /* ── summary metrics ── */
   .thc-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.75rem; }
@@ -24,11 +34,11 @@
   /* ── section label ── */
   .thc-sec-lbl { font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--thc-text-muted); margin-bottom: .6rem; }
 
-  /* ── transaction cards ── */
+  /* ── transaction type cards ── */
   .thc-txn-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1.5rem; }
   .thc-txn-card { background: #fff; border: 1px solid var(--thc-border); border-radius: 10px; padding: 16px; cursor: pointer; transition: border-color .15s, background .15s; display: flex; align-items: center; gap: 14px; color: inherit; }
   .thc-txn-card:hover { border-color: #a0b4b8; background: var(--thc-primary-light); color: inherit; }
-  .thc-txn-card.featured { border: 1.5px solid var(--thc-primary); background: #fff; }
+  .thc-txn-card.featured { border: 1.5px solid var(--thc-primary); }
   .thc-txn-card.featured:hover { background: var(--thc-primary-light); }
 
   .thc-txn-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
@@ -37,7 +47,8 @@
   .ic-purple { background: #eeedfe; color: #3c3489; }
   .ic-coral  { background: #faece7; color: #993c1d; }
   .ic-amber  { background: #faeeda; color: #854f0b; }
-  .ic-teal   { background: var(--thc-primary-light); color: var(--thc-primary); }
+  .ic-rose   { background: #fce7f3; color: #9d174d; }
+  .ic-slate  { background: #f1f5f9; color: #475569; }
 
   .thc-txn-info { flex: 1; min-width: 0; }
   .thc-txn-title { font-family: var(--thc-font-heading); font-size: .9rem; font-weight: 600; color: var(--thc-text); margin: 0 0 2px; }
@@ -50,6 +61,9 @@
   .thc-badge-green  { background: #1a7a60; color: #fff; }
   .thc-badge-purple { background: #3c3489; color: #fff; }
   .thc-badge-coral  { background: #993c1d; color: #fff; }
+  .thc-badge-amber  { background: #854f0b; color: #fff; }
+  .thc-badge-rose   { background: #9d174d; color: #fff; }
+  .thc-badge-slate  { background: #475569; color: #fff; }
 
   /* ── cash management ── */
   .thc-cash-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1.5rem; }
@@ -68,10 +82,11 @@
   .thc-cashier-name { font-size: .8rem; font-weight: 600; color: var(--thc-text); margin: 0; }
   .thc-cashier-role { font-size: .7rem; color: var(--thc-text-muted); margin: 1px 0 0; }
 
-  /* ── today's transactions list ── */
+  /* ── transaction list ── */
   .thc-txn-list { margin-bottom: 1.5rem; }
   .thc-rec-row { background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; padding: 11px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 6px; text-decoration: none; color: inherit; transition: border-color .15s, background .15s; }
   .thc-rec-row:hover { border-color: #a0b4b8; background: var(--thc-primary-light); text-decoration: none; color: inherit; }
+  .thc-rec-icon { width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: .85rem; flex-shrink: 0; }
   .thc-rec-info { flex: 1; min-width: 0; }
   .thc-rec-num { font-size: .68rem; color: var(--thc-text-muted); font-family: 'DM Mono', monospace; }
   .thc-rec-customer { font-size: .85rem; font-weight: 600; color: var(--thc-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -85,6 +100,7 @@
 
   @media (max-width: 600px) {
     .thc-txn-grid, .thc-cash-grid, .thc-metrics { grid-template-columns: 1fr; }
+    .thc-date-display { min-width: 140px; }
   }
 </style>
 {% endblock %}
@@ -98,24 +114,51 @@
       <p class="thc-brand-name">The Health Collective Inc.</p>
       <p class="thc-brand-sub">Daily Sales &amp; Petty Cash</p>
     </div>
-    <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
-      <div class="thc-date-badge">
-        <i class="bi bi-calendar3"></i>
-        {{ today.strftime("%A, %B %d, %Y") }}
+
+    <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;">
+
+      {# Date navigation #}
+      <div class="thc-date-nav">
+        <a href="{{ url_for('daily_sales.home', date=prev_date.isoformat()) }}"
+           class="thc-date-nav-btn" title="Previous day">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+
+        <div class="thc-date-input-wrap">
+          <div class="thc-date-display {{ 'is-today' if is_today }}">
+            <i class="bi bi-calendar3"></i>
+            {% if is_today %}Today — {% endif %}{{ selected_date.strftime("%b %d, %Y") }}
+          </div>
+          <input type="date" class="thc-date-hidden"
+                 value="{{ selected_date.isoformat() }}"
+                 max="{{ today.isoformat() }}"
+                 onchange="window.location.href='{{ url_for('daily_sales.home') }}?date=' + this.value">
+        </div>
+
+        <a href="{{ url_for('daily_sales.home', date=next_date.isoformat()) }}"
+           class="thc-date-nav-btn {{ 'disabled' if next_date > today }}" title="Next day">
+          <i class="bi bi-chevron-right"></i>
+        </a>
       </div>
-      <button
-        class="btn btn-sm" style="background:var(--thc-primary);color:#fff;font-weight:600;border:none;" type="button"
-        data-url="{{ url_for('daily_sales.daily_report') }}"
-        onclick="window.open(this.dataset.url,'_blank','width=1200,height=700,scrollbars=yes,resizable=yes')">
+
+      {% if not is_today %}
+      <a href="{{ url_for('daily_sales.home') }}" class="thc-today-btn">Go to Today</a>
+      {% endif %}
+
+      <button class="btn btn-sm" style="background:var(--thc-primary);color:#fff;font-weight:600;border:none;" type="button"
+        onclick="window.open('{{ url_for('daily_sales.daily_report', date=selected_date.isoformat()) }}','_blank','width=1200,height=700,scrollbars=yes,resizable=yes')">
         <i class="bi bi-file-earmark-text me-1"></i> Generate report
       </button>
+
     </div>
   </div>
 
   {# ── Summary metrics ── #}
   <div class="thc-metrics">
     <div class="thc-metric">
-      <div class="thc-metric-lbl">Total sales today</div>
+      <div class="thc-metric-lbl">
+        Total sales — {{ selected_date.strftime("%b %d, %Y") }}
+      </div>
       <div class="thc-metric-val accent">
         ₱{{ "%.2f"|format(summary.total_sales) }}
       </div>
@@ -126,99 +169,48 @@
     </div>
     <div class="thc-metric">
       <div class="thc-metric-lbl">Cash on hand</div>
-      <div class="thc-metric-val">
-        ₱{{ "%.2f"|format(summary.cash_on_hand) }}
-      </div>
+      <div class="thc-metric-val">₱{{ "%.2f"|format(summary.cash_on_hand) }}</div>
     </div>
   </div>
 
-  {# ── New transaction ── #}
+  {# ── New transaction — only shown for today ── #}
+  {% if is_today %}
   <div class="thc-sec-lbl">New transaction</div>
   <div class="thc-txn-grid">
-
-    {# Walk-in #}
-    {% set _url = url_for('daily_sales.new_transaction', type='walk_in') %}
-    <div class="thc-txn-card featured" onclick="window.location.href='{{ _url }}'">
-      <div class="thc-txn-icon ic-blue"><i class="bi bi-person-walking"></i></div>
+    {% for txn_type in transaction_types %}
+    {% set _url = url_for('daily_sales.new_transaction', type=txn_type.type_code) %}
+    <div class="thc-txn-card {{ 'featured' if loop.first }}" onclick="window.location.href='{{ _url }}'">
+      <div class="thc-txn-icon {{ txn_type.icon_color }}">
+        <i class="bi {{ txn_type.icon }}"></i>
+      </div>
       <div class="thc-txn-info">
-        <p class="thc-txn-title">Walk-in patient</p>
-        <p class="thc-txn-desc">Diagnostics for patients arriving at the clinic</p>
+        <p class="thc-txn-title">{{ txn_type.type_name }}</p>
+        <p class="thc-txn-desc">{{ txn_type.description }}</p>
         <div class="thc-badges">
-          {% for t in txn_type_tenders.get('walk_in', []) %}
+          {% for t in txn_type_tenders.get(txn_type.type_code, []) %}
           {% if t.symbol or t.tender_name %}
-          <a href="{{ url_for('daily_sales.new_transaction', type='walk_in', prefill_tender_id=t.id) }}" class="thc-badge thc-badge-blue" onclick="event.stopPropagation()">{{ t.symbol or t.tender_name }}</a>
+          <a href="{{ url_for('daily_sales.new_transaction', type=txn_type.type_code, prefill_tender_id=t.id) }}"
+             class="thc-badge {{ txn_type.badge_color }}"
+             onclick="event.stopPropagation()">{{ t.symbol or t.tender_name }}</a>
           {% endif %}
           {% endfor %}
         </div>
       </div>
     </div>
-
-    {# Home service #}
-    {% set _url = url_for('daily_sales.new_transaction', type='home_service') %}
-    <div class="thc-txn-card" onclick="window.location.href='{{ _url }}'">
-      <div class="thc-txn-icon ic-green"><i class="bi bi-house-heart"></i></div>
-      <div class="thc-txn-info">
-        <p class="thc-txn-title">Home service</p>
-        <p class="thc-txn-desc">Diagnostics performed at the patient's home</p>
-        <div class="thc-badges">
-          {% for t in txn_type_tenders.get('home_service', []) %}
-          {% if t.symbol or t.tender_name %}
-          <a href="{{ url_for('daily_sales.new_transaction', type='home_service', prefill_tender_id=t.id) }}" class="thc-badge thc-badge-green" onclick="event.stopPropagation()">{{ t.symbol or t.tender_name }}</a>
-          {% endif %}
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-
-    {# APE #}
-    {% set _url = url_for('daily_sales.new_transaction', type='hmo_ape') %}
-    <div class="thc-txn-card" onclick="window.location.href='{{ _url }}'">
-      <div class="thc-txn-icon ic-purple"><i class="bi bi-hospital"></i></div>
-      <div class="thc-txn-info">
-        <p class="thc-txn-title">APE</p>
-        <p class="thc-txn-desc">Annual physical exam billing</p>
-        <div class="thc-badges">
-          {% for t in txn_type_tenders.get('hmo_ape', []) %}
-          {% if t.symbol or t.tender_name %}
-          <a href="{{ url_for('daily_sales.new_transaction', type='hmo_ape', prefill_tender_id=t.id) }}" class="thc-badge thc-badge-purple" onclick="event.stopPropagation()">{{ t.symbol or t.tender_name }}</a>
-          {% endif %}
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-
-    {# Dialysis #}
-    {% set _url = url_for('daily_sales.new_transaction', type='dialysis') %}
-    <div class="thc-txn-card" onclick="window.location.href='{{ _url }}'">
-      <div class="thc-txn-icon ic-coral"><i class="bi bi-droplet-half"></i></div>
-      <div class="thc-txn-info">
-        <p class="thc-txn-title">Dialysis</p>
-        <p class="thc-txn-desc">Dialysis session billing and Philhealth coverage</p>
-        <div class="thc-badges">
-          {% for t in txn_type_tenders.get('dialysis', []) %}
-          {% if t.symbol or t.tender_name %}
-          <a href="{{ url_for('daily_sales.new_transaction', type='dialysis', prefill_tender_id=t.id) }}" class="thc-badge thc-badge-coral" onclick="event.stopPropagation()">{{ t.symbol or t.tender_name }}</a>
-          {% endif %}
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-
+    {% endfor %}
   </div>
 
   {# ── Cash management ── #}
   <div class="thc-sec-lbl">Cash management</div>
   <div class="thc-cash-grid">
-
     <a href="{{ url_for('daily_sales.record_deposit') }}" class="thc-cash-card">
-      <div class="thc-cash-icon ic-teal"><i class="bi bi-bank2"></i></div>
+      <div class="thc-cash-icon ic-blue"><i class="bi bi-bank2"></i></div>
       <div class="thc-cash-info">
         <p class="thc-cash-title">Record deposit</p>
         <p class="thc-cash-desc">Log cash deposited to bank</p>
       </div>
       <i class="bi bi-chevron-right thc-cash-chev"></i>
     </a>
-
     <a href="#" class="thc-cash-card">
       <div class="thc-cash-icon ic-amber"><i class="bi bi-receipt"></i></div>
       <div class="thc-cash-info">
@@ -227,23 +219,29 @@
       </div>
       <i class="bi bi-chevron-right thc-cash-chev"></i>
     </a>
-
   </div>
+  {% endif %}
 
-  {# ── Today's transactions ── #}
-  <div class="thc-sec-lbl">Today's transactions</div>
+  {# ── Transaction list ── #}
+  <div class="thc-sec-lbl">
+    {% if is_today %}Today's transactions{% else %}Transactions — {{ selected_date.strftime("%B %d, %Y") }}{% endif %}
+  </div>
   <div class="thc-txn-list">
     {% if transactions %}
       {% for t in transactions %}
         {% set net = namespace(val=0) %}
         {% for d in t.transaction_details %}{% set net.val = net.val + d.amount - d.discount %}{% endfor %}
         {% set net.val = net.val - (t.discount or 0) %}
+        {% set tt = type_lookup.get(t.transaction_type) %}
         <a href="{{ url_for('daily_sales.edit_transaction', transaction_id=t.id) if not t.submitted and not t.cancelled else url_for('daily_sales.view_transaction', transaction_id=t.id) }}"
            class="thc-rec-row">
+          <div class="thc-rec-icon {{ tt.icon_color if tt else 'ic-slate' }}">
+            <i class="bi {{ tt.icon if tt else 'bi-tag' }}"></i>
+          </div>
           <div class="thc-rec-info">
             <div class="thc-rec-num"># {{ t.record_number }}</div>
             <div class="thc-rec-customer">{{ t.customer.customer_name if t.customer else '—' }}</div>
-            <div class="thc-rec-type">{{ (t.description or 'walk_in') | replace('_', ' ') | title }}</div>
+            <div class="thc-rec-type">{{ tt.type_name if tt else (t.transaction_type or 'Walk-in') | replace('_', ' ') | title }}</div>
           </div>
           <div class="thc-rec-amount">₱{{ "%.2f" | format(net.val) }}</div>
           <div>
@@ -258,7 +256,9 @@
         </a>
       {% endfor %}
     {% else %}
-      <div class="thc-empty">No transactions recorded today.</div>
+      <div class="thc-empty">
+        {% if is_today %}No transactions recorded today.{% else %}No transactions found for {{ selected_date.strftime("%B %d, %Y") }}.{% endif %}
+      </div>
     {% endif %}
   </div>
 
@@ -266,10 +266,10 @@
   <div class="thc-footer">
     <div class="thc-cashier">
       <div class="thc-avatar">
-        {{ current_user.initials if current_user.initials else current_user.first_name[0] ~ current_user.last_name[0] }}
+        {{ current_user.first_name[0] }}{{ current_user.last_name[0] if current_user.last_name else '' }}
       </div>
       <div>
-        <p class="thc-cashier-name">{{ current_user.full_name }}</p>
+        <p class="thc-cashier-name">{{ current_user.first_name }} {{ current_user.last_name }}</p>
         <p class="thc-cashier-role">Cashier on duty</p>
       </div>
     </div>
