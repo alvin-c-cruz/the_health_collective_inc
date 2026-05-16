@@ -19,6 +19,8 @@ class Transaction(db.Model):
 
     description = db.Column(db.String())
 
+    transaction_type = db.Column(db.String(), default='walk_in')
+
     submitted = db.Column(db.String())
     cancelled = db.Column(db.String())
 

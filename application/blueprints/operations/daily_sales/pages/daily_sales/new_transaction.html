@@ -662,7 +662,7 @@
 
 
 
-      {# Row 1: Date · Record No. (auto, readonly) · DashLabs No. #}
+      {# Row 1: Date · Record No. (auto, readonly) · Transaction Type #}
 
       <div class="row g-3 mb-3">
 
@@ -684,7 +684,7 @@
 
         </div>
 
-        <div class="col-md-5">
+        <div class="col-md-4">
 
           <label class="form-label">
 
@@ -708,25 +708,67 @@
 
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-5">
 
-          <label class="form-label">DashLabs Number</label>
+          <label class="form-label">Transaction Type *</label>
 
-          <input type="text" name="dashlabs_number" class="form-control upper-case"
-
-            value="{{ form.dashlabs_number }}" placeholder="e.g. DL-0001" {{ 'readonly' if form._locked_ }} {{ 'autofocus' if not form._locked_ }}>
+          {% if form._locked_ %}
+            <input type="text" class="form-control input-readonly"
+              value="{{ form.transaction_type | replace('_', ' ') | title }}" readonly>
+            <input type="hidden" name="transaction_type" value="{{ form.transaction_type }}">
+          {% else %}
+            <select name="transaction_type" class="form-select">
+              {% set types = [
+                ('walk_in',    'Walk-in'),
+                ('teleconsult','Teleconsult'),
+                ('home_service','Home Service'),
+                ('hmo_phic',  'HMO / PhilHealth'),
+                ('dialysis',  'Dialysis (MEDIPAD)'),
+                ('ape',       'Annual Physical Exam (APE)'),
+              ] %}
+              {% for val, label in types %}
+              <option value="{{ val }}" {{ 'selected' if form.transaction_type == val }}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          {% endif %}
 
         </div>
 
       </div>
 
-
-
-      {# Row 2: Customer (wider) · POS Number (same width as DashLabs above) #}
+      {# Row 1b: DashLabs No. · POS No. #}
 
       <div class="row g-3 mb-3">
 
-        <div class="col-md-8">
+        <div class="col-md-6">
+
+          <label class="form-label">DashLabs Number</label>
+
+          <input type="text" name="dashlabs_number" class="form-control upper-case"
+
+            value="{{ form.dashlabs_number }}" placeholder="e.g. 001" {{ 'readonly' if form._locked_ }} {{ 'autofocus' if not form._locked_ }}>
+
+        </div>
+
+
+
+        <div class="col-md-6">
+
+          <label class="form-label">POS / Storehub Number</label>
+
+          <input type="text" name="pos_number" class="form-control upper-case"
+
+            value="{{ form.pos_number }}" placeholder="e.g. 0001" {{ 'readonly' if form._locked_ }}>
+
+        </div>
+
+      </div>
+
+      {# Row 2: Customer #}
+
+      <div class="row g-3 mb-3">
+
+        <div class="col-12">
 
           <label class="form-label">Customer *</label>
 
@@ -744,16 +786,6 @@
             <div class="invalid-feedback">{{ form.errors.customer_name }}</div>
 
           {% endif %}
-
-        </div>
-
-        <div class="col-md-4">
-
-          <label class="form-label">POS Number</label>
-
-          <input type="text" name="pos_number" class="form-control upper-case"
-
-            value="{{ form.pos_number }}" placeholder="e.g. POS-0001" {{ 'readonly' if form._locked_ }}>
 
         </div>
 

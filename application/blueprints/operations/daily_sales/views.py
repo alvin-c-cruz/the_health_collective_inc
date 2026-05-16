@@ -102,9 +102,11 @@ def new_transaction():
     form.user_prepare_id = current_user.id
     form.record_date = str(date.today())  # default to today
     form.record_number = _generate_record_number()
+    form.transaction_type = transaction_type
 
     if request.method == 'POST':
         form._post(request.form)
+        transaction_type = form.transaction_type
         # Always auto-assign record number â€” user cannot edit it
         if not form.record_number:
             form.record_number = _generate_record_number()
@@ -175,7 +177,7 @@ def edit_transaction(transaction_id):
     else:
         form._populate(record)
 
-    transaction_type = record.description or 'walk_in'
+    transaction_type = record.transaction_type or 'walk_in'
     product_types = ProductType.query.order_by(ProductType.product_type_name).all()
     tenders = Tender.query.order_by(Tender.tender_name).all()
     sexes = Sex.query.order_by(Sex.sex_name).all()
@@ -328,17 +330,17 @@ def daily_report():
             gross = sum(d.amount - d.discount for d in t.transaction_details)
             net = gross - (t.discount or 0)
 
-            tx_type = (t.description or '').lower()
+            tx_type = t.transaction_type or 'walk_in'
 
             for tender in t.transaction_tenders:
                 t_name = tender.tender.tender_name if tender.tender else 'Unknown'
                 amount = tender.amount
 
-                if 'hmo' in tx_type or 'ape' in tx_type:
+                if tx_type in ('hmo_phic', 'ape'):
                     report.hmo_sales[t_name] = report.hmo_sales.get(t_name, 0) + amount
-                elif 'home' in tx_type:
+                elif tx_type == 'home_service':
                     report.home_service_sales[t_name] = report.home_service_sales.get(t_name, 0) + amount
-                elif 'dialysis' in tx_type:
+                elif tx_type == 'dialysis':
                     report.dialysis_sales[t_name] = report.dialysis_sales.get(t_name, 0) + amount
                 else:
                     report.walk_in_sales[t_name] = report.walk_in_sales.get(t_name, 0) + amount
