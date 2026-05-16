@@ -23,14 +23,14 @@
     {% endwith %}
 
     {# Tender filter tabs #}
-    <div class="d-flex flex-wrap gap-2 mb-3">
+    <div class="thc-toggle-group mb-3">
         <a href="{{ url_for('collections.home') }}{% if show_settled %}?show_settled=1{% endif %}"
-           class="thc-btn thc-btn-sm {{ 'thc-btn-primary' if not selected_tender_id else 'thc-btn-secondary' }}">
+           class="thc-toggle {{ 'thc-toggle--on' if not selected_tender_id else 'thc-toggle--off' }}">
             All
         </a>
         {% for t in tenders %}
         <a href="{{ url_for('collections.home', tender_id=t.id) }}{% if show_settled %}&show_settled=1{% endif %}"
-           class="thc-btn thc-btn-sm {{ 'thc-btn-primary' if selected_tender_id == t.id else 'thc-btn-secondary' }}">
+           class="thc-toggle {{ 'thc-toggle--on' if selected_tender_id == t.id else 'thc-toggle--off' }}">
             {{ t.tender_name }}
         </a>
         {% endfor %}
@@ -98,4 +98,32 @@
         </table>
     </div>
 </div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .thc-toggle-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0;
+        border: 1px solid #c6dde1;
+        border-radius: 7px;
+        overflow: hidden;
+        width: fit-content;
+        max-width: 100%;
+    }
+    .thc-toggle {
+        padding: 0.28rem 0.75rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-decoration: none;
+        border-right: 1px solid #c6dde1;
+        transition: background 0.1s, color 0.1s;
+        white-space: nowrap;
+    }
+    .thc-toggle:last-child { border-right: none; }
+    .thc-toggle--on  { background: var(--thc-primary); color: #fff; }
+    .thc-toggle--off { background: #fff; color: var(--thc-text-muted); }
+    .thc-toggle--off:hover { background: var(--thc-primary-light); color: var(--thc-primary); }
+</style>
 {% endblock %}
