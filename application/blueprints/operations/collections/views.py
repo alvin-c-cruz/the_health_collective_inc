@@ -72,13 +72,20 @@ def home():
     if not show_settled:
         rows = [r for r in rows if not r["is_settled"]]
 
+    # Group rows by tender, preserving tender sort order
+    from collections import OrderedDict
+    groups = OrderedDict()
+    for r in rows:
+        name = r["tt"].tender.tender_name if r["tt"].tender else "—"
+        groups.setdefault(name, []).append(r)
+
     total_outstanding = sum(r["outstanding"] for r in rows if not r["is_settled"])
 
     context = {
         "app_label": app_label,
         "tenders": tenders,
         "selected_tender_id": tender_id,
-        "rows": rows,
+        "groups": groups,
         "show_settled": show_settled,
         "total_outstanding": total_outstanding,
     }

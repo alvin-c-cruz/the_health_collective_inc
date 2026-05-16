@@ -58,7 +58,6 @@
                     <th>Date</th>
                     <th>OR #</th>
                     <th>Patient</th>
-                    <th>Tender</th>
                     <th class="text-end">Amount</th>
                     <th class="text-end">Collected</th>
                     <th class="text-end">Outstanding</th>
@@ -66,36 +65,42 @@
                 </tr>
             </thead>
             <tbody>
-                {% for r in rows %}
-                {% set tt = r.tt %}
-                <tr class="{{ 'table-success' if r.is_settled else '' }}">
-                    <td class="text-nowrap">{{ tt.transaction.formatted_record_date or tt.transaction.record_date }}</td>
-                    <td class="font-monospace small">{{ tt.transaction.record_number or '—' }}</td>
-                    <td>{{ tt.transaction.customer.customer_name if tt.transaction.customer else '—' }}</td>
-                    <td>{{ tt.tender.tender_name if tt.tender else '—' }}</td>
-                    <td class="text-end font-monospace">{{ '{:,.2f}'.format(tt.amount) }}</td>
-                    <td class="text-end font-monospace">{{ '{:,.2f}'.format(r.collected) }}</td>
-                    <td class="text-end font-monospace {% if not r.is_settled %}fw-semibold{% endif %}">
-                        {{ '{:,.2f}'.format(r.outstanding) }}
-                    </td>
-                    <td>
-                        {% if r.is_settled %}
-                            <span class="badge bg-success">Settled</span>
-                        {% else %}
-                            <span class="badge bg-warning text-dark">Outstanding</span>
-                        {% endif %}
-                    </td>
-                </tr>
+                {% if groups %}
+                    {% for tender_name, group_rows in groups.items() %}
+                    <tr class="thc-group-header">
+                        <td colspan="7">{{ tender_name }}</td>
+                    </tr>
+                    {% for r in group_rows %}
+                    {% set tt = r.tt %}
+                    <tr class="{{ 'table-success' if r.is_settled else '' }}">
+                        <td class="text-nowrap">{{ tt.transaction.formatted_record_date or tt.transaction.record_date }}</td>
+                        <td class="font-monospace small">{{ tt.transaction.record_number or '—' }}</td>
+                        <td>{{ tt.transaction.customer.customer_name if tt.transaction.customer else '—' }}</td>
+                        <td class="text-end font-monospace">{{ '{:,.2f}'.format(tt.amount) }}</td>
+                        <td class="text-end font-monospace">{{ '{:,.2f}'.format(r.collected) }}</td>
+                        <td class="text-end font-monospace {% if not r.is_settled %}fw-semibold{% endif %}">
+                            {{ '{:,.2f}'.format(r.outstanding) }}
+                        </td>
+                        <td>
+                            {% if r.is_settled %}
+                                <span class="badge bg-success">Settled</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Outstanding</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
                 {% else %}
                 <tr>
-                    <td colspan="8" class="text-center text-muted py-4">No outstanding receivables.</td>
+                    <td colspan="7" class="text-center text-muted py-4">No outstanding receivables.</td>
                 </tr>
-                {% endfor %}
+                {% endif %}
             </tbody>
-            {% if rows %}
+            {% if groups %}
             <tfoot>
                 <tr class="fw-semibold">
-                    <td colspan="6" class="text-end">Total Outstanding</td>
+                    <td colspan="5" class="text-end">Total Outstanding</td>
                     <td class="text-end font-monospace">{{ '{:,.2f}'.format(total_outstanding) }}</td>
                     <td></td>
                 </tr>
@@ -131,6 +136,16 @@
     .thc-toggle--on  { background: var(--thc-primary); color: #fff; }
     .thc-toggle--off { background: #fff; color: var(--thc-text-muted); }
     .thc-toggle--off:hover { background: var(--thc-primary-light); color: var(--thc-primary); }
+
+    .thc-group-header td {
+        background: var(--thc-primary-light);
+        color: var(--thc-primary);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 0.35rem 0.5rem;
+    }
 
     .thc-pill-toggle {
         display: inline-flex;
