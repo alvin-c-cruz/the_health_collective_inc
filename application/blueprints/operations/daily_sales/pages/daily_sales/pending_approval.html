@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Pending Approval{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+
+    <div class="thc-page-header">
+        <h4>Pending Approval</h4>
+        <a href="{{ url_for('daily_sales.home') }}" class="thc-btn thc-btn-secondary">← Daily Sales</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="thc-card">
+        <table class="table table-sm table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Record #</th>
+                    <th>Customer</th>
+                    <th>Type</th>
+                    <th class="text-end">Amount</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in records %}
+                {% set gross = namespace(val=0) %}
+                {% set disc  = namespace(val=0) %}
+                {% for d in record.transaction_details %}
+                    {% set gross.val = gross.val + d.amount %}
+                    {% set disc.val  = disc.val  + d.discount %}
+                {% endfor %}
+                {% set net = gross.val - disc.val - (record.discount or 0) %}
+                <tr>
+                    <td class="text-nowrap">{{ record.record_date }}</td>
+                    <td class="font-monospace small">{{ record.record_number or '—' }}</td>
+                    <td class="fw-semibold">{{ record.customer.customer_name if record.customer else '—' }}</td>
+                    <td>{{ record.transaction_type.type_name if record.transaction_type else '—' }}</td>
+                    <td class="text-end font-monospace">{{ '{:,.2f}'.format(net) }}</td>
+                    <td class="text-end" style="white-space:nowrap;">
+                        <a href="{{ url_for('daily_sales.view_transaction', transaction_id=record.id) }}"
+                           class="thc-btn thc-btn-sm thc-btn-secondary me-1">View</a>
+                        <form method="POST"
+                              action="{{ url_for('daily_sales.approve_transaction', transaction_id=record.id) }}"
+                              style="display:inline;"
+                              onsubmit="return confirm('Approve transaction #{{ record.record_number or record.id }}?')">
+                            <button type="submit" class="thc-btn thc-btn-sm thc-btn-primary">Approve</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">All caught up — no transactions pending approval.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if records %}
+    <div class="text-muted small mt-2">{{ records | length }} transaction{{ 's' if records | length != 1 }} pending approval</div>
+    {% endif %}
+
+</div>
+{% endblock %}

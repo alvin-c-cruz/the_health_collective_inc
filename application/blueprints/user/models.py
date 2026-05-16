@@ -21,6 +21,7 @@ class User(db.Model):
     middle_name = db.Column(db.String())
     last_name = db.Column(db.String())
     email = db.Column(db.String())
+    superuser = db.Column(db.Boolean(), default=False)
     admin = db.Column(db.Boolean(), default=False)
     staff = db.Column(db.Boolean(), default=False)
     active = db.Column(db.Boolean(), default=False)

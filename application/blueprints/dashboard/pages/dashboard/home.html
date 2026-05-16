@@ -107,6 +107,7 @@
                 </div>
             </div>
 
+            {% if current_user.admin or current_user.superuser %}
             <div class="dash-card {% if pending_approval_count > 0 %}dash-card--warn{% endif %}">
                 <div class="dash-card__icon"
                      style="background:#fee2e2;color:#c0392b;">
@@ -115,10 +116,11 @@
                 <div class="dash-card__body">
                     <div class="dash-card__label">Pending Approval</div>
                     <div class="dash-card__value">{{ pending_approval_count }}</div>
-                    <a href="{{ url_for('daily_sales.home') }}"
+                    <a href="{{ url_for('daily_sales.pending_approval') }}"
                        class="dash-card__link">View &rarr;</a>
                 </div>
             </div>
+            {% endif %}
 
         </div>
     </div>

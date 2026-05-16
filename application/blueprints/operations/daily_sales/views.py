@@ -310,6 +310,96 @@ def delete_transaction(transaction_id):
 
 
 # ---------------------------------------------------------------------------
+# Pending approval list  (admin + superuser only)
+# ---------------------------------------------------------------------------
+
+@bp.route('/pending_approval', methods=['GET'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def pending_approval():
+    from sqlalchemy import select as sa_select
+    from .admin_models import AdminTransaction
+    from flask import abort
+
+    if not (current_user.admin or current_user.superuser):
+        abort(403)
+
+    approved_ids = sa_select(AdminTransaction.transaction_id)
+    records = (
+        Transaction.query
+        .filter(
+            Transaction.submitted.isnot(None),
+            Transaction.submitted != '',
+            Transaction.cancelled.is_(None),
+            Transaction.id.notin_(approved_ids),
+        )
+        .order_by(Transaction.record_date.asc(), Transaction.id.asc())
+        .all()
+    )
+    return render_template(
+        "daily_sales/pending_approval.html",
+        records=records,
+        app_label=app_label,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Approve transaction  (admin + superuser only)
+# ---------------------------------------------------------------------------
+
+@bp.route('/transaction/<int:transaction_id>/approve', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def approve_transaction(transaction_id):
+    from .admin_models import AdminTransaction
+    from application.extensions import db
+    from flask import abort
+
+    if not (current_user.admin or current_user.superuser):
+        abort(403)
+
+    record = Transaction.query.get_or_404(transaction_id)
+
+    if not record.submitted or record.cancelled:
+        flash('Only submitted, active transactions can be approved.', 'warning')
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+    existing = AdminTransaction.query.filter_by(transaction_id=transaction_id).first()
+    if existing:
+        flash('Transaction is already approved.', 'info')
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+    db.session.add(AdminTransaction(
+        transaction_id=transaction_id,
+        user_id=current_user.id,
+    ))
+    db.session.commit()
+    flash('Transaction approved.', 'success')
+    return redirect(url_for(f'{app_name}.pending_approval'))
+
+
+# ---------------------------------------------------------------------------
+# Unlock transaction  (superuser only)
+# ---------------------------------------------------------------------------
+
+@bp.route('/transaction/<int:transaction_id>/unlock', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def unlock_transaction(transaction_id):
+    from .admin_models import AdminTransaction
+    from application.extensions import db
+    from flask import abort
+
+    if not current_user.superuser:
+        abort(403)
+
+    AdminTransaction.query.filter_by(transaction_id=transaction_id).delete()
+    db.session.commit()
+    flash('Transaction unlocked and returned to pending approval.', 'warning')
+    return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+
+# ---------------------------------------------------------------------------
 # Customer autocomplete
 # ---------------------------------------------------------------------------
 

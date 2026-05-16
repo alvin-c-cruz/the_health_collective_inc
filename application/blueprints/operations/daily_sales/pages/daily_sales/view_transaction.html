@@ -62,6 +62,8 @@
 
   /* Status badges */
   .badge-submitted { background: #e8f5e9; color: #2e7d32; padding: 3px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 600; }
+  .badge-approved  { background: #1a6473; color: #fff;    padding: 3px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 600; }
+  .badge-pending   { background: #fee2e2; color: #c0392b; padding: 3px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 600; }
   .badge-draft { background: #fff8e1; color: #856404; padding: 3px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 600; }
   .badge-cancelled { background: #fdecea; color: #c0392b; padding: 3px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 600; }
 
@@ -87,9 +89,14 @@
     <h4>Transaction</h4>
     <span style="font-size:0.75rem;color:var(--thc-text-muted);">{{ record.formatted_record_date or record.record_date }}</span>
     <span style="font-size:0.75rem;color:var(--thc-text-muted);">&middot; {{ record.record_number or '—' }}</span>
-    <span style="margin-left:auto;">
+    <span style="margin-left:auto;display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;">
       {% if record.submitted %}
         <span class="badge-submitted">Submitted {{ record.formatted_submitted }}</span>
+        {% if record.user_approved %}
+          <span class="badge-approved">&#10003; Approved by {{ record.user_approved[0].user.user_name }}</span>
+        {% else %}
+          <span class="badge-pending">Pending Approval</span>
+        {% endif %}
       {% elif record.cancelled %}
         <span class="badge-cancelled">Cancelled {{ record.formatted_cancelled }}</span>
       {% else %}
@@ -225,6 +232,13 @@
     <form method="POST" action="{{ url_for('daily_sales.delete_transaction', transaction_id=record.id) }}"
       style="margin-left:auto;" onsubmit="return confirm('Permanently delete this draft?')">
       <button type="submit" class="btn-danger-outline">✗ Delete</button>
+    </form>
+    {% endif %}
+
+    {% if record.submitted and not record.cancelled and record.user_approved and current_user.superuser %}
+    <form method="POST" action="{{ url_for('daily_sales.unlock_transaction', transaction_id=record.id) }}"
+      style="margin-left:auto;" onsubmit="return confirm('Unlock this approved transaction and return it to Pending Approval?')">
+      <button type="submit" class="btn-danger-outline">&#128275; Unlock</button>
     </form>
     {% endif %}
   </div>
