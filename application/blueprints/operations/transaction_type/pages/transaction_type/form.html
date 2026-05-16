@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block title %}{{ "Add" if is_new else "Edit" }} Transaction Type — {{ app_label }}{% endblock %}
 
+{% block styles %}
+<link href="{{ url_for('static', filename='vendor/css/tom-select.bootstrap5.min.css') }}" rel="stylesheet">
+<style>
+  .icon-option { display:flex; align-items:center; gap:8px; }
+  .icon-option i { font-size:1.1rem; width:20px; text-align:center; }
+  .icon-option span { font-size:.8rem; font-family:monospace; color:var(--thc-text-muted); }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="thc-page" style="max-width:680px;margin:0 auto;">
   <div class="thc-page-header">
@@ -50,15 +59,9 @@
 
       <div class="row g-3 mb-3">
         <div class="col-md-4">
-          <label class="form-label">Icon <small class="text-muted">(Bootstrap Icon class)</small></label>
-          <div class="input-group">
-            <span class="input-group-text"><i id="icon-preview" class="bi {{ obj.icon or 'bi-tag' }}"></i></span>
-            <input type="text" name="icon" id="icon-input" class="form-control font-monospace"
-                   value="{{ obj.icon or 'bi-tag' }}">
-          </div>
-          <div style="font-size:.75rem;color:var(--thc-text-muted);margin-top:.25rem;">
-            e.g. bi-person-walking, bi-house-heart, bi-hospital
-          </div>
+          <label class="form-label">Icon</label>
+          <input type="hidden" name="icon" id="icon-value" value="{{ obj.icon or 'bi-tag' }}">
+          <select id="icon-select"></select>
         </div>
         <div class="col-md-4">
           <label class="form-label">Icon Color</label>
@@ -114,10 +117,44 @@
   </form>
 </div>
 
+<script src="{{ url_for('static', filename='vendor/js/tom-select.complete.min.js') }}"></script>
 <script>
-  document.getElementById('icon-input').addEventListener('input', function() {
-    var preview = document.getElementById('icon-preview');
-    preview.className = 'bi ' + this.value.trim();
+  const ICONS = [
+    'bi-tag','bi-person-walking','bi-house-heart','bi-hospital','bi-droplet-half',
+    'bi-heart-pulse','bi-clipboard2-pulse','bi-stethoscope','bi-capsule','bi-bandaid',
+    'bi-activity','bi-people','bi-person','bi-person-check','bi-person-plus',
+    'bi-truck','bi-telephone','bi-camera-video','bi-building','bi-building-add',
+    'bi-briefcase','bi-cash','bi-credit-card','bi-wallet2','bi-receipt',
+    'bi-file-medical','bi-file-earmark-text','bi-clipboard','bi-journal-medical',
+    'bi-shield-plus','bi-shield-check','bi-eye','bi-ear','bi-lungs',
+    'bi-thermometer-half','bi-syringe','bi-virus','bi-wheelchair','bi-bicycle',
+    'bi-car-front','bi-geo-alt','bi-clock','bi-calendar-check','bi-stars',
+  ];
+
+  const current = document.getElementById('icon-value').value || 'bi-tag';
+
+  const select = document.getElementById('icon-select');
+  ICONS.forEach(function(icon) {
+    const opt = document.createElement('option');
+    opt.value = icon;
+    opt.text = icon;
+    if (icon === current) opt.selected = true;
+    select.appendChild(opt);
+  });
+
+  const ts = new TomSelect('#icon-select', {
+    maxOptions: ICONS.length,
+    render: {
+      option: function(data) {
+        return '<div class="icon-option"><i class="bi ' + data.value + '"></i><span>' + data.value + '</span></div>';
+      },
+      item: function(data) {
+        return '<div class="icon-option"><i class="bi ' + data.value + '"></i><span>' + data.value + '</span></div>';
+      }
+    },
+    onChange: function(val) {
+      document.getElementById('icon-value').value = val;
+    }
   });
 </script>
 {% endblock %}
