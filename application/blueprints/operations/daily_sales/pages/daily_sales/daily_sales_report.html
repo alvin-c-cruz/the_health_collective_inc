@@ -168,16 +168,16 @@
       </thead>
       <tbody>
 
-        <tr class="sub-hdr"><td colspan="4">HMO / APE</td></tr>
-        {% for t in hmo_tenders %}
+        <tr class="sub-hdr"><td colspan="4">APE</td></tr>
+        {% for t in ape_tenders %}
         <tr>
           <td class="lbl2">{{ t }}</td>
           <td class="num"></td>
-          <td class="num">{{ "{:,.2f}".format(prev_report.hmo_sales.get(t, 0.0)) }}</td>
-          <td class="num">{{ "{:,.2f}".format(curr_report.hmo_sales.get(t, 0.0)) }}</td>
+          <td class="num">{{ "{:,.2f}".format(prev_report.ape_sales.get(t, 0.0)) }}</td>
+          <td class="num">{{ "{:,.2f}".format(curr_report.ape_sales.get(t, 0.0)) }}</td>
         </tr>
         {% else %}
-        <tr><td class="lbl2" colspan="4" style="color:var(--muted);font-style:italic;padding-top:3px;padding-bottom:3px;">No HMO/APE transactions</td></tr>
+        <tr><td class="lbl2" colspan="4" style="color:var(--muted);font-style:italic;padding-top:3px;padding-bottom:3px;">No APE transactions</td></tr>
         {% endfor %}
 
         <tr class="sub-hdr"><td colspan="4">Home Service</td></tr>
@@ -248,8 +248,8 @@
   </div>
 
   <!-- LOWER: Cash on Hand + Accountabilities -->
-  {% set prev_cash_sales = prev_report.walk_in_sales.get('CASH', 0.0) + prev_report.home_service_sales.get('CASH', 0.0) + prev_report.hmo_sales.get('CASH', 0.0) %}
-  {% set curr_cash_sales = curr_report.walk_in_sales.get('CASH', 0.0) + curr_report.home_service_sales.get('CASH', 0.0) + curr_report.hmo_sales.get('CASH', 0.0) %}
+  {% set prev_cash_sales = prev_report.walk_in_sales.get('CASH', 0.0) + prev_report.home_service_sales.get('CASH', 0.0) + prev_report.ape_sales.get('CASH', 0.0) %}
+  {% set curr_cash_sales = curr_report.walk_in_sales.get('CASH', 0.0) + curr_report.home_service_sales.get('CASH', 0.0) + curr_report.ape_sales.get('CASH', 0.0) %}
   <div class="lower-grid">
     <div class="sec">
       <div class="sec-title">Cash on Hand</div>

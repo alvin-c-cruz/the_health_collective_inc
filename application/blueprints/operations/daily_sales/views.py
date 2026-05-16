@@ -363,7 +363,7 @@ def daily_report():
                 amount = tender.amount
 
                 if tx_type == 'hmo_ape':
-                    report.hmo_sales[t_name] = report.hmo_sales.get(t_name, 0) + amount
+                    report.ape_sales[t_name] = report.ape_sales.get(t_name, 0) + amount
                 elif tx_type == 'home_service':
                     report.home_service_sales[t_name] = report.home_service_sales.get(t_name, 0) + amount
                 elif tx_type == 'dialysis':
@@ -372,7 +372,7 @@ def daily_report():
                     report.walk_in_sales[t_name] = report.walk_in_sales.get(t_name, 0) + amount
 
         report.total_diagnostic_sales = (
-            sum(report.hmo_sales.values()) +
+            sum(report.ape_sales.values()) +
             sum(report.home_service_sales.values()) +
             sum(report.walk_in_sales.values())
         )
@@ -391,7 +391,7 @@ def daily_report():
     context = {
         "prev_report": prev_report,
         "curr_report": curr_report,
-        "hmo_tenders": merged_keys(prev_report.hmo_sales, curr_report.hmo_sales),
+        "ape_tenders": merged_keys(prev_report.ape_sales, curr_report.ape_sales),
         "home_service_tenders": merged_keys(prev_report.home_service_sales, curr_report.home_service_sales),
         "walk_in_tenders": merged_keys(prev_report.walk_in_sales, curr_report.walk_in_sales),
         "dialysis_tenders": merged_keys(prev_report.dialysis_sales, curr_report.dialysis_sales),
@@ -408,7 +408,7 @@ def daily_report():
 class _Report:
     def __init__(self):
         self.report_date: date = date.today()
-        self.hmo_sales: dict = {}
+        self.ape_sales: dict = {}
         self.home_service_sales: dict = {}
         self.walk_in_sales: dict = {}
         self.dialysis_sales: dict = {}

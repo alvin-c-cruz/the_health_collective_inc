@@ -30,7 +30,7 @@
             <th style="width:48px;"></th>
             <th>Name</th>
             <th>Code</th>
-            <th>Report Category</th>
+
             <th class="text-center">Sort</th>
             <th class="text-center">Status</th>
             <th>Action</th>
@@ -51,7 +51,7 @@
               {% endif %}
             </td>
             <td><code style="font-size:.8rem;">{{ t.type_code }}</code></td>
-            <td style="font-size:.85rem;">{{ t.report_category | replace('_', ' ') | title }}</td>
+
             <td class="text-center" style="font-size:.85rem;">{{ t.sort_order }}</td>
             <td class="text-center">
               {% if t.active %}
@@ -77,7 +77,7 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="7" class="text-center text-muted py-4">No transaction types found.</td>
+            <td colspan="6" class="text-center text-muted py-4">No transaction types found.</td>
           </tr>
           {% endfor %}
         </tbody>
