@@ -10,6 +10,16 @@
         <span style="font-size:0.82rem;color:var(--thc-text-muted);">
             {{ today.strftime("%B %d, %Y") }}
         </span>
+        {% if "Daily Sales" in current_user.user_roles %}
+        <div style="margin-left:auto;display:flex;gap:0.5rem;">
+            <a href="{{ url_for('daily_sales.home') }}" class="dash-ql-btn">
+                <i class="bi bi-journal-text"></i> Daily Sales
+            </a>
+            <a href="{{ url_for('daily_sales.daily_report') }}" class="dash-ql-btn">
+                <i class="bi bi-file-earmark-bar-graph"></i> Daily Report
+            </a>
+        </div>
+        {% endif %}
     </div>
 
     {# ── Today ── #}
@@ -72,19 +82,6 @@
         </div>
     </div>
 
-    {# ── Quick Links ── #}
-    {% if "Daily Sales" in current_user.user_roles %}
-    <div class="dash-quicklinks">
-        <span class="dash-quicklinks__label">Quick Links</span>
-        <a href="{{ url_for('daily_sales.home') }}" class="dash-ql-btn">
-            <i class="bi bi-journal-text"></i> Daily Sales
-        </a>
-        <a href="{{ url_for('daily_sales.daily_report') }}" class="dash-ql-btn">
-            <i class="bi bi-file-earmark-bar-graph"></i> Daily Report
-        </a>
-    </div>
-    {% endif %}
-
     {# ── Action Items ── #}
     <div>
         <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
@@ -145,25 +142,6 @@
     .dash-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
     .dash-card--warn { border-color: #fbbf24; }
 
-    .dash-quicklinks {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        padding: 0.6rem 0.9rem;
-        background: var(--thc-primary-light);
-        border: 1px solid var(--thc-border);
-        border-radius: 10px;
-        margin-bottom: 1.5rem;
-    }
-    .dash-quicklinks__label {
-        font-size: 0.68rem;
-        font-weight: 700;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: var(--thc-text-muted);
-        margin-right: 0.25rem;
-    }
     .dash-ql-btn {
         display: inline-flex;
         align-items: center;
