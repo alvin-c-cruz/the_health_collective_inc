@@ -74,32 +74,14 @@
 
     {# ── Quick Links ── #}
     {% if "Daily Sales" in current_user.user_roles %}
-    <div style="margin-bottom:0.4rem;">
-        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
-                    color:var(--thc-text-muted);margin-bottom:0.6rem;">Quick Links</div>
-        <div class="dash-grid">
-
-            <a href="{{ url_for('daily_sales.home') }}" class="dash-card dash-card--link">
-                <div class="dash-card__icon" style="background:#ede9fe;color:#6d28d9;">
-                    <i class="bi bi-journal-text"></i>
-                </div>
-                <div class="dash-card__body">
-                    <div class="dash-card__label">Daily Sales</div>
-                    <div class="dash-card__value" style="font-size:0.92rem;font-weight:600;">Transactions</div>
-                </div>
-            </a>
-
-            <a href="{{ url_for('daily_sales.daily_report') }}" class="dash-card dash-card--link">
-                <div class="dash-card__icon" style="background:#dcfce7;color:#166534;">
-                    <i class="bi bi-file-earmark-bar-graph"></i>
-                </div>
-                <div class="dash-card__body">
-                    <div class="dash-card__label">Daily Sales</div>
-                    <div class="dash-card__value" style="font-size:0.92rem;font-weight:600;">Report</div>
-                </div>
-            </a>
-
-        </div>
+    <div class="dash-quicklinks">
+        <span class="dash-quicklinks__label">Quick Links</span>
+        <a href="{{ url_for('daily_sales.home') }}" class="dash-ql-btn">
+            <i class="bi bi-journal-text"></i> Daily Sales
+        </a>
+        <a href="{{ url_for('daily_sales.daily_report') }}" class="dash-ql-btn">
+            <i class="bi bi-file-earmark-bar-graph"></i> Daily Report
+        </a>
     </div>
     {% endif %}
 
@@ -162,8 +144,41 @@
     }
     .dash-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
     .dash-card--warn { border-color: #fbbf24; }
-    a.dash-card--link { text-decoration: none; color: inherit; cursor: pointer; }
-    a.dash-card--link:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.10); border-color: var(--thc-border); }
+
+    .dash-quicklinks {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 0.6rem 0.9rem;
+        background: var(--thc-primary-light);
+        border: 1px solid var(--thc-border);
+        border-radius: 10px;
+        margin-bottom: 1.5rem;
+    }
+    .dash-quicklinks__label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--thc-text-muted);
+        margin-right: 0.25rem;
+    }
+    .dash-ql-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.3rem 0.75rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--thc-primary);
+        background: #fff;
+        border: 1px solid var(--thc-primary);
+        border-radius: 6px;
+        text-decoration: none;
+        transition: background 0.12s, color 0.12s;
+    }
+    .dash-ql-btn:hover { background: var(--thc-primary); color: #fff; }
 
     .dash-card__icon {
         width: 40px;
