@@ -12,7 +12,7 @@ from application.extensions import db
 # Maps role name -> (parent_group, sub_group). '' sub_group = no sub-header.
 _ROLE_CATEGORIES = {
     'Daily Sales':            ('Operations', ''),
-    'Transaction Type':       ('Operations', ''),
+    'Service Types':          ('Operations', ''),
     'Bank Account':           ('Operations', ''),
     'Collections':            ('Operations', ''),
 

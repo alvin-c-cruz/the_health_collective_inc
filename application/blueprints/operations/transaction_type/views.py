@@ -46,7 +46,7 @@ def add():
         if not errors:
             db.session.add(obj)
             db.session.commit()
-            flash(f'Transaction type "{obj.type_name}" added.', 'success')
+            flash(f'Service type "{obj.type_name}" added.', 'success')
             return redirect(url_for('transaction_type.home'))
 
     return render_template('transaction_type/form.html',
@@ -83,7 +83,7 @@ def edit(record_id):
 
         if not errors:
             db.session.commit()
-            flash(f'Transaction type "{obj.type_name}" updated.', 'success')
+            flash(f'Service type "{obj.type_name}" updated.', 'success')
             return redirect(url_for('transaction_type.home'))
 
     return render_template('transaction_type/form.html',
