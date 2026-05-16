@@ -72,7 +72,7 @@ def roles_accepted(roles=[]):
         def decorated_view(*args, **kwargs):
             if not any(role in roles for role in current_user.user_roles):
                 flash("You are not allowed to access this area.", category="error")
-                return redirect(url_for('main.home')) 
+                return redirect(url_for('dashboard.home')) 
             return func(*args, **kwargs)
         return decorated_view
     return decorator  
@@ -229,7 +229,7 @@ def register():
 def change_password():
     if not current_user.admin:
         flash("Admin rights required", category="error")
-        return redirect(url_for('main.home'))
+        return redirect(url_for('dashboard.home'))
     
 
     if request.method == "POST":

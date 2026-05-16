@@ -1,4 +1,4 @@
-from . import main
+from . import dashboard
 from . import user
 
 from . import account
