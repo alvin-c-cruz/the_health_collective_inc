@@ -1,10 +1,6 @@
 from . import dashboard
 from . import user
 
-from . import account
-from . import account_class
-from . import account_type
-
 from .register import vendor
 from .register import customer
 from .register import measure
@@ -13,21 +9,27 @@ from .register import product_type
 from .register import tender
 from .register import sex
 
-from .books_of_accounts import sales
-from .books_of_accounts import receipt
-from .books_of_accounts import accounts_payable
-from .books_of_accounts import disbursement
-from .books_of_accounts import general
+from .accounting import account
+from .accounting import account_class
+from .accounting import account_type
 
-from .books_of_accounts_extra import sales_extra
-from .books_of_accounts_extra import receipt_extra
-from .books_of_accounts_extra import accounts_payable_extra
-from .books_of_accounts_extra import disbursement_extra
-from .books_of_accounts_extra import general_extra
+from .accounting.books_of_accounts import sales
+from .accounting.books_of_accounts import receipt
+from .accounting.books_of_accounts import accounts_payable
+from .accounting.books_of_accounts import disbursement
+from .accounting.books_of_accounts import general
 
-from . import trial_balance
-from . import ledger
+from .accounting.books_of_accounts_extra import sales_extra
+from .accounting.books_of_accounts_extra import receipt_extra
+from .accounting.books_of_accounts_extra import accounts_payable_extra
+from .accounting.books_of_accounts_extra import disbursement_extra
+from .accounting.books_of_accounts_extra import general_extra
+
+from .accounting import trial_balance
+from .accounting import ledger
 
 from .operations import daily_sales
 from .operations import transaction_type
+from .operations import bank_account
+from .operations import collections
 

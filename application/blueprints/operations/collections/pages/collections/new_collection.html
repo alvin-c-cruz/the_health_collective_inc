@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Record Collection{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+    <div class="thc-page-header">
+        <h4>Record Collection</h4>
+        <a href="{{ url_for('collections.home') }}" class="thc-btn thc-btn-secondary">Back</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endwith %}
+
+    <form method="post" action="{{ url_for('collections.new_collection') }}">
+        <div class="thc-card mb-3">
+            <h6 class="fw-semibold mb-3">Collection Details</h6>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Collection Date</label>
+                    <input type="date" class="form-control" name="collection_date" value="{{ today }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Tender / Payer</label>
+                    <select class="form-select" name="tender_id" id="tender_select" required>
+                        <option value="">— Select —</option>
+                        {% for t in tenders %}
+                        <option value="{{ t.id }}" {{ 'selected' if selected_tender_id == t.id }}>
+                            {{ t.tender_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Bank Account</label>
+                    <select class="form-select" name="bank_account_id">
+                        <option value="">— None —</option>
+                        {% for b in bank_accounts %}
+                        <option value="{{ b.id }}">{{ b.bank_name }}{% if b.account_number %} ({{ b.account_number }}){% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Reference No.</label>
+                    <input type="text" class="form-control" name="reference" placeholder="Check no., OR no., etc.">
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Notes</label>
+                    <input type="text" class="form-control" name="notes" placeholder="Optional remarks">
+                </div>
+            </div>
+        </div>
+
+        <div class="thc-card mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-semibold mb-0">Outstanding Lines</h6>
+                <span class="text-muted small">Select lines covered by this collection</span>
+            </div>
+
+            <div id="lines-container">
+                {% if outstanding_rows %}
+                    {% include 'collections/_lines_table.html' %}
+                {% else %}
+                    <p class="text-muted text-center py-3" id="lines-placeholder">
+                        Select a tender above to load outstanding lines.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="thc-btn thc-btn-primary">Save Collection</button>
+            <a href="{{ url_for('collections.home') }}" class="thc-btn thc-btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.getElementById('tender_select').addEventListener('change', function () {
+    const tenderId = this.value;
+    const container = document.getElementById('lines-container');
+    if (!tenderId) {
+        container.innerHTML = '<p class="text-muted text-center py-3">Select a tender above to load outstanding lines.</p>';
+        return;
+    }
+    container.innerHTML = '<p class="text-muted text-center py-3">Loading…</p>';
+    fetch(`{{ url_for('collections.get_lines') }}?tender_id=${tenderId}`)
+        .then(r => r.json())
+        .then(lines => {
+            if (!lines.length) {
+                container.innerHTML = '<p class="text-muted text-center py-3">No outstanding lines for this tender.</p>';
+                return;
+            }
+            let html = `<table class="table table-sm mb-0">
+                <thead><tr>
+                    <th><input type="checkbox" id="check_all" title="Select all"> All</th>
+                    <th>Date</th><th>OR #</th><th>Patient</th>
+                    <th class="text-end">Amount</th>
+                    <th class="text-end">Collected</th>
+                    <th class="text-end">Outstanding</th>
+                    <th class="text-end" style="min-width:110px">Apply</th>
+                </tr></thead><tbody>`;
+            lines.forEach(l => {
+                html += `<tr>
+                    <td><input type="checkbox" class="line-check" name="line_id" value="${l.id}" onchange="syncAmount(this)"></td>
+                    <td class="text-nowrap">${l.record_date}</td>
+                    <td class="font-monospace small">${l.record_number}</td>
+                    <td>${l.customer}</td>
+                    <td class="text-end font-monospace">${fmt(l.amount)}</td>
+                    <td class="text-end font-monospace">${fmt(l.collected)}</td>
+                    <td class="text-end font-monospace fw-semibold">${fmt(l.outstanding)}</td>
+                    <td class="text-end">
+                        <input type="number" class="form-control form-control-sm text-end line-amount"
+                               name="line_amount" value="${l.outstanding}" step="0.01" min="0.01"
+                               style="width:100px;display:inline-block" disabled
+                               data-max="${l.outstanding}">
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+
+            document.getElementById('check_all').addEventListener('change', function () {
+                document.querySelectorAll('.line-check').forEach(cb => {
+                    cb.checked = this.checked;
+                    syncAmount(cb);
+                });
+            });
+        });
+});
+
+function syncAmount(cb) {
+    const row = cb.closest('tr');
+    const input = row.querySelector('.line-amount');
+    input.disabled = !cb.checked;
+    if (cb.checked) input.focus();
+}
+
+function fmt(n) {
+    return Number(n).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+</script>
+{% endblock %}

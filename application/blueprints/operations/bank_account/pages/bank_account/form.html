@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "macros_simple_form.html" import text_box, text_area, save_button %}
+
+{% block title %}Bank Account{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+    <div class="thc-page-header">
+        <h4>{{ 'Edit' if form.id else 'Add' }} Bank Account</h4>
+    </div>
+
+    <form action="{{ url_for('bank_account.edit', record_id=form.id) if form.id else url_for('bank_account.add') }}" method="post">
+        {% if form.id %}
+            <input type="hidden" name="record_id" value="{{ form.id }}">
+        {% endif %}
+
+        {{ text_box(form, "Bank Name", "bank_name", form.bank_name, autofocus=True) }}
+        {{ text_box(form, "Account Name", "account_name", form.account_name) }}
+        {{ text_box(form, "Account Number", "account_number", form.account_number) }}
+        {{ text_area(form, "Notes", "notes", form.notes) }}
+
+        <div class="mb-3">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="active" id="active"
+                    {{ 'checked' if form.active }}>
+                <label class="form-check-label fw-semibold" for="active">Active</label>
+            </div>
+        </div>
+
+        {{ save_button() }}
+    </form>
+</div>
+{% endblock %}

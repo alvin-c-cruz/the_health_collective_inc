@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Collection #{{ col.id }}{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+    <div class="thc-page-header">
+        <h4>Collection #{{ col.id }}</h4>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('collections.home') }}" class="thc-btn thc-btn-secondary">Receivables</a>
+            <a href="{{ url_for('collections.history') }}" class="thc-btn thc-btn-secondary">History</a>
+            <form action="{{ url_for('collections.delete_collection', collection_id=col.id) }}" method="post"
+                  onsubmit="return confirm('Delete this collection record?')">
+                <button type="submit" class="thc-btn thc-btn-danger">Delete</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="thc-card mb-3">
+        <div class="row g-3">
+            <div class="col-sm-3">
+                <div class="text-muted small">Date</div>
+                <div class="fw-semibold">{{ col.formatted_collection_date }}</div>
+            </div>
+            <div class="col-sm-3">
+                <div class="text-muted small">Tender / Payer</div>
+                <div class="fw-semibold">{{ col.tender.tender_name if col.tender else '—' }}</div>
+            </div>
+            <div class="col-sm-3">
+                <div class="text-muted small">Bank Account</div>
+                <div>{{ col.bank_account.bank_name if col.bank_account else '—' }}
+                    {% if col.bank_account and col.bank_account.account_number %}
+                        <span class="text-muted small">({{ col.bank_account.account_number }})</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="text-muted small">Reference</div>
+                <div class="font-monospace">{{ col.reference or '—' }}</div>
+            </div>
+            {% if col.notes %}
+            <div class="col-12">
+                <div class="text-muted small">Notes</div>
+                <div>{{ col.notes }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="thc-card">
+        <h6 class="fw-semibold mb-3">Lines Settled</h6>
+        <table class="table table-sm mb-0">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>OR #</th>
+                    <th>Patient</th>
+                    <th class="text-end">Line Amount</th>
+                    <th class="text-end">Applied</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in col.details %}
+                {% set tt = d.transaction_tender %}
+                <tr>
+                    <td class="text-nowrap">{{ tt.transaction.formatted_record_date or tt.transaction.record_date }}</td>
+                    <td class="font-monospace small">{{ tt.transaction.record_number or '—' }}</td>
+                    <td>{{ tt.transaction.customer.customer_name if tt.transaction.customer else '—' }}</td>
+                    <td class="text-end font-monospace">{{ '{:,.2f}'.format(tt.amount) }}</td>
+                    <td class="text-end font-monospace fw-semibold">{{ d.formatted_amount }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="fw-semibold">
+                    <td colspan="4" class="text-end">Total</td>
+                    <td class="text-end font-monospace">{{ col.formatted_total }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endblock %}

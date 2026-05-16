@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Collection History{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+    <div class="thc-page-header">
+        <h4>Collection History</h4>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('collections.home') }}" class="thc-btn thc-btn-secondary">Receivables</a>
+            <a href="{{ url_for('collections.new_collection') }}" class="thc-btn thc-btn-primary">Record Collection</a>
+        </div>
+    </div>
+
+    <div class="thc-card">
+        <table class="table table-sm table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Date</th>
+                    <th>Tender / Payer</th>
+                    <th>Bank Account</th>
+                    <th>Reference</th>
+                    <th class="text-end">Total Applied</th>
+                    <th>Lines</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for col in cols %}
+                <tr>
+                    <td class="text-muted small">{{ col.id }}</td>
+                    <td class="text-nowrap">{{ col.formatted_collection_date }}</td>
+                    <td>{{ col.tender.tender_name if col.tender else '—' }}</td>
+                    <td>{{ col.bank_account.bank_name if col.bank_account else '—' }}</td>
+                    <td class="font-monospace small">{{ col.reference or '—' }}</td>
+                    <td class="text-end font-monospace fw-semibold">{{ col.formatted_total }}</td>
+                    <td class="text-muted small">{{ col.details | length }}</td>
+                    <td class="text-end">
+                        <a href="{{ url_for('collections.view_collection', collection_id=col.id) }}"
+                           class="thc-btn thc-btn-sm thc-btn-secondary">View</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">No collections recorded yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

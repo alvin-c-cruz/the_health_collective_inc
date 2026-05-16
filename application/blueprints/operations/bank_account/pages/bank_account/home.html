@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Bank Accounts{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+    <div class="thc-page-header">
+        <h4>Bank Accounts</h4>
+        <a href="{{ url_for('bank_account.add') }}" class="thc-btn thc-btn-primary">Add Bank Account</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="thc-card">
+        <table class="table table-sm table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Bank</th>
+                    <th>Account Name</th>
+                    <th>Account Number</th>
+                    <th>Notes</th>
+                    <th>Active</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td class="fw-semibold">{{ row.bank_name }}</td>
+                    <td>{{ row.account_name or '—' }}</td>
+                    <td class="font-monospace">{{ row.account_number or '—' }}</td>
+                    <td class="text-muted small">{{ row.notes or '' }}</td>
+                    <td>
+                        {% if row.active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{{ url_for('bank_account.edit', record_id=row.id) }}" class="thc-btn thc-btn-sm thc-btn-secondary">Edit</a>
+                        <form action="{{ url_for('bank_account.delete', record_id=row.id) }}" method="post" class="d-inline"
+                              onsubmit="return confirm('Delete {{ row.bank_name }}?')">
+                            <button type="submit" class="thc-btn thc-btn-sm thc-btn-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">No bank accounts yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
