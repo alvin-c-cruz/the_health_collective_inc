@@ -24,7 +24,7 @@ ROLES_ACCEPTED = app_label
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def home():
-    rows = Obj.query.order_by(getattr(Obj, f"{app_name}_name")).all()
+    rows = Obj.query.order_by(Obj.sort_order.desc()).all()
 
     context = {
         "rows": rows
@@ -41,6 +41,9 @@ def add():
     if request.method == "POST":
         form = Form()
         form._post(request.form, current_user.id)
+        if not form.sort_order:
+            max_order = db.session.query(db.func.max(Obj.sort_order)).scalar() or 0
+            form.sort_order = max_order + 10
 
         if form._validate_on_submit():
             form._save()

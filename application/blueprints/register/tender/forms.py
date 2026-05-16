@@ -37,6 +37,8 @@ class Form:
     tender_name: str = ""
     symbol: str = ""
     transaction_types: str = ""
+    sort_order: int = 0
+    report_static: bool = False
 
     user_prepare_id: int = None
     user_prepare: str = ""
@@ -108,6 +110,16 @@ class Form:
             elif attribute == "transaction_types":
                 types = request_form.getlist("transaction_types")
                 self.transaction_types = ','.join(types)
+            elif attribute == "sort_order":
+                raw = request_form.get("sort_order", "0")
+                try:
+                    self.sort_order = int(raw)
+                except (ValueError, TypeError):
+                    self.sort_order = 0
+            elif attribute == "report_static":
+                self.report_static = "report_static" in request_form
+            elif attribute == "tender_name":
+                self.tender_name = (request_form.get("tender_name") or "").strip()
             elif attribute in ("submitted", "cancelled"):
                 continue
             else:

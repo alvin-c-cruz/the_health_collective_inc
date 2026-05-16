@@ -32,6 +32,9 @@
                     <thead>
                         <tr>
                             <th>Tender Name</th>
+                            <th>Transaction Types</th>
+                            <th class="text-center">Sort</th>
+                            <th class="text-center">Report Static</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -39,6 +42,13 @@
                         {% for row in rows %}
                         <tr>
                             <td aria-label="Tender Name">{{ row.tender_name }}</td>
+                            <td style="font-size:.8rem;color:var(--thc-text-muted);">{{ (row.transaction_types or '—').replace(',', ', ') }}</td>
+                            <td class="text-center" style="font-size:.85rem;">{{ row.sort_order or 0 }}</td>
+                            <td class="text-center">
+                                {% if row.report_static %}
+                                <i class="bi bi-pin-fill" style="color:var(--thc-primary);" title="Always shown in report"></i>
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if not row.approved %}
                                     {{ edit_button(url_for('tender.edit', record_id=row.id)) }}
@@ -56,7 +66,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="2" class="text-center text-muted py-4">
+                            <td colspan="5" class="text-center text-muted py-4">
                                 No records found. 
                             </td>
                         </tr>

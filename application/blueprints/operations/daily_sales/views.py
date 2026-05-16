@@ -382,19 +382,33 @@ def daily_report():
     prev_report = build_report(prev_date)
     curr_report = build_report(curr_date)
 
-    def merged_keys(*dicts):
+    all_tenders = Tender.query.order_by(Tender.sort_order.desc()).all()
+    tender_order = {t.tender_name: t.sort_order for t in all_tenders}
+
+    def static_for(type_code):
+        return [t.tender_name for t in all_tenders
+                if t.report_static and t.transaction_types
+                and type_code in t.transaction_types.split(',')]
+
+    def ordered_keys(*dicts, static=None):
         keys = set()
         for d in dicts:
             keys.update(d.keys())
-        return sorted(keys)
+        if static:
+            keys.update(static)
+        return sorted(keys, key=lambda k: tender_order.get(k, 0), reverse=True)
 
     context = {
         "prev_report": prev_report,
         "curr_report": curr_report,
-        "ape_tenders": merged_keys(prev_report.ape_sales, curr_report.ape_sales),
-        "home_service_tenders": merged_keys(prev_report.home_service_sales, curr_report.home_service_sales),
-        "walk_in_tenders": merged_keys(prev_report.walk_in_sales, curr_report.walk_in_sales),
-        "dialysis_tenders": merged_keys(prev_report.dialysis_sales, curr_report.dialysis_sales),
+        "ape_tenders": ordered_keys(prev_report.ape_sales, curr_report.ape_sales,
+                                    static=static_for('hmo_ape')),
+        "home_service_tenders": ordered_keys(prev_report.home_service_sales, curr_report.home_service_sales,
+                                             static=static_for('home_service')),
+        "walk_in_tenders": ordered_keys(prev_report.walk_in_sales, curr_report.walk_in_sales,
+                                        static=static_for('walk_in')),
+        "dialysis_tenders": ordered_keys(prev_report.dialysis_sales, curr_report.dialysis_sales,
+                                         static=static_for('dialysis')),
         "app_label": app_label,
         "report_date": curr_date,
     }

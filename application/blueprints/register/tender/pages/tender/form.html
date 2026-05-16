@@ -28,12 +28,12 @@
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" name="transaction_types" value="walk_in" id="tt_walk_in"
                         {{ 'checked' if 'walk_in' in types }}>
-                    <label class="form-check-label" for="tt_walk_in">Walk-in patient</label>
+                    <label class="form-check-label" for="tt_walk_in">Walk-in</label>
                 </div>
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" name="transaction_types" value="home_service" id="tt_home_service"
                         {{ 'checked' if 'home_service' in types }}>
-                    <label class="form-check-label" for="tt_home_service">Home service</label>
+                    <label class="form-check-label" for="tt_home_service">Home Service</label>
                 </div>
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" name="transaction_types" value="hmo_ape" id="tt_hmo_ape"
@@ -45,6 +45,23 @@
                         {{ 'checked' if 'dialysis' in types }}>
                     <label class="form-check-label" for="tt_dialysis">Dialysis</label>
                 </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Sort Order</label>
+            <input type="number" class="form-control" name="sort_order" value="{{ form.sort_order or 0 }}" style="max-width:120px;">
+            <div class="form-text">Higher number appears first in lists and the daily report.</div>
+        </div>
+
+        <div class="mb-3">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="report_static" id="report_static"
+                    {{ 'checked' if form.report_static }}>
+                <label class="form-check-label fw-semibold" for="report_static">
+                    Always show in daily report
+                </label>
+                <div class="form-text">If checked, this tender appears in the report even on days with no transactions.</div>
             </div>
         </div>
 
