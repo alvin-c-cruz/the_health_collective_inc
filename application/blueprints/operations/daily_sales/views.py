@@ -384,34 +384,48 @@ def daily_report():
             keys.update(static)
         return sorted(keys, key=lambda k: tender_order.get(k, 0), reverse=True)
 
+    receivable_names = {t.tender_name for t in all_tenders if t.is_receivable}
+
     # Build one section entry per active transaction type
     report_sections = []
     for tt in transaction_types:
         prev_sales = prev_report.sales.get(tt.type_code, {})
         curr_sales = curr_report.sales.get(tt.type_code, {})
         tenders = ordered_keys(prev_sales, curr_sales, static=static_for(tt.type_code))
+        curr_receivable = sum(
+            amt for name, amt in curr_sales.items() if name in receivable_names
+        )
+        prev_receivable = sum(
+            amt for name, amt in prev_sales.items() if name in receivable_names
+        )
         report_sections.append({
             'type_code': tt.type_code,
             'type_name': tt.type_name,
             'tenders': tenders,
             'is_dialysis': tt.type_code == 'dialysis',
+            'curr_receivable': curr_receivable,
+            'prev_receivable': prev_receivable,
         })
 
-    # Cash on hand = CASH tender across all non-dialysis sections
+    # Cash on hand = CASH tender across diagnostic sections only (dialysis is Philhealth)
     def cash_total(report):
         return sum(
             sales.get('Cash', 0.0)
             for code, sales in report.sales.items()
+            if code != 'dialysis'
         )
 
     context = {
         "prev_report": prev_report,
         "curr_report": curr_report,
         "report_sections": report_sections,
+        "receivable_names": receivable_names,
         "prev_cash": cash_total(prev_report),
         "curr_cash": cash_total(curr_report),
         "app_label": app_label,
         "report_date": curr_date,
+        "prev_date": prev_date,
+        "next_date": curr_date + timedelta(days=1),
     }
     return render_template("daily_sales/daily_sales_report.html", **context)
 

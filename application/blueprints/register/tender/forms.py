@@ -39,6 +39,7 @@ class Form:
     transaction_types: str = ""
     sort_order: int = 0
     report_static: bool = False
+    is_receivable: bool = False
 
     user_prepare_id: int = None
     user_prepare: str = ""
@@ -118,6 +119,8 @@ class Form:
                     self.sort_order = 0
             elif attribute == "report_static":
                 self.report_static = "report_static" in request_form
+            elif attribute == "is_receivable":
+                self.is_receivable = "is_receivable" in request_form
             elif attribute == "tender_name":
                 self.tender_name = (request_form.get("tender_name") or "").strip()
             elif attribute in ("submitted", "cancelled"):

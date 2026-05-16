@@ -10,6 +10,7 @@ class Tender(db.Model):
     transaction_types = db.Column(db.String(255))  # comma-separated type codes; hmo_ape = APE service type
     sort_order = db.Column(db.Integer, default=0)
     report_static = db.Column(db.Boolean, default=False)
+    is_receivable = db.Column(db.Boolean, default=False)
 
     def has_transaction_type(self, txn_type):
         if not self.transaction_types:

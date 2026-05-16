@@ -65,6 +65,17 @@
             </div>
         </div>
 
+        <div class="mb-3">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="is_receivable" id="is_receivable"
+                    {{ 'checked' if form.is_receivable }}>
+                <label class="form-check-label fw-semibold" for="is_receivable">
+                    Receivable (collected later)
+                </label>
+                <div class="form-text">HMO companies, PhilHealth, A/R — amounts appear in the Receivable column of the daily report.</div>
+            </div>
+        </div>
+
         {{ save_button() }}
 
     </form>

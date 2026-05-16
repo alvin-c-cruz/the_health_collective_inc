@@ -4,7 +4,6 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Daily Sales &amp; Petty Cash Report – The Health Collective Inc.</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
   <style>
     :root {
       --bg: #f5f2ec;
@@ -22,16 +21,44 @@
       --ink: #2c2825;
       --rule: 1px solid var(--border);
       --rule-dk: 1px solid var(--border-dark);
+      --mono: ui-monospace, 'Cascadia Code', Consolas, 'Courier New', monospace;
+      --sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--sans);
       font-size: 8.5pt;
       background: var(--bg);
       color: var(--text);
-      padding: 1.5rem;
+      padding: 1rem 1rem 2rem;
+    }
+
+    /* DATE NAV */
+    .date-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .date-nav a {
+      font-family: var(--mono);
+      font-size: 7pt;
+      color: var(--accent-dk);
+      text-decoration: none;
+      border: var(--rule);
+      border-radius: 3px;
+      padding: 2px 8px;
+      background: var(--surface);
+    }
+    .date-nav a:hover { background: var(--accent); color: #fff; border-color: var(--accent-dk); }
+    .date-nav .curr-lbl {
+      font-family: var(--mono);
+      font-size: 7pt;
+      color: var(--muted);
+      letter-spacing: 0.06em;
     }
 
     .page {
@@ -47,7 +74,7 @@
       @page { size: A4 portrait; margin: 10mm 12mm 10mm; }
       body { background: #fff; padding: 0; font-size: 8pt; }
       .page { box-shadow: none; padding: 0; width: 100%; min-height: unset; }
-      .print-btn { display: none !important; }
+      .no-print { display: none !important; }
     }
 
     /* HEADER */
@@ -61,61 +88,69 @@
       margin-bottom: 6px;
     }
     .org { font-size: 10.5pt; font-weight: 700; letter-spacing: 0.02em; color: var(--ink); }
-    .sub { font-family: 'DM Mono', monospace; font-size: 6pt; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+    .sub { font-family: var(--mono); font-size: 6pt; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
     .date-badges { display: flex; gap: 4px; }
-    .badge { text-align: center; border: var(--rule); border-radius: 3px; padding: 3px 8px; min-width: 84px; background: var(--surface); }
-    .badge.active { background: var(--accent); border-color: var(--accent-dk); }
-    .badge .dl { font-family: 'DM Mono', monospace; font-size: 5.5pt; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); display: block; }
-    .badge.active .dl { color: rgba(255,255,255,0.75); }
-    .badge .ds { font-size: 7pt; font-weight: 600; color: var(--ink); display: block; margin-top: 1px; }
-    .badge.active .ds { color: #fff; }
+    .dbadge { text-align: center; border: var(--rule); border-radius: 3px; padding: 3px 8px; min-width: 84px; background: var(--surface); }
+    .dbadge.active { background: var(--accent); border-color: var(--accent-dk); }
+    .dbadge .dl { font-family: var(--mono); font-size: 5.5pt; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); display: block; }
+    .dbadge.active .dl { color: rgba(255,255,255,0.75); }
+    .dbadge .ds { font-size: 7pt; font-weight: 600; color: var(--ink); display: block; margin-top: 1px; }
+    .dbadge.active .ds { color: #fff; }
 
-    /* TOTAL SALES */
+    /* TOTAL SALES STRIP */
     .ts-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 6px; }
     .ts-card { border: var(--rule); border-radius: 3px; padding: 4px 8px; display: flex; justify-content: space-between; align-items: center; }
     .ts-card.today { border-color: var(--accent); background: #fffbf3; }
-    .ts-lbl { font-family: 'DM Mono', monospace; font-size: 6pt; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+    .ts-lbl { font-family: var(--mono); font-size: 6pt; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
     .ts-dt { font-size: 6pt; color: var(--muted); }
-    .ts-amt { font-family: 'DM Mono', monospace; font-size: 10.5pt; font-weight: 600; color: var(--ink); }
+    .ts-amt { font-family: var(--mono); font-size: 10.5pt; font-weight: 600; color: var(--ink); }
     .ts-card.today .ts-amt { color: var(--accent-dk); }
 
     /* SECTION */
     .sec { border: var(--rule); border-radius: 3px; margin-bottom: 5px; overflow: hidden; }
-    .sec-title { font-family: 'DM Mono', monospace; font-size: 6.5pt; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink); background: #f5f2ec; border-bottom: var(--rule); padding: 3px 5px; }
+    .sec-title { font-family: var(--mono); font-size: 6.5pt; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink); background: #f5f2ec; border-bottom: var(--rule); padding: 3px 5px; }
 
     /* TABLE */
     .tbl { width: 100%; border-collapse: collapse; }
     .tbl td, .tbl th { padding: 1.8px 4px; border-bottom: var(--rule); font-size: 7.5pt; line-height: 1.3; }
-    .tbl th { font-family: 'DM Mono', monospace; font-size: 6pt; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); text-align: right; border-bottom: var(--rule-dk); padding-bottom: 2px; }
+    .tbl th { font-family: var(--mono); font-size: 6pt; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); text-align: right; border-bottom: var(--rule-dk); padding-bottom: 2px; }
     .tbl th:first-child { text-align: left; }
-    .tbl td.num { font-family: 'DM Mono', monospace; text-align: right; font-size: 7.5pt; }
+    .tbl td.num { font-family: var(--mono); text-align: right; font-size: 7.5pt; }
+    .tbl td.num.rcv { color: var(--accent-dk); }
     .tbl td.lbl { color: var(--muted); padding-left: 12px; }
     .tbl td.lbl2 { padding-left: 20px; font-size: 7pt; }
     .tbl tr:last-child td { border-bottom: none; }
 
-    .tbl tr.sub-hdr td { font-family: 'DM Mono', monospace; font-size: 5.8pt; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); background: #faf8f4; border-bottom: var(--rule-dk); padding: 2px 4px 2px 5px; }
-    .tbl tr.total-row td { font-weight: 600; font-family: 'DM Mono', monospace; background: #f0ede7; border-top: var(--rule-dk); border-bottom: none; font-size: 7.5pt; }
-    .tbl tr.ending-row td { font-weight: 700; font-family: 'DM Mono', monospace; background: var(--highlight); border-top: var(--rule-dk); border-bottom: none; }
-    .tbl tr.highlight-row td { font-weight: 600; font-family: 'DM Mono', monospace; background: var(--highlight); border-bottom: var(--rule); }
-    .tbl tr.zero-row td { font-weight: 700; font-family: 'DM Mono', monospace; background: var(--green-bg); color: var(--green-txt); border-bottom: none; }
+    .tbl tr.sub-hdr td { font-family: var(--mono); font-size: 5.8pt; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); background: #faf8f4; border-bottom: var(--rule-dk); padding: 2px 4px 2px 5px; }
+    .tbl tr.total-row td { font-weight: 600; font-family: var(--mono); background: #f0ede7; border-top: var(--rule-dk); border-bottom: none; font-size: 7.5pt; }
+    .tbl tr.ending-row td { font-weight: 700; font-family: var(--mono); background: var(--highlight); border-top: var(--rule-dk); border-bottom: none; }
     .neg { color: var(--red) !important; }
+    .zero { color: var(--border-dark); }
 
     /* LOWER GRID */
     .lower-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 5px; }
 
     /* SIGNATURE */
     .sig-block { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; border-top: var(--rule-dk); padding-top: 7px; margin-top: 5px; }
-    .sig-lbl { font-family: 'DM Mono', monospace; font-size: 6pt; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 14px; }
+    .sig-lbl { font-family: var(--mono); font-size: 6pt; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 14px; }
     .sig-line { border-bottom: 1px solid var(--border-dark); margin-bottom: 3px; }
     .sig-name { font-size: 7.5pt; font-weight: 600; }
-    .sig-date { font-family: 'DM Mono', monospace; font-size: 6pt; color: var(--muted); margin-top: 1px; }
+    .sig-date { font-family: var(--mono); font-size: 6pt; color: var(--muted); margin-top: 1px; }
 
     /* PRINT BUTTON */
-    .print-btn { display: block; margin: 12px auto 0; padding: 6px 20px; font-family: 'DM Mono', monospace; font-size: 7pt; letter-spacing: 0.1em; text-transform: uppercase; background: var(--ink); color: #fff; border: none; border-radius: 3px; cursor: pointer; }
+    .print-btn { display: block; margin: 10px auto 0; padding: 5px 18px; font-family: var(--mono); font-size: 7pt; letter-spacing: 0.1em; text-transform: uppercase; background: var(--ink); color: #fff; border: none; border-radius: 3px; cursor: pointer; }
     .print-btn:hover { background: var(--accent-dk); }
   </style>
 </head>
 <body>
+
+  <!-- DATE NAVIGATION -->
+  <div class="date-nav no-print">
+    <a href="?date={{ prev_date }}">&larr; {{ prev_date.strftime("%b %d") }}</a>
+    <span class="curr-lbl">{{ curr_report.report_date.strftime("%B %d, %Y") }}</span>
+    <a href="?date={{ next_date }}">&rarr; {{ next_date.strftime("%b %d") }}</a>
+  </div>
+
 <div class="page">
 
   <!-- HEADER -->
@@ -125,11 +160,11 @@
       <div class="sub">Daily Sales &amp; Petty Cash Report</div>
     </div>
     <div class="date-badges">
-      <div class="badge">
+      <div class="dbadge">
         <span class="dl">{{ prev_report.report_date.strftime("%A") }}</span>
         <span class="ds">{{ prev_report.report_date.strftime("%B %d, %Y") }}</span>
       </div>
-      <div class="badge active">
+      <div class="dbadge active">
         <span class="dl">{{ curr_report.report_date.strftime("%A") }}</span>
         <span class="ds">{{ curr_report.report_date.strftime("%B %d, %Y") }}</span>
       </div>
@@ -160,8 +195,8 @@
     <table class="tbl">
       <thead>
         <tr>
-          <th style="width:46%"></th>
-          <th style="width:14%;text-align:right">Receivable</th>
+          <th style="width:44%"></th>
+          <th style="width:16%;text-align:right">Receivable</th>
           <th style="width:20%">{{ prev_report.report_date.strftime("%b %d") }}</th>
           <th style="width:20%">{{ curr_report.report_date.strftime("%b %d") }}</th>
         </tr>
@@ -174,11 +209,21 @@
         {% set curr_amt = curr_report.sales.get(section.type_code, {}).get(t, 0.0) %}
         <tr>
           <td class="lbl2">{{ t }}</td>
-          <td class="num"></td>
-          <td class="num">{{ "{:,.2f}".format(prev_amt) }}</td>
-          <td class="num">{{ "{:,.2f}".format(curr_amt) }}</td>
+          <td class="num rcv">
+            {% if t in receivable_names and curr_amt > 0 %}{{ "{:,.2f}".format(curr_amt) }}{% endif %}
+          </td>
+          <td class="num {% if prev_amt == 0 %}zero{% endif %}">{{ "{:,.2f}".format(prev_amt) }}</td>
+          <td class="num {% if curr_amt == 0 %}zero{% endif %}">{{ "{:,.2f}".format(curr_amt) }}</td>
         </tr>
         {% endfor %}
+        {% if section.curr_receivable > 0 or section.prev_receivable > 0 %}
+        <tr class="total-row">
+          <td style="padding-left:5px">{{ section.type_name }} Receivable</td>
+          <td class="num rcv">{{ "{:,.2f}".format(section.curr_receivable) }}</td>
+          <td class="num">{{ "{:,.2f}".format(section.prev_receivable) }}</td>
+          <td class="num">{{ "{:,.2f}".format(section.curr_receivable) }}</td>
+        </tr>
+        {% endif %}
         {% endfor %}
         <tr class="total-row">
           <td style="padding-left:5px">Total Diagnostics Sales</td>
@@ -190,15 +235,15 @@
     </table>
   </div>
 
-  <!-- DIALYSIS -->
+  <!-- DIALYSIS (one block per dialysis-type section) -->
   {% for section in report_sections if section.is_dialysis %}
   <div class="sec">
     <div class="sec-title">{{ section.type_name }}</div>
     <table class="tbl">
       <thead>
         <tr>
-          <th style="width:46%"></th>
-          <th style="width:14%;text-align:right">Receivable</th>
+          <th style="width:44%"></th>
+          <th style="width:16%;text-align:right">Receivable</th>
           <th style="width:20%">{{ prev_report.report_date.strftime("%b %d") }}</th>
           <th style="width:20%">{{ curr_report.report_date.strftime("%b %d") }}</th>
         </tr>
@@ -209,14 +254,16 @@
         {% set curr_amt = curr_report.sales.get(section.type_code, {}).get(t, 0.0) %}
         <tr>
           <td class="lbl2">{{ t }}</td>
-          <td class="num">{% if t == 'Philhealth' %}{{ "{:,.2f}".format(curr_amt) }}{% endif %}</td>
-          <td class="num">{{ "{:,.2f}".format(prev_amt) }}</td>
-          <td class="num">{{ "{:,.2f}".format(curr_amt) }}</td>
+          <td class="num rcv">
+            {% if t in receivable_names and curr_amt > 0 %}{{ "{:,.2f}".format(curr_amt) }}{% endif %}
+          </td>
+          <td class="num {% if prev_amt == 0 %}zero{% endif %}">{{ "{:,.2f}".format(prev_amt) }}</td>
+          <td class="num {% if curr_amt == 0 %}zero{% endif %}">{{ "{:,.2f}".format(curr_amt) }}</td>
         </tr>
         {% endfor %}
         <tr class="total-row">
           <td style="padding-left:5px">Total {{ section.type_name }} Sales</td>
-          <td class="num">{{ "{:,.2f}".format(curr_report.total_dialysis_sales) }}</td>
+          <td class="num rcv">{{ "{:,.2f}".format(section.curr_receivable) }}</td>
           <td class="num">{{ "{:,.2f}".format(prev_report.total_dialysis_sales) }}</td>
           <td class="num">{{ "{:,.2f}".format(curr_report.total_dialysis_sales) }}</td>
         </tr>
@@ -226,8 +273,6 @@
   {% endfor %}
 
   <!-- LOWER: Cash on Hand + Accountabilities -->
-  {% set prev_cash_sales = prev_cash %}
-  {% set curr_cash_sales = curr_cash %}
   <div class="lower-grid">
     <div class="sec">
       <div class="sec-title">Cash on Hand</div>
@@ -240,12 +285,19 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td class="lbl">Beginning Cash</td><td class="num" style="font-weight:600">0.00</td><td class="num" style="font-weight:600">0.00</td></tr>
-          <tr><td class="lbl">Funds Received</td><td class="num">0.00</td><td class="num">0.00</td></tr>
-          <tr><td class="lbl">Cash Sales</td><td class="num">{{ "{:,.2f}".format(prev_cash_sales) }}</td><td class="num">{{ "{:,.2f}".format(curr_cash_sales) }}</td></tr>
-          <tr><td class="lbl">Cash Deposited</td><td class="num">0.00</td><td class="num">0.00</td></tr>
-          <tr><td class="lbl">Expenses</td><td class="num">0.00</td><td class="num">0.00</td></tr>
-          <tr class="ending-row"><td style="padding-left:5px">Ending Cash</td><td class="num">{{ "{:,.2f}".format(prev_cash_sales) }}</td><td class="num">{{ "{:,.2f}".format(curr_cash_sales) }}</td></tr>
+          <tr><td class="lbl">Beginning Cash</td><td class="num zero">—</td><td class="num zero">—</td></tr>
+          <tr><td class="lbl">Funds Received</td><td class="num zero">—</td><td class="num zero">—</td></tr>
+          <tr><td class="lbl">Cash Sales</td>
+            <td class="num">{{ "{:,.2f}".format(prev_cash) }}</td>
+            <td class="num">{{ "{:,.2f}".format(curr_cash) }}</td>
+          </tr>
+          <tr><td class="lbl">Cash Deposited</td><td class="num zero">—</td><td class="num zero">—</td></tr>
+          <tr><td class="lbl">Expenses</td><td class="num zero">—</td><td class="num zero">—</td></tr>
+          <tr class="ending-row">
+            <td style="padding-left:5px">Ending Cash</td>
+            <td class="num zero">—</td>
+            <td class="num zero">—</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -260,11 +312,18 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td class="lbl">Petty Cash Fund</td><td class="num">0.00</td><td class="num">0.00</td></tr>
-          <tr><td class="lbl">Unreimbursed Expenses</td><td class="num">0.00</td><td class="num">0.00</td></tr>
-          <tr><td class="lbl">Cash Fund</td><td class="num">0.00</td><td class="num">0.00</td></tr>
-          <tr><td class="lbl">Undeposited Cash Sales</td><td class="num">{{ "{:,.2f}".format(prev_cash_sales) }}</td><td class="num">{{ "{:,.2f}".format(curr_cash_sales) }}</td></tr>
-          <tr class="total-row"><td style="padding-left:5px">Total Accountabilities</td><td class="num">{{ "{:,.2f}".format(prev_cash_sales) }}</td><td class="num">{{ "{:,.2f}".format(curr_cash_sales) }}</td></tr>
+          <tr><td class="lbl">Petty Cash Fund</td><td class="num zero">—</td><td class="num zero">—</td></tr>
+          <tr><td class="lbl">Unreimbursed Expenses</td><td class="num zero">—</td><td class="num zero">—</td></tr>
+          <tr><td class="lbl">Cash Fund</td><td class="num zero">—</td><td class="num zero">—</td></tr>
+          <tr><td class="lbl">Undeposited Cash Sales</td>
+            <td class="num">{{ "{:,.2f}".format(prev_cash) }}</td>
+            <td class="num">{{ "{:,.2f}".format(curr_cash) }}</td>
+          </tr>
+          <tr class="total-row">
+            <td style="padding-left:5px">Total Accountabilities</td>
+            <td class="num zero">—</td>
+            <td class="num zero">—</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -287,7 +346,13 @@
 
 </div>
 
-<button class="print-btn" onclick="window.print()">&#x2399; &nbsp; Print / Save as PDF</button>
+<div class="no-print" style="text-align:center;margin-top:10px;display:flex;gap:8px;justify-content:center;">
+  <button class="print-btn" onclick="window.print()">&#x2399;&nbsp; Print / Save PDF</button>
+  <a class="print-btn" style="text-decoration:none;"
+     href="?date={{ prev_date }}">&larr; Prev Day</a>
+  <a class="print-btn" style="text-decoration:none;"
+     href="?date={{ next_date }}">Next Day &rarr;</a>
+</div>
 
 </body>
 </html>
