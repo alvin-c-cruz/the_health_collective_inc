@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}DSR Collection Preview{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+    <div class="thc-page-header">
+        <h4>DSR Collection Preview</h4>
+        <a href="{{ url_for('collections.upload_dsr') }}" class="thc-btn thc-btn-secondary">Back</a>
+    </div>
+
+    {% if unmatched %}
+    <div class="thc-card mb-3">
+        <h6 class="fw-semibold text-warning mb-2">
+            {{ unmatched | length }} row(s) could not be matched — skipped
+        </h6>
+        <table class="table table-sm mb-0">
+            <thead>
+                <tr><th>Sheet</th><th>Row</th><th>Tx Date</th><th>Patient</th><th>Col. Date</th><th class="text-end">Amount</th><th>Reason</th></tr>
+            </thead>
+            <tbody>
+                {% for r in unmatched %}
+                <tr class="text-muted">
+                    <td class="small">{{ r.sheet }}</td>
+                    <td class="small">{{ r.row_num }}</td>
+                    <td>{{ r.tx_date }}</td>
+                    <td>{{ r.patient }}</td>
+                    <td>{{ r.col_date }}</td>
+                    <td class="text-end font-monospace">{{ '{:,.2f}'.format(r.col_amt) }}</td>
+                    <td class="small fst-italic">{{ r.reason }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if not preview %}
+    <div class="alert alert-danger">No matchable collection rows found. Check the unmatched list above.</div>
+    {% else %}
+
+    <p class="text-muted mb-3">
+        <strong>{{ preview | length }}</strong> collection batch(es) will be created from the DSR file.
+        Review and confirm below.
+    </p>
+
+    {% for batch in preview %}
+    <div class="thc-card mb-3">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+                <span class="fw-semibold">{{ batch.col_date }}</span>
+                {% if batch.reference %}<span class="ms-2 text-muted font-monospace">{{ batch.reference }}</span>{% endif %}
+                <span class="ms-2 badge bg-secondary">{{ batch.tender_names | join(', ') }}</span>
+            </div>
+            <div class="fw-semibold font-monospace">{{ '{:,.2f}'.format(batch.total) }}</div>
+        </div>
+        <table class="table table-sm mb-0">
+            <thead>
+                <tr>
+                    <th>Sheet</th>
+                    <th>Tx Date</th>
+                    <th>OR #</th>
+                    <th>Patient</th>
+                    <th>Tender</th>
+                    <th class="text-end">Outstanding</th>
+                    <th class="text-end">Amount Applied</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in batch.lines %}
+                <tr>
+                    <td class="small text-muted">{{ r.sheet }}</td>
+                    <td>{{ r.tx_date }}</td>
+                    <td class="font-monospace small">{{ r.tt.transaction.record_number or '—' }}</td>
+                    <td>{{ r.tt.transaction.customer.customer_name if r.tt.transaction.customer else r.patient }}</td>
+                    <td>{{ r.tt.tender.tender_name if r.tt.tender else '—' }}</td>
+                    <td class="text-end font-monospace">{{ '{:,.2f}'.format(r.outstanding) }}</td>
+                    <td class="text-end font-monospace fw-semibold">{{ '{:,.2f}'.format(r.col_amt) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+
+    <form method="post" action="{{ url_for('collections.confirm_dsr_upload') }}">
+        <input type="hidden" name="bank_account_id" value="{{ bank_account_id or '' }}">
+        {% for batch in preview %}
+            {% for r in batch.lines %}
+            <input type="hidden" name="col_date"    value="{{ batch.col_date }}">
+            <input type="hidden" name="reference"   value="{{ batch.reference }}">
+            <input type="hidden" name="tt_id"       value="{{ r.tt.id }}">
+            <input type="hidden" name="amt_applied" value="{{ r.col_amt }}">
+            {% endfor %}
+        {% endfor %}
+        <div class="d-flex gap-2">
+            <button type="submit" class="thc-btn thc-btn-primary">Confirm and Save</button>
+            <a href="{{ url_for('collections.upload_dsr') }}" class="thc-btn thc-btn-secondary">Cancel</a>
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

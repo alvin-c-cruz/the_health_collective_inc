@@ -455,6 +455,328 @@ def upload_collections():
                            tt_map=tt_map)
 
 
+# ---------------------------------------------------------------------------
+# Upload DSR Excel (existing workbook, reads COLLECTION columns)
+# ---------------------------------------------------------------------------
+
+def _norm_name(name):
+    """Normalise patient name for fuzzy matching."""
+    if not name:
+        return ""
+    return " ".join(str(name).upper().split())
+
+
+def _to_date_str(val):
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        return val.date().isoformat()
+    if isinstance(val, date):
+        return val.isoformat()
+    s = str(val).strip()
+    # try parsing common formats
+    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(s, fmt).date().isoformat()
+        except ValueError:
+            pass
+    return s or None
+
+
+def _find_collection_cols(ws):
+    """
+    Scan row 2 for the 'COLLECTION' label, then read row 3 headers after
+    that position to locate Date / Reference / Amount columns (0-indexed).
+    Returns (col_date, col_ref, col_amt) or None if not found.
+    """
+    max_col = ws.max_column
+    row2 = [ws.cell(row=2, column=c).value for c in range(1, max_col + 1)]
+    marker_col = next(
+        (i for i, v in enumerate(row2) if v and "COLLECTION" in str(v).upper()),
+        None
+    )
+    if marker_col is None:
+        return None
+
+    row3 = [ws.cell(row=3, column=c).value for c in range(1, max_col + 1)]
+    col_date = col_ref = col_amt = None
+    for i in range(marker_col, len(row3)):
+        h = str(row3[i] or "").strip().lower()
+        if h == "date" and col_date is None:
+            col_date = i
+        elif h == "reference" and col_ref is None:
+            col_ref = i
+        elif "amount" in h and col_amt is None:
+            col_amt = i
+    if None in (col_date, col_amt):
+        return None
+    return col_date, col_ref, col_amt
+
+
+def _find_patient_col(row3):
+    for i, v in enumerate(row3):
+        if v and "patient" in str(v).lower():
+            return i
+    # APE uses 'Description' (company name) — fall back to col 2
+    for i, v in enumerate(row3):
+        if v and "description" in str(v).lower():
+            return i
+    return 2  # default fallback
+
+
+def _find_receivable_cols(row3, receivable_tenders):
+    """Map column indices to Tender objects based on header text."""
+    result = {}
+    for i, v in enumerate(row3):
+        if not v:
+            continue
+        header = str(v).strip().lower()
+        for t in receivable_tenders:
+            if t.tender_name.lower() == header or t.tender_name.lower() in header:
+                result[i] = t
+                break
+    return result
+
+
+def _parse_dsr_sheets(wb):
+    """
+    Parse all sheets that contain a COLLECTION section.
+    Returns list of dicts: {tx_date, patient, col_date, col_ref, col_amt,
+                             tender_hint (Tender or None), sheet_name, row_num}
+    """
+    receivable_tenders = Tender.query.filter_by(is_receivable=True).all()
+    results = []
+
+    for sheet_name in wb.sheetnames:
+        ws = wb[sheet_name]
+        cols = _find_collection_cols(ws)
+        if not cols:
+            continue
+        col_date_i, col_ref_i, col_amt_i = cols
+
+        row3 = [ws.cell(row=3, column=c).value for c in range(1, ws.max_column + 1)]
+        patient_col = _find_patient_col(row3)
+        receivable_cols = _find_receivable_cols(row3, receivable_tenders)
+
+        for row_num, row in enumerate(ws.iter_rows(min_row=4, values_only=True), start=4):
+            row = list(row)
+
+            # Pad row if shorter than expected
+            while len(row) <= max(col_date_i, col_amt_i):
+                row.append(None)
+
+            col_date_val = row[col_date_i]
+            col_amt_val  = row[col_amt_i] if col_amt_i < len(row) else None
+
+            if not col_date_val or not col_amt_val:
+                continue
+
+            tx_date_val = row[0]
+            patient_val = row[patient_col] if patient_col < len(row) else None
+
+            tx_date_str  = _to_date_str(tx_date_val)
+            col_date_str = _to_date_str(col_date_val)
+            if not tx_date_str or not col_date_str:
+                continue
+
+            try:
+                amt = float(col_amt_val)
+            except (ValueError, TypeError):
+                continue
+            if amt <= 0:
+                continue
+
+            col_ref_val = row[col_ref_i] if col_ref_i is not None and col_ref_i < len(row) else None
+
+            # Determine which receivable tender the row belongs to
+            tender_hint = None
+            for col_idx, tender in receivable_cols.items():
+                if col_idx < len(row) and row[col_idx]:
+                    tender_hint = tender
+                    break
+
+            results.append({
+                "tx_date":    tx_date_str,
+                "patient":    _norm_name(patient_val),
+                "col_date":   col_date_str,
+                "col_ref":    str(col_ref_val).strip() if col_ref_val else "",
+                "col_amt":    amt,
+                "tender_hint": tender_hint,
+                "sheet":      sheet_name,
+                "row_num":    row_num,
+            })
+
+    return results
+
+
+def _match_to_tt(tx_date, patient_norm, tender_hint):
+    """
+    Find a TransactionTender by transaction date + normalised patient name.
+    Returns (TransactionTender, confidence) or (None, reason_string).
+    """
+    from ..daily_sales.models import Transaction
+    txns = Transaction.query.filter(
+        Transaction.record_date == tx_date,
+        Transaction.submitted.isnot(None),
+        Transaction.cancelled.is_(None),
+    ).all()
+
+    if not txns:
+        return None, "no submitted transaction on this date"
+
+    # Match by normalised customer name
+    matched_txn = None
+    for txn in txns:
+        if txn.customer and _norm_name(txn.customer.customer_name) == patient_norm:
+            matched_txn = txn
+            break
+
+    if not matched_txn:
+        return None, f"no transaction on {tx_date} for '{patient_norm}'"
+
+    # Find receivable TransactionTender(s)
+    receivable_tts = [tt for tt in matched_txn.transaction_tenders
+                      if tt.tender and tt.tender.is_receivable]
+
+    if not receivable_tts:
+        return None, f"transaction found but has no receivable tender"
+
+    if tender_hint:
+        for tt in receivable_tts:
+            if tt.tender.tender_name.lower() == tender_hint.tender_name.lower():
+                return tt, "ok"
+        # Fallback: if only one receivable tender, use it
+    if len(receivable_tts) == 1:
+        return receivable_tts[0], "ok"
+
+    return None, f"multiple receivable tenders — cannot auto-select"
+
+
+@bp.route("/upload-dsr", methods=["GET", "POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def upload_dsr():
+    bank_accounts = BankAccount.query.filter_by(active=True).order_by(BankAccount.bank_name).all()
+
+    if request.method == "GET":
+        return render_template("collections/upload_dsr.html",
+                               app_label=app_label, bank_accounts=bank_accounts)
+
+    uploaded = request.files.get("xlsx_file")
+    if not uploaded or not uploaded.filename.endswith(".xlsx"):
+        flash("Please upload a valid .xlsx file.", "danger")
+        return render_template("collections/upload_dsr.html",
+                               app_label=app_label, bank_accounts=bank_accounts)
+
+    bank_account_id = request.form.get("bank_account_id", type=int) or None
+    action          = request.form.get("action", "preview")
+
+    try:
+        wb = openpyxl.load_workbook(uploaded, data_only=True)
+    except Exception as e:
+        flash(f"Could not read file: {e}", "danger")
+        return render_template("collections/upload_dsr.html",
+                               app_label=app_label, bank_accounts=bank_accounts)
+
+    parsed = _parse_dsr_sheets(wb)
+
+    if not parsed:
+        flash("No collection rows found in this file. Make sure the COLLECTION columns are filled in.", "warning")
+        return render_template("collections/upload_dsr.html",
+                               app_label=app_label, bank_accounts=bank_accounts)
+
+    # Match each row to a TransactionTender
+    matched   = []
+    unmatched = []
+    for r in parsed:
+        tt, reason = _match_to_tt(r["tx_date"], r["patient"], r["tender_hint"])
+        if tt:
+            already = _collected(tt.id)
+            outstanding = round(tt.amount - already, 2)
+            matched.append({**r, "tt": tt, "outstanding": outstanding})
+        else:
+            unmatched.append({**r, "reason": reason})
+
+    # Group matched rows by (col_date, col_ref) into batches
+    from collections import OrderedDict
+    batches = OrderedDict()
+    for r in matched:
+        key = (r["col_date"], r["col_ref"])
+        batches.setdefault(key, []).append(r)
+
+    preview = []
+    for (col_date, col_ref), lines in batches.items():
+        preview.append({
+            "col_date":    col_date,
+            "reference":   col_ref,
+            "tender_names": list({r["tt"].tender.tender_name for r in lines if r["tt"].tender}),
+            "lines":       lines,
+            "total":       sum(r["col_amt"] for r in lines),
+        })
+
+    return render_template("collections/upload_dsr_preview.html",
+                           app_label=app_label,
+                           preview=preview,
+                           unmatched=unmatched,
+                           bank_accounts=bank_accounts,
+                           bank_account_id=bank_account_id)
+
+
+@bp.route("/upload-dsr/confirm", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def confirm_dsr_upload():
+    bank_account_id = request.form.get("bank_account_id", type=int) or None
+    col_dates    = request.form.getlist("col_date")
+    references   = request.form.getlist("reference")
+    tt_ids       = request.form.getlist("tt_id")
+    amts_applied = request.form.getlist("amt_applied")
+
+    if not tt_ids:
+        flash("No data to save.", "warning")
+        return redirect(url_for(f"{app_name}.upload_dsr"))
+
+    tt_id_ints = [int(x) for x in tt_ids]
+    tt_map = {tt.id: tt for tt in TransactionTender.query.filter(TransactionTender.id.in_(tt_id_ints)).all()}
+
+    from collections import OrderedDict
+    batches = OrderedDict()
+    for col_date, reference, tt_id, amt in zip(col_dates, references, tt_id_ints, amts_applied):
+        key = (col_date, reference)
+        try:
+            amt = float(amt)
+        except (ValueError, TypeError):
+            continue
+        batches.setdefault(key, []).append({"tt_id": tt_id, "amt_applied": amt})
+
+    created = 0
+    for (col_date, reference), lines in batches.items():
+        first_tt = tt_map.get(lines[0]["tt_id"])
+        if not first_tt:
+            continue
+        col = Collection(
+            collection_date=col_date,
+            tender_id=first_tt.tender_id,
+            bank_account_id=bank_account_id,
+            reference=reference,
+            recorded_by=current_user.id,
+            created_at=str(date.today()),
+        )
+        db.session.add(col)
+        db.session.flush()
+        for r in lines:
+            db.session.add(CollectionDetail(
+                collection_id=col.id,
+                transaction_tender_id=r["tt_id"],
+                amount_applied=r["amt_applied"],
+            ))
+        created += 1
+
+    db.session.commit()
+    flash(f"{created} collection batch(es) recorded from DSR file.", "success")
+    return redirect(url_for(f"{app_name}.history"))
+
+
 @bp.route("/upload/confirm", methods=["POST"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
