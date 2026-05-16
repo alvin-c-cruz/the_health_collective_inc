@@ -321,17 +321,23 @@ def remove_role():
 def check_roles():
     from application import blueprints
     modules = [
-        getattr(blueprints, module) 
-        for module in dir(blueprints) if hasattr(getattr(blueprints, module),"bp")
-        ]
-    role_names = ['user']
+        getattr(blueprints, module)
+        for module in dir(blueprints) if hasattr(getattr(blueprints, module), "bp")
+    ]
+    expected = {'user'}
     for module in modules:
-        if hasattr(module,"menu_label"):
-            role_names.append(getattr(module,"menu_label")[2])
-    
-    for role_name in role_names:
-        role = Role.query.filter_by(role_name=role_name).first()
-        if not role:
-            role = Role(role_name=role_name)
-            db.session.add(role)
-            db.session.commit()
+        if hasattr(module, "menu_label"):
+            expected.add(getattr(module, "menu_label")[2])
+
+    # Add missing roles
+    for role_name in expected:
+        if not Role.query.filter_by(role_name=role_name).first():
+            db.session.add(Role(role_name=role_name))
+
+    # Remove roles that no longer correspond to any module
+    for role in Role.query.all():
+        if role.role_name not in expected:
+            UserRole.query.filter_by(role_id=role.id).delete()
+            db.session.delete(role)
+
+    db.session.commit()
