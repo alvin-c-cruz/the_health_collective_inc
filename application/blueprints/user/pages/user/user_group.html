@@ -82,24 +82,16 @@
     </div>
 
     {# ── Roles by group ── #}
-    <div class="thc-card">
-        <div class="thc-card-title">Roles</div>
+    <div class="thc-card-title" style="margin-bottom:0.5rem;">Roles</div>
 
-        {% for parent_name, sub_groups in role_groups %}
-        <div style="margin-bottom:1.5rem;">
-            <div style="font-size:0.72rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;
-                        color:var(--thc-primary);margin-bottom:0.75rem;padding-bottom:0.4rem;
-                        border-bottom:2px solid var(--thc-primary-light);">
-                {{ parent_name }}
-            </div>
-
+    {% for parent_name, sub_groups in role_groups %}
+    <div class="role-parent-card">
+        <div class="role-parent-header">{{ parent_name }}</div>
+        <div class="role-parent-body">
             {% for sub_name, roles in sub_groups %}
-            <div style="margin-bottom:0.9rem;{% if not loop.last %}padding-bottom:0.75rem;border-bottom:1px solid #f0f2f5;{% endif %}">
+            <div class="role-sub-group">
                 {% if sub_name %}
-                <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
-                            color:var(--thc-text-muted);margin-bottom:0.45rem;">
-                    {{ sub_name }}
-                </div>
+                <div class="role-sub-label">{{ sub_name }}</div>
                 {% endif %}
                 <div class="d-flex flex-wrap gap-2">
                     {% for role in roles %}
@@ -121,16 +113,56 @@
                 </div>
             </div>
             {% endfor %}
-
         </div>
-        {% endfor %}
     </div>
+    {% endfor %}
 
 </div>
 {% endblock %}
 
 {% block styles %}
 <style>
+    /* Parent group card */
+    .role-parent-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 1rem;
+    }
+    .role-parent-header {
+        background: var(--thc-primary);
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        padding: 0.45rem 1rem;
+    }
+    .role-parent-body {
+        padding: 0.75rem 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    /* Sub-group inside a parent */
+    .role-sub-group {
+        padding: 0.6rem 0;
+        border-bottom: 1px solid #f0f2f5;
+    }
+    .role-sub-group:last-child { border-bottom: none; padding-bottom: 0; }
+    .role-sub-group:first-child { padding-top: 0; }
+
+    .role-sub-label {
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--thc-text-muted);
+        margin-bottom: 0.45rem;
+    }
+
+    /* Role buttons */
     .role-btn {
         display: inline-flex;
         align-items: center;
