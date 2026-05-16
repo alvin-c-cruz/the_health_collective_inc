@@ -362,7 +362,7 @@ def daily_report():
                 t_name = tender.tender.tender_name if tender.tender else 'Unknown'
                 amount = tender.amount
 
-                if tx_type in ('hmo_phic', 'ape'):
+                if tx_type == 'hmo_ape':
                     report.hmo_sales[t_name] = report.hmo_sales.get(t_name, 0) + amount
                 elif tx_type == 'home_service':
                     report.home_service_sales[t_name] = report.home_service_sales.get(t_name, 0) + amount
@@ -382,14 +382,19 @@ def daily_report():
     prev_report = build_report(prev_date)
     curr_report = build_report(curr_date)
 
-    # Collect all tender names used across both days for HMO section
-    all_tender_names = Tender.query.order_by(Tender.tender_name).all()
-    hmos = [{"hmo_name": t.tender_name, "receivable": "0.00"} for t in all_tender_names]
+    def merged_keys(*dicts):
+        keys = set()
+        for d in dicts:
+            keys.update(d.keys())
+        return sorted(keys)
 
     context = {
         "prev_report": prev_report,
         "curr_report": curr_report,
-        "hmos": hmos,
+        "hmo_tenders": merged_keys(prev_report.hmo_sales, curr_report.hmo_sales),
+        "home_service_tenders": merged_keys(prev_report.home_service_sales, curr_report.home_service_sales),
+        "walk_in_tenders": merged_keys(prev_report.walk_in_sales, curr_report.walk_in_sales),
+        "dialysis_tenders": merged_keys(prev_report.dialysis_sales, curr_report.dialysis_sales),
         "app_label": app_label,
         "report_date": curr_date,
     }

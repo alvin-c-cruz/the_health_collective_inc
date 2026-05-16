@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Daily Sales & Petty Cash Report – The Health Collective Inc.</title>
+  <title>Daily Sales &amp; Petty Cash Report – The Health Collective Inc.</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
   <style>
     :root {
@@ -125,19 +125,31 @@
       <div class="sub">Daily Sales &amp; Petty Cash Report</div>
     </div>
     <div class="date-badges">
-      <div class="badge"><span class="dl">{{ prev_report.report_date.strftime("%A") }}</span><span class="ds">{{ prev_report.report_date.strftime("%B %d, %Y") }}</span></div>
-      <div class="badge active"><span class="dl">{{ curr_report.report_date.strftime("%A") }}</span><span class="ds">{{ curr_report.report_date.strftime("%B %d, %Y") }}</span></div>
+      <div class="badge">
+        <span class="dl">{{ prev_report.report_date.strftime("%A") }}</span>
+        <span class="ds">{{ prev_report.report_date.strftime("%B %d, %Y") }}</span>
+      </div>
+      <div class="badge active">
+        <span class="dl">{{ curr_report.report_date.strftime("%A") }}</span>
+        <span class="ds">{{ curr_report.report_date.strftime("%B %d, %Y") }}</span>
+      </div>
     </div>
   </div>
 
   <!-- TOTAL SALES -->
   <div class="ts-strip">
     <div class="ts-card">
-      <div><div class="ts-lbl">Total Sales</div><div class="ts-dt">{{ prev_report.report_date.strftime("%A, %B %d") }}</div></div>
+      <div>
+        <div class="ts-lbl">Total Sales</div>
+        <div class="ts-dt">{{ prev_report.report_date.strftime("%A, %B %d") }}</div>
+      </div>
       <div class="ts-amt">{{ "{:,.2f}".format(prev_report.total_sales) }}</div>
     </div>
     <div class="ts-card today">
-      <div><div class="ts-lbl">Total Sales</div><div class="ts-dt">{{ curr_report.report_date.strftime("%A, %B %d") }}</div></div>
+      <div>
+        <div class="ts-lbl">Total Sales</div>
+        <div class="ts-dt">{{ curr_report.report_date.strftime("%A, %B %d") }}</div>
+      </div>
       <div class="ts-amt">{{ "{:,.2f}".format(curr_report.total_sales) }}</div>
     </div>
   </div>
@@ -147,30 +159,57 @@
     <div class="sec-title">Diagnostics — Sales Breakdown</div>
     <table class="tbl">
       <thead>
-        <tr><th style="width:46%"></th><th style="width:14%;text-align:right">Receivable</th><th style="width:20%">Apr 24</th><th style="width:20%">Apr 25</th></tr>
+        <tr>
+          <th style="width:46%"></th>
+          <th style="width:14%;text-align:right">Receivable</th>
+          <th style="width:20%">{{ prev_report.report_date.strftime("%b %d") }}</th>
+          <th style="width:20%">{{ curr_report.report_date.strftime("%b %d") }}</th>
+        </tr>
       </thead>
       <tbody>
-        <tr class="sub-hdr"><td colspan="4">HMO</td></tr>
-        {% for hmo in hmos %}
-        <tr><td class="lbl2">{{ hmo.hmo_name }}</td><td class="num">{{ hmo.receivable }}</td><td class="num">{{ "{:,.2f}".format(prev_report.hmo_sales.get(hmo.hmo_name, 0.00)) }}</td><td class="num">{{ "{:,.2f}".format(curr_report.hmo_sales.get(hmo.hmo_name, 0.00)) }}</td></tr>
+
+        <tr class="sub-hdr"><td colspan="4">HMO / APE</td></tr>
+        {% for t in hmo_tenders %}
+        <tr>
+          <td class="lbl2">{{ t }}</td>
+          <td class="num"></td>
+          <td class="num">{{ "{:,.2f}".format(prev_report.hmo_sales.get(t, 0.0)) }}</td>
+          <td class="num">{{ "{:,.2f}".format(curr_report.hmo_sales.get(t, 0.0)) }}</td>
+        </tr>
+        {% else %}
+        <tr><td class="lbl2" colspan="4" style="color:var(--muted);font-style:italic;padding-top:3px;padding-bottom:3px;">No HMO/APE transactions</td></tr>
         {% endfor %}
-        
-        <tr class="sub-hdr"><td colspan="4">APE</td></tr>
-        {% for ape in apes %}
-        <tr><td class="lbl2">{{ ape.ape_name }}</td><td class="num">{{ ape.receivable }}</td><td class="num">{{ "{:,.2f}".format(prev_report.hmo_sales.get(ape.ape_name, 0.00)) }}</td><td class="num">{{ "{:,.2f}".format(curr_report.hmo_sales.get(ape.ape_name, 0.00)) }}</td></tr>
-        {% endfor %}
-        
+
         <tr class="sub-hdr"><td colspan="4">Home Service</td></tr>
-        <tr><td class="lbl2">Gcash / Bank Transfer</td><td class="num"></td><td class="num">{{ "{:,.2f}".format(prev_report.home_service_sales.get("Gcash / Bank Transfer", 0.00)) }}</td><td class="num">{{ "{:,.2f}".format(curr_report.home_service_sales.get("Gcash / Bank Transfer", 0.00)) }}</td></tr>
-        <tr><td class="lbl2">Credit Card</td><td class="num">{{ "{:,.2f}".format(curr_report.home_service_sales.get("Credit Card", 0.00)) }}</td><td class="num">{{ "{:,.2f}".format(prev_report.home_service_sales.get("Credit Card", 0.00)) }}</td><td class="num">{{ "{:,.2f}".format(curr_report.home_service_sales.get("Credit Card", 0.00)) }}</td></tr>
-        <tr><td class="lbl2">Cash</td><td class="num"></td><td class="num">{{ "{:,.2f}".format(prev_report.home_service_sales.get("Cash", 0.00)) }}</td><td class="num">{{ "{:,.2f}".format(curr_report.home_service_sales.get("Cash", 0.00)) }}</td></tr>
+        {% for t in home_service_tenders %}
+        <tr>
+          <td class="lbl2">{{ t }}</td>
+          <td class="num"></td>
+          <td class="num">{{ "{:,.2f}".format(prev_report.home_service_sales.get(t, 0.0)) }}</td>
+          <td class="num">{{ "{:,.2f}".format(curr_report.home_service_sales.get(t, 0.0)) }}</td>
+        </tr>
+        {% else %}
+        <tr><td class="lbl2" colspan="4" style="color:var(--muted);font-style:italic;padding-top:3px;padding-bottom:3px;">No Home Service transactions</td></tr>
+        {% endfor %}
 
         <tr class="sub-hdr"><td colspan="4">Walk-in</td></tr>
-        <tr><td class="lbl2">Gcash / Bank Transfer</td><td class="num"></td><td class="num">{{ "{:,.2f}".format(prev_report.walk_in_sales.get("Gcash / Bank Transfer", 0.00)) }}</td><td class="num">{{ "{:,.2f}".format(curr_report.walk_in_sales.get("Gcash / Bank Transfer", 0.00)) }}</td></tr>
-        <tr><td class="lbl2">A/R-Co.</td><td class="num">{{ "{:,.2f}".format(curr_report.walk_in_sales.get("A/R-Co.", 0.00)) }}</td><td class="num">{{ "{:,.2f}".format(prev_report.walk_in_sales.get("A/R-Co.", 0.00)) }}</td><td class="num">{{ "{:,.2f}".format(curr_report.walk_in_sales.get("A/R-Co.", 0.00)) }}</td></tr>
-        <tr><td class="lbl2">Credit Card</td><td class="num">{{ "{:,.2f}".format(curr_report.walk_in_sales.get("Credit Card", 0.00)) }}</td><td class="num">{{ "{:,.2f}".format(prev_report.walk_in_sales.get("Credit Card", 0.00)) }}</td><td class="num">{{ "{:,.2f}".format(curr_report.walk_in_sales.get("Credit Card", 0.00)) }}</td></tr>
-        <tr><td class="lbl2">Cash</td><td class="num"></td><td class="num">{{ "{:,.2f}".format(prev_report.walk_in_sales.get("Cash", 0.00)) }}</td><td class="num">{{ "{:,.2f}".format(curr_report.walk_in_sales.get("Cash", 0.00)) }}</td></tr>
-        <tr class="total-row"><td style="padding-left:5px">Total Diagnostics Sales</td><td class="num"></td><td class="num">{{ "{:,.2f}".format(prev_report.total_diagnostic_sales) }}</td><td class="num">{{ "{:,.2f}".format(curr_report.total_diagnostic_sales) }}</td></tr>
+        {% for t in walk_in_tenders %}
+        <tr>
+          <td class="lbl2">{{ t }}</td>
+          <td class="num">{% if t == 'A/R-DGO' %}{{ "{:,.2f}".format(curr_report.walk_in_sales.get(t, 0.0)) }}{% endif %}</td>
+          <td class="num">{{ "{:,.2f}".format(prev_report.walk_in_sales.get(t, 0.0)) }}</td>
+          <td class="num">{{ "{:,.2f}".format(curr_report.walk_in_sales.get(t, 0.0)) }}</td>
+        </tr>
+        {% else %}
+        <tr><td class="lbl2" colspan="4" style="color:var(--muted);font-style:italic;padding-top:3px;padding-bottom:3px;">No Walk-in transactions</td></tr>
+        {% endfor %}
+
+        <tr class="total-row">
+          <td style="padding-left:5px">Total Diagnostics Sales</td>
+          <td class="num"></td>
+          <td class="num">{{ "{:,.2f}".format(prev_report.total_diagnostic_sales) }}</td>
+          <td class="num">{{ "{:,.2f}".format(curr_report.total_diagnostic_sales) }}</td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -180,46 +219,74 @@
     <div class="sec-title">Dialysis</div>
     <table class="tbl">
       <thead>
-        <tr><th style="width:46%"></th><th style="width:14%;text-align:right">Receivable</th><th style="width:20%">Apr 24</th><th style="width:20%">Apr 25</th></tr>
+        <tr>
+          <th style="width:46%"></th>
+          <th style="width:14%;text-align:right">Receivable</th>
+          <th style="width:20%">{{ prev_report.report_date.strftime("%b %d") }}</th>
+          <th style="width:20%">{{ curr_report.report_date.strftime("%b %d") }}</th>
+        </tr>
       </thead>
       <tbody>
-        <tr><td class="lbl2">Philhealth</td><td class="num">{{ "{:,.2f}".format(curr_report.dialysis_sales.get("Philhealth", 0.00)) }}</td><td class="num">0.00</td><td class="num">0.00</td></tr>
-        <tr><td class="lbl2">Credit Card</td><td class="num">—</td><td class="num">0.00</td><td class="num">0.00</td></tr>
-        <tr><td class="lbl2">Gcash / Bank Transfer</td><td class="num"></td><td class="num">0.00</td><td class="num">0.00</td></tr>
-        <tr><td class="lbl2">A/R-o/o</td><td class="num">—</td><td class="num">0.00</td><td class="num">0.00</td></tr>
-        <tr><td class="lbl2">Cash</td><td class="num"></td><td class="num">0.00</td><td class="num">0.00</td></tr>
-        <tr class="total-row"><td style="padding-left:5px">Total Dialysis Sales</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+        {% for t in dialysis_tenders %}
+        <tr>
+          <td class="lbl2">{{ t }}</td>
+          <td class="num">{% if t == 'PHILHEALTH' %}{{ "{:,.2f}".format(curr_report.dialysis_sales.get(t, 0.0)) }}{% else %}—{% endif %}</td>
+          <td class="num">{{ "{:,.2f}".format(prev_report.dialysis_sales.get(t, 0.0)) }}</td>
+          <td class="num">{{ "{:,.2f}".format(curr_report.dialysis_sales.get(t, 0.0)) }}</td>
+        </tr>
+        {% else %}
+        <tr><td class="lbl2" colspan="4" style="color:var(--muted);font-style:italic;padding-top:3px;padding-bottom:3px;">No Dialysis transactions</td></tr>
+        {% endfor %}
+        <tr class="total-row">
+          <td style="padding-left:5px">Total Dialysis Sales</td>
+          <td class="num">{{ "{:,.2f}".format(curr_report.total_dialysis_sales) }}</td>
+          <td class="num">{{ "{:,.2f}".format(prev_report.total_dialysis_sales) }}</td>
+          <td class="num">{{ "{:,.2f}".format(curr_report.total_dialysis_sales) }}</td>
+        </tr>
       </tbody>
     </table>
   </div>
 
   <!-- LOWER: Cash on Hand + Accountabilities -->
+  {% set prev_cash_sales = prev_report.walk_in_sales.get('CASH', 0.0) + prev_report.home_service_sales.get('CASH', 0.0) + prev_report.hmo_sales.get('CASH', 0.0) %}
+  {% set curr_cash_sales = curr_report.walk_in_sales.get('CASH', 0.0) + curr_report.home_service_sales.get('CASH', 0.0) + curr_report.hmo_sales.get('CASH', 0.0) %}
   <div class="lower-grid">
     <div class="sec">
       <div class="sec-title">Cash on Hand</div>
       <table class="tbl">
-        <thead><tr><th style="width:50%"></th><th>Apr 24</th><th>Apr 25</th></tr></thead>
+        <thead>
+          <tr>
+            <th style="width:50%"></th>
+            <th>{{ prev_report.report_date.strftime("%b %d") }}</th>
+            <th>{{ curr_report.report_date.strftime("%b %d") }}</th>
+          </tr>
+        </thead>
         <tbody>
-          <tr><td class="lbl">Beginning Cash</td><td class="num" style="font-weight:600">3,101.00</td><td class="num" style="font-weight:600">2,807.00</td></tr>
+          <tr><td class="lbl">Beginning Cash</td><td class="num" style="font-weight:600">0.00</td><td class="num" style="font-weight:600">0.00</td></tr>
           <tr><td class="lbl">Funds Received</td><td class="num">0.00</td><td class="num">0.00</td></tr>
-          <tr><td class="lbl">Cash Sales</td><td class="num">0.00</td><td class="num">1,540.00</td></tr>
+          <tr><td class="lbl">Cash Sales</td><td class="num">{{ "{:,.2f}".format(prev_cash_sales) }}</td><td class="num">{{ "{:,.2f}".format(curr_cash_sales) }}</td></tr>
           <tr><td class="lbl">Cash Deposited</td><td class="num">0.00</td><td class="num">0.00</td></tr>
-          <tr><td class="lbl">Deposit Cash Out</td><td class="num">0.00</td><td class="num">0.00</td></tr>
-          <tr><td class="lbl">Expenses</td><td class="num neg">(294.00)</td><td class="num">0.00</td></tr>
-          <tr class="ending-row"><td style="padding-left:5px">Ending Cash</td><td class="num">2,807.00</td><td class="num">4,347.00</td></tr>
+          <tr><td class="lbl">Expenses</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+          <tr class="ending-row"><td style="padding-left:5px">Ending Cash</td><td class="num">{{ "{:,.2f}".format(prev_cash_sales) }}</td><td class="num">{{ "{:,.2f}".format(curr_cash_sales) }}</td></tr>
         </tbody>
       </table>
     </div>
     <div class="sec">
       <div class="sec-title">Accountabilities</div>
       <table class="tbl">
-        <thead><tr><th style="width:50%"></th><th>Apr 24</th><th>Apr 25</th></tr></thead>
+        <thead>
+          <tr>
+            <th style="width:50%"></th>
+            <th>{{ prev_report.report_date.strftime("%b %d") }}</th>
+            <th>{{ curr_report.report_date.strftime("%b %d") }}</th>
+          </tr>
+        </thead>
         <tbody>
-          <tr><td class="lbl">Petty Cash Fund</td><td class="num">5,000.00</td><td class="num">5,000.00</td></tr>
-          <tr><td class="lbl">Unreimbursed Expenses</td><td class="num neg">(3,193.00)</td><td class="num neg">(3,193.00)</td></tr>
-          <tr><td class="lbl">Cash Fund</td><td class="num">1,000.00</td><td class="num">1,000.00</td></tr>
-          <tr><td class="lbl">Undeposited Cash Sales</td><td class="num">0.00</td><td class="num">1,540.00</td></tr>
-          <tr class="total-row"><td style="padding-left:5px">Total Accountabilities</td><td class="num">2,807.00</td><td class="num">4,347.00</td></tr>
+          <tr><td class="lbl">Petty Cash Fund</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+          <tr><td class="lbl">Unreimbursed Expenses</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+          <tr><td class="lbl">Cash Fund</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+          <tr><td class="lbl">Undeposited Cash Sales</td><td class="num">{{ "{:,.2f}".format(prev_cash_sales) }}</td><td class="num">{{ "{:,.2f}".format(curr_cash_sales) }}</td></tr>
+          <tr class="total-row"><td style="padding-left:5px">Total Accountabilities</td><td class="num">{{ "{:,.2f}".format(prev_cash_sales) }}</td><td class="num">{{ "{:,.2f}".format(curr_cash_sales) }}</td></tr>
         </tbody>
       </table>
     </div>
@@ -230,8 +297,8 @@
     <div>
       <div class="sig-lbl">Prepared by</div>
       <div class="sig-line"></div>
-      <div class="sig-name">Stiffany Joy C. Salvador</div>
-      <div class="sig-date">April 25, 2026</div>
+      <div class="sig-name">&nbsp;</div>
+      <div class="sig-date">{{ curr_report.report_date.strftime("%B %d, %Y") }}</div>
     </div>
     <div>
       <div class="sig-lbl">Approved by</div>
@@ -242,7 +309,7 @@
 
 </div>
 
-<button class="print-btn" onclick="window.print()">⎙ &nbsp; Print / Save as PDF</button>
+<button class="print-btn" onclick="window.print()">&#x2399; &nbsp; Print / Save as PDF</button>
 
 </body>
 </html>
