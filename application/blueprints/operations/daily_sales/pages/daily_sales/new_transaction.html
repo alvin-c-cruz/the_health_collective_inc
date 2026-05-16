@@ -592,7 +592,7 @@
 
     <h4>{{ "Edit" if not is_new else "New" }} Transaction</h4>
 
-    <span class="txn-type-badge">{{ transaction_type | replace('_', ' ') }}</span>
+    <span class="txn-type-badge">{{ transaction_type.type_name if transaction_type else '' }}</span>
 
     {% if not is_new and record %}
 
@@ -712,20 +712,12 @@
 
           {% if form._locked_ %}
             <input type="text" class="form-control input-readonly"
-              value="{{ form.transaction_type | replace('_', ' ') | title }}" readonly>
-            <input type="hidden" name="transaction_type" value="{{ form.transaction_type }}">
+              value="{{ transaction_type.type_name if transaction_type else '—' }}" readonly>
+            <input type="hidden" name="transaction_type_id" value="{{ form.transaction_type_id or '' }}">
           {% else %}
-            <select name="transaction_type" class="form-select">
-              {% set types = [
-                ('walk_in',    'Walk-in'),
-                ('teleconsult','Teleconsult'),
-                ('home_service','Home Service'),
-                ('hmo_phic',  'HMO / PhilHealth'),
-                ('dialysis',  'Dialysis (MEDIPAD)'),
-                ('ape',       'Annual Physical Exam (APE)'),
-              ] %}
-              {% for val, label in types %}
-              <option value="{{ val }}" {{ 'selected' if form.transaction_type == val }}>{{ label }}</option>
+            <select name="transaction_type_id" class="form-select">
+              {% for tt in transaction_types %}
+              <option value="{{ tt.id }}" {{ 'selected' if form.transaction_type_id == tt.id }}>{{ tt.type_name }}</option>
               {% endfor %}
             </select>
           {% endif %}

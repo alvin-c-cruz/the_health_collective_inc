@@ -1,4 +1,4 @@
-﻿from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from datetime import date
 from sqlalchemy import func
 
@@ -115,17 +115,17 @@ def home():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def new_transaction():
-    transaction_type = request.args.get('type', 'walk_in')
+    type_id = request.args.get('type_id', type=int)
+    transaction_type = TransactionType.query.get(type_id) if type_id else TransactionType.query.order_by(TransactionType.sort_order).first()
     form = Form()
     form.user_prepare_id = current_user.id
     form.record_date = str(date.today())  # default to today
     form.record_number = _generate_record_number()
-    form.transaction_type = transaction_type
+    form.transaction_type_id = transaction_type.id if transaction_type else None
 
     if request.method == 'POST':
         form._post(request.form)
-        transaction_type = form.transaction_type
-        # Always auto-assign record number â€” user cannot edit it
+        transaction_type = TransactionType.query.get(form.transaction_type_id) if form.transaction_type_id else None
         if not form.record_number:
             form.record_number = _generate_record_number()
 
@@ -146,10 +146,12 @@ def new_transaction():
     tenders = Tender.query.order_by(Tender.tender_name).all()
     sexes = Sex.query.order_by(Sex.sex_name).all()
     customers = Customer.query.order_by(Customer.customer_name).all()
+    transaction_types = TransactionType.query.filter_by(active=True).order_by(TransactionType.sort_order).all()
 
     context = {
         "form": form,
         "transaction_type": transaction_type,
+        "transaction_types": transaction_types,
         "product_types": product_types,
         "tenders": tenders,
         "sexes": sexes,
@@ -195,15 +197,17 @@ def edit_transaction(transaction_id):
     else:
         form._populate(record)
 
-    transaction_type = record.transaction_type or 'walk_in'
+    transaction_type = record.transaction_type
     product_types = ProductType.query.order_by(ProductType.product_type_name).all()
     tenders = Tender.query.order_by(Tender.tender_name).all()
     sexes = Sex.query.order_by(Sex.sex_name).all()
     customers = Customer.query.order_by(Customer.customer_name).all()
+    transaction_types = TransactionType.query.filter_by(active=True).order_by(TransactionType.sort_order).all()
 
     context = {
         "form": form,
         "transaction_type": transaction_type,
+        "transaction_types": transaction_types,
         "product_types": product_types,
         "tenders": tenders,
         "sexes": sexes,
@@ -310,7 +314,7 @@ def customer_search():
 def record_deposit():
     if request.method == 'POST':
         # Placeholder: wire to a Deposit model when ready
-        flash('Deposit recorded (not yet persisted â€” model pending).', 'info')
+        flash('Deposit recorded (not yet persisted â€" model pending).', 'info')
         return redirect(url_for(f'{app_name}.record_deposit'))
 
     return render_template('daily_sales/record_deposit.html', app_label=app_label)
@@ -348,7 +352,7 @@ def daily_report():
             gross = sum(d.amount - d.discount for d in t.transaction_details)
             net = gross - (t.discount or 0)
 
-            tx_type = t.transaction_type or 'walk_in'
+            tx_type = t.transaction_type.type_code if t.transaction_type else 'walk_in'
 
             for tender in t.transaction_tenders:
                 t_name = tender.tender.tender_name if tender.tender else 'Unknown'

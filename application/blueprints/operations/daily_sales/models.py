@@ -20,7 +20,8 @@ class Transaction(db.Model):
 
     description = db.Column(db.String())
 
-    transaction_type = db.Column(db.String(), default='walk_in')
+    transaction_type_id = db.Column(db.Integer, db.ForeignKey('transaction_type.id'), nullable=True)
+    transaction_type = db.relationship('TransactionType', lazy=True)
 
     submitted = db.Column(db.String())
     cancelled = db.Column(db.String())

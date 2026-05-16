@@ -115,7 +115,7 @@ class Form:
     record_number: str = ""
     dashlabs_number: str = ""
     pos_number: str = ""
-    transaction_type: str = "walk_in"
+    transaction_type_id: int = None
     customer_id: int = 0
     prepared_by: str = ""
     checked_by: str = ""
@@ -149,7 +149,7 @@ class Form:
         self.record_number = obj.record_number or ""
         self.dashlabs_number = obj.dashlabs_number or ""
         self.pos_number = obj.pos_number or ""
-        self.transaction_type = obj.transaction_type or "walk_in"
+        self.transaction_type_id = obj.transaction_type_id
         self.customer_id = obj.customer_id
         self.prepared_by = obj.prepared_by or ""
         self.checked_by = obj.checked_by or ""
@@ -190,7 +190,8 @@ class Form:
         self.record_number = request_form.get("record_number", "")
         self.dashlabs_number = request_form.get("dashlabs_number", "")
         self.pos_number = request_form.get("pos_number", "")
-        self.transaction_type = request_form.get("transaction_type", "walk_in")
+        raw_type_id = request_form.get("transaction_type_id")
+        self.transaction_type_id = int(raw_type_id) if raw_type_id else None
         self.prepared_by = request_form.get("prepared_by", "")
         self.checked_by = request_form.get("checked_by", "")
         self.approved_by = request_form.get("approved_by", "")
@@ -293,7 +294,7 @@ class Form:
                 record_number=self.record_number,
                 dashlabs_number=self.dashlabs_number,
                 pos_number=self.pos_number,
-                transaction_type=self.transaction_type,
+                transaction_type_id=self.transaction_type_id,
                 customer_id=self.customer_id,
                 prepared_by=self.prepared_by,
                 checked_by=self.checked_by,
@@ -310,7 +311,7 @@ class Form:
             record.record_number = self.record_number
             record.dashlabs_number = self.dashlabs_number
             record.pos_number = self.pos_number
-            record.transaction_type = self.transaction_type
+            record.transaction_type_id = self.transaction_type_id
             record.customer_id = self.customer_id
             record.prepared_by = self.prepared_by
             record.checked_by = self.checked_by

@@ -178,7 +178,7 @@
   <div class="thc-sec-lbl">New transaction</div>
   <div class="thc-txn-grid">
     {% for txn_type in transaction_types %}
-    {% set _url = url_for('daily_sales.new_transaction', type=txn_type.type_code) %}
+    {% set _url = url_for('daily_sales.new_transaction', type_id=txn_type.id) %}
     <div class="thc-txn-card {{ 'featured' if loop.first }}" onclick="window.location.href='{{ _url }}'">
       <div class="thc-txn-icon {{ txn_type.icon_color }}">
         <i class="bi {{ txn_type.icon }}"></i>
@@ -189,7 +189,7 @@
         <div class="thc-badges">
           {% for t in txn_type_tenders.get(txn_type.type_code, []) %}
           {% if t.symbol or t.tender_name %}
-          <a href="{{ url_for('daily_sales.new_transaction', type=txn_type.type_code, prefill_tender_id=t.id) }}"
+          <a href="{{ url_for('daily_sales.new_transaction', type_id=txn_type.id, prefill_tender_id=t.id) }}"
              class="thc-badge {{ txn_type.badge_color }}"
              onclick="event.stopPropagation()">{{ t.symbol or t.tender_name }}</a>
           {% endif %}
@@ -232,7 +232,7 @@
         {% set net = namespace(val=0) %}
         {% for d in t.transaction_details %}{% set net.val = net.val + d.amount - d.discount %}{% endfor %}
         {% set net.val = net.val - (t.discount or 0) %}
-        {% set tt = type_lookup.get(t.transaction_type) %}
+        {% set tt = t.transaction_type %}
         <a href="{{ url_for('daily_sales.edit_transaction', transaction_id=t.id) if not t.submitted and not t.cancelled else url_for('daily_sales.view_transaction', transaction_id=t.id) }}"
            class="thc-rec-row">
           <div class="thc-rec-icon {{ tt.icon_color if tt else 'ic-slate' }}">
@@ -241,7 +241,7 @@
           <div class="thc-rec-info">
             <div class="thc-rec-num"># {{ t.record_number }}</div>
             <div class="thc-rec-customer">{{ t.customer.customer_name if t.customer else '—' }}</div>
-            <div class="thc-rec-type">{{ tt.type_name if tt else (t.transaction_type or 'Walk-in') | replace('_', ' ') | title }}</div>
+            <div class="thc-rec-type">{{ tt.type_name if tt else '—' }}</div>
           </div>
           <div class="thc-rec-amount">₱{{ "%.2f" | format(net.val) }}</div>
           <div>
