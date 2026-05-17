@@ -238,6 +238,16 @@
       <i class="bi bi-chevron-right thc-cash-chev"></i>
     </a>
     {% endif %}
+    {% if "APE Batch" in current_user.user_roles %}
+    <a href="{{ url_for('ape_batch.home') }}" class="thc-cash-card">
+      <div class="thc-cash-icon ic-purple"><i class="bi bi-building"></i></div>
+      <div class="thc-cash-info">
+        <p class="thc-cash-title">APE Batches</p>
+        <p class="thc-cash-desc">Annual physical exam batches</p>
+      </div>
+      <i class="bi bi-chevron-right thc-cash-chev"></i>
+    </a>
+    {% endif %}
   </div>
   {% endif %}
 
