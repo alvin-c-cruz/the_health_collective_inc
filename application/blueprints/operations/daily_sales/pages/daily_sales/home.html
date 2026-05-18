@@ -187,7 +187,7 @@
   <div class="thc-sec-lbl">New transaction</div>
   <div class="thc-txn-grid">
     {% for txn_type in transaction_types %}
-    {% if txn_type.type_code == 'hmo_ape' %}
+    {% if txn_type.type_code == 'ape' %}
       {% set _url = url_for('ape_batch.home') %}
     {% else %}
       {% set _url = url_for('daily_sales.new_transaction', type_id=txn_type.id) %}
@@ -202,7 +202,7 @@
         <div class="thc-badges">
           {% for t in txn_type_tenders.get(txn_type.type_code, []) %}
           {% if t.symbol or t.tender_name %}
-          {% if txn_type.type_code == 'hmo_ape' %}
+          {% if txn_type.type_code == 'ape' %}
           <a href="{{ url_for('ape_batch.home') }}"
              class="thc-badge {{ txn_type.badge_color }}"
              onclick="event.stopPropagation()">{{ t.symbol or t.tender_name }}</a>

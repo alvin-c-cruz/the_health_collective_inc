@@ -727,7 +727,7 @@
 
       </div>
 
-      {# APE Batch row — shown only when transaction type code is hmo_ape #}
+      {# APE Batch row — shown only when transaction type code is ape #}
       <div id="ape-batch-row" class="row g-3 mb-3" {% if not locked_from_batch %}style="display:none"{% endif %}>
         <div class="col-md-8">
           <label class="form-label">APE Batch</label>
@@ -1735,7 +1735,7 @@
   function toggleApeBatchRow() {
     var row = document.getElementById('ape-batch-row');
     if (!row) return;
-    row.style.display = getSelectedTypeCode() === 'hmo_ape' ? '' : 'none';
+    row.style.display = getSelectedTypeCode() === 'ape' ? '' : 'none';
   }
 
   function applyApeBatchPrefill(packageAmount) {

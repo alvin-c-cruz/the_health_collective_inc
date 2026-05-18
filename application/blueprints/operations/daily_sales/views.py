@@ -128,7 +128,7 @@ def new_transaction():
     locked_from_batch = False
 
     if ape_batch_id_arg:
-        ape_type = TransactionType.query.filter_by(type_code='hmo_ape').first()
+        ape_type = TransactionType.query.filter_by(type_code='ape').first()
         transaction_type = ape_type
         locked_from_batch = True
     else:
