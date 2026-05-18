@@ -124,6 +124,10 @@
           <label class="form-label fw-semibold" style="font-size:0.82rem;">Contact Number</label>
           <input type="text" id="co-phone-input" class="form-control form-control-sm" placeholder="Optional">
         </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:0.82rem;">TIN</label>
+          <input type="text" id="co-tin-input" class="form-control form-control-sm" placeholder="Optional">
+        </div>
         <div class="mb-0">
           <label class="form-label fw-semibold" style="font-size:0.82rem;">Address</label>
           <input type="text" id="co-address-input" class="form-control form-control-sm" placeholder="Optional">
@@ -231,6 +235,7 @@ addTrig.addEventListener('mousedown', function(e) {
   document.getElementById('co-name-input').value = '';
   document.getElementById('co-contact-input').value = '';
   document.getElementById('co-phone-input').value = '';
+  document.getElementById('co-tin-input').value = '';
   document.getElementById('co-address-input').value = '';
   document.getElementById('co-modal-error').style.display = 'none';
   new bootstrap.Modal(document.getElementById('addCompanyModal')).show();
@@ -255,6 +260,7 @@ function saveNewCompany() {
       company_name: name,
       contact_person: document.getElementById('co-contact-input').value.trim(),
       contact_number: document.getElementById('co-phone-input').value.trim(),
+      tin:            document.getElementById('co-tin-input').value.trim(),
       address:        document.getElementById('co-address-input').value.trim(),
     })
   })

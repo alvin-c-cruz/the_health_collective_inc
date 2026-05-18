@@ -99,6 +99,7 @@ def quick_add():
         contact_person=data.get("contact_person", "").strip() or None,
         contact_number=data.get("contact_number", "").strip() or None,
         address=data.get("address", "").strip() or None,
+        tin=data.get("tin", "").strip() or None,
         active=True,
     )
     db.session.add(company)
