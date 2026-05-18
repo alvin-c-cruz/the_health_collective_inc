@@ -3,6 +3,31 @@
 
 {% block title %}{{ 'Edit' if batch else 'New' }} APE Batch{% endblock %}
 
+{% block styles %}
+<style>
+  .co-ac-wrap     { position: relative; }
+  .co-ac-dropdown { position:absolute; top:100%; left:0; right:0; z-index:9999;
+                    background:#fff; border:1px solid var(--thc-border);
+                    border-radius:var(--thc-radius-sm);
+                    box-shadow:0 4px 12px rgba(0,0,0,.10);
+                    max-height:220px; overflow-y:auto; display:none;
+                    font-size:0.875rem; }
+  .co-ac-item     { padding:7px 14px; cursor:pointer; color:var(--thc-text); }
+  .co-ac-item:hover, .co-ac-item--active { background:var(--thc-primary-light); color:var(--thc-primary); font-weight:500; }
+  .co-ac-add      { color:var(--thc-primary) !important; font-weight:600 !important; border-bottom:1px solid var(--thc-border); }
+  .co-ac-empty    { padding:7px 14px; color:var(--thc-text-muted); font-style:italic; }
+
+  /* inline add-company row inside dropdown */
+  .co-ac-new-row  { display:none; padding:6px 10px; border-top:1px solid var(--thc-border); background:#f8fafa; gap:6px; align-items:center; }
+  .co-ac-new-row.visible { display:flex; }
+  .co-ac-new-row input { flex:1; border:1px solid var(--thc-border); border-radius:4px; padding:3px 8px; font-size:0.82rem; outline:none; }
+  .co-ac-new-row input:focus { border-color:var(--thc-primary); }
+  .co-ac-new-row button { font-size:0.78rem; padding:3px 10px; border-radius:4px; border:none; cursor:pointer; }
+  .co-ac-save-btn { background:var(--thc-primary); color:#fff; }
+  .co-ac-cancel-btn { background:#e2e8f0; color:var(--thc-text); }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="thc-page">
     <div class="thc-page-header">
@@ -25,21 +50,27 @@
 
     <form action="{{ url_for('ape_batch.edit_batch', batch_id=batch.id) if batch else url_for('ape_batch.new_batch') }}" method="post">
         <div class="thc-card">
+
+            {# ── Company (searchable autocomplete) ── #}
             <div class="mb-3 row">
                 <label class="col-sm-3 col-form-label fw-semibold">Company <span class="text-danger">*</span></label>
-                <div class="col-sm-9 d-flex gap-2 align-items-center">
-                    <select id="company_id" name="company_id" class="form-select form-select-sm" required>
-                        <option value="">— Select Company —</option>
-                        {% for c in companies %}
-                        <option value="{{ c.id }}" {{ 'selected' if batch and batch.company_id == c.id }}>
-                            {{ c.company_name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <button type="button" class="btn btn-sm btn-outline-secondary text-nowrap"
-                            onclick="document.getElementById('addCompanyModal').style.display='flex'">
-                        + New
-                    </button>
+                <div class="col-sm-9">
+                    <div class="co-ac-wrap">
+                        <input type="text" id="co-display" class="form-control form-control-sm"
+                               placeholder="Search company..."
+                               value="{{ batch.company.company_name if batch and batch.company else '' }}"
+                               autocomplete="off">
+                        <input type="hidden" id="company_id" name="company_id"
+                               value="{{ batch.company_id if batch else '' }}" required>
+                        <div id="co-dropdown" class="co-ac-dropdown">
+                            <div class="co-ac-item co-ac-add" id="co-add-trigger">+ Add Company</div>
+                        </div>
+                        <div id="co-new-row" class="co-ac-new-row">
+                            <input type="text" id="co-new-name" placeholder="New company name">
+                            <button type="button" class="co-ac-save-btn" onclick="saveNewCompany()">Save</button>
+                            <button type="button" class="co-ac-cancel-btn" onclick="hideNewRow()">✕</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -84,54 +115,140 @@
     </form>
 </div>
 
-{# ── Quick-add company modal ── #}
-<div id="addCompanyModal"
-     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1050;
-            align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:10px;padding:1.5rem;width:100%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
-        <div style="font-size:0.95rem;font-weight:700;margin-bottom:1rem;">Add New Company</div>
-        <input id="newCompanyName" type="text" class="form-control form-control-sm mb-3"
-               placeholder="Company name" autofocus>
-        <div id="addCompanyError" style="color:#c0392b;font-size:0.78rem;margin-bottom:0.5rem;display:none;"></div>
-        <div class="d-flex gap-2 justify-content-end">
-            <button type="button" class="btn btn-sm btn-outline-secondary"
-                    onclick="closeAddCompany()">Cancel</button>
-            <button type="button" class="btn btn-sm btn-primary"
-                    onclick="saveNewCompany()">Save</button>
-        </div>
-    </div>
-</div>
-
 <script>
-function closeAddCompany() {
-    document.getElementById('addCompanyModal').style.display = 'none';
-    document.getElementById('newCompanyName').value = '';
-    document.getElementById('addCompanyError').style.display = 'none';
+const CO_OPTIONS = [
+  {% for c in companies %}
+  { id: {{ c.id }}, name: {{ c.company_name | tojson }} }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+
+const display  = document.getElementById('co-display');
+const hidden   = document.getElementById('company_id');
+const dropdown = document.getElementById('co-dropdown');
+const addTrig  = document.getElementById('co-add-trigger');
+const newRow   = document.getElementById('co-new-row');
+const newName  = document.getElementById('co-new-name');
+
+let active = -1;
+
+function hl(text, q) {
+  if (!q) return text;
+  const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+  return text.replace(re, '<strong style="font-weight:700;color:var(--thc-primary)">$1</strong>');
+}
+
+function renderDropdown(q) {
+  const lq = (q || '').toLowerCase();
+  const matches = lq ? CO_OPTIONS.filter(c => c.name.toLowerCase().includes(lq)) : CO_OPTIONS;
+
+  // Clear everything after the add-trigger
+  while (dropdown.children.length > 1) dropdown.removeChild(dropdown.lastChild);
+  active = -1;
+
+  if (matches.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'co-ac-empty';
+    empty.textContent = 'No companies found.';
+    dropdown.appendChild(empty);
+  } else {
+    matches.forEach(function(c) {
+      const item = document.createElement('div');
+      item.className = 'co-ac-item';
+      item.dataset.id = c.id;
+      item.dataset.name = c.name;
+      item.innerHTML = hl(c.name, q);
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        selectCompany(c.id, c.name);
+      });
+      dropdown.appendChild(item);
+    });
+  }
+  dropdown.style.display = 'block';
+}
+
+function selectCompany(id, name) {
+  hidden.value = id;
+  display.value = name;
+  dropdown.style.display = 'none';
+  active = -1;
+}
+
+function hideDropdown() {
+  dropdown.style.display = 'none';
+  newRow.classList.remove('visible');
+  active = -1;
+}
+
+function showNewRow() {
+  newRow.classList.add('visible');
+  newName.value = display.value;
+  setTimeout(() => newName.focus(), 50);
+}
+
+function hideNewRow() {
+  newRow.classList.remove('visible');
+  newName.value = '';
+  display.focus();
 }
 
 function saveNewCompany() {
-    const name = document.getElementById('newCompanyName').value.trim();
-    const errEl = document.getElementById('addCompanyError');
-    if (!name) { errEl.textContent = 'Company name is required.'; errEl.style.display = 'block'; return; }
+  const name = newName.value.trim();
+  if (!name) { newName.focus(); return; }
 
-    fetch('{{ url_for("company.quick_add") }}', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({company_name: name})
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.error) { errEl.textContent = data.error; errEl.style.display = 'block'; return; }
-        const sel = document.getElementById('company_id');
-        const opt = new Option(data.company_name, data.id, true, true);
-        sel.add(opt);
-        closeAddCompany();
-    })
-    .catch(() => { errEl.textContent = 'Server error. Please try again.'; errEl.style.display = 'block'; });
+  fetch('{{ url_for("company.quick_add") }}', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ company_name: name })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.error) { alert(data.error); return; }
+    CO_OPTIONS.push({ id: data.id, name: data.company_name });
+    CO_OPTIONS.sort((a, b) => a.name.localeCompare(b.name));
+    selectCompany(data.id, data.company_name);
+    hideDropdown();
+  })
+  .catch(() => alert('Server error. Please try again.'));
 }
 
-document.getElementById('newCompanyName').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') { e.preventDefault(); saveNewCompany(); }
+// Events
+display.addEventListener('focus', function() { renderDropdown(this.value); });
+display.addEventListener('input', function() {
+  hidden.value = '';  // clear selection until user picks
+  renderDropdown(this.value);
+});
+display.addEventListener('blur', function() {
+  setTimeout(hideDropdown, 150);
+});
+display.addEventListener('keydown', function(e) {
+  const items = dropdown.querySelectorAll('.co-ac-item:not(.co-ac-add)');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    active = Math.min(active + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle('co-ac-item--active', i === active));
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    active = Math.max(active - 1, 0);
+    items.forEach((el, i) => el.classList.toggle('co-ac-item--active', i === active));
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (active >= 0 && items[active]) {
+      selectCompany(items[active].dataset.id, items[active].dataset.name);
+    }
+  } else if (e.key === 'Escape') {
+    hideDropdown();
+  }
+});
+
+addTrig.addEventListener('mousedown', function(e) {
+  e.preventDefault();
+  showNewRow();
+});
+
+newName.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); saveNewCompany(); }
+  if (e.key === 'Escape') { hideNewRow(); }
 });
 </script>
 {% endblock %}
