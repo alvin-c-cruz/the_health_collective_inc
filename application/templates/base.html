@@ -79,6 +79,62 @@
         font-family: var(--thc-font-body);
       }
 
+      /* ── Mobile nav: floating overlay panel ── */
+      @media (max-width: 991.98px) {
+        .thc-navbar .container-fluid { position: relative; flex-wrap: nowrap; }
+
+        .thc-navbar .navbar-collapse {
+          position: absolute;
+          top: 100%;
+          right: 0;
+          width: 260px;
+          max-height: calc(100vh - 60px);
+          overflow-y: auto;
+          background: var(--thc-primary-dark);
+          border-radius: 0 0 10px 10px;
+          box-shadow: 0 8px 28px rgba(0,0,0,0.28);
+          padding: 0.4rem 0 0.6rem;
+          z-index: 1055;
+        }
+
+        .thc-navbar .navbar-nav { flex-direction: column !important; gap: 0; }
+
+        .thc-navbar .navbar-nav .nav-link {
+          padding: 0.55rem 1.1rem !important;
+          font-size: 0.78rem !important;
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+          letter-spacing: 0.05em;
+        }
+
+        /* Dropdowns inside mobile panel — expand in-place */
+        .thc-navbar .dropdown-menu {
+          position: static !important;
+          float: none !important;
+          background: rgba(0,0,0,0.18) !important;
+          border: none !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          padding: 0.2rem 0 !important;
+          margin: 0 !important;
+        }
+        .thc-navbar .dropdown-item {
+          color: rgba(255,255,255,0.82) !important;
+          padding: 0.42rem 2rem !important;
+          font-size: 0.78rem !important;
+          background: transparent !important;
+          border-bottom: none !important;
+        }
+        .thc-navbar .dropdown-item:hover,
+        .thc-navbar .dropdown-item:focus {
+          background: rgba(255,255,255,0.1) !important;
+          color: #fff !important;
+        }
+        .thc-navbar .dropdown-divider { border-color: rgba(255,255,255,0.12) !important; }
+
+        /* Hide version tag on mobile — redundant in panel */
+        .thc-navbar .navbar-version { display: none; }
+      }
+
       .custom-border {
         border: 1px solid transparent;
         transition: border-color 0.3s;
