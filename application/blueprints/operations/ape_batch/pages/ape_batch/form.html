@@ -17,14 +17,6 @@
   .co-ac-add      { color:var(--thc-primary) !important; font-weight:600 !important; border-bottom:1px solid var(--thc-border); }
   .co-ac-empty    { padding:7px 14px; color:var(--thc-text-muted); font-style:italic; }
 
-  /* inline add-company row inside dropdown */
-  .co-ac-new-row  { display:none; padding:6px 10px; border-top:1px solid var(--thc-border); background:#f8fafa; gap:6px; align-items:center; }
-  .co-ac-new-row.visible { display:flex; }
-  .co-ac-new-row input { flex:1; border:1px solid var(--thc-border); border-radius:4px; padding:3px 8px; font-size:0.82rem; outline:none; }
-  .co-ac-new-row input:focus { border-color:var(--thc-primary); }
-  .co-ac-new-row button { font-size:0.78rem; padding:3px 10px; border-radius:4px; border:none; cursor:pointer; }
-  .co-ac-save-btn { background:var(--thc-primary); color:#fff; }
-  .co-ac-cancel-btn { background:#e2e8f0; color:var(--thc-text); }
 </style>
 {% endblock %}
 
@@ -64,11 +56,6 @@
                                value="{{ batch.company_id if batch else '' }}" required>
                         <div id="co-dropdown" class="co-ac-dropdown">
                             <div class="co-ac-item co-ac-add" id="co-add-trigger">+ Add Company</div>
-                        </div>
-                        <div id="co-new-row" class="co-ac-new-row">
-                            <input type="text" id="co-new-name" placeholder="New company name">
-                            <button type="button" class="co-ac-save-btn" onclick="saveNewCompany()">Save</button>
-                            <button type="button" class="co-ac-cancel-btn" onclick="hideNewRow()">✕</button>
                         </div>
                     </div>
                 </div>
@@ -141,7 +128,6 @@ function renderDropdown(q) {
   const lq = (q || '').toLowerCase();
   const matches = lq ? CO_OPTIONS.filter(c => c.name.toLowerCase().includes(lq)) : CO_OPTIONS;
 
-  // Clear everything after the add-trigger
   while (dropdown.children.length > 1) dropdown.removeChild(dropdown.lastChild);
   active = -1;
 
@@ -176,51 +162,16 @@ function selectCompany(id, name) {
 
 function hideDropdown() {
   dropdown.style.display = 'none';
-  newRow.classList.remove('visible');
   active = -1;
-}
-
-function showNewRow() {
-  newRow.classList.add('visible');
-  newName.value = display.value;
-  setTimeout(() => newName.focus(), 50);
-}
-
-function hideNewRow() {
-  newRow.classList.remove('visible');
-  newName.value = '';
-  display.focus();
-}
-
-function saveNewCompany() {
-  const name = newName.value.trim();
-  if (!name) { newName.focus(); return; }
-
-  fetch('{{ url_for("company.quick_add") }}', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ company_name: name })
-  })
-  .then(r => r.json())
-  .then(data => {
-    if (data.error) { alert(data.error); return; }
-    CO_OPTIONS.push({ id: data.id, name: data.company_name });
-    CO_OPTIONS.sort((a, b) => a.name.localeCompare(b.name));
-    selectCompany(data.id, data.company_name);
-    hideDropdown();
-  })
-  .catch(() => alert('Server error. Please try again.'));
 }
 
 // Events
 display.addEventListener('focus', function() { renderDropdown(this.value); });
 display.addEventListener('input', function() {
-  hidden.value = '';  // clear selection until user picks
+  hidden.value = '';
   renderDropdown(this.value);
 });
-display.addEventListener('blur', function() {
-  setTimeout(hideDropdown, 150);
-});
+display.addEventListener('blur', function() { setTimeout(hideDropdown, 150); });
 display.addEventListener('keydown', function(e) {
   const items = dropdown.querySelectorAll('.co-ac-item:not(.co-ac-add)');
   if (e.key === 'ArrowDown') {
@@ -233,9 +184,7 @@ display.addEventListener('keydown', function(e) {
     items.forEach((el, i) => el.classList.toggle('co-ac-item--active', i === active));
   } else if (e.key === 'Enter') {
     e.preventDefault();
-    if (active >= 0 && items[active]) {
-      selectCompany(items[active].dataset.id, items[active].dataset.name);
-    }
+    if (active >= 0 && items[active]) selectCompany(items[active].dataset.id, items[active].dataset.name);
   } else if (e.key === 'Escape') {
     hideDropdown();
   }
@@ -243,12 +192,19 @@ display.addEventListener('keydown', function(e) {
 
 addTrig.addEventListener('mousedown', function(e) {
   e.preventDefault();
-  showNewRow();
+  hideDropdown();
+  window.open('{{ url_for("company.add", popup=1) }}', 'add_company', 'width=640,height=600,resizable=yes,scrollbars=yes');
 });
 
-newName.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') { e.preventDefault(); saveNewCompany(); }
-  if (e.key === 'Escape') { hideNewRow(); }
+// Receive new company from popup
+window.addEventListener('message', function(e) {
+  if (!e.data || e.data.type !== 'company_added') return;
+  const c = { id: e.data.id, name: e.data.company_name };
+  if (!CO_OPTIONS.find(o => o.id === c.id)) {
+    CO_OPTIONS.push(c);
+    CO_OPTIONS.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  selectCompany(c.id, c.name);
 });
 </script>
 {% endblock %}

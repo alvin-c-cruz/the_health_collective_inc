@@ -9,7 +9,7 @@
         <h4>{{ 'Edit' if form.id else 'Add' }} Company</h4>
     </div>
 
-    <form action="{{ url_for('company.edit', record_id=form.id) if form.id else url_for('company.add') }}" method="post">
+    <form action="{{ url_for('company.edit', record_id=form.id) if form.id else url_for('company.add', popup=1) if popup else url_for('company.add') }}" method="post">
         {% if form.id %}
             <input type="hidden" name="record_id" value="{{ form.id }}">
         {% endif %}

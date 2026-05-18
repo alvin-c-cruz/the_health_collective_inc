@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, render_template_string, request, redirect, url_for, flash, jsonify
 from flask_login import current_user
 from sqlalchemy.exc import IntegrityError
 
@@ -26,15 +26,30 @@ def home():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def add():
+    popup = request.args.get('popup') == '1'
     if request.method == "POST":
         form = Form()
         form._post(request.form, current_user.id)
         if form._validate_on_submit():
             form._save()
+            if popup:
+                company = Obj.query.get(form.id)
+                return render_template_string(
+                    '<!doctype html><html><head><meta charset="utf-8"></head><body>'
+                    '<script>'
+                    'if(window.opener){'
+                    'window.opener.postMessage({type:"company_added",id:{{ id }},company_name:{{ name | tojson }}},"*");'
+                    '}'
+                    'window.close();'
+                    '</script>'
+                    '</body></html>',
+                    id=company.id,
+                    name=company.company_name,
+                )
             return redirect(url_for(f"{app_name}.home"))
     else:
         form = Form()
-    return render_template(f"{app_name}/form.html", form=form)
+    return render_template(f"{app_name}/form.html", form=form, popup=popup)
 
 
 @bp.route("/edit/<int:record_id>", methods=["GET", "POST"])
