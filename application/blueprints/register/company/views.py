@@ -90,10 +90,17 @@ def delete(record_id):
 @bp.route("/quick_add", methods=["POST"])
 @login_required
 def quick_add():
-    company_name = (request.json or {}).get("company_name", "").strip()
+    data = request.json or {}
+    company_name = data.get("company_name", "").strip()
     if not company_name:
         return jsonify({"error": "Company name is required."}), 400
-    company = Obj(company_name=company_name, active=True)
+    company = Obj(
+        company_name=company_name,
+        contact_person=data.get("contact_person", "").strip() or None,
+        contact_number=data.get("contact_number", "").strip() or None,
+        address=data.get("address", "").strip() or None,
+        active=True,
+    )
     db.session.add(company)
     db.session.commit()
     return jsonify({"id": company.id, "company_name": company.company_name})
