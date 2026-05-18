@@ -146,6 +146,19 @@ def new_transaction():
     prefill_tender_id = request.args.get('prefill_tender_id', type=int)
     if prefill_tender_id:
         form.tenders[0][1].tender_id = prefill_tender_id
+    elif transaction_type and transaction_type.type_code == 'ape':
+        # Default tender to Credit for all APE transactions
+        credit_tender = Tender.query.filter(
+            Tender.tender_name.ilike('credit')
+        ).first()
+        if credit_tender:
+            form.tenders[0][1].tender_id = credit_tender.id
+            # If locked from a batch, also pre-fill the package amount
+            if locked_from_batch and ape_batch_id_arg:
+                from ..ape_batch.models import ApeBatch
+                batch = ApeBatch.query.get(ape_batch_id_arg)
+                if batch and batch.package_amount:
+                    form.tenders[0][1].amount = batch.package_amount
 
     if request.method == 'POST':
         form._post(request.form)
