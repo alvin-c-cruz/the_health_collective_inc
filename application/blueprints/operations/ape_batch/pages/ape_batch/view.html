@@ -129,55 +129,113 @@
         </table>
     </div>
 
-    <div class="thc-page-header" style="margin-bottom:0.5rem;">
-        <h4 class="fs-6 fw-semibold mb-0">Transactions</h4>
-        <a href="{{ url_for('daily_sales.new_transaction', ape_batch_id=batch.id) }}" class="thc-btn thc-btn-sm thc-btn-primary">
-            Add Transaction
-        </a>
-    </div>
+    {% set draft_count = transactions | selectattr('submitted', 'falsy') | selectattr('cancelled', 'falsy') | list | length %}
 
-    <div class="thc-card">
-        <table class="table table-sm table-hover mb-0">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Sales #</th>
-                    <th>Patient</th>
-                    <th class="text-end">Amount</th>
-                    <th>Status</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for t in transactions %}
-                <tr>
-                    <td class="text-nowrap">{{ t.formatted_record_date or t.record_date }}</td>
-                    <td class="font-monospace small">{{ t.record_number or '—' }}</td>
-                    <td>{{ t.customer.customer_name if t.customer else '—' }}</td>
-                    <td class="text-end font-monospace">
-                        {{ '{:,.2f}'.format(t.transaction_details | sum(attribute='amount')) }}
-                    </td>
-                    <td>
-                        {% if t.cancelled %}
-                            <span class="badge bg-danger">Cancelled</span>
-                        {% elif t.submitted %}
-                            <span class="badge bg-success">Submitted</span>
-                        {% else %}
-                            <span class="badge bg-warning text-dark">Draft</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-end">
-                        <a href="{{ url_for('daily_sales.view_transaction', transaction_id=t.id) }}"
-                           class="thc-btn thc-btn-sm thc-btn-secondary">View</a>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="6" class="text-center text-muted py-4">No transactions linked to this batch yet.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <form method="POST" action="{{ url_for('daily_sales.bulk_submit') }}" id="bulk-form">
+        <input type="hidden" name="batch_id" value="{{ batch.id }}">
+
+        <div class="thc-page-header" style="margin-bottom:0.5rem;">
+            <h4 class="fs-6 fw-semibold mb-0">Transactions</h4>
+            <div class="d-flex gap-2 align-items-center">
+                {% if draft_count %}
+                <button type="button" class="thc-btn thc-btn-sm thc-btn-secondary" id="select-all-btn"
+                        onclick="toggleSelectAll(this)">Select All</button>
+                <button type="submit" class="thc-btn thc-btn-sm thc-btn-primary" id="submit-selected-btn"
+                        style="display:none"
+                        onclick="return confirm('Submit selected transactions? They will be locked after submission.')">
+                    ✔ Submit Selected
+                </button>
+                {% endif %}
+                <a href="{{ url_for('daily_sales.new_transaction', ape_batch_id=batch.id) }}" class="thc-btn thc-btn-sm thc-btn-primary">
+                    Add Transaction
+                </a>
+            </div>
+        </div>
+
+        <div class="thc-card">
+            <table class="table table-sm table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:36px;">
+                            {% if draft_count %}
+                            <input type="checkbox" id="check-all" onchange="toggleAll(this)" title="Select all drafts">
+                            {% endif %}
+                        </th>
+                        <th>Date</th>
+                        <th>Sales #</th>
+                        <th>Patient</th>
+                        <th class="text-end">Amount</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transactions %}
+                    <tr>
+                        <td>
+                            {% if not t.submitted and not t.cancelled %}
+                            <input type="checkbox" class="txn-check" name="transaction_ids" value="{{ t.id }}"
+                                   onchange="updateSubmitBtn()">
+                            {% endif %}
+                        </td>
+                        <td class="text-nowrap">{{ t.formatted_record_date or t.record_date }}</td>
+                        <td class="font-monospace small">{{ t.record_number or '—' }}</td>
+                        <td>{{ t.customer.customer_name if t.customer else '—' }}</td>
+                        <td class="text-end font-monospace">
+                            {{ '{:,.2f}'.format(t.transaction_details | sum(attribute='amount')) }}
+                        </td>
+                        <td>
+                            {% if t.cancelled %}
+                                <span class="badge bg-danger">Cancelled</span>
+                            {% elif t.submitted %}
+                                <span class="badge bg-success">Submitted</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Draft</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('daily_sales.view_transaction', transaction_id=t.id) }}"
+                               class="thc-btn thc-btn-sm thc-btn-secondary">View</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">No transactions linked to this batch yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleAll(master) {
+    document.querySelectorAll('.txn-check').forEach(cb => cb.checked = master.checked);
+    updateSubmitBtn();
+}
+
+function toggleSelectAll(btn) {
+    const checks = document.querySelectorAll('.txn-check');
+    const anyUnchecked = [...checks].some(cb => !cb.checked);
+    checks.forEach(cb => cb.checked = anyUnchecked);
+    const master = document.getElementById('check-all');
+    if (master) master.checked = anyUnchecked;
+    btn.textContent = anyUnchecked ? 'Deselect All' : 'Select All';
+    updateSubmitBtn();
+}
+
+function updateSubmitBtn() {
+    const anyChecked = [...document.querySelectorAll('.txn-check')].some(cb => cb.checked);
+    const btn = document.getElementById('submit-selected-btn');
+    if (btn) btn.style.display = anyChecked ? '' : 'none';
+    const master = document.getElementById('check-all');
+    if (master) {
+        const checks = document.querySelectorAll('.txn-check');
+        master.checked = checks.length > 0 && [...checks].every(cb => cb.checked);
+    }
+}
+</script>
 {% endblock %}

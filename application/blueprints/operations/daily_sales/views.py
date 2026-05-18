@@ -319,6 +319,35 @@ def cancel_transaction(transaction_id):
 
 
 # ---------------------------------------------------------------------------
+# Bulk submit (APE batch page)
+# ---------------------------------------------------------------------------
+
+@bp.route('/transaction/bulk_submit', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def bulk_submit():
+    if not _can_transact():
+        abort(403)
+    ids = request.form.getlist('transaction_ids')
+    batch_id = request.form.get('batch_id', type=int)
+    submitted_count = 0
+    for tid in ids:
+        record = Transaction.query.get(int(tid))
+        if record and not record.submitted and not record.cancelled:
+            record.submitted = str(ph_today())
+            submitted_count += 1
+    db.session.commit()
+    if submitted_count:
+        flash(f'{submitted_count} transaction(s) submitted successfully.', 'success')
+    else:
+        flash('No eligible draft transactions were selected.', 'warning')
+    if batch_id:
+        from ..ape_batch.views import bp as ape_bp
+        return redirect(url_for('ape_batch.view_batch', batch_id=batch_id))
+    return redirect(url_for(f'{app_name}.home'))
+
+
+# ---------------------------------------------------------------------------
 # Delete (draft only)
 # ---------------------------------------------------------------------------
 
