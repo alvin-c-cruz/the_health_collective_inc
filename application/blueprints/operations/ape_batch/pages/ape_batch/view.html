@@ -97,16 +97,16 @@
                         {{ '{:,.2f}'.format(t.transaction_details | sum(attribute='amount')) }}
                     </td>
                     <td>
-                        {% if t.status == 'submitted' %}
-                            <span class="badge bg-success">Submitted</span>
-                        {% elif t.status == 'cancelled' %}
+                        {% if t.cancelled %}
                             <span class="badge bg-danger">Cancelled</span>
+                        {% elif t.submitted %}
+                            <span class="badge bg-success">Submitted</span>
                         {% else %}
                             <span class="badge bg-warning text-dark">Draft</span>
                         {% endif %}
                     </td>
                     <td class="text-end">
-                        <a href="{{ url_for('daily_sales.view_transaction', record_id=t.id) }}"
+                        <a href="{{ url_for('daily_sales.view_transaction', transaction_id=t.id) }}"
                            class="thc-btn thc-btn-sm thc-btn-secondary">View</a>
                     </td>
                 </tr>
