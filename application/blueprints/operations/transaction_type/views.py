@@ -109,6 +109,20 @@ def toggle(record_id):
     return redirect(url_for('transaction_type.home'))
 
 
+@bp.route('/reorder', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def reorder():
+    from flask import jsonify
+    ids = request.json.get('ids', [])
+    for i, record_id in enumerate(ids):
+        obj = Obj.query.get(record_id)
+        if obj:
+            obj.sort_order = (i + 1) * 10
+    db.session.commit()
+    return jsonify(ok=True)
+
+
 @bp.route('/delete/<int:record_id>', methods=['POST'])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
