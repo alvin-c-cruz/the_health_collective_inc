@@ -710,10 +710,10 @@
 
           <label class="form-label">Transaction Type *</label>
 
-          {% if form._locked_ %}
+          {% if form._locked_ or locked_from_batch %}
             <input type="text" class="form-control input-readonly"
               value="{{ transaction_type.type_name if transaction_type else '—' }}" readonly>
-            <input type="hidden" name="transaction_type_id" value="{{ form.transaction_type_id or '' }}">
+            <input type="hidden" id="txn-type-hidden" name="transaction_type_id" value="{{ form.transaction_type_id or '' }}">
           {% else %}
             <div style="position:relative;">
               <input type="text" id="txn-type-display" class="form-control" placeholder="Search type…" autocomplete="off"
@@ -727,14 +727,14 @@
 
       </div>
 
-      {# APE Batch row — shown only when transaction type code is APE #}
-      <div id="ape-batch-row" class="row g-3 mb-3" style="display:none;">
+      {# APE Batch row — shown only when transaction type code is hmo_ape #}
+      <div id="ape-batch-row" class="row g-3 mb-3" {% if not locked_from_batch %}style="display:none"{% endif %}>
         <div class="col-md-8">
           <label class="form-label">APE Batch</label>
-          {% if form._locked_ %}
+          {% if form._locked_ or locked_from_batch %}
             <input type="text" class="form-control input-readonly"
               value="{% for b in ape_batches %}{% if b.id == form.ape_batch_id %}{{ b.company.company_name }} — {{ b.batch_date }}{% endif %}{% endfor %}" readonly>
-            <input type="hidden" name="ape_batch_id" value="{{ form.ape_batch_id or '' }}">
+            <input type="hidden" id="ape-batch-hidden" name="ape_batch_id" value="{{ form.ape_batch_id or '' }}">
           {% else %}
             <div style="position:relative;">
               <input type="text" id="ape-batch-display" class="form-control" placeholder="Search APE batch…" autocomplete="off"
@@ -1735,7 +1735,7 @@
   function toggleApeBatchRow() {
     var row = document.getElementById('ape-batch-row');
     if (!row) return;
-    row.style.display = getSelectedTypeCode() === 'APE' ? '' : 'none';
+    row.style.display = getSelectedTypeCode() === 'hmo_ape' ? '' : 'none';
   }
 
   function applyApeBatchPrefill(packageAmount) {

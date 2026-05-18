@@ -131,7 +131,7 @@
 
     <div class="thc-page-header" style="margin-bottom:0.5rem;">
         <h4 class="fs-6 fw-semibold mb-0">Transactions</h4>
-        <a href="{{ url_for('daily_sales.new_transaction') }}" class="thc-btn thc-btn-sm thc-btn-primary">
+        <a href="{{ url_for('daily_sales.new_transaction', ape_batch_id=batch.id) }}" class="thc-btn thc-btn-sm thc-btn-primary">
             Add Transaction
         </a>
     </div>

@@ -1,5 +1,5 @@
 from application import create_app, db
-import socket, webbrowser
+import socket
 
 
 app = create_app()
@@ -16,7 +16,5 @@ if __name__ == "__main__":
     web_site = f"http://{host}:{port}"
     print(f"Please type on your browser this web address: {web_site}")
     print(host_name)
-        
-    # webbrowser.open(web_site)
-    
+            
     app.run(host="0.0.0.0", port=port)

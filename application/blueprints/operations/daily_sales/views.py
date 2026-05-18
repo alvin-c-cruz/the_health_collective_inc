@@ -123,13 +123,25 @@ def home():
 def new_transaction():
     if not _can_transact():
         abort(403)
-    type_id = request.args.get('type_id', type=int)
-    transaction_type = TransactionType.query.get(type_id) if type_id else TransactionType.query.order_by(TransactionType.sort_order).first()
+
+    ape_batch_id_arg = request.args.get('ape_batch_id', type=int)
+    locked_from_batch = False
+
+    if ape_batch_id_arg:
+        ape_type = TransactionType.query.filter_by(type_code='hmo_ape').first()
+        transaction_type = ape_type
+        locked_from_batch = True
+    else:
+        type_id = request.args.get('type_id', type=int)
+        transaction_type = TransactionType.query.get(type_id) if type_id else TransactionType.query.order_by(TransactionType.sort_order).first()
+
     form = Form()
     form.user_prepare_id = current_user.id
-    form.record_date = str(ph_today())  # default to today
+    form.record_date = str(ph_today())
     form.record_number = _generate_record_number()
     form.transaction_type_id = transaction_type.id if transaction_type else None
+    if ape_batch_id_arg:
+        form.ape_batch_id = ape_batch_id_arg
 
     prefill_tender_id = request.args.get('prefill_tender_id', type=int)
     if prefill_tender_id:
@@ -173,6 +185,7 @@ def new_transaction():
         "ape_batches": ape_batches,
         "app_label": app_label,
         "is_new": True,
+        "locked_from_batch": locked_from_batch,
     }
     return render_template("daily_sales/new_transaction.html", **context)
 
