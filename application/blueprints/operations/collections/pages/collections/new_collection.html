@@ -65,6 +65,20 @@
                     <label class="form-label fw-semibold">Reference No.</label>
                     <input type="text" class="form-control" name="reference" placeholder="Check no., OR no., etc.">
                 </div>
+
+                {# APE Batch link (optional) #}
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">APE Batch <span class="text-muted fw-normal">(optional)</span></label>
+                    <div class="ac-wrap">
+                        <input type="text" id="ape-batch-display" class="form-control" placeholder="Link to an APE Batch..."
+                               value="{% for b in ape_batches %}{% if b.id == selected_ape_batch_id %}{{ b.company.company_name }} — {{ b.batch_date }}{% endif %}{% endfor %}"
+                               autocomplete="off">
+                        <input type="hidden" id="ape_batch_id" name="ape_batch_id" value="{{ selected_ape_batch_id or '' }}">
+                        <div id="ape-batch-dropdown" class="ac-dropdown"></div>
+                    </div>
+                    <div class="form-text">Selecting a batch filters outstanding lines to that batch's transactions.</div>
+                </div>
+
                 <div class="col-12">
                     <label class="form-label fw-semibold">Notes</label>
                     <input type="text" class="form-control" name="notes" placeholder="Optional remarks">
@@ -83,7 +97,7 @@
                     {% include 'collections/_lines_table.html' %}
                 {% else %}
                     <p class="text-muted text-center py-3" id="lines-placeholder">
-                        Select a tender above to load outstanding lines.
+                        Select a tender or APE Batch above to load outstanding lines.
                     </p>
                 {% endif %}
             </div>
@@ -97,7 +111,6 @@
 </div>
 
 <script>
-// ── Tender autocomplete ──
 const TENDER_OPTIONS = [
   {% for t in tenders %}
   { id: {{ t.id }}, name: {{ t.tender_name | tojson }} }{% if not loop.last %},{% endif %}
@@ -107,6 +120,12 @@ const TENDER_OPTIONS = [
 const BANK_OPTIONS = [
   {% for b in bank_accounts %}
   { id: {{ b.id }}, name: {{ (b.bank_name + (' (' + b.account_number + ')' if b.account_number else '')) | tojson }} }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+
+const APE_BATCH_OPTIONS = [
+  {% for b in ape_batches %}
+  { id: {{ b.id }}, name: {{ (b.company.company_name ~ ' — ' ~ b.batch_date) | tojson }} }{% if not loop.last %},{% endif %}
   {% endfor %}
 ];
 
@@ -154,7 +173,7 @@ function makeAutocomplete(opts) {
   function hide() { dropdown.style.display = 'none'; active = -1; }
 
   display.addEventListener('focus', () => render(display.value));
-  display.addEventListener('input', () => { hidden.value = ''; render(display.value); });
+  display.addEventListener('input', () => { hidden.value = ''; render(display.value); if (opts.onClear) opts.onClear(); });
   display.addEventListener('blur', () => setTimeout(hide, 150));
   display.addEventListener('keydown', e => {
     const items = dropdown.querySelectorAll('.ac-item');
@@ -164,7 +183,6 @@ function makeAutocomplete(opts) {
     else if (e.key === 'Escape') hide();
   });
 
-  // pre-select if hidden already has a value (e.g. selected_tender_id)
   if (hidden.value) {
     const pre = opts.options.find(o => String(o.id) === String(hidden.value));
     if (pre) display.value = pre.name;
@@ -182,19 +200,30 @@ makeAutocomplete({
   options: BANK_OPTIONS
 });
 
-// ── Outstanding lines loader (triggered by tender selection) ──
-function loadLines(tenderId) {
+makeAutocomplete({
+  displayId: 'ape-batch-display', hiddenId: 'ape_batch_id', dropdownId: 'ape-batch-dropdown',
+  options: APE_BATCH_OPTIONS,
+  onChange: (batchId) => loadLines(document.getElementById('tender_id').value, batchId)
+});
+
+// ── Outstanding lines loader ──
+function loadLines(tenderId, batchId) {
+  tenderId = tenderId || document.getElementById('tender_id').value;
+  batchId  = batchId  || document.getElementById('ape_batch_id').value;
   const container = document.getElementById('lines-container');
-  if (!tenderId) {
-    container.innerHTML = '<p class="text-muted text-center py-3">Select a tender above to load outstanding lines.</p>';
+  if (!tenderId && !batchId) {
+    container.innerHTML = '<p class="text-muted text-center py-3">Select a tender or APE Batch above to load outstanding lines.</p>';
     return;
   }
   container.innerHTML = '<p class="text-muted text-center py-3">Loading…</p>';
-  fetch(`{{ url_for('collections.get_lines') }}?tender_id=${tenderId}`)
+  let url = `{{ url_for('collections.get_lines') }}?`;
+  if (tenderId) url += `tender_id=${tenderId}&`;
+  if (batchId)  url += `ape_batch_id=${batchId}`;
+  fetch(url)
     .then(r => r.json())
     .then(lines => {
       if (!lines.length) {
-        container.innerHTML = '<p class="text-muted text-center py-3">No outstanding lines for this tender.</p>';
+        container.innerHTML = '<p class="text-muted text-center py-3">No outstanding lines found.</p>';
         return;
       }
       let html = `<table class="table table-sm mb-0">
@@ -230,9 +259,10 @@ function loadLines(tenderId) {
     });
 }
 
-// load lines on page load if tender was pre-selected
-const preSelected = document.getElementById('tender_id').value;
-if (preSelected) loadLines(preSelected);
+// load on page load if pre-selected
+const preTender = document.getElementById('tender_id').value;
+const preBatch  = document.getElementById('ape_batch_id').value;
+if (preTender || preBatch) loadLines(preTender, preBatch);
 
 function syncAmount(cb) {
   const row = cb.closest('tr');

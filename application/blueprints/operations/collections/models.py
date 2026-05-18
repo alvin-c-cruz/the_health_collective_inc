@@ -15,6 +15,9 @@ class Collection(db.Model):
     recorded_by     = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
     created_at      = db.Column(db.String())
 
+    ape_batch_id = db.Column(db.Integer, db.ForeignKey("ape_batch.id"), nullable=True)
+    ape_batch    = db.relationship("ApeBatch", backref="collections", lazy=True)
+
     details = db.relationship("CollectionDetail", backref="collection", lazy=True,
                               cascade="all, delete-orphan")
 

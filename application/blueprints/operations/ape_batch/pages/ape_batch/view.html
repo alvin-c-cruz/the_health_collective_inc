@@ -70,10 +70,63 @@
             <div class="thc-card text-center">
                 <div class="text-muted small mb-1">Employees</div>
                 <div class="fs-3 fw-bold">{{ batch.employee_count }}</div>
-                <div class="text-muted small mt-2 mb-1">Total Sales</div>
+                <div class="text-muted small mt-2 mb-1">Total Billed</div>
                 <div class="fs-5 fw-semibold font-monospace">{{ '{:,.2f}'.format(batch.total_amount) }}</div>
+                <hr class="my-2">
+                <div class="text-muted small mb-1">Total Collected</div>
+                <div class="fw-semibold font-monospace text-success">{{ '{:,.2f}'.format(batch.total_collected) }}</div>
+                <div class="text-muted small mt-2 mb-1">Outstanding</div>
+                <div class="fw-bold font-monospace {% if batch.outstanding_balance <= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {{ '{:,.2f}'.format(batch.outstanding_balance) }}
+                </div>
+                {% if batch.outstanding_balance <= 0 and batch.total_amount > 0 %}
+                <div class="mt-2"><span class="badge bg-success">Fully Collected</span></div>
+                {% elif batch.total_collected > 0 %}
+                <div class="mt-2"><span class="badge bg-warning text-dark">Partial</span></div>
+                {% else %}
+                <div class="mt-2"><span class="badge bg-secondary">Unpaid</span></div>
+                {% endif %}
             </div>
         </div>
+    </div>
+
+    {# Collections section #}
+    <div class="thc-page-header" style="margin-bottom:0.5rem;">
+        <h4 class="fs-6 fw-semibold mb-0">Collections</h4>
+        <a href="{{ url_for('collections.new_collection', ape_batch_id=batch.id) }}"
+           class="thc-btn thc-btn-sm thc-btn-primary">Record Collection</a>
+    </div>
+
+    <div class="thc-card mb-3">
+        <table class="table table-sm table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Tender</th>
+                    <th>Reference</th>
+                    <th class="text-end">Amount</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for col in batch.collections %}
+                <tr>
+                    <td class="text-nowrap">{{ col.formatted_collection_date }}</td>
+                    <td>{{ col.tender.tender_name if col.tender else '—' }}</td>
+                    <td class="font-monospace small">{{ col.reference or '—' }}</td>
+                    <td class="text-end font-monospace">{{ col.formatted_total }}</td>
+                    <td class="text-end">
+                        <a href="{{ url_for('collections.view_collection', collection_id=col.id) }}"
+                           class="thc-btn thc-btn-sm thc-btn-secondary">View</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-3">No collections recorded yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
     <div class="thc-page-header" style="margin-bottom:0.5rem;">
