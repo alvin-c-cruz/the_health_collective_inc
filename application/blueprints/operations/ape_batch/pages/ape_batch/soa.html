@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOA — {{ batch.company.company_name }} — {{ batch.batch_date }}</title>
+<style>
+  :root {
+    --primary: #1a6473;
+    --text: #1a2a2a;
+    --muted: #6b7280;
+    --border: #e2e8f0;
+    --surface: #ffffff;
+    --bg: #f8f9fa;
+    --sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono: 'Courier New', monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    font-size: 9.5pt;
+    background: var(--bg);
+    color: var(--text);
+    padding: 1.5rem 1.5rem 3rem;
+  }
+
+  .page { max-width: 720px; margin: 0 auto; background: var(--surface); padding: 2rem; border: 1px solid var(--border); }
+
+  /* Print button — hidden when printing */
+  .print-bar { max-width: 720px; margin: 0 auto 1rem; display: flex; gap: 0.5rem; }
+  .btn { font-family: var(--sans); font-size: 0.82rem; padding: 0.4rem 1rem; border-radius: 6px; cursor: pointer; border: none; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-secondary { background: #e2e8f0; color: var(--text); text-decoration: none; display: inline-block; }
+
+  /* Clinic header */
+  .clinic-header { border-bottom: 2px solid var(--primary); padding-bottom: 0.75rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: flex-end; }
+  .clinic-name { font-size: 13pt; font-weight: 700; color: var(--primary); letter-spacing: -0.02em; }
+  .clinic-sub { font-size: 8pt; color: var(--muted); margin-top: 2px; }
+  .doc-label { text-align: right; }
+  .doc-label .title { font-size: 14pt; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.05em; }
+  .doc-label .soa-no { font-size: 8pt; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+
+  /* Bill-to / meta */
+  .meta-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.25rem; }
+  .meta-block { }
+  .meta-label { font-size: 7.5pt; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 4px; }
+  .meta-value { font-size: 9.5pt; color: var(--text); }
+  .meta-value.lg { font-size: 11pt; font-weight: 600; }
+  .meta-value.mono { font-family: var(--mono); }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 9pt; }
+  thead tr { background: var(--primary); color: #fff; }
+  thead th { padding: 6px 8px; text-align: left; font-weight: 600; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.05em; }
+  thead th.r { text-align: right; }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:nth-child(even) { background: #f8f9fa; }
+  tbody td { padding: 6px 8px; }
+  tbody td.r { text-align: right; font-family: var(--mono); }
+  tbody td.muted { color: var(--muted); font-size: 8.5pt; }
+
+  /* Totals */
+  .totals { display: flex; justify-content: flex-end; margin-bottom: 1.5rem; }
+  .totals-box { min-width: 260px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .totals-row { display: flex; justify-content: space-between; padding: 6px 12px; font-size: 9pt; border-bottom: 1px solid var(--border); }
+  .totals-row:last-child { border-bottom: none; background: var(--primary); color: #fff; font-weight: 700; font-size: 10pt; }
+  .totals-row span:last-child { font-family: var(--mono); }
+
+  /* Notes */
+  .notes-block { background: #f8f9fa; border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 8.5pt; color: var(--muted); }
+
+  /* Footer */
+  .soa-footer { border-top: 1px solid var(--border); padding-top: 0.75rem; font-size: 8pt; color: var(--muted); display: flex; justify-content: space-between; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .print-bar { display: none; }
+    .page { border: none; padding: 1cm 1cm; max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="print-bar">
+  <button class="btn btn-primary" onclick="window.print()">&#128438; Print / Save PDF</button>
+  <a class="btn btn-secondary" href="{{ url_for('ape_batch.view_batch', batch_id=batch.id) }}">&#8592; Back to Batch</a>
+</div>
+
+<div class="page">
+
+  {# ── Clinic header ── #}
+  <div class="clinic-header">
+    <div>
+      <div class="clinic-name">The Health Collective Inc.</div>
+      <div class="clinic-sub">Health &amp; Wellness Services</div>
+    </div>
+    <div class="doc-label">
+      <div class="title">Statement of Account</div>
+      <div class="soa-no">
+        {% if batch.loa_soa_number %}SOA / LOA Ref: {{ batch.loa_soa_number }}{% else %}Batch #{{ batch.id }}{% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# ── Bill-to and batch meta ── #}
+  <div class="meta-row">
+    <div>
+      <div class="meta-label">Billed To</div>
+      <div class="meta-value lg">{{ batch.company.company_name }}</div>
+      {% if batch.company.tin %}
+      <div class="meta-value mono" style="font-size:8.5pt;margin-top:3px;">TIN: {{ batch.company.tin }}</div>
+      {% endif %}
+      {% if batch.company.address %}
+      <div class="meta-value" style="font-size:8.5pt;margin-top:2px;color:var(--muted);">{{ batch.company.address }}</div>
+      {% endif %}
+      {% if batch.company.contact_person %}
+      <div class="meta-value" style="font-size:8.5pt;margin-top:2px;color:var(--muted);">Attn: {{ batch.company.contact_person }}</div>
+      {% endif %}
+    </div>
+    <div style="text-align:right;">
+      <div class="meta-label">Date Issued</div>
+      <div class="meta-value">{{ batch.batch_date }}</div>
+      <div style="margin-top:0.75rem;">
+        <div class="meta-label">Package Rate / Employee</div>
+        <div class="meta-value mono">PHP {{ '{:,.2f}'.format(batch.package_amount) }}</div>
+      </div>
+      {% if batch.loa_soa_number %}
+      <div style="margin-top:0.75rem;">
+        <div class="meta-label">LOA / SOA Reference</div>
+        <div class="meta-value mono">{{ batch.loa_soa_number }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Line items ── #}
+  <table>
+    <thead>
+      <tr>
+        <th style="width:2rem;">#</th>
+        <th>Patient / Employee</th>
+        <th>Date of Service</th>
+        <th>Sales #</th>
+        <th class="r">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in transactions %}
+      {% if not t.cancelled %}
+      <tr>
+        <td class="muted">{{ loop.index }}</td>
+        <td>{{ t.customer.customer_name if t.customer else '—' }}</td>
+        <td class="muted">{{ t.formatted_record_date or t.record_date }}</td>
+        <td class="muted mono">{{ t.record_number or '—' }}</td>
+        <td class="r">{{ '{:,.2f}'.format(t.transaction_details | sum(attribute='amount')) }}</td>
+      </tr>
+      {% endif %}
+      {% else %}
+      <tr>
+        <td colspan="5" style="text-align:center;color:var(--muted);padding:1rem;">No transactions on this batch.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {# ── Totals ── #}
+  <div class="totals">
+    <div class="totals-box">
+      <div class="totals-row">
+        <span>No. of Employees</span>
+        <span>{{ transactions | rejectattr('cancelled') | list | length }}</span>
+      </div>
+      <div class="totals-row">
+        <span>Package Rate</span>
+        <span>PHP {{ '{:,.2f}'.format(batch.package_amount) }}</span>
+      </div>
+      <div class="totals-row">
+        <span>TOTAL AMOUNT DUE</span>
+        <span>PHP {{ '{:,.2f}'.format(batch.total_amount) }}</span>
+      </div>
+    </div>
+  </div>
+
+  {# ── Notes ── #}
+  {% if batch.notes %}
+  <div class="notes-block"><strong>Notes:</strong> {{ batch.notes }}</div>
+  {% endif %}
+
+  {# ── Footer ── #}
+  <div class="soa-footer">
+    <span>This SOA is computer-generated and does not require a signature.</span>
+    <span>The Health Collective Inc. &mdash; {{ batch.batch_date }}</span>
+  </div>
+
+</div>
+</body>
+</html>

@@ -9,7 +9,15 @@
             <h4>{{ batch.company.company_name }}</h4>
             <div class="text-muted small">APE Batch &mdash; {{ batch.batch_date }}</div>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <a href="{{ url_for('ape_batch.guide') }}" target="_blank"
+               class="thc-btn thc-btn-secondary d-flex align-items-center gap-1" style="font-size:0.82rem;">
+                <i class="bi bi-question-circle"></i> How to Record APE
+            </a>
+            <a href="{{ url_for('ape_batch.soa', batch_id=batch.id) }}" target="_blank"
+               class="thc-btn thc-btn-secondary d-flex align-items-center gap-1" style="font-size:0.82rem;">
+                <i class="bi bi-printer"></i> Print SOA
+            </a>
             <a href="{{ url_for('ape_batch.home') }}" class="thc-btn thc-btn-secondary">Back</a>
             <a href="{{ url_for('ape_batch.edit_batch', batch_id=batch.id) }}" class="thc-btn thc-btn-secondary">Edit</a>
             <form action="{{ url_for('ape_batch.delete_batch', batch_id=batch.id) }}" method="post" class="d-inline"

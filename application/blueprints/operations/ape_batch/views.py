@@ -105,6 +105,15 @@ def delete_batch(batch_id):
     return redirect(url_for(f"{app_name}.home"))
 
 
+@bp.route("/<int:batch_id>/soa")
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def soa(batch_id):
+    batch = ApeBatch.query.get_or_404(batch_id)
+    transactions = Transaction.query.filter_by(ape_batch_id=batch_id).order_by(Transaction.record_date).all()
+    return render_template(f"{app_name}/soa.html", batch=batch, transactions=transactions)
+
+
 @bp.route("/guide")
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
