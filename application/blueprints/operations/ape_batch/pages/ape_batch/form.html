@@ -27,8 +27,8 @@
         <div class="thc-card">
             <div class="mb-3 row">
                 <label class="col-sm-3 col-form-label fw-semibold">Company <span class="text-danger">*</span></label>
-                <div class="col-sm-9">
-                    <select name="company_id" class="form-select form-select-sm" required>
+                <div class="col-sm-9 d-flex gap-2 align-items-center">
+                    <select id="company_id" name="company_id" class="form-select form-select-sm" required>
                         <option value="">— Select Company —</option>
                         {% for c in companies %}
                         <option value="{{ c.id }}" {{ 'selected' if batch and batch.company_id == c.id }}>
@@ -36,6 +36,10 @@
                         </option>
                         {% endfor %}
                     </select>
+                    <button type="button" class="btn btn-sm btn-outline-secondary text-nowrap"
+                            onclick="document.getElementById('addCompanyModal').style.display='flex'">
+                        + New
+                    </button>
                 </div>
             </div>
 
@@ -79,4 +83,55 @@
         {{ save_button() }}
     </form>
 </div>
+
+{# ── Quick-add company modal ── #}
+<div id="addCompanyModal"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1050;
+            align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:10px;padding:1.5rem;width:100%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+        <div style="font-size:0.95rem;font-weight:700;margin-bottom:1rem;">Add New Company</div>
+        <input id="newCompanyName" type="text" class="form-control form-control-sm mb-3"
+               placeholder="Company name" autofocus>
+        <div id="addCompanyError" style="color:#c0392b;font-size:0.78rem;margin-bottom:0.5rem;display:none;"></div>
+        <div class="d-flex gap-2 justify-content-end">
+            <button type="button" class="btn btn-sm btn-outline-secondary"
+                    onclick="closeAddCompany()">Cancel</button>
+            <button type="button" class="btn btn-sm btn-primary"
+                    onclick="saveNewCompany()">Save</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function closeAddCompany() {
+    document.getElementById('addCompanyModal').style.display = 'none';
+    document.getElementById('newCompanyName').value = '';
+    document.getElementById('addCompanyError').style.display = 'none';
+}
+
+function saveNewCompany() {
+    const name = document.getElementById('newCompanyName').value.trim();
+    const errEl = document.getElementById('addCompanyError');
+    if (!name) { errEl.textContent = 'Company name is required.'; errEl.style.display = 'block'; return; }
+
+    fetch('{{ url_for("company.quick_add") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({company_name: name})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) { errEl.textContent = data.error; errEl.style.display = 'block'; return; }
+        const sel = document.getElementById('company_id');
+        const opt = new Option(data.company_name, data.id, true, true);
+        sel.add(opt);
+        closeAddCompany();
+    })
+    .catch(() => { errEl.textContent = 'Server error. Please try again.'; errEl.style.display = 'block'; });
+}
+
+document.getElementById('newCompanyName').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); saveNewCompany(); }
+});
+</script>
 {% endblock %}

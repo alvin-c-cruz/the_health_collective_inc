@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import current_user
 from sqlalchemy.exc import IntegrityError
 
@@ -70,6 +70,18 @@ def delete(record_id):
         db.session.rollback()
         flash(f"Cannot delete {obj} — it has related records.", "danger")
     return redirect(url_for(f"{app_name}.home"))
+
+
+@bp.route("/quick_add", methods=["POST"])
+@login_required
+def quick_add():
+    company_name = (request.json or {}).get("company_name", "").strip()
+    if not company_name:
+        return jsonify({"error": "Company name is required."}), 400
+    company = Obj(company_name=company_name, active=True)
+    db.session.add(company)
+    db.session.commit()
+    return jsonify({"id": company.id, "company_name": company.company_name})
 
 
 @bp.route("/approve/<int:record_id>")
