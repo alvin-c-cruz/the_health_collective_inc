@@ -94,7 +94,36 @@
 
             <div id="lines-container">
                 {% if outstanding_rows %}
-                    {% include 'collections/_lines_table.html' %}
+                <table class="table table-sm mb-0">
+                    <thead><tr>
+                        <th><input type="checkbox" id="check_all" title="Select all"> All</th>
+                        <th>Date</th><th>OR #</th><th>Patient</th>
+                        <th class="text-end">Amount</th>
+                        <th class="text-end">Collected</th>
+                        <th class="text-end">Outstanding</th>
+                        <th class="text-end" style="min-width:110px">Apply</th>
+                    </tr></thead>
+                    <tbody>
+                    {% for row in outstanding_rows %}
+                    {% set tt = row.tt %}
+                    {% set collected = tt.amount - row.outstanding %}
+                    <tr>
+                        <td><input type="checkbox" class="line-check" name="line_id" value="{{ tt.id }}" onchange="syncAmount(this)"></td>
+                        <td class="text-nowrap">{{ tt.transaction.record_date or '—' }}</td>
+                        <td class="font-monospace small">{{ tt.transaction.record_number or '—' }}</td>
+                        <td>{{ tt.transaction.customer.customer_name if tt.transaction.customer else '—' }}</td>
+                        <td class="text-end font-monospace">{{ '{:,.2f}'.format(tt.amount) }}</td>
+                        <td class="text-end font-monospace">{{ '{:,.2f}'.format(collected) }}</td>
+                        <td class="text-end font-monospace fw-semibold">{{ '{:,.2f}'.format(row.outstanding) }}</td>
+                        <td class="text-end">
+                            <input type="number" class="form-control form-control-sm text-end line-amount"
+                                   name="line_amount" value="{{ row.outstanding }}" step="0.01" min="0.01"
+                                   style="width:100px;display:inline-block" disabled data-max="{{ row.outstanding }}">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
                 {% else %}
                     <p class="text-muted text-center py-3" id="lines-placeholder">
                         Select a tender or APE Batch above to load outstanding lines.
@@ -259,10 +288,20 @@ function loadLines(tenderId, batchId) {
     });
 }
 
-// load on page load if pre-selected
+// Wire check_all for server-rendered table (present on page load)
+function wireCheckAll() {
+  const ca = document.getElementById('check_all');
+  if (ca) ca.addEventListener('change', function () {
+    document.querySelectorAll('.line-check').forEach(cb => { cb.checked = this.checked; syncAmount(cb); });
+  });
+}
+wireCheckAll();
+
+// load via AJAX only if table not already server-rendered
 const preTender = document.getElementById('tender_id').value;
 const preBatch  = document.getElementById('ape_batch_id').value;
-if (preTender || preBatch) loadLines(preTender, preBatch);
+const alreadyLoaded = document.querySelector('#lines-container table');
+if ((preTender || preBatch) && !alreadyLoaded) loadLines(preTender, preBatch);
 
 function syncAmount(cb) {
   const row = cb.closest('tr');
