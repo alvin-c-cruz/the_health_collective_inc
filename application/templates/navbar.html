@@ -27,9 +27,7 @@
           <!-- Operations Menu -->
             {% if (
               "Daily Sales" in current_user.user_roles
-              or "Service Types" in current_user.user_roles
               or "Collections" in current_user.user_roles
-              or "Bank Account" in current_user.user_roles
               or "APE Batch" in current_user.user_roles
               ) %}
             <li class="nav-item dropdown">
@@ -38,9 +36,7 @@
               </a>
               <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
               {% include "daily_sales/navbar.html" %}
-              {% include "transaction_type/navbar.html" %}
               {% include "collections/navbar.html" %}
-              {% include "bank_account/navbar.html" %}
               {% include "ape_batch/navbar.html" %}
               </ul>
             </li>
