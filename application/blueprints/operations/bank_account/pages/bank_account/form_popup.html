@@ -294,18 +294,6 @@
     </div>
 
     <script>
-        // Disable parent window interaction (make this modal)
-        if (window.opener) {
-            try {
-                // Try to disable parent window (may not work due to cross-origin)
-                window.opener.document.body.style.pointerEvents = 'none';
-                window.opener.document.body.style.opacity = '0.7';
-            } catch (e) {
-                // If cross-origin, just ignore
-                console.log('Parent window access restricted');
-            }
-        }
-
         // Auto-focus first input
         document.addEventListener('DOMContentLoaded', function() {
             const firstInput = document.getElementById('bank_name');
@@ -347,27 +335,13 @@
 
                 if (bankName || accountNumber) {
                     if (confirm('Close without saving? All entered data will be lost.')) {
-                        restoreParentWindow();
                         window.close();
                     }
                 } else {
-                    restoreParentWindow();
                     window.close();
                 }
             }
         });
-
-        // Restore parent window when closing
-        function restoreParentWindow() {
-            if (window.opener) {
-                try {
-                    window.opener.document.body.style.pointerEvents = '';
-                    window.opener.document.body.style.opacity = '';
-                } catch (e) {
-                    console.log('Parent window access restricted');
-                }
-            }
-        }
 
         // Handle cancel button
         window.addEventListener('DOMContentLoaded', function() {
@@ -380,11 +354,9 @@
 
                     if (bankName || accountNumber) {
                         if (confirm('Close without saving? All entered data will be lost.')) {
-                            restoreParentWindow();
                             window.close();
                         }
                     } else {
-                        restoreParentWindow();
                         window.close();
                     }
                 });
