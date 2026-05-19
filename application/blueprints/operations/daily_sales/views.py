@@ -1,12 +1,14 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
-from datetime import date
+from datetime import date, datetime
 from sqlalchemy import func
 
 from ...user import login_required, roles_accepted, current_user
 from ...register.customer import Customer
+from application.extensions import db
+from ..bank_account.models import BankAccount
 
 from . import app_label, app_name
-from .models import Transaction, TransactionDetail, TransactionTender, TransactionType
+from .models import Transaction, TransactionDetail, TransactionTender, TransactionType, Deposit, DepositItem
 from .forms import Form
 from ...register.product_type import ProductType
 from ...register.tender import Tender
@@ -402,6 +404,7 @@ def get_undeposited_cash_transactions():
 def record_deposit():
     from .models import Deposit, DepositItem
     from flask_login import current_user
+    from application.blueprints.operations.bank_account.models import BankAccount
 
     if request.method == 'POST':
         try:
@@ -444,10 +447,12 @@ def record_deposit():
 
     # GET request - show form
     undeposited_transactions = get_undeposited_cash_transactions()
+    bank_accounts = BankAccount.query.filter_by(active=True).order_by(BankAccount.bank_name).all()
 
     context = {
         'app_label': app_label,
         'undeposited_transactions': undeposited_transactions,
+        'bank_accounts': bank_accounts,
     }
 
     return render_template('daily_sales/record_deposit.html', **context)
