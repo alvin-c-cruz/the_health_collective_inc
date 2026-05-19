@@ -68,29 +68,6 @@
         letter-spacing: 0.08em;
         padding: 0.6rem 0.75rem !important;
         border-top: 2px solid #135260;
-        cursor: pointer;
-        user-select: none;
-    }
-
-    .section-header td:hover {
-        background: #135260;
-    }
-
-    .section-header .collapse-icon {
-        float: right;
-        transition: transform 0.3s ease;
-    }
-
-    .section-header.collapsed .collapse-icon {
-        transform: rotate(-90deg);
-    }
-
-    .section-content {
-        display: none;
-    }
-
-    .section-content.show {
-        display: table-row;
     }
 
     .type-header td {
@@ -99,6 +76,29 @@
         font-size: 0.85rem;
         color: #1a6473;
         padding: 0.5rem 0.75rem !important;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .type-header td:hover {
+        background: #d1e9ed;
+    }
+
+    .type-header .collapse-icon {
+        float: right;
+        transition: transform 0.3s ease;
+    }
+
+    .type-header.collapsed .collapse-icon {
+        transform: rotate(-90deg);
+    }
+
+    .account-row {
+        display: none;
+    }
+
+    .account-row.show {
+        display: table-row;
     }
 
     .account-row td {
@@ -187,23 +187,24 @@
 <table class="income-statement-table">
     <tbody>
         <!-- REVENUE -->
-        <tr class="section-header" onclick="toggleSection('revenue')" data-section="revenue">
-            <td colspan="2">REVENUE<span class="collapse-icon">▼</span></td>
+        <tr class="section-header">
+            <td colspan="2">REVENUE</td>
         </tr>
 
         {% for type_name, accounts in revenue_by_type.items() %}
-        <tr class="type-header section-content" data-parent="revenue">
-            <td colspan="2">{{ type_name }}</td>
+        {% set type_id = 'revenue_' ~ loop.index %}
+        <tr class="type-header" onclick="toggleType('{{ type_id }}')" data-type="{{ type_id }}">
+            <td colspan="2">{{ type_name }}<span class="collapse-icon">▼</span></td>
         </tr>
         {% set type_total = namespace(value=0) %}
         {% for account in accounts %}
-        <tr class="account-row section-content" data-parent="revenue">
+        <tr class="account-row" data-parent="{{ type_id }}">
             <td>{{ account.number }} - {{ account.title }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(account.credit - account.debit) }}</td>
         </tr>
         {% set type_total.value = type_total.value + (account.credit - account.debit) %}
         {% endfor %}
-        <tr class="type-total section-content" data-parent="revenue">
+        <tr class="type-total">
             <td>Total {{ type_name }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(type_total.value) }}</td>
         </tr>
@@ -216,23 +217,24 @@
 
         <!-- COST OF SALES -->
         {% if cost_of_sales_by_type %}
-        <tr class="section-header" onclick="toggleSection('cost_of_sales')" data-section="cost_of_sales">
-            <td colspan="2">COST OF SALES<span class="collapse-icon">▼</span></td>
+        <tr class="section-header">
+            <td colspan="2">COST OF SALES</td>
         </tr>
 
         {% for type_name, accounts in cost_of_sales_by_type.items() %}
-        <tr class="type-header section-content" data-parent="cost_of_sales">
+        {% set type_id = 'cost_of_sales_' ~ loop.index %}
+        <tr class="type-header" onclick="toggleType('{{ type_id }}')" data-type="{{ type_id }}">
             <td colspan="2">{{ type_name }}</td>
         </tr>
         {% set type_total = namespace(value=0) %}
         {% for account in accounts %}
-        <tr class="account-row section-content" data-parent="cost_of_sales">
+        <tr class="account-row" data-parent="{{ type_id }}">
             <td>{{ account.number }} - {{ account.title }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(account.debit - account.credit) }}</td>
         </tr>
         {% set type_total.value = type_total.value + (account.debit - account.credit) %}
         {% endfor %}
-        <tr class="type-total section-content" data-parent="cost_of_sales">
+        <tr class="type-total">
             <td>Total {{ type_name }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(type_total.value) }}</td>
         </tr>
@@ -250,23 +252,24 @@
         {% endif %}
 
         <!-- EXPENSES -->
-        <tr class="section-header" onclick="toggleSection('expenses')" data-section="expenses">
-            <td colspan="2">EXPENSES<span class="collapse-icon">▼</span></td>
+        <tr class="section-header">
+            <td colspan="2">EXPENSES</td>
         </tr>
 
         {% for type_name, accounts in expenses_by_type.items() %}
-        <tr class="type-header section-content" data-parent="expenses">
+        {% set type_id = 'expenses_' ~ loop.index %}
+        <tr class="type-header" onclick="toggleType('{{ type_id }}')" data-type="{{ type_id }}">
             <td colspan="2">{{ type_name }}</td>
         </tr>
         {% set type_total = namespace(value=0) %}
         {% for account in accounts %}
-        <tr class="account-row section-content" data-parent="expenses">
+        <tr class="account-row" data-parent="{{ type_id }}">
             <td>{{ account.number }} - {{ account.title }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(account.debit - account.credit) }}</td>
         </tr>
         {% set type_total.value = type_total.value + (account.debit - account.credit) %}
         {% endfor %}
-        <tr class="type-total section-content" data-parent="expenses">
+        <tr class="type-total">
             <td>Total {{ type_name }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(type_total.value) }}</td>
         </tr>
@@ -292,30 +295,29 @@
 </table>
 
 <script>
-function toggleSection(sectionName) {
-    // Get all section headers
-    const allHeaders = document.querySelectorAll('.section-header');
-    const clickedHeader = document.querySelector(`.section-header[data-section="${sectionName}"]`);
+function toggleType(typeId) {
+    // Get the clicked type header
+    const clickedHeader = document.querySelector(`.type-header[data-type="${typeId}"]`);
 
-    // Get all content rows for this section
-    const sectionContent = document.querySelectorAll(`.section-content[data-parent="${sectionName}"]`);
+    // Get all account rows for this type
+    const accountRows = document.querySelectorAll(`.account-row[data-parent="${typeId}"]`);
 
-    // Check if the clicked section is currently shown
-    const isCurrentlyShown = sectionContent.length > 0 && sectionContent[0].classList.contains('show');
+    // Check if the clicked type is currently shown
+    const isCurrentlyShown = accountRows.length > 0 && accountRows[0].classList.contains('show');
 
-    // Hide all sections first (accordion behavior)
-    document.querySelectorAll('.section-content').forEach(row => {
+    // Hide all account rows first (accordion behavior - only one type expanded at a time)
+    document.querySelectorAll('.account-row').forEach(row => {
         row.classList.remove('show');
     });
 
-    // Remove collapsed class from all headers
-    allHeaders.forEach(header => {
+    // Remove collapsed class from all type headers
+    document.querySelectorAll('.type-header').forEach(header => {
         header.classList.remove('collapsed');
     });
 
-    // If the section wasn't shown, show it now
+    // If the type wasn't shown, show it now
     if (!isCurrentlyShown) {
-        sectionContent.forEach(row => {
+        accountRows.forEach(row => {
             row.classList.add('show');
         });
     } else {
@@ -323,9 +325,4 @@ function toggleSection(sectionName) {
         clickedHeader.classList.add('collapsed');
     }
 }
-
-// Open the first section (REVENUE) by default on page load
-document.addEventListener('DOMContentLoaded', function() {
-    toggleSection('revenue');
-});
 </script>
