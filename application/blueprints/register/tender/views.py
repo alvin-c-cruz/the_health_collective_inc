@@ -5,6 +5,7 @@ import openpyxl
 from io import BytesIO
 from werkzeug.utils import secure_filename
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func
 from .models import Tender as Obj
 from .models import ObjAdmin as Approver
 from .models import ObjUser as Preparer
@@ -209,8 +210,9 @@ def upload():
                 if not tender_name:
                     continue
 
+                # Case-insensitive duplicate check
                 existing = Obj.query.filter(
-                    (Obj.tender_name == str(tender_name)) 
+                    func.lower(Obj.tender_name) == func.lower(str(tender_name))
                 ).first()
 
                 if existing:
