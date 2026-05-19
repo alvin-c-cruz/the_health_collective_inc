@@ -1,0 +1,143 @@
+<style>
+    table {
+        font-size: 11px;
+        table-layout: fixed;
+    }
+
+    .table-wrapper {
+        max-height: 70vh;
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 2;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .table tbody td:first-child {
+        position: sticky;
+        left: 0;
+        background: #fff;
+        z-index: 3;
+    }
+
+    .table thead th:first-child {
+        position: sticky;
+        top: 0;
+        left: 0;
+        background: #fff;
+        z-index: 5;
+    }
+
+    .account-title {
+        word-wrap: break-word;
+        white-space: normal;
+        max-width: 260px;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    td a {
+        display: block;
+        color: inherit;
+        text-decoration: none;
+    }
+
+    td a:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<h3 style="font-family: var(--thc-font-heading); margin-bottom: 1.5rem;">Trial Balance - Year {{ report_year }}</h3>
+
+<div class="table-wrapper">
+    <table class="table table-bordered table-sm table-hover">
+        <thead>
+            <tr>
+                <th style="width:18%;">Account</th>
+                <th>Beg</th>
+                <th>Jan</th>
+                <th>Feb</th>
+                <th>Mar</th>
+                <th>Apr</th>
+                <th>May</th>
+                <th>Jun</th>
+                <th>Jul</th>
+                <th>Aug</th>
+                <th>Sep</th>
+                <th>Oct</th>
+                <th>Nov</th>
+                <th>Dec</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for row in accounts %}
+            <tr>
+                <td class="account-title">
+                    {{ row.Account }}
+                </td>
+
+                <td class="text-end">
+                    {{ row.Beg | default(0) | float | round(2) }}
+                </td>
+
+                <td class="text-end">
+                    {{ row.Beg + row.Jan | default(0) | float | round(2) }}
+                </td>
+
+                <td class="text-end">
+                    {{ row.Beg + row.Jan + row.Feb | default(0) | float | round(2) }}
+                </td>
+
+                <td class="text-end">
+                    {{ row.Beg + row.Jan + row.Feb + row.Mar | default(0) | float | round(2) }}
+                </td>
+
+                <td class="text-end">
+                    {{ row.Beg + row.Jan + row.Feb + row.Mar + row.Apr | default(0) | float | round(2) }}
+                </td>
+
+                <td class="text-end">
+                    {{ row.Beg + row.Jan + row.Feb + row.Mar + row.Apr + row.May | default(0) | float | round(2) }}
+                </td>
+
+                <td class="text-end">
+                    {{ row.Beg + row.Jan + row.Feb + row.Mar + row.Apr + row.May + row.Jun | default(0) | float | round(2) }}
+                </td>
+
+                <td class="text-end">
+                    {{ row.Beg + row.Jan + row.Feb + row.Mar + row.Apr + row.May + row.Jun + row.Jul | default(0) | float | round(2) }}
+                </td>
+
+                <td class="text-end">
+                    {{ row.Beg + row.Jan + row.Feb + row.Mar + row.Apr + row.May + row.Jun + row.Jul + row.Aug | default(0) | float | round(2) }}
+                </td>
+
+                <td class="text-end">
+                    {{ row.Beg + row.Jan + row.Feb + row.Mar + row.Apr + row.May + row.Jun + row.Jul + row.Aug + row.Sep | default(0) | float | round(2) }}
+                </td>
+
+                <td class="text-end">
+                    {{ row.Beg + row.Jan + row.Feb + row.Mar + row.Apr + row.May + row.Jun + row.Jul + row.Aug + row.Sep + row.Oct | default(0) | float | round(2) }}
+                </td>
+
+                <td class="text-end">
+                    {{ row.Beg + row.Jan + row.Feb + row.Mar + row.Apr + row.May + row.Jun + row.Jul + row.Aug + row.Sep + row.Oct + row.Nov | default(0) | float | round(2) }}
+                </td>
+
+                <td class="text-end">
+                    {{ row.Beg + row.Jan + row.Feb + row.Mar + row.Apr + row.May + row.Jun + row.Jul + row.Aug + row.Sep + row.Oct + row.Nov + row.Dec | default(0) | float | round(2) }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

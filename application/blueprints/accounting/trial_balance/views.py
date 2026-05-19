@@ -30,9 +30,9 @@ def home():
         "report_date": report_date if 'report_date' in locals() else datetime.now()
     }
 
-    # Check if AJAX request
+    # Check if AJAX request - return just content without base template
     if request.args.get('ajax') == '1':
-        return render_template("trial_balance/view.html", **context)
+        return render_template("trial_balance/content.html", **context)
 
     return render_template("trial_balance/home.html", **context)
 
