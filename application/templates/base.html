@@ -372,7 +372,7 @@
           <div class="row align-items-center">
             <div class="col-md-4">
               <label for="reportDate" class="form-label mb-1" style="font-size: 0.8rem; font-weight: 600;">As of Date:</label>
-              <input type="date" class="form-control" id="reportDate" value="{{ now().strftime('%Y-%m-%d') }}">
+              <input type="date" class="form-control" id="reportDate">
             </div>
             <div class="col-md-8 text-end">
               <button type="button" class="btn btn-secondary" onclick="printReport()">
@@ -411,6 +411,11 @@ function openReportModal(reportType) {
   }[reportType] || 'Report';
 
   document.getElementById('reportModalLabel').textContent = modalTitle;
+
+  // Set today's date as default
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('reportDate').value = today;
+
   const modal = new bootstrap.Modal(document.getElementById('reportModal'));
   modal.show();
 
