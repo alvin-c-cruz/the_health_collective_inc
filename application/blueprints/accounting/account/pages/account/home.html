@@ -10,30 +10,64 @@
     </div>
 
     <div class="thc-card">
-        <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
-            <a href="{{ url_for('account.add') }}" class="btn btn-primary btn-sm">Add Account</a>
+        <!-- Primary Actions Row -->
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap" style="gap:1rem;">
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <a href="{{ url_for('account.add') }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-circle"></i> Add Account
+                </a>
 
-            <!-- Date Picker -->
-            <div class="d-flex gap-2 align-items-center">
-                <label for="as_of_date" style="font-size:0.875rem;font-weight:600;white-space:nowrap;">As of Date:</label>
-                <input type="date"
-                       id="as_of_date"
-                       class="form-control form-control-sm"
-                       value="{{ as_of_date.isoformat() }}"
-                       max="{{ today.isoformat() }}"
-                       onchange="window.location.href='{{ url_for('account.home') }}?as_of_date=' + this.value"
-                       style="max-width:150px;">
-                {% if as_of_date != today %}
-                <a href="{{ url_for('account.home') }}" class="btn btn-outline-secondary btn-sm">Today</a>
-                {% endif %}
+                <!-- Date Filter -->
+                <div class="d-flex gap-2 align-items-center" style="border-left:1px solid var(--thc-border);padding-left:1rem;">
+                    <label for="as_of_date" style="font-size:0.875rem;font-weight:600;color:var(--thc-text-muted);white-space:nowrap;">
+                        As of:
+                    </label>
+                    <input type="date"
+                           id="as_of_date"
+                           class="form-control form-control-sm"
+                           value="{{ as_of_date.isoformat() }}"
+                           max="{{ today.isoformat() }}"
+                           onchange="window.location.href='{{ url_for('account.home') }}?as_of_date=' + this.value"
+                           style="width:145px;">
+                    {% if as_of_date != today %}
+                    <a href="{{ url_for('account.home') }}" class="btn btn-outline-secondary btn-sm" style="font-size:0.75rem;">
+                        <i class="bi bi-calendar-check"></i> Today
+                    </a>
+                    {% endif %}
+                </div>
             </div>
 
-            <a href="{{ url_for('account.download_accounts', as_of_date=as_of_date.isoformat()) }}" class="btn btn-secondary btn-sm">Download Accounts</a>
-            <form method="POST" action="{{ url_for('account.upload') }}" enctype="multipart/form-data" class="d-flex gap-2 align-items-center">
-                <input type="file" name="xlsx_file" accept=".xlsx" class="form-control form-control-sm" required style="max-width:200px;">
-                <button type="submit" class="btn btn-info btn-sm">Upload Excel</button>
-            </form>
-            <a href="{{ url_for('account.download_template') }}" class="btn btn-secondary btn-sm">Download Template</a>
+            <!-- Secondary Actions -->
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <a href="{{ url_for('account.download_accounts', as_of_date=as_of_date.isoformat()) }}"
+                   class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-download"></i> Export
+                </a>
+
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="bi bi-upload"></i> Import
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="document.getElementById('xlsx_file_input').click(); return false;">
+                                <i class="bi bi-file-earmark-excel"></i> Upload Excel
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('account.download_template') }}">
+                                <i class="bi bi-file-earmark-arrow-down"></i> Download Template
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <form method="POST" action="{{ url_for('account.upload') }}" enctype="multipart/form-data" id="upload_form" style="display:none;">
+                    <input type="file" name="xlsx_file" id="xlsx_file_input" accept=".xlsx" required
+                           onchange="if(this.files.length > 0) { if(confirm('Upload ' + this.files[0].name + '?')) { this.form.submit(); } else { this.value = ''; } }">
+                </form>
+            </div>
         </div>
 
         <div class="table-responsive">
