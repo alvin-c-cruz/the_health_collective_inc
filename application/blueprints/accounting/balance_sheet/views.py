@@ -1,6 +1,8 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, send_file
 from flask_login import login_required
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
+import pandas as pd
+import io
 
 from .. account import Account
 from .. account_type import AccountType
@@ -92,11 +94,14 @@ def home():
     Balance Sheet - Statement of Financial Position
     Shows Assets, Liabilities, and Equity as of a specific date
     """
-    # Get date parameter
+    # Get date parameter (support both 'date' and 'as_of_date')
     today = date.today()
-    date_str = request.args.get('as_of_date', str(today))
+    date_str = request.args.get('date') or request.args.get('as_of_date', str(today))
     try:
-        as_of_date = date.fromisoformat(date_str)
+        if isinstance(date_str, str):
+            as_of_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        else:
+            as_of_date = date_str
     except ValueError:
         as_of_date = today
 
@@ -191,4 +196,94 @@ def home():
         "total_liabilities_and_equity": total_liabilities + total_equity_with_retained,
     }
 
+    # Check if AJAX request
+    if request.args.get('ajax') == '1':
+        return render_template("balance_sheet/home.html", **context)
+
     return render_template("balance_sheet/home.html", **context)
+
+
+@bp.route("/download_excel", methods=["GET"])
+@login_required
+def download_excel():
+    """
+    Download Balance Sheet as Excel file
+    """
+    # Get date parameter
+    today = date.today()
+    date_str = request.args.get('date', str(today))
+    try:
+        as_of_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        as_of_date = today
+
+    # Get all accounts
+    accounts = Account.query.order_by(Account.account_number).all()
+
+    # Prepare data for Excel
+    data_rows = []
+
+    # Assets section
+    data_rows.append(['ASSETS', '', ''])
+    for account in accounts:
+        if not account.account_type or not account.account_type.account_class:
+            continue
+        class_name = account.account_type.account_class.account_class_name.upper()
+        if 'ASSET' in class_name:
+            balance = account.debit_balance(as_of_date) - account.credit_balance(as_of_date)
+            if balance != 0:
+                data_rows.append([
+                    f"{account.account_number} - {account.account_title}",
+                    account.account_type.account_type_name,
+                    abs(balance)
+                ])
+
+    # Liabilities section
+    data_rows.append(['', '', ''])
+    data_rows.append(['LIABILITIES', '', ''])
+    for account in accounts:
+        if not account.account_type or not account.account_type.account_class:
+            continue
+        class_name = account.account_type.account_class.account_class_name.upper()
+        if 'LIABILIT' in class_name:
+            balance = account.credit_balance(as_of_date) - account.debit_balance(as_of_date)
+            if balance != 0:
+                data_rows.append([
+                    f"{account.account_number} - {account.account_title}",
+                    account.account_type.account_type_name,
+                    abs(balance)
+                ])
+
+    # Equity section
+    data_rows.append(['', '', ''])
+    data_rows.append(['EQUITY', '', ''])
+    for account in accounts:
+        if not account.account_type or not account.account_type.account_class:
+            continue
+        class_name = account.account_type.account_class.account_class_name.upper()
+        if 'EQUITY' in class_name or 'CAPITAL' in class_name:
+            balance = account.credit_balance(as_of_date) - account.debit_balance(as_of_date)
+            if balance != 0:
+                data_rows.append([
+                    f"{account.account_number} - {account.account_title}",
+                    account.account_type.account_type_name,
+                    abs(balance)
+                ])
+
+    # Create DataFrame
+    df = pd.DataFrame(data_rows, columns=['Account', 'Type', 'Amount'])
+
+    # Create Excel file in memory
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, sheet_name='Balance Sheet', index=False)
+    output.seek(0)
+
+    # Send file
+    filename = f"balance_sheet_{date_str}.xlsx"
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename
+    )

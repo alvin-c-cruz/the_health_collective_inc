@@ -358,7 +358,131 @@
   }
 </script>
 
-  
+<!-- Reports Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background: var(--thc-primary); color: white;">
+        <h5 class="modal-title" id="reportModalLabel" style="font-family: var(--thc-font-heading);">Report Preview</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" style="padding: 0;">
+        <!-- Date picker section -->
+        <div style="background: #f8f9fa; padding: 1rem 1.5rem; border-bottom: 1px solid #e2e8f0;">
+          <div class="row align-items-center">
+            <div class="col-md-4">
+              <label for="reportDate" class="form-label mb-1" style="font-size: 0.8rem; font-weight: 600;">As of Date:</label>
+              <input type="date" class="form-control" id="reportDate" value="{{ now().strftime('%Y-%m-%d') }}">
+            </div>
+            <div class="col-md-8 text-end">
+              <button type="button" class="btn btn-secondary" onclick="printReport()">
+                <i class="bi bi-printer"></i> Print
+              </button>
+              <button type="button" class="btn btn-success" onclick="downloadExcel()">
+                <i class="bi bi-file-earmark-excel"></i> Download Excel
+              </button>
+              <button type="button" class="btn btn-primary" onclick="loadReport()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Report content area -->
+        <div id="reportContent" style="padding: 2rem; min-height: 400px;">
+          <div class="text-center text-muted" style="padding: 3rem 0;">
+            <i class="bi bi-file-text" style="font-size: 3rem;"></i>
+            <p class="mt-3">Select a date and click Refresh to load the report</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentReportType = '';
+
+function openReportModal(reportType) {
+  currentReportType = reportType;
+  const modalTitle = {
+    'trial_balance': 'Trial Balance',
+    'balance_sheet': 'Balance Sheet',
+    'income_statement': 'Income Statement'
+  }[reportType] || 'Report';
+
+  document.getElementById('reportModalLabel').textContent = modalTitle;
+  const modal = new bootstrap.Modal(document.getElementById('reportModal'));
+  modal.show();
+
+  // Auto-load the report
+  setTimeout(() => loadReport(), 300);
+}
+
+function loadReport() {
+  if (!currentReportType) return;
+
+  const reportDate = document.getElementById('reportDate').value;
+  const reportContent = document.getElementById('reportContent');
+
+  // Show loading
+  reportContent.innerHTML = '<div class="text-center" style="padding: 3rem 0;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-3 text-muted">Loading report...</p></div>';
+
+  // Build URL
+  const url = `/${currentReportType}/?date=${reportDate}&ajax=1`;
+
+  // Fetch report
+  fetch(url)
+    .then(response => response.text())
+    .then(html => {
+      reportContent.innerHTML = html;
+    })
+    .catch(error => {
+      reportContent.innerHTML = '<div class="alert alert-danger m-4">Error loading report. Please try again.</div>';
+      console.error('Error loading report:', error);
+    });
+}
+
+function printReport() {
+  const reportContent = document.getElementById('reportContent').innerHTML;
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Print Report</title>
+      <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/bootstrap.min.css') }}">
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        @media print {
+          .no-print { display: none !important; }
+        }
+      </style>
+    </head>
+    <body onload="window.print(); window.close();">
+      ${reportContent}
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
+
+function downloadExcel() {
+  if (!currentReportType) return;
+
+  const reportDate = document.getElementById('reportDate').value;
+  const url = `/${currentReportType}/download_excel?date=${reportDate}`;
+
+  // Create temporary link and trigger download
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${currentReportType}_${reportDate}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+</script>
+
+
     {% block scripts %}{% endblock %}
   </body>
 </html>

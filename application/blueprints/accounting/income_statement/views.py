@@ -1,6 +1,8 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, send_file
 from flask_login import login_required
-from datetime import date
+from datetime import date, datetime, timedelta
+import pandas as pd
+import io
 
 from .. account import Account
 from .. account_type import AccountType
@@ -17,20 +19,32 @@ def home():
     Income Statement - Statement of Comprehensive Income
     Shows Revenue, Expenses, and Net Income for a date range
     """
-    # Get date parameters
+    # Get date parameters (support both 'date' and 'to_date')
     today = date.today()
-    from_date_str = request.args.get('from_date', f'{today.year}-01-01')
-    to_date_str = request.args.get('to_date', str(today))
+    date_param = request.args.get('date')
 
-    try:
-        from_date = date.fromisoformat(from_date_str)
-    except ValueError:
-        from_date = date(today.year, 1, 1)
+    if date_param:
+        # If 'date' parameter is provided (from modal), use it as to_date and calculate from_date as beginning of year
+        try:
+            to_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+            from_date = date(to_date.year, 1, 1)
+        except ValueError:
+            to_date = today
+            from_date = date(today.year, 1, 1)
+    else:
+        # Original behavior with from_date and to_date
+        from_date_str = request.args.get('from_date', f'{today.year}-01-01')
+        to_date_str = request.args.get('to_date', str(today))
 
-    try:
-        to_date = date.fromisoformat(to_date_str)
-    except ValueError:
-        to_date = today
+        try:
+            from_date = date.fromisoformat(from_date_str)
+        except ValueError:
+            from_date = date(today.year, 1, 1)
+
+        try:
+            to_date = date.fromisoformat(to_date_str)
+        except ValueError:
+            to_date = today
 
     # Get all accounts ordered by account number
     accounts = Account.query.order_by(Account.account_number).all()
@@ -56,7 +70,6 @@ def home():
         ending_balance = account.balance(to_date)
 
         # For beginning balance, we need the day before from_date
-        from datetime import timedelta
         beginning_balance = account.balance(from_date - timedelta(days=1)) if from_date else 0
 
         # Period activity is the difference
@@ -130,4 +143,107 @@ def home():
         "net_income": net_income,
     }
 
+    # Check if AJAX request
+    if request.args.get('ajax') == '1':
+        return render_template("income_statement/home.html", **context)
+
     return render_template("income_statement/home.html", **context)
+
+
+@bp.route("/download_excel", methods=["GET"])
+@login_required
+def download_excel():
+    """
+    Download Income Statement as Excel file
+    """
+    # Get date parameters
+    today = date.today()
+    date_param = request.args.get('date')
+
+    if date_param:
+        try:
+            to_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+            from_date = date(to_date.year, 1, 1)
+        except ValueError:
+            to_date = today
+            from_date = date(today.year, 1, 1)
+    else:
+        from_date = date(today.year, 1, 1)
+        to_date = today
+
+    # Get all accounts
+    accounts = Account.query.order_by(Account.account_number).all()
+
+    # Prepare data for Excel
+    data_rows = []
+
+    # Revenue section
+    data_rows.append(['REVENUE', '', ''])
+    for account in accounts:
+        if not account.account_type or not account.account_type.account_class:
+            continue
+        class_name = account.account_type.account_class.account_class_name.upper()
+        type_name = account.account_type.account_type_name.upper()
+
+        ending_balance = account.balance(to_date)
+        beginning_balance = account.balance(from_date - timedelta(days=1))
+        period_balance = ending_balance - beginning_balance
+
+        if period_balance == 0:
+            continue
+
+        if 'REVENUE' in class_name or 'INCOME' in class_name or 'SALES' in type_name:
+            credit = account.credit_balance(to_date) - account.credit_balance(from_date - timedelta(days=1))
+            debit = account.debit_balance(to_date) - account.debit_balance(from_date - timedelta(days=1))
+            amount = credit - debit
+            if amount != 0:
+                data_rows.append([
+                    f"{account.account_number} - {account.account_title}",
+                    account.account_type.account_type_name,
+                    amount
+                ])
+
+    # Expenses section
+    data_rows.append(['', '', ''])
+    data_rows.append(['EXPENSES', '', ''])
+    for account in accounts:
+        if not account.account_type or not account.account_type.account_class:
+            continue
+        class_name = account.account_type.account_class.account_class_name.upper()
+        type_name = account.account_type.account_type_name.upper()
+
+        ending_balance = account.balance(to_date)
+        beginning_balance = account.balance(from_date - timedelta(days=1))
+        period_balance = ending_balance - beginning_balance
+
+        if period_balance == 0:
+            continue
+
+        if 'EXPENSE' in class_name or 'EXPENSE' in type_name or 'COST OF SALES' in type_name:
+            debit = account.debit_balance(to_date) - account.debit_balance(from_date - timedelta(days=1))
+            credit = account.credit_balance(to_date) - account.credit_balance(from_date - timedelta(days=1))
+            amount = debit - credit
+            if amount != 0:
+                data_rows.append([
+                    f"{account.account_number} - {account.account_title}",
+                    account.account_type.account_type_name,
+                    amount
+                ])
+
+    # Create DataFrame
+    df = pd.DataFrame(data_rows, columns=['Account', 'Type', 'Amount'])
+
+    # Create Excel file in memory
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, sheet_name='Income Statement', index=False)
+    output.seek(0)
+
+    # Send file
+    filename = f"income_statement_{from_date}_to_{to_date}.xlsx"
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename
+    )

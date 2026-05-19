@@ -20,9 +20,21 @@
                 Reports
               </a>
               <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-              {% include "trial_balance/navbar.html" %}
-              {% include "balance_sheet/navbar.html" %}
-              {% include "income_statement/navbar.html" %}
+                {% if ("Trial Balance" in current_user.user_roles) %}
+                <li class="nav-item">
+                  <a class="dropdown-item" href="#" onclick="openReportModal('trial_balance'); return false;">Trial Balance</a>
+                </li>
+                {% endif %}
+                {% if ("Balance Sheet" in current_user.user_roles) %}
+                <li class="nav-item">
+                  <a class="dropdown-item" href="#" onclick="openReportModal('balance_sheet'); return false;">Balance Sheet</a>
+                </li>
+                {% endif %}
+                {% if ("Income Statement" in current_user.user_roles) %}
+                <li class="nav-item">
+                  <a class="dropdown-item" href="#" onclick="openReportModal('income_statement'); return false;">Income Statement</a>
+                </li>
+                {% endif %}
               </ul>
             </li>
             {% endif %}
