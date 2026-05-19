@@ -132,3 +132,71 @@ class TransactionTender(db.Model):
     @property
     def formatted_amount(self):
         return '{:,.2f}'.format(self.amount)
+
+
+class Deposit(db.Model):
+    """Bank deposit record linking cash sales to bank deposits"""
+    id = db.Column(db.Integer, primary_key=True)
+    record_date = db.Column(db.String())  # Deposit date
+    reference_number = db.Column(db.String())  # Bank slip / ref no.
+    bank_account = db.Column(db.String())  # Bank / Account name
+    notes = db.Column(db.String())  # Optional notes
+
+    # Workflow fields
+    status = db.Column(db.String(20), default='draft')  # draft | submitted | posted
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    created_by_user = db.relationship('User', foreign_keys=[created_by_id], backref='deposits_created')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    submitted_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    submitted_by_user = db.relationship('User', foreign_keys=[submitted_by_id], backref='deposits_submitted')
+    submitted_at = db.Column(db.DateTime, nullable=True)
+
+    approved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    approved_by_user = db.relationship('User', foreign_keys=[approved_by_id], backref='deposits_approved')
+    approved_at = db.Column(db.DateTime, nullable=True)
+
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def formatted_record_date(self):
+        return short_date(self.record_date) if self.record_date else None
+
+    @property
+    def total_amount(self):
+        """Total amount from all deposit items"""
+        return sum(item.amount for item in self.deposit_items)
+
+    @property
+    def formatted_total_amount(self):
+        return '{:,.2f}'.format(self.total_amount)
+
+    @property
+    def is_draft(self):
+        return self.status == 'draft'
+
+    @property
+    def is_submitted(self):
+        return self.status == 'submitted'
+
+    @property
+    def is_posted(self):
+        return self.status == 'posted'
+
+
+class DepositItem(db.Model):
+    """Individual transactions included in a deposit"""
+    id = db.Column(db.Integer, primary_key=True)
+
+    deposit_id = db.Column(db.Integer, db.ForeignKey('deposit.id'), nullable=False)
+    deposit = db.relationship('Deposit', backref='deposit_items', lazy=True)
+
+    transaction_id = db.Column(db.Integer, db.ForeignKey('transaction.id'), nullable=False)
+    transaction = db.relationship('Transaction', backref='deposit_items', lazy=True)
+
+    amount = db.Column(db.Float, default=0)  # Amount from this transaction included in deposit
+    notes = db.Column(db.String())  # Optional notes per item
+
+    @property
+    def formatted_amount(self):
+        return '{:,.2f}'.format(self.amount)

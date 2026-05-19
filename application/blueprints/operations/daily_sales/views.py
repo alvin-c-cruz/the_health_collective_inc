@@ -353,16 +353,104 @@ def customer_search():
 # Record deposit
 # ---------------------------------------------------------------------------
 
+def get_undeposited_cash_transactions():
+    """Get all transactions with cash payments that haven't been deposited yet"""
+    from .models import Deposit, DepositItem
+    from ..tender.models import Tender
+    from sqlalchemy import desc
+
+    # Get all submitted transactions
+    transactions = Obj.query.filter(
+        Obj.submitted.isnot(None),
+        Obj.cancelled.is_(None)
+    ).order_by(desc(Obj.id)).all()  # Use ID for ordering to avoid date comparison issues
+
+    # Filter transactions that have cash tenders
+    undeposited = []
+    for transaction in transactions:
+        # Calculate cash amount for this transaction
+        cash_amount = sum(
+            td.amount for td in transaction.transaction_tenders
+            if td.tender and 'cash' in td.tender.tender_name.lower()
+        )
+
+        if cash_amount <= 0:
+            continue
+
+        # Check if already deposited
+        deposited_amount = sum(
+            item.amount for item in transaction.deposit_items
+            if item.deposit.status != 'draft'  # Only count non-draft deposits
+        )
+
+        remaining_cash = cash_amount - deposited_amount
+
+        if remaining_cash > 0:
+            undeposited.append({
+                'transaction': transaction,
+                'cash_amount': cash_amount,
+                'deposited_amount': deposited_amount,
+                'remaining_cash': remaining_cash,
+            })
+
+    return undeposited
+
+
 @bp.route('/deposit/new', methods=['GET', 'POST'])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def record_deposit():
-    if request.method == 'POST':
-        # Placeholder: wire to a Deposit model when ready
-        flash('Deposit recorded (not yet persisted â€" model pending).', 'info')
-        return redirect(url_for(f'{app_name}.record_deposit'))
+    from .models import Deposit, DepositItem
+    from flask_login import current_user
 
-    return render_template('daily_sales/record_deposit.html', app_label=app_label)
+    if request.method == 'POST':
+        try:
+            # Create new deposit
+            deposit = Deposit()
+            deposit.record_date = request.form.get('record_date')
+            deposit.reference_number = request.form.get('reference_number', '')
+            deposit.bank_account = request.form.get('bank_account', '')
+            deposit.notes = request.form.get('notes', '')
+            deposit.status = 'draft'
+            deposit.created_by_id = current_user.id
+            deposit.created_at = datetime.now()
+
+            db.session.add(deposit)
+            db.session.flush()  # Get deposit ID
+
+            # Add deposit items from selected transactions
+            total_amount = 0
+            transaction_ids = request.form.getlist('transaction_ids')
+
+            for trans_id in transaction_ids:
+                amount = float(request.form.get(f'amount_{trans_id}', 0))
+                if amount > 0:
+                    item = DepositItem()
+                    item.deposit_id = deposit.id
+                    item.transaction_id = int(trans_id)
+                    item.amount = amount
+                    db.session.add(item)
+                    total_amount += amount
+
+            db.session.commit()
+
+            flash(f'Deposit recorded successfully! Total amount: ₱{total_amount:,.2f}', 'success')
+            return redirect(url_for(f'{app_name}.record_deposit'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error recording deposit: {str(e)}', 'danger')
+            return redirect(url_for(f'{app_name}.record_deposit'))
+
+    # GET request - show form
+    undeposited_transactions = get_undeposited_cash_transactions()
+
+    context = {
+        'app_label': app_label,
+        'undeposited_transactions': undeposited_transactions,
+    }
+
+    return render_template('daily_sales/record_deposit.html', **context)
 
 
 # ---------------------------------------------------------------------------

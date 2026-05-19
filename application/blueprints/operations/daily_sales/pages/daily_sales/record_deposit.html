@@ -2,6 +2,47 @@
 
 {% block title %}Record Deposit{% endblock %}
 
+{% block styles %}
+<style>
+  .transaction-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+
+  .amount-input {
+    width: 150px;
+    text-align: right;
+  }
+
+  .transaction-row {
+    background: white;
+  }
+
+  .transaction-row.selected {
+    background: #e8f4fd;
+  }
+
+  .deposit-summary {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+  }
+
+  .deposit-summary h5 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .deposit-summary .total {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #0066cc;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="thc-page">
 
@@ -13,72 +54,205 @@
   </div>
 
   <!-- Form -->
-  <form method="POST">
+  <form method="POST" id="depositForm">
 
+    <!-- Deposit Details -->
     <div class="row mb-3">
       <div class="col-md-4">
-        <label class="form-label">Deposit Date</label>
-        <input type="date" name="record_date" class="form-control" required>
+        <label class="form-label">Deposit Date <span class="text-danger">*</span></label>
+        <input type="date" name="record_date" id="record_date" class="form-control" required>
       </div>
       <div class="col-md-4">
         <label class="form-label">Reference Number</label>
         <input type="text" name="reference_number" class="form-control upper-case" placeholder="Bank slip / ref no.">
       </div>
       <div class="col-md-4">
-        <label class="form-label">Amount</label>
-        <input type="number" name="amount" class="form-control" placeholder="0.00" step="0.01" min="0" required>
+        <label class="form-label">Bank / Account</label>
+        <input type="text" name="bank_account" class="form-control upper-case" placeholder="e.g. BDO Savings - 1234">
       </div>
     </div>
 
-    <div class="row mb-3">
-      <div class="col-md-6">
-        <label class="form-label">Bank / Account</label>
-        <input type="text" name="bank" class="form-control upper-case" placeholder="e.g. BDO Savings - 1234">
-      </div>
-      <div class="col-md-6">
+    <div class="row mb-4">
+      <div class="col-md-12">
         <label class="form-label">Notes</label>
         <input type="text" name="notes" class="form-control" placeholder="Optional">
       </div>
     </div>
 
-    <div class="row mb-4">
+    <hr>
+
+    <!-- Undeposited Cash Sales -->
+    <div class="row mb-3">
+      <div class="col">
+        <h5>Select Transactions to Deposit</h5>
+        <p class="text-muted">Check the transactions to include in this deposit. You can adjust the amount for each transaction (cannot exceed cash amount).</p>
+      </div>
+    </div>
+
+    <!-- Deposit Summary -->
+    <div class="deposit-summary">
+      <div class="row">
+        <div class="col-md-8">
+          <h5>Deposit Summary</h5>
+          <p class="mb-0"><span id="selected_count">0</span> transaction(s) selected</p>
+        </div>
+        <div class="col-md-4 text-end">
+          <div class="total">₱<span id="total_amount">0.00</span></div>
+        </div>
+      </div>
+    </div>
+
+    {% if undeposited_transactions %}
+    <div class="row">
+      <div class="col">
+        <table class="thc-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">
+                <input type="checkbox" id="select_all" class="transaction-checkbox" onclick="toggleSelectAll()">
+              </th>
+              <th>Date</th>
+              <th>Trans #</th>
+              <th>Customer</th>
+              <th class="text-end">Cash Amount</th>
+              <th class="text-end">Deposited</th>
+              <th class="text-end">Remaining</th>
+              <th class="text-end">Deposit Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in undeposited_transactions %}
+            <tr class="transaction-row" id="row_{{ item.transaction.id }}">
+              <td>
+                <input type="checkbox" name="transaction_ids" value="{{ item.transaction.id }}"
+                       class="transaction-checkbox transaction-check"
+                       data-cash="{{ item.remaining_cash }}"
+                       onclick="toggleRow({{ item.transaction.id }})">
+              </td>
+              <td>{{ item.transaction.formatted_record_date }}</td>
+              <td>{{ item.transaction.record_number }}</td>
+              <td>{{ item.transaction.customer.customer_name if item.transaction.customer else '' }}</td>
+              <td class="text-end">₱{{ "{:,.2f}".format(item.cash_amount) }}</td>
+              <td class="text-end">₱{{ "{:,.2f}".format(item.deposited_amount) }}</td>
+              <td class="text-end">₱{{ "{:,.2f}".format(item.remaining_cash) }}</td>
+              <td class="text-end">
+                <input type="number" name="amount_{{ item.transaction.id }}"
+                       id="amount_{{ item.transaction.id }}"
+                       class="form-control amount-input"
+                       value="{{ "{:.2f}".format(item.remaining_cash) }}"
+                       step="0.01"
+                       min="0"
+                       max="{{ item.remaining_cash }}"
+                       disabled
+                       onchange="updateTotal()">
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="row">
+      <div class="col">
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i> No undeposited cash sales found. All cash has been deposited.
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="row mt-4 mb-4">
       <div class="col d-flex gap-2">
-        <button type="submit" class="btn btn-primary"
-          onclick="return confirmSubmit()">Save Deposit</button>
-        <a href="javascript:history.back()" class="btn btn-secondary btn-sm">Cancel</a>
+        <button type="submit" class="btn btn-primary" id="saveButton" disabled>Save Deposit</button>
+        <a href="{{ url_for('daily_sales.home') }}" class="btn btn-secondary btn-sm">Cancel</a>
       </div>
     </div>
 
   </form>
 
-  <hr>
+</div>
 
-  <!-- Placeholder table -->
-  <div class="row mb-2">
-    <div class="col">
-      <h6>Deposit Records</h6>
-    </div>
-  </div>
+<script>
+  // Set today's date as default
+  document.getElementById('record_date').valueAsDate = new Date();
 
-  <div class="row">
-    <div class="col">
-      <table class="thc-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Date</th>
-            <th>Reference No.</th>
-            <th>Bank / Account</th>
-            <th class="text-end">Amount</th>
-            <th>Notes</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td colspan="7" class="text-center text-muted">No deposit records yet.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+  function toggleRow(transactionId) {
+    const checkbox = document.querySelector(`input[value="${transactionId}"]`);
+    const amountInput = document.getElementById(`amount_${transactionId}`);
+    const row = document.getElementById(`row_${transactionId}`);
+
+    if (checkbox.checked) {
+      amountInput.disabled = false;
+      row.classList.add('selected');
+    } else {
+      amountInput.disabled = true;
+      row.classList.remove('selected');
+    }
+
+    updateTotal();
+  }
+
+  function toggleSelectAll() {
+    const selectAll = document.getElementById('select_all');
+    const checkboxes = document.querySelectorAll('.transaction-check');
+
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = selectAll.checked;
+      const transId = checkbox.value;
+      const amountInput = document.getElementById(`amount_${transId}`);
+      const row = document.getElementById(`row_${transId}`);
+
+      if (selectAll.checked) {
+        amountInput.disabled = false;
+        row.classList.add('selected');
+      } else {
+        amountInput.disabled = true;
+        row.classList.remove('selected');
+      }
+    });
+
+    updateTotal();
+  }
+
+  function updateTotal() {
+    const checkboxes = document.querySelectorAll('.transaction-check:checked');
+    let total = 0;
+    let count = 0;
+
+    checkboxes.forEach(checkbox => {
+      const transId = checkbox.value;
+      const amountInput = document.getElementById(`amount_${transId}`);
+      const amount = parseFloat(amountInput.value) || 0;
+      const maxAmount = parseFloat(checkbox.dataset.cash) || 0;
+
+      // Ensure amount doesn't exceed remaining cash
+      if (amount > maxAmount) {
+        amountInput.value = maxAmount.toFixed(2);
+      }
+
+      total += parseFloat(amountInput.value) || 0;
+      count++;
+    });
+
+    document.getElementById('total_amount').textContent = total.toLocaleString('en-PH', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    document.getElementById('selected_count').textContent = count;
+
+    // Enable/disable save button
+    const saveButton = document.getElementById('saveButton');
+    saveButton.disabled = (count === 0);
+  }
+
+  // Update total when amount inputs change
+  document.addEventListener('DOMContentLoaded', function() {
+    const amountInputs = document.querySelectorAll('.amount-input');
+    amountInputs.forEach(input => {
+      input.addEventListener('input', updateTotal);
+    });
+  });
+</script>
+
 {% endblock %}
