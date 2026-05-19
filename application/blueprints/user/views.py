@@ -139,14 +139,14 @@ def user_group(record_id):
 def user_admin():
     user_id = request.args.get('user_id')
     value = int(request.args.get("value"))
-    
+
     user = User.query.get(user_id)
     if user.user_name != "admin":
         user.admin = value
         db.session.commit()
     else:
         flash("Cannot change super admin status", category="error")
-    
+
     return redirect(url_for('user.user_group', record_id=user_id))
 
 
@@ -156,14 +156,80 @@ def user_admin():
 def user_active():
     user_id = request.args.get('user_id')
     value = int(request.args.get("value"))
-    
+
     user = User.query.get(user_id)
     if user.user_name != "admin":
-        user.active = value   
+        user.active = value
         db.session.commit()
     else:
         flash("Cannot change super admin status", category="error")
-    
+
+    return redirect(url_for('user.user_group', record_id=user_id))
+
+
+@bp.route("toggle_superuser")
+@login_required
+@roles_accepted(['user'])
+def toggle_superuser():
+    user_id = request.args.get('user_id')
+    value = int(request.args.get("value"))
+
+    user = User.query.get(user_id)
+    if user.user_name != "admin":
+        user.is_superuser = value
+        db.session.commit()
+        flash(f"SuperUser status {'enabled' if value else 'disabled'} for {user.user_name}", category="success")
+    else:
+        flash("Cannot change super admin status", category="error")
+
+    return redirect(url_for('user.user_group', record_id=user_id))
+
+
+@bp.route("toggle_admin")
+@login_required
+@roles_accepted(['user'])
+def toggle_admin():
+    user_id = request.args.get('user_id')
+    value = int(request.args.get("value"))
+
+    user = User.query.get(user_id)
+    if user.user_name != "admin":
+        user.is_admin = value
+        db.session.commit()
+        flash(f"Administrator status {'enabled' if value else 'disabled'} for {user.user_name}", category="success")
+    else:
+        flash("Cannot change super admin status", category="error")
+
+    return redirect(url_for('user.user_group', record_id=user_id))
+
+
+@bp.route("toggle_staff")
+@login_required
+@roles_accepted(['user'])
+def toggle_staff():
+    user_id = request.args.get('user_id')
+    value = int(request.args.get("value"))
+
+    user = User.query.get(user_id)
+    user.is_staff = value
+    db.session.commit()
+    flash(f"Staff status {'enabled' if value else 'disabled'} for {user.user_name}", category="success")
+
+    return redirect(url_for('user.user_group', record_id=user_id))
+
+
+@bp.route("toggle_viewer")
+@login_required
+@roles_accepted(['user'])
+def toggle_viewer():
+    user_id = request.args.get('user_id')
+    value = int(request.args.get("value"))
+
+    user = User.query.get(user_id)
+    user.is_view = value
+    db.session.commit()
+    flash(f"Viewer status {'enabled' if value else 'disabled'} for {user.user_name}", category="success")
+
     return redirect(url_for('user.user_group', record_id=user_id))
 
 

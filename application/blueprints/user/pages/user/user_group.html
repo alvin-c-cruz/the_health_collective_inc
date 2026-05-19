@@ -42,6 +42,18 @@
                 <span style="font-size:0.78rem;font-weight:600;padding:0.25rem 0.6rem;border-radius:20px;
                              background:#e0f2fe;color:#0369a1;">Admin</span>
                 {% endif %}
+                {% if user.is_superuser %}
+                <span style="font-size:0.78rem;font-weight:600;padding:0.25rem 0.6rem;border-radius:20px;
+                             background:#fef3c7;color:#92400e;">SuperUser</span>
+                {% endif %}
+                {% if user.is_staff %}
+                <span style="font-size:0.78rem;font-weight:600;padding:0.25rem 0.6rem;border-radius:20px;
+                             background:#ddd6fe;color:#5b21b6;">Staff</span>
+                {% endif %}
+                {% if user.is_view %}
+                <span style="font-size:0.78rem;font-weight:600;padding:0.25rem 0.6rem;border-radius:20px;
+                             background:#e5e7eb;color:#374151;">Viewer</span>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -51,14 +63,46 @@
         <div class="thc-card-title">Access Flags</div>
         <div class="d-flex gap-3 flex-wrap">
 
-            {# Admin toggle #}
+            {# SuperUser toggle #}
+            <div style="display:flex;flex-direction:column;gap:0.35rem;align-items:flex-start;">
+                <span style="font-size:0.7rem;font-weight:600;letter-spacing:0.06em;
+                             text-transform:uppercase;color:var(--thc-text-muted);">SuperUser</span>
+                <a href="{{ url_for('user.toggle_superuser', user_id=user.id, value=0 if user.is_superuser else 1) }}"
+                   {% if is_super %}onclick="return false;" style="pointer-events:none;opacity:0.5;"{% endif %}
+                   class="btn btn-sm {% if user.is_superuser %}btn-warning{% else %}btn-secondary{% endif %}">
+                    {% if user.is_superuser %}<i class="bi bi-star-fill me-1"></i>ON{% else %}<i class="bi bi-star me-1"></i>OFF{% endif %}
+                </a>
+            </div>
+
+            {# Admin toggle (legacy) #}
             <div style="display:flex;flex-direction:column;gap:0.35rem;align-items:flex-start;">
                 <span style="font-size:0.7rem;font-weight:600;letter-spacing:0.06em;
                              text-transform:uppercase;color:var(--thc-text-muted);">Administrator</span>
-                <a href="{{ url_for('user.user_admin', user_id=user.id, value=0 if user.admin else 1) }}"
+                <a href="{{ url_for('user.toggle_admin', user_id=user.id, value=0 if user.is_admin else 1) }}"
                    {% if is_super %}onclick="return false;" style="pointer-events:none;opacity:0.5;"{% endif %}
-                   class="btn btn-sm {% if user.admin %}btn-success{% else %}btn-secondary{% endif %}">
-                    {% if user.admin %}<i class="bi bi-shield-check me-1"></i>ON{% else %}<i class="bi bi-shield me-1"></i>OFF{% endif %}
+                   class="btn btn-sm {% if user.is_admin %}btn-primary{% else %}btn-secondary{% endif %}">
+                    {% if user.is_admin %}<i class="bi bi-shield-check me-1"></i>ON{% else %}<i class="bi bi-shield me-1"></i>OFF{% endif %}
+                </a>
+            </div>
+
+            {# Staff toggle #}
+            <div style="display:flex;flex-direction:column;gap:0.35rem;align-items:flex-start;">
+                <span style="font-size:0.7rem;font-weight:600;letter-spacing:0.06em;
+                             text-transform:uppercase;color:var(--thc-text-muted);">Staff</span>
+                <a href="{{ url_for('user.toggle_staff', user_id=user.id, value=0 if user.is_staff else 1) }}"
+                   class="btn btn-sm {% if user.is_staff %}btn-info{% else %}btn-secondary{% endif %}">
+                    {% if user.is_staff %}<i class="bi bi-person-badge-fill me-1"></i>ON{% else %}<i class="bi bi-person-badge me-1"></i>OFF{% endif %}
+                </a>
+            </div>
+
+            {# Viewer toggle #}
+            <div style="display:flex;flex-direction:column;gap:0.35rem;align-items:flex-start;">
+                <span style="font-size:0.7rem;font-weight:600;letter-spacing:0.06em;
+                             text-transform:uppercase;color:var(--thc-text-muted);">Viewer</span>
+                <a href="{{ url_for('user.toggle_viewer', user_id=user.id, value=0 if user.is_view else 1) }}"
+                   class="btn btn-sm {% if user.is_view %}btn-secondary{% else %}btn-secondary{% endif %}"
+                   style="{% if user.is_view %}background:#6b7280;border-color:#6b7280;{% endif %}">
+                    {% if user.is_view %}<i class="bi bi-eye-fill me-1"></i>ON{% else %}<i class="bi bi-eye me-1"></i>OFF{% endif %}
                 </a>
             </div>
 
