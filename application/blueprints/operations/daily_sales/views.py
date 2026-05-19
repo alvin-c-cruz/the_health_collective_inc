@@ -280,6 +280,30 @@ def cancel_transaction(transaction_id):
     return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
 
 
+@bp.route('/transaction/<int:transaction_id>/uncancel', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def uncancel_transaction(transaction_id):
+    """Un-cancel a transaction - only allowed before submission"""
+    record = Transaction.query.get_or_404(transaction_id)
+
+    if not record.cancelled:
+        flash('Transaction is not cancelled.', 'warning')
+    elif record.submitted:
+        flash('Submitted transactions cannot be un-cancelled. Contact an admin.', 'danger')
+    else:
+        form = Form()
+        form.id = transaction_id
+        form._populate(record)
+        success = form._uncancel()
+        if success:
+            flash('Transaction un-cancelled successfully.', 'success')
+        else:
+            flash('Unable to un-cancel this transaction.', 'danger')
+
+    return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+
 # ---------------------------------------------------------------------------
 # Delete (draft only)
 # ---------------------------------------------------------------------------

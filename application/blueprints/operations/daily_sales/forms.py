@@ -379,6 +379,16 @@ class Form:
         self.cancelled = record.cancelled
         db.session.commit()
 
+    def _uncancel(self):
+        """Un-cancel a transaction - only allowed before submission"""
+        record = Obj.query.get(self.id)
+        if record.submitted:
+            return False  # Cannot un-cancel submitted transactions
+        record.cancelled = None
+        self.cancelled = None
+        db.session.commit()
+        return True
+
     @property
     def _locked_(self):
         return bool(self.submitted or self.cancelled)

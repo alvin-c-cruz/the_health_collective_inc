@@ -430,6 +430,10 @@
 
   .btn-danger-outline:hover { background: var(--thc-danger-light); }
 
+  .btn-success-outline { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 500; background: transparent; color: #0f6e56; border: 1px solid #0f6e56; border-radius: var(--thc-radius-sm); padding: 0.6rem 1.25rem; cursor: pointer; margin-left: auto; transition: background 0.15s, color 0.15s; }
+
+  .btn-success-outline:hover { background: #e6f3f0; color: #0a5544; }
+
 
 
   /* Tom Select — customer field */
@@ -1091,13 +1095,17 @@
 
       {% if not is_new %}
 
-      <form method="POST" action="{{ url_for('daily_sales.cancel_transaction', transaction_id=form.id) }}"
-
-        style="margin-left:auto;" onsubmit="return confirm('Cancel this transaction?')">
-
-        <button type="submit" class="btn-danger-outline">✗ Cancel Transaction</button>
-
+      {% if form.cancelled %}
+      <form method="POST" action="{{ url_for('daily_sales.uncancel_transaction', transaction_id=form.id) }}"
+        style="margin-left:auto;" onsubmit="return confirm('Restore this cancelled transaction?')">
+        <button type="submit" class="btn-success-outline">↻ Un-cancel Transaction</button>
       </form>
+      {% else %}
+      <form method="POST" action="{{ url_for('daily_sales.cancel_transaction', transaction_id=form.id) }}"
+        style="margin-left:auto;" onsubmit="return confirm('Cancel this transaction?')">
+        <button type="submit" class="btn-danger-outline">✗ Cancel Transaction</button>
+      </form>
+      {% endif %}
 
       {% endif %}
 
