@@ -21,9 +21,18 @@ class User(db.Model):
     middle_name = db.Column(db.String())
     last_name = db.Column(db.String())
     email = db.Column(db.String())
+
+    # Role flags (new hierarchy)
+    is_superuser = db.Column(db.Boolean(), default=False)
+    is_admin = db.Column(db.Boolean(), default=False)
+    is_staff = db.Column(db.Boolean(), default=False)
+    is_view = db.Column(db.Boolean(), default=False)
+
+    # Legacy flags (keep for backward compatibility during migration)
     admin = db.Column(db.Boolean(), default=False)
     staff = db.Column(db.Boolean(), default=False)
     active = db.Column(db.Boolean(), default=False)
+
     salt = db.Column(db.String())
     
     def __str__(self):

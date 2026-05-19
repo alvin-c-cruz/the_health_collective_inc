@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Change Request History{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+    <div class="thc-page-header d-flex justify-content-between align-items-center">
+        <h4><i class="bi bi-clock-history"></i> Change Request History</h4>
+        <a href="{{ url_for('daily_sales.change_requests_list') }}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-hourglass-split"></i> Pending Requests
+        </a>
+    </div>
+
+    {% if history %}
+    <div class="thc-card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Transaction</th>
+                        <th>Requested By</th>
+                        <th>Requested At</th>
+                        <th>Status</th>
+                        <th>Reviewed By</th>
+                        <th>Reviewed At</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cr in history %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('daily_sales.view_transaction', transaction_id=cr.transaction_id) }}">
+                                #{{ cr.transaction_id }}
+                            </a>
+                        </td>
+                        <td>{{ cr.requested_by.user_name if cr.requested_by else 'N/A' }}</td>
+                        <td style="font-size:0.85rem;">
+                            {{ cr.requested_at.strftime("%b %d, %Y %H:%M") if cr.requested_at else 'N/A' }}
+                        </td>
+                        <td>
+                            {% if cr.status == 'approved' %}
+                            <span class="badge bg-success">Approved</span>
+                            {% elif cr.status == 'rejected' %}
+                            <span class="badge bg-danger">Rejected</span>
+                            {% elif cr.status == 'direct' %}
+                            <span class="badge bg-info">Direct Edit</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ cr.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ cr.reviewed_by.user_name if cr.reviewed_by else 'N/A' }}</td>
+                        <td style="font-size:0.85rem;">
+                            {{ cr.reviewed_at.strftime("%b %d, %Y %H:%M") if cr.reviewed_at else 'N/A' }}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('daily_sales.transaction_history', transaction_id=cr.transaction_id) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-list-ul"></i> Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="thc-card text-center py-5">
+        <i class="bi bi-inbox text-muted" style="font-size:3rem;"></i>
+        <p class="text-muted mt-3">No change request history found.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

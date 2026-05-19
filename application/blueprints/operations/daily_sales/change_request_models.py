@@ -1,0 +1,78 @@
+import json
+from datetime import datetime
+from application.extensions import db
+
+
+class ChangeRequest(db.Model):
+    """
+    Model for tracking change requests on transactions.
+
+    Workflow:
+    - Staff requests to modify a submitted/posted transaction
+    - Admin reviews and approves/rejects the request
+    - If approved, transaction is updated and requires re-approval
+    """
+    __tablename__ = 'change_request'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Reference to the transaction being modified
+    transaction_id = db.Column(db.Integer, db.ForeignKey('transaction.id'), nullable=False)
+    transaction = db.relationship('Transaction', backref='change_requests', lazy=True)
+
+    # JSON-encoded old and new values
+    _old_values = db.Column('old_values', db.Text)
+    _new_values = db.Column('new_values', db.Text)
+
+    # Reason for the change request
+    reason = db.Column(db.String(500), nullable=False)
+
+    # Status: pending | approved | rejected | direct (superuser direct edit)
+    status = db.Column(db.String(20), default='pending')
+
+    # Audit trail - who requested
+    requested_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    requested_by = db.relationship('User', foreign_keys=[requested_by_id], backref='change_requests_made')
+    requested_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Audit trail - who reviewed
+    reviewed_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    reviewed_by = db.relationship('User', foreign_keys=[reviewed_by_id], backref='change_requests_reviewed')
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    review_notes = db.Column(db.String(500))
+
+    @property
+    def old_values(self):
+        """Deserialize old values from JSON"""
+        return json.loads(self._old_values) if self._old_values else {}
+
+    @old_values.setter
+    def old_values(self, val):
+        """Serialize old values to JSON"""
+        self._old_values = json.dumps(val)
+
+    @property
+    def new_values(self):
+        """Deserialize new values from JSON"""
+        return json.loads(self._new_values) if self._new_values else {}
+
+    @new_values.setter
+    def new_values(self, val):
+        """Serialize new values to JSON"""
+        self._new_values = json.dumps(val)
+
+    @property
+    def is_pending(self):
+        return self.status == 'pending'
+
+    @property
+    def is_approved(self):
+        return self.status == 'approved'
+
+    @property
+    def is_rejected(self):
+        return self.status == 'rejected'
+
+    @property
+    def is_direct(self):
+        return self.status == 'direct'

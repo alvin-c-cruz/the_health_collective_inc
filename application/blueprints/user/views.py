@@ -371,3 +371,70 @@ def check_roles():
             if role.id not in assigned_role_ids:
                 db.session.add(UserRole(user_id=admin.id, role_id=role.id))
         db.session.commit()
+
+
+# ============================================================================
+# NEW USER ROLE MANAGEMENT (is_superuser, is_admin, is_staff, is_view)
+# ============================================================================
+
+ROLES = ["is_superuser", "is_admin", "is_staff", "is_view"]
+
+
+@bp.route("/user_management")
+@login_required
+def user_management():
+    """List all users and allow role management"""
+    from flask import session
+    user_id = session.get('user_id')
+    current_user_obj = User.query.get(user_id) if user_id else None
+
+    # Only superuser or admin can access
+    if not current_user_obj or not (current_user_obj.is_superuser or current_user_obj.is_admin):
+        flash("Access denied. Admin or SuperUser required.", "danger")
+        return redirect(url_for('dashboard.home'))
+
+    users = User.query.order_by(User.user_name).all()
+    return render_template("user/user_management.html", users=users, roles=ROLES, current_user_obj=current_user_obj)
+
+
+@bp.route("/update_user_roles/<int:user_id>", methods=["POST"])
+@login_required
+def update_user_roles(user_id):
+    """Update user roles"""
+    from flask import session
+    current_user_id = session.get('user_id')
+    current_user_obj = User.query.get(current_user_id) if current_user_id else None
+
+    # Only superuser or admin can access
+    if not current_user_obj or not (current_user_obj.is_superuser or current_user_obj.is_admin):
+        flash("Access denied.", "danger")
+        return redirect(url_for('user.user_management'))
+
+    user = User.query.get_or_404(user_id)
+
+    # Prevent modifying own account
+    if user.id == current_user_obj.id:
+        flash("You cannot modify your own account here.", "warning")
+        return redirect(url_for('user.user_management'))
+
+    # Prevent demoting protected admins (users with is_admin=True)
+    if user.is_admin and not request.form.get("is_admin"):
+        flash(f"User '{user.user_name}' is a protected admin and cannot be demoted.", "danger")
+        return redirect(url_for('user.user_management'))
+
+    # Only superuser can grant/revoke superuser rights
+    if "is_superuser" in request.form:
+        if not current_user_obj.is_superuser:
+            flash("Only a SuperUser can grant SuperUser rights.", "danger")
+            return redirect(url_for('user.user_management'))
+        user.is_superuser = bool(request.form.get("is_superuser"))
+
+    # Update other roles
+    user.is_admin = bool(request.form.get("is_admin"))
+    user.is_staff = bool(request.form.get("is_staff"))
+    user.is_view = bool(request.form.get("is_view"))
+    user.active = bool(request.form.get("active"))
+
+    db.session.commit()
+    flash(f"User '{user.user_name}' roles updated successfully.", "success")
+    return redirect(url_for('user.user_management'))

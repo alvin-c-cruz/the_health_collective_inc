@@ -470,3 +470,36 @@ class _Report:
     def total_dialysis_sales(self):
         return sum(self.sales.get('dialysis', {}).values())
 
+
+# ---------------------------------------------------------------------------
+# Change Request Routes
+# ---------------------------------------------------------------------------
+
+from .change_request_views import (
+    request_transaction_change,
+    change_requests_list,
+    review_change_request,
+    change_history,
+    transaction_history
+)
+
+bp.route('/transaction/<int:transaction_id>/request_change', methods=['GET', 'POST'])(
+    login_required(roles_accepted([ROLES_ACCEPTED])(request_transaction_change))
+)
+
+bp.route('/change_requests', methods=['GET'])(
+    login_required(roles_accepted([ROLES_ACCEPTED])(change_requests_list))
+)
+
+bp.route('/change_request/<int:request_id>/review', methods=['POST'])(
+    login_required(roles_accepted([ROLES_ACCEPTED])(review_change_request))
+)
+
+bp.route('/change_history', methods=['GET'])(
+    login_required(roles_accepted([ROLES_ACCEPTED])(change_history))
+)
+
+bp.route('/transaction/<int:transaction_id>/history', methods=['GET'])(
+    login_required(roles_accepted([ROLES_ACCEPTED])(transaction_history))
+)
+

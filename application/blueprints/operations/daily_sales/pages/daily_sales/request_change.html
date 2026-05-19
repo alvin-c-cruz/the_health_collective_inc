@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Request Transaction Change{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+    <div class="thc-page-header">
+        <h4><i class="bi bi-pencil-square"></i> Request Change to Transaction #{{ transaction.id }}</h4>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="thc-card">
+        <h6 class="mb-3">Current Transaction Details</h6>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label text-muted" style="font-size:0.75rem;">Date</label>
+                <div><strong>{{ transaction.record_date }}</strong></div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label text-muted" style="font-size:0.75rem;">Customer</label>
+                <div><strong>{{ transaction.customer.customer_name if transaction.customer else 'N/A' }}</strong></div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label text-muted" style="font-size:0.75rem;">DashLabs#</label>
+                <div><strong>{{ transaction.dashlabs_number or 'N/A' }}</strong></div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label text-muted" style="font-size:0.75rem;">POS#</label>
+                <div><strong>{{ transaction.pos_number or 'N/A' }}</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST">
+        <div class="thc-card">
+            <h6 class="mb-3">Requested Changes</h6>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Date</label>
+                    <input type="date" name="record_date" class="form-control" value="{{ transaction.record_date }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Customer ID</label>
+                    <input type="number" name="customer_id" class="form-control" value="{{ transaction.customer_id }}">
+                    <input type="hidden" name="customer_name" value="{{ transaction.customer.customer_name if transaction.customer else '' }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">DashLabs Number</label>
+                    <input type="text" name="dashlabs_number" class="form-control" value="{{ transaction.dashlabs_number or '' }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">POS Number</label>
+                    <input type="text" name="pos_number" class="form-control" value="{{ transaction.pos_number or '' }}">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" class="form-control" rows="2">{{ transaction.description or '' }}</textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Discount</label>
+                    <input type="number" name="discount" step="0.01" class="form-control" value="{{ transaction.discount or 0 }}">
+                </div>
+            </div>
+        </div>
+
+        <div class="thc-card">
+            <h6 class="mb-3">Reason for Change <span class="text-danger">*</span></h6>
+            <textarea name="reason" class="form-control" rows="4" required placeholder="Please explain why this change is necessary..."></textarea>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-send"></i> Submit Change Request
+            </button>
+            <a href="{{ url_for('daily_sales.view_transaction', transaction_id=transaction.id) }}" class="btn btn-secondary">
+                <i class="bi bi-x-lg"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

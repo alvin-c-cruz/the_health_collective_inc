@@ -1,3 +1,4 @@
+from datetime import datetime
 from application.extensions import db, short_date, long_date
 from .admin_models import AdminTransaction as ObjAdmin
 from .admin_models import UserTransaction as ObjUser
@@ -14,6 +15,7 @@ class Transaction(db.Model):
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
     customer = db.relationship('Customer', backref='transactions', lazy=True)
 
+    # Legacy fields (keep for backward compatibility)
     prepared_by = db.Column(db.String())
     checked_by = db.Column(db.String())
     approved_by = db.Column(db.String())
@@ -26,10 +28,27 @@ class Transaction(db.Model):
     ape_batch_id = db.Column(db.Integer, db.ForeignKey('ape_batch.id'), nullable=True)
     ape_batch = db.relationship('ApeBatch', lazy=True, foreign_keys=[ape_batch_id])
 
+    # Legacy submitted/cancelled fields
     submitted = db.Column(db.String())
     cancelled = db.Column(db.String())
 
     discount = db.Column(db.Float, default=0)
+
+    # New workflow fields
+    status = db.Column(db.String(20), default='draft')  # draft | submitted | posted
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    created_by_user = db.relationship('User', foreign_keys=[created_by_id], backref='transactions_created')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    submitted_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    submitted_by_user = db.relationship('User', foreign_keys=[submitted_by_id], backref='transactions_submitted')
+    submitted_at = db.Column(db.DateTime, nullable=True)
+
+    approved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    approved_by_user = db.relationship('User', foreign_keys=[approved_by_id], backref='transactions_approved')
+    approved_at = db.Column(db.DateTime, nullable=True)
+
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     @property
     def preparer(self):
@@ -61,6 +80,19 @@ class Transaction(db.Model):
 
     def is_submitted(self):
         return True if self.submitted else False
+
+    # New workflow status methods
+    @property
+    def is_draft(self):
+        return self.status == 'draft'
+
+    @property
+    def is_status_submitted(self):
+        return self.status == 'submitted'
+
+    @property
+    def is_posted(self):
+        return self.status == 'posted'
 
 
 class TransactionDetail(db.Model):
