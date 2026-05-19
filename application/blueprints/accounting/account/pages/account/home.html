@@ -71,29 +71,49 @@
         </div>
 
         <style>
-        .filter-header {
-            padding: 0.5rem 0.75rem !important;
-            vertical-align: middle;
+        .filterable-header {
+            position: relative;
         }
-        .filter-header .filter-select {
+        .filterable-header .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+        .filterable-header .header-text {
+            font-weight: 600;
+        }
+        .filterable-header .filter-dropdown {
             font-size: 0.75rem;
-            padding: 0.25rem 0.5rem;
+            padding: 0.2rem 1.8rem 0.2rem 0.5rem;
             border: 1px solid #dee2e6;
             border-radius: 4px;
-            background: white;
+            background: #f8f9fa;
             cursor: pointer;
-            width: 100%;
-            margin-top: 0.25rem;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.4rem center;
+            background-size: 12px 12px;
+            min-width: 120px;
         }
-        .filter-header .filter-select:focus {
+        .filterable-header .filter-dropdown:hover {
+            border-color: var(--thc-primary);
+            background: white;
+        }
+        .filterable-header .filter-dropdown:focus {
             border-color: var(--thc-primary);
             outline: none;
-            box-shadow: 0 0 0 0.2rem rgba(24,95,165,0.15);
+            box-shadow: 0 0 0 0.15rem rgba(24,95,165,0.1);
+            background: white;
         }
-        .filter-label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
+        .filterable-header .filter-dropdown option {
+            padding: 0.5rem;
+        }
+        /* Show filter icon when active */
+        .filterable-header.filtered .header-text::before {
+            content: '🔍 ';
+            font-size: 0.7rem;
         }
         </style>
 
@@ -103,26 +123,30 @@
                     <tr>
                         <th>Account Number</th>
                         <th>Account Title</th>
-                        <th class="filter-header">
-                            <div class="filter-label">Account Type</div>
-                            <select class="filter-select" onchange="applyFilters()" id="account_type_filter">
-                                <option value="">All Types</option>
-                                {% for at in account_types %}
-                                <option value="{{ at.id }}" {% if account_type_filter == at.id|string %}selected{% endif %}>
-                                    {{ at.account_type_name }}
-                                </option>
-                                {% endfor %}
-                            </select>
+                        <th class="filterable-header {% if account_type_filter %}filtered{% endif %}">
+                            <div class="header-content">
+                                <span class="header-text">Account Type</span>
+                                <select class="filter-dropdown" onchange="applyFilters()" id="account_type_filter">
+                                    <option value="">All</option>
+                                    {% for at in account_types %}
+                                    <option value="{{ at.id }}" {% if account_type_filter == at.id|string %}selected{% endif %}>
+                                        {{ at.account_type_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                         </th>
                         <th>Debit</th>
                         <th>Credit</th>
-                        <th class="filter-header">
-                            <div class="filter-label">Action</div>
-                            <select class="filter-select" onchange="applyFilters()" id="approval_filter">
-                                <option value="">All</option>
-                                <option value="approved" {% if approval_filter == 'approved' %}selected{% endif %}>Approved</option>
-                                <option value="not_approved" {% if approval_filter == 'not_approved' %}selected{% endif %}>Not Approved</option>
-                            </select>
+                        <th class="filterable-header {% if approval_filter %}filtered{% endif %}">
+                            <div class="header-content">
+                                <span class="header-text">Action</span>
+                                <select class="filter-dropdown" onchange="applyFilters()" id="approval_filter">
+                                    <option value="">All</option>
+                                    <option value="approved" {% if approval_filter == 'approved' %}selected{% endif %}>Approved</option>
+                                    <option value="not_approved" {% if approval_filter == 'not_approved' %}selected{% endif %}>Not Approved</option>
+                                </select>
+                            </div>
                         </th>
                     </tr>
                 </thead>
