@@ -245,10 +245,44 @@
             </tr>
             {% endfor %}
 
+            {% if total_equity > 0 %}
+            <tr class="type-total">
+                <td>Total Capital Accounts</td>
+                <td></td>
+                <td class="text-end">{{ "{:,.2f}".format(total_equity) }}</td>
+            </tr>
+            {% endif %}
+
+            <!-- RETAINED EARNINGS -->
+            <tr class="type-header">
+                <td colspan="3">RETAINED EARNINGS</td>
+            </tr>
+            <tr class="account-row">
+                <td style="padding-left: 3rem;">Beginning Retained Earnings (as of Dec 31, {{ retained_earnings.year - 1 }})</td>
+                <td class="text-end">{{ "{:,.2f}".format(retained_earnings.beginning) }}</td>
+                <td></td>
+            </tr>
+            <tr class="account-row">
+                <td style="padding-left: 3rem;">
+                    {% if retained_earnings.net_income >= 0 %}
+                    Add: Net Income for {{ retained_earnings.year }}
+                    {% else %}
+                    Less: Net Loss for {{ retained_earnings.year }}
+                    {% endif %}
+                </td>
+                <td class="text-end">{{ "{:,.2f}".format(retained_earnings.net_income|abs) }}</td>
+                <td></td>
+            </tr>
+            <tr class="type-total">
+                <td>Ending Retained Earnings</td>
+                <td></td>
+                <td class="text-end">{{ "{:,.2f}".format(retained_earnings.ending) }}</td>
+            </tr>
+
             <tr class="section-total">
                 <td>TOTAL EQUITY</td>
                 <td></td>
-                <td class="text-end">{{ "{:,.2f}".format(total_equity) }}</td>
+                <td class="text-end">{{ "{:,.2f}".format(total_equity_with_retained) }}</td>
             </tr>
 
             <!-- TOTAL LIABILITIES AND EQUITY -->
