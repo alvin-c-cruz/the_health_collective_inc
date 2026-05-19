@@ -196,9 +196,9 @@ def home():
         "total_liabilities_and_equity": total_liabilities + total_equity_with_retained,
     }
 
-    # Check if AJAX request
+    # Check if AJAX request - return just content without base template
     if request.args.get('ajax') == '1':
-        return render_template("balance_sheet/home.html", **context)
+        return render_template("balance_sheet/content.html", **context)
 
     return render_template("balance_sheet/home.html", **context)
 

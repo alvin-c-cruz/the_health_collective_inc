@@ -143,9 +143,9 @@ def home():
         "net_income": net_income,
     }
 
-    # Check if AJAX request
+    # Check if AJAX request - return just content without base template
     if request.args.get('ajax') == '1':
-        return render_template("income_statement/home.html", **context)
+        return render_template("income_statement/content.html", **context)
 
     return render_template("income_statement/home.html", **context)
 

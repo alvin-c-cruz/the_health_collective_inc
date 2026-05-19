@@ -1,0 +1,327 @@
+<style>
+    .report-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        border-bottom: 2px solid #1a6473;
+        padding-bottom: 1rem;
+    }
+
+    .report-header h1 {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1a6473;
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.05em;
+    }
+
+    .report-header h2 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1a2a2a;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+
+    .report-header .report-date {
+        font-size: 0.9rem;
+        color: #6b7280;
+        font-style: italic;
+    }
+
+    .balance-sheet-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+        font-family: 'Inter', 'DM Sans', sans-serif;
+    }
+
+    .balance-sheet-table th {
+        background: #1a6473;
+        color: white;
+        padding: 0.75rem;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border: 1px solid #135260;
+    }
+
+    .balance-sheet-table th.text-end {
+        text-align: right;
+    }
+
+    .balance-sheet-table td {
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .section-header td {
+        background: #1a6473;
+        color: white;
+        font-weight: 700;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 0.6rem 0.75rem !important;
+        border-top: 2px solid #135260;
+    }
+
+    .type-header td {
+        background: #e6f3f5;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #1a6473;
+        padding: 0.5rem 0.75rem !important;
+    }
+
+    .account-row td {
+        padding-left: 2rem !important;
+    }
+
+    .type-total {
+        font-weight: 600;
+        background: #f8f9fa;
+    }
+
+    .type-total td {
+        padding: 0.6rem 0.75rem !important;
+        border-top: 1px solid #9ca3af;
+    }
+
+    .section-total {
+        font-weight: 700;
+        font-size: 1rem;
+        background: #e9ecef;
+    }
+
+    .section-total td {
+        padding: 0.75rem !important;
+        border-top: 2px solid #1a6473;
+        border-bottom: 2px solid #1a6473;
+    }
+
+    .grand-total {
+        font-weight: 700;
+        font-size: 1.05rem;
+        background: #1a6473;
+        color: white;
+    }
+
+    .grand-total td {
+        padding: 0.85rem 0.75rem !important;
+        border-top: 3px double #135260;
+        border-bottom: 3px double #135260;
+    }
+
+    .text-end {
+        text-align: right;
+        font-family: 'DM Mono', 'Courier New', monospace;
+    }
+
+    .balance-check {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        text-align: center;
+        font-weight: 600;
+    }
+
+    .balance-check.balanced {
+        background: #dcfce7;
+        border: 2px solid #166534;
+        color: #166534;
+    }
+
+    .balance-check.unbalanced {
+        background: #fee2e2;
+        border: 2px solid #dc2626;
+        color: #dc2626;
+    }
+
+    /* Ensure no horizontal scroll */
+    .balance-sheet-table {
+        table-layout: fixed;
+    }
+
+    .balance-sheet-table th:nth-child(1),
+    .balance-sheet-table td:nth-child(1) {
+        width: 55%;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .balance-sheet-table th:nth-child(2),
+    .balance-sheet-table td:nth-child(2) {
+        width: 22.5%;
+    }
+
+    .balance-sheet-table th:nth-child(3),
+    .balance-sheet-table td:nth-child(3) {
+        width: 22.5%;
+    }
+</style>
+
+<div class="report-header">
+    <h1>THE HEALTH COLLECTIVE INC.</h1>
+    <h2>Statement of Financial Position</h2>
+    <div class="report-date">As of {{ as_of_date.strftime('%B %d, %Y') }}</div>
+</div>
+
+<table class="balance-sheet-table">
+    <thead>
+        <tr>
+            <th>Account</th>
+            <th class="text-end">Amount</th>
+            <th class="text-end">Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- ASSETS -->
+        <tr class="section-header">
+            <td colspan="3">ASSETS</td>
+        </tr>
+
+        {% for type_name, accounts in assets_by_type.items() %}
+        <tr class="type-header">
+            <td colspan="3">{{ type_name }}</td>
+        </tr>
+        {% set type_total = namespace(value=0) %}
+        {% for account in accounts %}
+        <tr class="account-row">
+            <td>{{ account.number }} - {{ account.title }}</td>
+            <td class="text-end">₱{{ "{:,.2f}".format(account.debit - account.credit) }}</td>
+            <td></td>
+        </tr>
+        {% set type_total.value = type_total.value + (account.debit - account.credit) %}
+        {% endfor %}
+        <tr class="type-total">
+            <td>Total {{ type_name }}</td>
+            <td></td>
+            <td class="text-end">₱{{ "{:,.2f}".format(type_total.value) }}</td>
+        </tr>
+        {% endfor %}
+
+        <tr class="section-total">
+            <td>TOTAL ASSETS</td>
+            <td></td>
+            <td class="text-end">₱{{ "{:,.2f}".format(total_assets) }}</td>
+        </tr>
+
+        <!-- LIABILITIES -->
+        <tr class="section-header">
+            <td colspan="3">LIABILITIES</td>
+        </tr>
+
+        {% for type_name, accounts in liabilities_by_type.items() %}
+        <tr class="type-header">
+            <td colspan="3">{{ type_name }}</td>
+        </tr>
+        {% set type_total = namespace(value=0) %}
+        {% for account in accounts %}
+        <tr class="account-row">
+            <td>{{ account.number }} - {{ account.title }}</td>
+            <td class="text-end">₱{{ "{:,.2f}".format(account.credit - account.debit) }}</td>
+            <td></td>
+        </tr>
+        {% set type_total.value = type_total.value + (account.credit - account.debit) %}
+        {% endfor %}
+        <tr class="type-total">
+            <td>Total {{ type_name }}</td>
+            <td></td>
+            <td class="text-end">₱{{ "{:,.2f}".format(type_total.value) }}</td>
+        </tr>
+        {% endfor %}
+
+        <tr class="section-total">
+            <td>TOTAL LIABILITIES</td>
+            <td></td>
+            <td class="text-end">₱{{ "{:,.2f}".format(total_liabilities) }}</td>
+        </tr>
+
+        <!-- EQUITY -->
+        <tr class="section-header">
+            <td colspan="3">EQUITY</td>
+        </tr>
+
+        {% for type_name, accounts in equity_by_type.items() %}
+        <tr class="type-header">
+            <td colspan="3">{{ type_name }}</td>
+        </tr>
+        {% set type_total = namespace(value=0) %}
+        {% for account in accounts %}
+        <tr class="account-row">
+            <td>{{ account.number }} - {{ account.title }}</td>
+            <td class="text-end">₱{{ "{:,.2f}".format(account.credit - account.debit) }}</td>
+            <td></td>
+        </tr>
+        {% set type_total.value = type_total.value + (account.credit - account.debit) %}
+        {% endfor %}
+        <tr class="type-total">
+            <td>Total {{ type_name }}</td>
+            <td></td>
+            <td class="text-end">₱{{ "{:,.2f}".format(type_total.value) }}</td>
+        </tr>
+        {% endfor %}
+
+        {% if total_equity > 0 %}
+        <tr class="type-total">
+            <td>Total Capital Accounts</td>
+            <td></td>
+            <td class="text-end">₱{{ "{:,.2f}".format(total_equity) }}</td>
+        </tr>
+        {% endif %}
+
+        <!-- RETAINED EARNINGS -->
+        <tr class="type-header">
+            <td colspan="3">RETAINED EARNINGS</td>
+        </tr>
+        <tr class="account-row">
+            <td>Beginning Retained Earnings (as of Dec 31, {{ retained_earnings.year - 1 }})</td>
+            <td class="text-end">₱{{ "{:,.2f}".format(retained_earnings.beginning) }}</td>
+            <td></td>
+        </tr>
+        <tr class="account-row">
+            <td>
+                {% if retained_earnings.net_income >= 0 %}
+                Add: Net Income for {{ retained_earnings.year }}
+                {% else %}
+                Less: Net Loss for {{ retained_earnings.year }}
+                {% endif %}
+            </td>
+            <td class="text-end">₱{{ "{:,.2f}".format(retained_earnings.net_income|abs) }}</td>
+            <td></td>
+        </tr>
+        <tr class="type-total">
+            <td>Ending Retained Earnings</td>
+            <td></td>
+            <td class="text-end">₱{{ "{:,.2f}".format(retained_earnings.ending) }}</td>
+        </tr>
+
+        <tr class="section-total">
+            <td>TOTAL EQUITY</td>
+            <td></td>
+            <td class="text-end">₱{{ "{:,.2f}".format(total_equity_with_retained) }}</td>
+        </tr>
+
+        <!-- TOTAL LIABILITIES AND EQUITY -->
+        <tr class="grand-total">
+            <td>TOTAL LIABILITIES AND EQUITY</td>
+            <td></td>
+            <td class="text-end">₱{{ "{:,.2f}".format(total_liabilities_and_equity) }}</td>
+        </tr>
+    </tbody>
+</table>
+
+{% if total_assets == total_liabilities_and_equity %}
+<div class="balance-check balanced">
+    ✓ Balance Sheet is BALANCED - Assets equal Liabilities + Equity
+</div>
+{% else %}
+<div class="balance-check unbalanced">
+    ⚠ Balance Sheet is UNBALANCED - Difference: ₱{{ "{:,.2f}".format((total_assets - total_liabilities_and_equity)|abs) }}
+</div>
+{% endif %}
