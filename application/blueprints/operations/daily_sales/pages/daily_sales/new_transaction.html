@@ -1091,24 +1091,6 @@
 
       <a href="{{ url_for('daily_sales.home') }}" class="btn-back">Cancel</a>
 
-
-
-      {% if not is_new %}
-
-      {% if form.cancelled %}
-      <form method="POST" action="{{ url_for('daily_sales.uncancel_transaction', transaction_id=form.id) }}"
-        style="margin-left:auto;" onsubmit="return confirm('Restore this cancelled transaction?')">
-        <button type="submit" class="btn-success-outline">↻ Un-cancel Transaction</button>
-      </form>
-      {% else %}
-      <form method="POST" action="{{ url_for('daily_sales.cancel_transaction', transaction_id=form.id) }}"
-        style="margin-left:auto;" onsubmit="return confirm('Cancel this transaction?')">
-        <button type="submit" class="btn-danger-outline">✗ Cancel Transaction</button>
-      </form>
-      {% endif %}
-
-      {% endif %}
-
     </div>
 
     {% else %}
@@ -1124,6 +1106,23 @@
 
 
   </form>
+
+  <!-- Cancel/Un-cancel Transaction Forms (outside main form to avoid nesting) -->
+  {% if not form._locked_ and not is_new %}
+  <div style="margin-top: 1rem; display: flex; justify-content: flex-end;">
+    {% if form.cancelled %}
+    <form method="POST" action="{{ url_for('daily_sales.uncancel_transaction', transaction_id=form.id) }}"
+      onsubmit="return confirm('Restore this cancelled transaction?')">
+      <button type="submit" class="btn-success-outline">↻ Un-cancel Transaction</button>
+    </form>
+    {% else %}
+    <form method="POST" action="{{ url_for('daily_sales.cancel_transaction', transaction_id=form.id) }}"
+      onsubmit="return confirm('Cancel this transaction?')">
+      <button type="submit" class="btn-danger-outline">✗ Cancel Transaction</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
 
 </div>
 
