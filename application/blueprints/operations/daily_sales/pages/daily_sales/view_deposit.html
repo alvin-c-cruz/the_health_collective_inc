@@ -76,6 +76,8 @@
                 <span class="badge bg-warning text-dark">Submitted</span>
               {% elif deposit.status == 'posted' %}
                 <span class="badge bg-success">Posted</span>
+              {% elif deposit.status == 'cancelled' %}
+                <span class="badge bg-danger">Cancelled</span>
               {% endif %}
             </div>
           </div>
@@ -93,6 +95,12 @@
           <div class="row mb-2">
             <div class="col-md-4"><strong>Approved By:</strong></div>
             <div class="col-md-8">{{ deposit.approved_by_user.first_name }}</div>
+          </div>
+          {% endif %}
+          {% if deposit.status == 'cancelled' and deposit.cancelled_by_user %}
+          <div class="row mb-2">
+            <div class="col-md-4"><strong>Cancelled By:</strong></div>
+            <div class="col-md-8">{{ deposit.cancelled_by_user.first_name }} on {{ deposit.cancelled_at.strftime('%d-%b-%Y') if deposit.cancelled_at else '-' }}</div>
           </div>
           {% endif %}
         </div>

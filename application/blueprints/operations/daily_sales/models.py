@@ -143,7 +143,7 @@ class Deposit(db.Model):
     notes = db.Column(db.String())  # Optional notes
 
     # Workflow fields
-    status = db.Column(db.String(20), default='draft')  # draft | submitted | posted
+    status = db.Column(db.String(20), default='draft')  # draft | submitted | posted | cancelled
     created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     created_by_user = db.relationship('User', foreign_keys=[created_by_id], backref='deposits_created')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -155,6 +155,10 @@ class Deposit(db.Model):
     approved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     approved_by_user = db.relationship('User', foreign_keys=[approved_by_id], backref='deposits_approved')
     approved_at = db.Column(db.DateTime, nullable=True)
+
+    cancelled_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    cancelled_by_user = db.relationship('User', foreign_keys=[cancelled_by_id], backref='deposits_cancelled')
+    cancelled_at = db.Column(db.DateTime, nullable=True)
 
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -182,6 +186,10 @@ class Deposit(db.Model):
     @property
     def is_posted(self):
         return self.status == 'posted'
+
+    @property
+    def is_cancelled(self):
+        return self.status == 'cancelled'
 
 
 class DepositItem(db.Model):

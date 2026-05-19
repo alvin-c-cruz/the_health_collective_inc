@@ -474,8 +474,8 @@ def deposit_report():
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
 
-    # Build query - show all deposits including drafts
-    query = Deposit.query
+    # Build query - show all deposits except cancelled
+    query = Deposit.query.filter(Deposit.status != 'cancelled')
 
     if start_date:
         query = query.filter(Deposit.record_date >= start_date)
@@ -485,7 +485,7 @@ def deposit_report():
     # Get all deposits ordered by date (most recent first)
     deposits = query.order_by(desc(Deposit.record_date), desc(Deposit.id)).all()
 
-    # Calculate totals
+    # Calculate totals (exclude cancelled)
     total_deposits = len(deposits)
     total_amount = sum(deposit.total_amount for deposit in deposits)
 
@@ -571,7 +571,7 @@ def approve_deposit(deposit_id):
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def cancel_deposit(deposit_id):
-    """Cancel/delete draft deposit"""
+    """Cancel draft deposit (soft delete - marks as cancelled)"""
     deposit = Deposit.query.get_or_404(deposit_id)
 
     # Only draft deposits can be cancelled
@@ -584,12 +584,12 @@ def cancel_deposit(deposit_id):
         flash('You can only cancel your own deposits.', 'danger')
         return redirect(url_for(f'{app_name}.deposit_report'))
 
-    # Delete deposit items first
-    for item in deposit.deposit_items:
-        db.session.delete(item)
+    # Soft delete - mark as cancelled instead of deleting
+    deposit.status = 'cancelled'
+    deposit.cancelled_by_id = current_user.id
+    deposit.cancelled_at = datetime.now()
+    deposit.updated_at = datetime.now()
 
-    # Delete deposit
-    db.session.delete(deposit)
     db.session.commit()
 
     flash('Deposit cancelled successfully.', 'info')
