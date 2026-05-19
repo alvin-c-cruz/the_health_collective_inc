@@ -141,13 +141,18 @@
 
     <!-- Deposit Summary -->
     <div class="deposit-summary">
-      <div class="row">
-        <div class="col-md-8">
+      <div class="row align-items-center">
+        <div class="col-md-6">
           <h5>Deposit Summary</h5>
           <p class="mb-0"><span id="selected_count">0</span> transaction(s) selected</p>
         </div>
-        <div class="col-md-4 text-end">
+        <div class="col-md-3 text-end">
           <div class="total">₱<span id="total_amount">0.00</span></div>
+        </div>
+        <div class="col-md-3 text-end">
+          <a href="{{ url_for('daily_sales.deposit_report') }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-file-earmark-bar-graph"></i> View Deposit Report
+          </a>
         </div>
       </div>
     </div>
