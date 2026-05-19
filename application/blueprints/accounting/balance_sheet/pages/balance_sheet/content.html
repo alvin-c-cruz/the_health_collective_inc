@@ -314,12 +314,17 @@
 {% endif %}
 
 <script>
-function toggleType(typeId) {
+// Define toggleType in the global scope to ensure onclick handlers can access it
+window.toggleType = function(typeId) {
+    console.log('Toggle clicked for:', typeId);
+
     // Get the clicked type header
     const clickedHeader = document.querySelector(`.type-header[data-type="${typeId}"]`);
 
     // Get all account rows for this type
     const accountRows = document.querySelectorAll(`.account-row[data-parent="${typeId}"]`);
+
+    console.log('Found', accountRows.length, 'account rows');
 
     // Check if the clicked type is currently shown
     const isCurrentlyShown = accountRows.length > 0 && accountRows[0].classList.contains('show');
@@ -339,9 +344,11 @@ function toggleType(typeId) {
         accountRows.forEach(row => {
             row.classList.add('show');
         });
+        console.log('Expanded', typeId);
     } else {
         // If it was shown, collapse it
         clickedHeader.classList.add('collapsed');
+        console.log('Collapsed', typeId);
     }
-}
+};
 </script>
