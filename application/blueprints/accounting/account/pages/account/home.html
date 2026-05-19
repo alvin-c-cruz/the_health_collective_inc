@@ -70,6 +70,53 @@
             </div>
         </div>
 
+        <!-- Filters Row -->
+        <div class="d-flex gap-2 align-items-center mb-3 flex-wrap" style="padding:0.75rem;background:#f8f9fa;border-radius:6px;">
+            <span style="font-size:0.8rem;font-weight:600;color:var(--thc-text-muted);">
+                <i class="bi bi-funnel"></i> Filters:
+            </span>
+
+            <!-- Account Type Filter -->
+            <select class="form-select form-select-sm" style="width:auto;min-width:150px;"
+                    onchange="applyFilters()" id="account_type_filter">
+                <option value="">All Account Types</option>
+                {% for at in account_types %}
+                <option value="{{ at.id }}" {% if account_type_filter == at.id|string %}selected{% endif %}>
+                    {{ at.account_type_name }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <!-- Approval Filter -->
+            <select class="form-select form-select-sm" style="width:auto;min-width:150px;"
+                    onchange="applyFilters()" id="approval_filter">
+                <option value="">All Statuses</option>
+                <option value="approved" {% if approval_filter == 'approved' %}selected{% endif %}>Approved Only</option>
+                <option value="not_approved" {% if approval_filter == 'not_approved' %}selected{% endif %}>Not Approved</option>
+            </select>
+
+            {% if account_type_filter or approval_filter %}
+            <a href="{{ url_for('account.home', as_of_date=as_of_date.isoformat()) }}"
+               class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-x-circle"></i> Clear Filters
+            </a>
+            {% endif %}
+        </div>
+
+        <script>
+        function applyFilters() {
+            const accountType = document.getElementById('account_type_filter').value;
+            const approval = document.getElementById('approval_filter').value;
+            const asOfDate = '{{ as_of_date.isoformat() }}';
+
+            let url = '{{ url_for("account.home") }}?as_of_date=' + asOfDate;
+            if (accountType) url += '&account_type=' + accountType;
+            if (approval) url += '&approval=' + approval;
+
+            window.location.href = url;
+        }
+        </script>
+
         <div class="table-responsive">
             <table class="thc-table">
                 <thead>

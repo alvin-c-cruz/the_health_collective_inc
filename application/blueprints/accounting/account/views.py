@@ -25,6 +25,7 @@ ROLES_ACCEPTED = app_label
 @roles_accepted([ROLES_ACCEPTED])
 def home():
     from datetime import date
+    from ..account_type.models import AccountType
 
     # Get date parameter from query string, default to today
     today = date.today()
@@ -34,12 +35,39 @@ def home():
     except ValueError:
         as_of_date = today
 
-    rows = Obj.query.order_by(getattr(Obj, f"account_number")).all()
+    # Get filter parameters
+    account_type_filter = request.args.get('account_type', '')
+    approval_filter = request.args.get('approval', '')  # 'approved' or 'not_approved'
+
+    # Build query with filters
+    query = Obj.query
+
+    if account_type_filter:
+        try:
+            account_type_id = int(account_type_filter)
+            query = query.filter(Obj.account_type_id == account_type_id)
+        except ValueError:
+            pass
+
+    if approval_filter == 'approved':
+        # Filter accounts that have approved relationship
+        query = query.join(Approver, Approver.account_id == Obj.id)
+    elif approval_filter == 'not_approved':
+        # Filter accounts that don't have approved relationship
+        query = query.outerjoin(Approver, Approver.account_id == Obj.id).filter(Approver.id == None)
+
+    rows = query.order_by(getattr(Obj, f"account_number")).all()
+
+    # Get all account types for filter dropdown
+    account_types = AccountType.query.order_by(AccountType.account_type_name).all()
 
     context = {
         "rows": rows,
         "as_of_date": as_of_date,
         "today": today,
+        "account_types": account_types,
+        "account_type_filter": account_type_filter,
+        "approval_filter": approval_filter,
     }
 
     return render_template(f"{app_name}/home.html", **context)
