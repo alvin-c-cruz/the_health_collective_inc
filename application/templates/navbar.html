@@ -11,7 +11,9 @@
           
           <!-- Reports Menu -->
             {% if (
-              "Trial Balance" in current_user.user_roles 
+              "Trial Balance" in current_user.user_roles
+              or "Balance Sheet" in current_user.user_roles
+              or "Income Statement" in current_user.user_roles
               ) %}
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -19,6 +21,8 @@
               </a>
               <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
               {% include "trial_balance/navbar.html" %}
+              {% include "balance_sheet/navbar.html" %}
+              {% include "income_statement/navbar.html" %}
               </ul>
             </li>
             {% endif %}
