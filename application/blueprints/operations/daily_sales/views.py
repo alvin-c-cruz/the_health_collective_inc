@@ -356,7 +356,7 @@ def customer_search():
 def get_undeposited_cash_transactions():
     """Get all transactions with cash payments that haven't been deposited yet"""
     from .models import Deposit, DepositItem
-    from ..tender.models import Tender
+    from application.blueprints.register.tender.models import Tender
     from sqlalchemy import desc
 
     # Get all submitted transactions
