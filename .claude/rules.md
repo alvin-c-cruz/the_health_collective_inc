@@ -10,6 +10,39 @@
 - **Server:** Flask development server on port 9000 (http://192.168.68.109:9000)
 - **Related Projects:** `cebu_landmasters`, `acas` (Alvin's own accounting system)
 
+## Version Control Rules
+
+### **Semantic Versioning (MAJOR.MINOR.PATCH)**
+
+Format: `thci X.Y.Z`
+
+- **MAJOR (X)** - Breaking changes, major redesigns
+  - Complete database structure changes
+  - Removing features entirely
+  - Fundamental workflow changes
+  - Example: `1.4.2` → `2.0.0`
+
+- **MINOR (Y)** - New features (backwards-compatible)
+  - Adding new functionality
+  - New reports or modules
+  - Significant UI improvements
+  - Example: `1.4.2` → `1.5.0`
+  - Reset PATCH to 0 when incrementing MINOR
+
+- **PATCH (Z)** - Bug fixes only
+  - Fixing calculation errors
+  - Correcting display issues
+  - Small corrections
+  - Example: `1.4.2` → `1.4.3`
+
+**When to Increment:**
+- ✅ Increment MINOR version at end of session when new features are added
+- ✅ Increment PATCH version immediately after bug fixes
+- ✅ Increment MAJOR version only when explicitly decided by developer
+- ✅ Update version in navbar.html: `<span class="navbar-version ms-auto">thci X.Y.Z</span>`
+
+**Current Version:** `thci 1.4.0` (as of 2026-05-19)
+
 ## Git Workflow Rules
 
 ### **CRITICAL RULE: Auto-commit After Each Task**
