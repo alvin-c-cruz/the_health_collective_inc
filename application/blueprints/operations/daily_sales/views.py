@@ -387,7 +387,8 @@ def get_undeposited_cash_transactions():
 
         remaining_cash = cash_amount - deposited_amount
 
-        if remaining_cash > 0:
+        # Only include if remaining cash is greater than 0.01 (to avoid floating point precision issues)
+        if remaining_cash > 0.01:
             undeposited.append({
                 'transaction': transaction,
                 'cash_amount': cash_amount,
@@ -414,7 +415,7 @@ def record_deposit():
             deposit.reference_number = request.form.get('reference_number', '')
             deposit.bank_account = request.form.get('bank_account', '')
             deposit.notes = request.form.get('notes', '')
-            deposit.status = 'draft'
+            deposit.status = 'posted'  # Changed from 'draft' to 'posted'
             deposit.created_by_id = current_user.id
             deposit.created_at = datetime.now()
 
