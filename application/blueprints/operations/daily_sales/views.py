@@ -379,10 +379,10 @@ def get_undeposited_cash_transactions():
         if cash_amount <= 0:
             continue
 
-        # Check if already deposited
+        # Check if already deposited (only count posted deposits)
         deposited_amount = sum(
             item.amount for item in transaction.deposit_items
-            if item.deposit.status != 'draft'  # Only count non-draft deposits
+            if item.deposit.status == 'posted'  # Only count posted deposits
         )
 
         remaining_cash = cash_amount - deposited_amount
@@ -415,7 +415,7 @@ def record_deposit():
             deposit.reference_number = request.form.get('reference_number', '')
             deposit.bank_account = request.form.get('bank_account', '')
             deposit.notes = request.form.get('notes', '')
-            deposit.status = 'posted'  # Changed from 'draft' to 'posted'
+            deposit.status = 'draft'  # Deposits start as draft
             deposit.created_by_id = current_user.id
             deposit.created_at = datetime.now()
 
@@ -474,8 +474,8 @@ def deposit_report():
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
 
-    # Build query
-    query = Deposit.query.filter(Deposit.status != 'draft')
+    # Build query - show all deposits including drafts
+    query = Deposit.query
 
     if start_date:
         query = query.filter(Deposit.record_date >= start_date)
@@ -499,6 +499,101 @@ def deposit_report():
     }
 
     return render_template(f'{app_name}/deposit_report.html', **context)
+
+
+@bp.route('/deposit/view/<int:deposit_id>', methods=['GET'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def view_deposit(deposit_id):
+    """View deposit details"""
+    deposit = Deposit.query.get_or_404(deposit_id)
+
+    context = {
+        'app_label': app_label,
+        'deposit': deposit,
+    }
+
+    return render_template(f'{app_name}/view_deposit.html', **context)
+
+
+@bp.route('/deposit/submit/<int:deposit_id>', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def submit_deposit(deposit_id):
+    """Submit deposit for approval"""
+    deposit = Deposit.query.get_or_404(deposit_id)
+
+    # Only draft deposits can be submitted
+    if deposit.status != 'draft':
+        flash('Only draft deposits can be submitted.', 'danger')
+        return redirect(url_for(f'{app_name}.deposit_report'))
+
+    # Check if user is the creator
+    if deposit.created_by_id != current_user.id:
+        flash('You can only submit your own deposits.', 'danger')
+        return redirect(url_for(f'{app_name}.deposit_report'))
+
+    deposit.status = 'submitted'
+    deposit.submitted_by_id = current_user.id
+    deposit.submitted_at = datetime.now()
+    deposit.updated_at = datetime.now()
+
+    db.session.commit()
+
+    flash(f'Deposit submitted successfully! Total amount: ₱{deposit.formatted_total_amount}', 'success')
+    return redirect(url_for(f'{app_name}.deposit_report'))
+
+
+@bp.route('/deposit/approve/<int:deposit_id>', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def approve_deposit(deposit_id):
+    """Approve submitted deposit (admin only)"""
+    deposit = Deposit.query.get_or_404(deposit_id)
+
+    # Only submitted deposits can be approved
+    if deposit.status != 'submitted':
+        flash('Only submitted deposits can be approved.', 'danger')
+        return redirect(url_for(f'{app_name}.deposit_report'))
+
+    deposit.status = 'posted'
+    deposit.approved_by_id = current_user.id
+    deposit.approved_at = datetime.now()
+    deposit.updated_at = datetime.now()
+
+    db.session.commit()
+
+    flash(f'Deposit approved successfully! Total amount: ₱{deposit.formatted_total_amount}', 'success')
+    return redirect(url_for(f'{app_name}.deposit_report'))
+
+
+@bp.route('/deposit/cancel/<int:deposit_id>', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def cancel_deposit(deposit_id):
+    """Cancel/delete draft deposit"""
+    deposit = Deposit.query.get_or_404(deposit_id)
+
+    # Only draft deposits can be cancelled
+    if deposit.status != 'draft':
+        flash('Only draft deposits can be cancelled.', 'danger')
+        return redirect(url_for(f'{app_name}.deposit_report'))
+
+    # Check if user is the creator
+    if deposit.created_by_id != current_user.id:
+        flash('You can only cancel your own deposits.', 'danger')
+        return redirect(url_for(f'{app_name}.deposit_report'))
+
+    # Delete deposit items first
+    for item in deposit.deposit_items:
+        db.session.delete(item)
+
+    # Delete deposit
+    db.session.delete(deposit)
+    db.session.commit()
+
+    flash('Deposit cancelled successfully.', 'info')
+    return redirect(url_for(f'{app_name}.deposit_report'))
 
 
 @bp.route("/daily_report", methods=["GET"])

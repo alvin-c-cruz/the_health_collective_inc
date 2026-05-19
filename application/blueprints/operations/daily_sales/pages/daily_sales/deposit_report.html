@@ -102,9 +102,36 @@
                 <small>{{ deposit.created_by_user.first_name if deposit.created_by_user else '-' }}</small>
               </td>
               <td>
-                <a href="#" class="btn btn-sm btn-outline-primary" title="View Details">
-                  <i class="bi bi-eye"></i>
-                </a>
+                <div class="btn-group btn-group-sm" role="group">
+                  <a href="{{ url_for('daily_sales.view_deposit', deposit_id=deposit.id) }}"
+                     class="btn btn-outline-primary" title="View Details">
+                    <i class="bi bi-eye"></i>
+                  </a>
+
+                  {% if deposit.status == 'draft' %}
+                    <!-- Draft: Show Submit and Cancel buttons -->
+                    <form method="POST" action="{{ url_for('daily_sales.submit_deposit', deposit_id=deposit.id) }}"
+                          style="display: inline;" onsubmit="return confirm('Submit this deposit for approval?');">
+                      <button type="submit" class="btn btn-outline-success" title="Submit for Approval">
+                        <i class="bi bi-check-circle"></i>
+                      </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('daily_sales.cancel_deposit', deposit_id=deposit.id) }}"
+                          style="display: inline;" onsubmit="return confirm('Cancel this deposit? This cannot be undone.');">
+                      <button type="submit" class="btn btn-outline-danger" title="Cancel Deposit">
+                        <i class="bi bi-x-circle"></i>
+                      </button>
+                    </form>
+                  {% elif deposit.status == 'submitted' %}
+                    <!-- Submitted: Show Approve button (admin only) -->
+                    <form method="POST" action="{{ url_for('daily_sales.approve_deposit', deposit_id=deposit.id) }}"
+                          style="display: inline;" onsubmit="return confirm('Approve this deposit?');">
+                      <button type="submit" class="btn btn-outline-primary" title="Approve Deposit">
+                        <i class="bi bi-check2-all"></i>
+                      </button>
+                    </form>
+                  {% endif %}
+                </div>
               </td>
             </tr>
             {% endfor %}

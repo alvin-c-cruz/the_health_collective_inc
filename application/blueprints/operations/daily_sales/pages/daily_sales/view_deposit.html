@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}View Deposit{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+
+  <!-- Header -->
+  <div class="row mb-3">
+    <div class="col">
+      <h4>Deposit Details</h4>
+      <p class="text-muted">View deposit information and transaction details</p>
+      <hr>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="row mb-3">
+    <div class="col">
+      <a href="{{ url_for('daily_sales.deposit_report') }}" class="btn btn-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Back to Report
+      </a>
+
+      {% if deposit.status == 'draft' %}
+        <form method="POST" action="{{ url_for('daily_sales.submit_deposit', deposit_id=deposit.id) }}"
+              style="display: inline;" onsubmit="return confirm('Submit this deposit for approval?');">
+          <button type="submit" class="btn btn-success btn-sm">
+            <i class="bi bi-check-circle"></i> Submit for Approval
+          </button>
+        </form>
+        <form method="POST" action="{{ url_for('daily_sales.cancel_deposit', deposit_id=deposit.id) }}"
+              style="display: inline;" onsubmit="return confirm('Cancel this deposit? This cannot be undone.');">
+          <button type="submit" class="btn btn-danger btn-sm">
+            <i class="bi bi-x-circle"></i> Cancel Deposit
+          </button>
+        </form>
+      {% elif deposit.status == 'submitted' %}
+        <form method="POST" action="{{ url_for('daily_sales.approve_deposit', deposit_id=deposit.id) }}"
+              style="display: inline;" onsubmit="return confirm('Approve this deposit?');">
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-check2-all"></i> Approve Deposit
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Deposit Information Card -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Deposit Information</h5>
+          <div class="row mb-2">
+            <div class="col-md-4"><strong>Deposit Date:</strong></div>
+            <div class="col-md-8">{{ deposit.formatted_record_date }}</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-4"><strong>Bank / Account:</strong></div>
+            <div class="col-md-8">{{ deposit.bank_account or '-' }}</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-4"><strong>Reference Number:</strong></div>
+            <div class="col-md-8">{{ deposit.reference_number or '-' }}</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-4"><strong>Notes:</strong></div>
+            <div class="col-md-8">{{ deposit.notes or '-' }}</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-4"><strong>Status:</strong></div>
+            <div class="col-md-8">
+              {% if deposit.status == 'draft' %}
+                <span class="badge bg-secondary">Draft</span>
+              {% elif deposit.status == 'submitted' %}
+                <span class="badge bg-warning text-dark">Submitted</span>
+              {% elif deposit.status == 'posted' %}
+                <span class="badge bg-success">Posted</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-4"><strong>Created By:</strong></div>
+            <div class="col-md-8">{{ deposit.created_by_user.first_name if deposit.created_by_user else '-' }}</div>
+          </div>
+          {% if deposit.status == 'submitted' and deposit.submitted_by_user %}
+          <div class="row mb-2">
+            <div class="col-md-4"><strong>Submitted By:</strong></div>
+            <div class="col-md-8">{{ deposit.submitted_by_user.first_name }}</div>
+          </div>
+          {% endif %}
+          {% if deposit.status == 'posted' and deposit.approved_by_user %}
+          <div class="row mb-2">
+            <div class="col-md-4"><strong>Approved By:</strong></div>
+            <div class="col-md-8">{{ deposit.approved_by_user.first_name }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body text-center">
+          <h6 class="card-subtitle mb-2 text-muted">Total Amount</h6>
+          <h2 class="card-title mb-0" style="color: #1a6473;">₱{{ deposit.formatted_total_amount }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transaction Items Table -->
+  <div class="row">
+    <div class="col">
+      <h5>Transactions Included</h5>
+      <div class="table-responsive">
+        <table class="thc-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Trans #</th>
+              <th>Customer</th>
+              <th class="text-end">Amount</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in deposit.deposit_items %}
+            <tr>
+              <td>{{ item.transaction.formatted_record_date }}</td>
+              <td>{{ item.transaction.record_number or '-' }}</td>
+              <td>{{ item.transaction.customer.full_name if item.transaction.customer else '-' }}</td>
+              <td class="text-end fw-bold">₱{{ item.formatted_amount }}</td>
+              <td><small>{{ item.notes or '-' }}</small></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr class="table-active">
+              <td colspan="3" class="text-end fw-bold">TOTAL:</td>
+              <td class="text-end fw-bold">₱{{ deposit.formatted_total_amount }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  .card-body {
+    padding: 1.5rem;
+  }
+
+  .card-subtitle {
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .card-title {
+    font-size: 2rem;
+    font-weight: 600;
+  }
+
+  .thc-table {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: collapse;
+  }
+
+  .thc-table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .thc-table tbody td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: middle;
+  }
+
+  .thc-table tfoot td {
+    padding: 0.75rem;
+    border-top: 2px solid #dee2e6;
+    font-size: 1rem;
+  }
+
+  .thc-table tbody tr:hover {
+    background-color: #f8f9fa;
+  }
+</style>
+
+{% endblock %}
