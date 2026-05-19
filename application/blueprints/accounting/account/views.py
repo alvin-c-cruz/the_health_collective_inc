@@ -54,7 +54,7 @@ def home():
         query = query.join(Approver, Approver.account_id == Obj.id)
     elif approval_filter == 'not_approved':
         # Filter accounts that don't have approved relationship
-        query = query.outerjoin(Approver, Approver.account_id == Obj.id).filter(Approver.id == None)
+        query = query.outerjoin(Approver, Approver.account_id == Obj.id).filter(Approver.account_id == None)
 
     rows = query.order_by(getattr(Obj, f"account_number")).all()
 
