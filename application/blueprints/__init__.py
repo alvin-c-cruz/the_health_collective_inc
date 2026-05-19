@@ -30,6 +30,7 @@ from .accounting import trial_balance
 from .accounting import ledger
 from .accounting import balance_sheet
 from .accounting import income_statement
+from .accounting import reports
 
 from .operations import daily_sales
 from .operations import transaction_type
