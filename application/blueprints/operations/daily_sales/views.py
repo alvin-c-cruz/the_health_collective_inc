@@ -438,7 +438,7 @@ def record_deposit():
             db.session.commit()
 
             flash(f'Deposit recorded successfully! Total amount: ₱{total_amount:,.2f}', 'success')
-            return redirect(url_for(f'{app_name}.record_deposit'))
+            return redirect(url_for(f'{app_name}.deposit_report'))
 
         except Exception as e:
             db.session.rollback()
