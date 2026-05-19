@@ -34,6 +34,8 @@ class Account(db.Model):
         Calculate balance up to and including the specified date.
         If as_of_date is None, calculate all-time balance.
         """
+        from datetime import date, datetime
+
         books = [
             "sales",
             "receipt",
@@ -54,8 +56,20 @@ class Account(db.Model):
                 # Get the parent record (sales, receipt, etc.)
                 parent = getattr(d, book)
                 if parent and hasattr(parent, 'record_date'):
+                    # Get the record date and convert if necessary
+                    record_date = parent.record_date
+
+                    # Handle string dates (convert to date object)
+                    if isinstance(record_date, str):
+                        try:
+                            record_date = datetime.strptime(record_date, '%Y-%m-%d').date()
+                        except (ValueError, TypeError):
+                            # If parsing fails, include the record
+                            _balance += (d.debit - d.credit)
+                            continue
+
                     # Filter by date if as_of_date is provided
-                    if as_of_date is None or (parent.record_date and parent.record_date <= as_of_date):
+                    if as_of_date is None or (record_date and record_date <= as_of_date):
                         _balance += (d.debit - d.credit)
                 else:
                     # If no date field, include all records
