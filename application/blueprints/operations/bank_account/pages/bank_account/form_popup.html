@@ -294,6 +294,9 @@
     </div>
 
     <script>
+        // Track if form is being submitted
+        let formSubmitting = false;
+
         // Auto-focus first input
         document.addEventListener('DOMContentLoaded', function() {
             const firstInput = document.getElementById('bank_name');
@@ -312,10 +315,18 @@
                 alert('Bank Name and Account Number are required.');
                 return false;
             }
+
+            // Mark form as being submitted to prevent beforeunload warning
+            formSubmitting = true;
         });
 
-        // Prevent closing without confirmation
+        // Prevent closing without confirmation (except when submitting)
         window.addEventListener('beforeunload', function(e) {
+            // Don't show warning if form is being submitted
+            if (formSubmitting) {
+                return;
+            }
+
             // Only show warning if form has been touched
             const bankName = document.getElementById('bank_name').value.trim();
             const accountNumber = document.getElementById('account_number').value.trim();

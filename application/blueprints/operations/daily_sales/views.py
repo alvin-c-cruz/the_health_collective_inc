@@ -462,6 +462,44 @@ def record_deposit():
 # Daily report
 # ---------------------------------------------------------------------------
 
+@bp.route('/deposit/report', methods=['GET'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def deposit_report():
+    """Deposit report - summary of all deposits arranged by date"""
+    from sqlalchemy import desc
+
+    # Get date range from query params
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    # Build query
+    query = Deposit.query.filter(Deposit.status != 'draft')
+
+    if start_date:
+        query = query.filter(Deposit.record_date >= start_date)
+    if end_date:
+        query = query.filter(Deposit.record_date <= end_date)
+
+    # Get all deposits ordered by date (most recent first)
+    deposits = query.order_by(desc(Deposit.record_date), desc(Deposit.id)).all()
+
+    # Calculate totals
+    total_deposits = len(deposits)
+    total_amount = sum(deposit.total_amount for deposit in deposits)
+
+    context = {
+        'app_label': app_label,
+        'deposits': deposits,
+        'total_deposits': total_deposits,
+        'total_amount': total_amount,
+        'start_date': start_date,
+        'end_date': end_date,
+    }
+
+    return render_template(f'{app_name}/deposit_report.html', **context)
+
+
 @bp.route("/daily_report", methods=["GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])

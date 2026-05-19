@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Deposit Report{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+
+  <!-- Header -->
+  <div class="row mb-3">
+    <div class="col">
+      <h4>Deposit Report</h4>
+      <p class="text-muted">Summary of all bank deposits arranged by date</p>
+      <hr>
+    </div>
+  </div>
+
+  <!-- Filter Form -->
+  <form method="GET" id="filterForm" class="mb-4">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label for="start_date" class="form-label">Start Date</label>
+        <input type="date" name="start_date" id="start_date" class="form-control" value="{{ start_date or '' }}">
+      </div>
+      <div class="col-md-3">
+        <label for="end_date" class="form-label">End Date</label>
+        <input type="date" name="end_date" id="end_date" class="form-control" value="{{ end_date or '' }}">
+      </div>
+      <div class="col-md-6">
+        <button type="submit" class="btn btn-primary">Apply Filter</button>
+        <a href="{{ url_for('daily_sales.deposit_report') }}" class="btn btn-secondary">Clear Filter</a>
+        <a href="{{ url_for('daily_sales.record_deposit') }}" class="btn btn-success">New Deposit</a>
+      </div>
+    </div>
+  </form>
+
+  <!-- Summary Cards -->
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body">
+          <h6 class="card-subtitle mb-2 text-muted">Total Deposits</h6>
+          <h3 class="card-title mb-0">{{ total_deposits }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body">
+          <h6 class="card-subtitle mb-2 text-muted">Total Amount</h6>
+          <h3 class="card-title mb-0">₱{{ "{:,.2f}".format(total_amount) }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deposits Table -->
+  {% if deposits %}
+  <div class="row">
+    <div class="col">
+      <div class="table-responsive">
+        <table class="thc-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Bank / Account</th>
+              <th>Reference #</th>
+              <th class="text-end">Amount</th>
+              <th>Status</th>
+              <th>Transactions</th>
+              <th>Notes</th>
+              <th>Created By</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for deposit in deposits %}
+            <tr>
+              <td>{{ deposit.formatted_record_date }}</td>
+              <td>{{ deposit.bank_account or '-' }}</td>
+              <td>{{ deposit.reference_number or '-' }}</td>
+              <td class="text-end fw-bold">₱{{ deposit.formatted_total_amount }}</td>
+              <td>
+                {% if deposit.status == 'draft' %}
+                  <span class="badge bg-secondary">Draft</span>
+                {% elif deposit.status == 'submitted' %}
+                  <span class="badge bg-warning text-dark">Submitted</span>
+                {% elif deposit.status == 'posted' %}
+                  <span class="badge bg-success">Posted</span>
+                {% endif %}
+              </td>
+              <td>
+                <small>
+                  {% for item in deposit.deposit_items %}
+                    #{{ item.transaction.record_number }}{% if not loop.last %}, {% endif %}
+                  {% endfor %}
+                </small>
+              </td>
+              <td>
+                <small>{{ deposit.notes or '-' }}</small>
+              </td>
+              <td>
+                <small>{{ deposit.created_by_user.first_name if deposit.created_by_user else '-' }}</small>
+              </td>
+              <td>
+                <a href="#" class="btn btn-sm btn-outline-primary" title="View Details">
+                  <i class="bi bi-eye"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr class="table-active">
+              <td colspan="3" class="text-end fw-bold">TOTAL:</td>
+              <td class="text-end fw-bold">₱{{ "{:,.2f}".format(total_amount) }}</td>
+              <td colspan="5"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="row">
+    <div class="col">
+      <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> No deposits found for the selected period.
+        {% if start_date or end_date %}
+          Try adjusting the date range filter.
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<style>
+  .card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  .card-body {
+    padding: 1.5rem;
+  }
+
+  .card-subtitle {
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .card-title {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #1a6473;
+  }
+
+  .thc-table {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: collapse;
+  }
+
+  .thc-table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .thc-table tbody td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: middle;
+  }
+
+  .thc-table tfoot td {
+    padding: 0.75rem;
+    border-top: 2px solid #dee2e6;
+    font-size: 1rem;
+  }
+
+  .thc-table tbody tr:hover {
+    background-color: #f8f9fa;
+  }
+
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+    font-weight: 600;
+  }
+</style>
+
+{% endblock %}
