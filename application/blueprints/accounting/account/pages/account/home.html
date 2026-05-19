@@ -70,52 +70,32 @@
             </div>
         </div>
 
-        <!-- Filters Row -->
-        <div class="d-flex gap-2 align-items-center mb-3 flex-wrap" style="padding:0.75rem;background:#f8f9fa;border-radius:6px;">
-            <span style="font-size:0.8rem;font-weight:600;color:var(--thc-text-muted);">
-                <i class="bi bi-funnel"></i> Filters:
-            </span>
-
-            <!-- Account Type Filter -->
-            <select class="form-select form-select-sm" style="width:auto;min-width:150px;"
-                    onchange="applyFilters()" id="account_type_filter">
-                <option value="">All Account Types</option>
-                {% for at in account_types %}
-                <option value="{{ at.id }}" {% if account_type_filter == at.id|string %}selected{% endif %}>
-                    {{ at.account_type_name }}
-                </option>
-                {% endfor %}
-            </select>
-
-            <!-- Approval Filter -->
-            <select class="form-select form-select-sm" style="width:auto;min-width:150px;"
-                    onchange="applyFilters()" id="approval_filter">
-                <option value="">All Statuses</option>
-                <option value="approved" {% if approval_filter == 'approved' %}selected{% endif %}>Approved Only</option>
-                <option value="not_approved" {% if approval_filter == 'not_approved' %}selected{% endif %}>Not Approved</option>
-            </select>
-
-            {% if account_type_filter or approval_filter %}
-            <a href="{{ url_for('account.home', as_of_date=as_of_date.isoformat()) }}"
-               class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-x-circle"></i> Clear Filters
-            </a>
-            {% endif %}
-        </div>
-
-        <script>
-        function applyFilters() {
-            const accountType = document.getElementById('account_type_filter').value;
-            const approval = document.getElementById('approval_filter').value;
-            const asOfDate = '{{ as_of_date.isoformat() }}';
-
-            let url = '{{ url_for("account.home") }}?as_of_date=' + asOfDate;
-            if (accountType) url += '&account_type=' + accountType;
-            if (approval) url += '&approval=' + approval;
-
-            window.location.href = url;
+        <style>
+        .filter-header {
+            padding: 0.5rem 0.75rem !important;
+            vertical-align: middle;
         }
-        </script>
+        .filter-header .filter-select {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 0.25rem;
+        }
+        .filter-header .filter-select:focus {
+            border-color: var(--thc-primary);
+            outline: none;
+            box-shadow: 0 0 0 0.2rem rgba(24,95,165,0.15);
+        }
+        .filter-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        </style>
 
         <div class="table-responsive">
             <table class="thc-table">
@@ -123,12 +103,42 @@
                     <tr>
                         <th>Account Number</th>
                         <th>Account Title</th>
-                        <th>Account Type</th>
+                        <th class="filter-header">
+                            <div class="filter-label">Account Type</div>
+                            <select class="filter-select" onchange="applyFilters()" id="account_type_filter">
+                                <option value="">All Types</option>
+                                {% for at in account_types %}
+                                <option value="{{ at.id }}" {% if account_type_filter == at.id|string %}selected{% endif %}>
+                                    {{ at.account_type_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </th>
                         <th>Debit</th>
                         <th>Credit</th>
-                        <th>Action</th>
+                        <th class="filter-header">
+                            <div class="filter-label">Action</div>
+                            <select class="filter-select" onchange="applyFilters()" id="approval_filter">
+                                <option value="">All</option>
+                                <option value="approved" {% if approval_filter == 'approved' %}selected{% endif %}>Approved</option>
+                                <option value="not_approved" {% if approval_filter == 'not_approved' %}selected{% endif %}>Not Approved</option>
+                            </select>
+                        </th>
                     </tr>
                 </thead>
+                <script>
+                function applyFilters() {
+                    const accountType = document.getElementById('account_type_filter').value;
+                    const approval = document.getElementById('approval_filter').value;
+                    const asOfDate = '{{ as_of_date.isoformat() }}';
+
+                    let url = '{{ url_for("account.home") }}?as_of_date=' + asOfDate;
+                    if (accountType) url += '&account_type=' + accountType;
+                    if (approval) url += '&approval=' + approval;
+
+                    window.location.href = url;
+                }
+                </script>
                 <tbody>
                     {% for row in rows %}
                     <tr>
