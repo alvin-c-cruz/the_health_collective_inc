@@ -7,12 +7,17 @@
 
   <!-- Header -->
   <div class="row mb-3">
-    <div class="col">
+    <div class="col-md-8">
       <h4>Deposit Report</h4>
       <p class="text-muted">Summary of all bank deposits arranged by date</p>
-      <hr>
+    </div>
+    <div class="col-md-4 text-end">
+      <a href="{{ url_for('daily_sales.record_deposit') }}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Record New Deposit
+      </a>
     </div>
   </div>
+  <hr>
 
   <!-- Filter Form -->
   <form method="GET" id="filterForm" class="mb-4">
