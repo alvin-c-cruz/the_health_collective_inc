@@ -1,0 +1,133 @@
+from flask import Blueprint, render_template, request
+from flask_login import login_required
+from datetime import date
+
+from .. account import Account
+from .. account_type import AccountType
+from .. account_class import AccountClass
+
+
+bp = Blueprint("income_statement", __name__, template_folder="pages", url_prefix="/income_statement")
+
+
+@bp.route("/", methods=["GET"])
+@login_required
+def home():
+    """
+    Income Statement - Statement of Comprehensive Income
+    Shows Revenue, Expenses, and Net Income for a date range
+    """
+    # Get date parameters
+    today = date.today()
+    from_date_str = request.args.get('from_date', f'{today.year}-01-01')
+    to_date_str = request.args.get('to_date', str(today))
+
+    try:
+        from_date = date.fromisoformat(from_date_str)
+    except ValueError:
+        from_date = date(today.year, 1, 1)
+
+    try:
+        to_date = date.fromisoformat(to_date_str)
+    except ValueError:
+        to_date = today
+
+    # Get all accounts ordered by account number
+    accounts = Account.query.order_by(Account.account_number).all()
+
+    # Organize accounts by class (Revenue, Cost of Sales, Expenses)
+    revenue_accounts = []
+    cost_of_sales_accounts = []
+    expense_accounts = []
+
+    total_revenue = 0
+    total_cost_of_sales = 0
+    total_expenses = 0
+
+    for account in accounts:
+        if not account.account_type:
+            continue
+
+        account_class = account.account_type.account_class
+        if not account_class:
+            continue
+
+        # Calculate balance for the period (to_date) and beginning balance (from_date - 1 day)
+        ending_balance = account.balance(to_date)
+
+        # For beginning balance, we need the day before from_date
+        from datetime import timedelta
+        beginning_balance = account.balance(from_date - timedelta(days=1)) if from_date else 0
+
+        # Period activity is the difference
+        period_balance = ending_balance - beginning_balance
+
+        # Skip accounts with zero activity in the period
+        if period_balance == 0:
+            continue
+
+        account_data = {
+            'number': account.account_number,
+            'title': account.account_title,
+            'type': account.account_type.account_type_name,
+            'balance': abs(period_balance),
+            'debit': account.debit_balance(to_date) - account.debit_balance(from_date - timedelta(days=1)) if from_date else account.debit_balance(to_date),
+            'credit': account.credit_balance(to_date) - account.credit_balance(from_date - timedelta(days=1)) if from_date else account.credit_balance(to_date),
+        }
+
+        class_name = account_class.account_class_name.upper()
+        type_name = account.account_type.account_type_name.upper()
+
+        if 'REVENUE' in class_name or 'INCOME' in class_name or 'SALES' in type_name:
+            revenue_accounts.append(account_data)
+            total_revenue += account_data['credit'] - account_data['debit']
+        elif 'COST OF SALES' in type_name or 'COST OF GOODS' in type_name:
+            cost_of_sales_accounts.append(account_data)
+            total_cost_of_sales += account_data['debit'] - account_data['credit']
+        elif 'EXPENSE' in class_name or 'EXPENSE' in type_name:
+            expense_accounts.append(account_data)
+            total_expenses += account_data['debit'] - account_data['credit']
+
+    # Group revenue by type
+    revenue_by_type = {}
+    for rev in revenue_accounts:
+        type_name = rev['type']
+        if type_name not in revenue_by_type:
+            revenue_by_type[type_name] = []
+        revenue_by_type[type_name].append(rev)
+
+    # Group cost of sales by type
+    cost_of_sales_by_type = {}
+    for cos in cost_of_sales_accounts:
+        type_name = cos['type']
+        if type_name not in cost_of_sales_by_type:
+            cost_of_sales_by_type[type_name] = []
+        cost_of_sales_by_type[type_name].append(cos)
+
+    # Group expenses by type
+    expenses_by_type = {}
+    for expense in expense_accounts:
+        type_name = expense['type']
+        if type_name not in expenses_by_type:
+            expenses_by_type[type_name] = []
+        expenses_by_type[type_name].append(expense)
+
+    # Calculate totals
+    gross_profit = total_revenue - total_cost_of_sales
+    net_income = gross_profit - total_expenses
+
+    context = {
+        "from_date": from_date,
+        "to_date": to_date,
+        "today": today,
+        "revenue_by_type": revenue_by_type,
+        "cost_of_sales_by_type": cost_of_sales_by_type,
+        "expenses_by_type": expenses_by_type,
+        "total_revenue": total_revenue,
+        "total_cost_of_sales": total_cost_of_sales,
+        "total_expenses": total_expenses,
+        "gross_profit": gross_profit,
+        "net_income": net_income,
+    }
+
+    return render_template("income_statement/home.html", **context)

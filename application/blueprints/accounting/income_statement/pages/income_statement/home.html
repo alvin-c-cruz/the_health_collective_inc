@@ -1,0 +1,286 @@
+{% extends "base_financial_report.html" %}
+
+{% block title %}Income Statement{% endblock %}
+
+{% block styles %}
+<style>
+    .report-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .report-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .report-header h1 {
+        margin-bottom: 0.5rem;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .report-header h2 {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #666;
+        margin-bottom: 0.25rem;
+    }
+
+    .report-header .report-date {
+        font-size: 0.95rem;
+        color: #888;
+    }
+
+    .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+
+    .toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .form-label {
+        margin-bottom: 0;
+        font-weight: 500;
+    }
+
+    .income-statement-table {
+        width: 100%;
+        margin-bottom: 2rem;
+        border-collapse: collapse;
+    }
+
+    .income-statement-table th,
+    .income-statement-table td {
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .income-statement-table thead th {
+        background: #f8f9fa;
+        font-weight: 600;
+        text-align: left;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .income-statement-table .text-end {
+        text-align: right;
+    }
+
+    .section-header {
+        font-weight: 600;
+        font-size: 1.1rem;
+        background: #e9ecef;
+        padding: 0.75rem 1rem;
+    }
+
+    .type-header {
+        font-weight: 600;
+        background: #f8f9fa;
+        padding: 0.5rem 1rem;
+        padding-left: 2rem;
+    }
+
+    .account-row td {
+        padding-left: 3rem;
+    }
+
+    .type-total {
+        font-weight: 600;
+        background: #f8f9fa;
+        padding-left: 2rem;
+    }
+
+    .section-total {
+        font-weight: 700;
+        font-size: 1.05rem;
+        background: #e9ecef;
+        border-top: 2px solid #000;
+        border-bottom: 2px solid #000;
+    }
+
+    .subtotal {
+        font-weight: 700;
+        font-size: 1.05rem;
+        background: #e9ecef;
+        border-top: 1px solid #000;
+    }
+
+    .grand-total {
+        font-weight: 700;
+        font-size: 1.1rem;
+        background: #d1d5db;
+        border-top: 3px double #000;
+        border-bottom: 3px double #000;
+    }
+
+    .net-income-positive {
+        background: #dcfce7;
+    }
+
+    .net-income-negative {
+        background: #fee2e2;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="report-container">
+    <div class="report-header">
+        <h1>THE HEALTH COLLECTIVE INC.</h1>
+        <h2>INCOME STATEMENT</h2>
+        <div class="report-date">For the period {{ from_date.strftime('%B %d, %Y') }} to {{ to_date.strftime('%B %d, %Y') }}</div>
+    </div>
+
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <label class="form-label" for="from_date">From:</label>
+            <input type="date" id="from_date" name="from_date" class="form-control form-control-sm"
+                value="{{ from_date }}" onchange="updateReport()">
+
+            <label class="form-label" for="to_date">To:</label>
+            <input type="date" id="to_date" name="to_date" class="form-control form-control-sm"
+                value="{{ to_date }}" onchange="updateReport()">
+        </div>
+    </div>
+
+    <table class="income-statement-table">
+        <thead>
+            <tr>
+                <th style="width: 60%;">Account</th>
+                <th class="text-end" style="width: 20%;">Amount</th>
+                <th class="text-end" style="width: 20%;">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- REVENUE -->
+            <tr class="section-header">
+                <td colspan="3">REVENUE</td>
+            </tr>
+
+            {% for type_name, accounts in revenue_by_type.items() %}
+            <tr class="type-header">
+                <td colspan="3">{{ type_name }}</td>
+            </tr>
+            {% set type_total = namespace(value=0) %}
+            {% for account in accounts %}
+            <tr class="account-row">
+                <td>{{ account.number }} - {{ account.title }}</td>
+                <td class="text-end">{{ "{:,.2f}".format(account.credit - account.debit) }}</td>
+                <td></td>
+            </tr>
+            {% set type_total.value = type_total.value + (account.credit - account.debit) %}
+            {% endfor %}
+            <tr class="type-total">
+                <td>Total {{ type_name }}</td>
+                <td></td>
+                <td class="text-end">{{ "{:,.2f}".format(type_total.value) }}</td>
+            </tr>
+            {% endfor %}
+
+            <tr class="section-total">
+                <td>TOTAL REVENUE</td>
+                <td></td>
+                <td class="text-end">{{ "{:,.2f}".format(total_revenue) }}</td>
+            </tr>
+
+            <!-- COST OF SALES -->
+            {% if cost_of_sales_by_type %}
+            <tr class="section-header">
+                <td colspan="3">COST OF SALES</td>
+            </tr>
+
+            {% for type_name, accounts in cost_of_sales_by_type.items() %}
+            <tr class="type-header">
+                <td colspan="3">{{ type_name }}</td>
+            </tr>
+            {% set type_total = namespace(value=0) %}
+            {% for account in accounts %}
+            <tr class="account-row">
+                <td>{{ account.number }} - {{ account.title }}</td>
+                <td class="text-end">{{ "{:,.2f}".format(account.debit - account.credit) }}</td>
+                <td></td>
+            </tr>
+            {% set type_total.value = type_total.value + (account.debit - account.credit) %}
+            {% endfor %}
+            <tr class="type-total">
+                <td>Total {{ type_name }}</td>
+                <td></td>
+                <td class="text-end">{{ "{:,.2f}".format(type_total.value) }}</td>
+            </tr>
+            {% endfor %}
+
+            <tr class="section-total">
+                <td>TOTAL COST OF SALES</td>
+                <td></td>
+                <td class="text-end">{{ "{:,.2f}".format(total_cost_of_sales) }}</td>
+            </tr>
+
+            <tr class="subtotal">
+                <td>GROSS PROFIT</td>
+                <td></td>
+                <td class="text-end">{{ "{:,.2f}".format(gross_profit) }}</td>
+            </tr>
+            {% endif %}
+
+            <!-- EXPENSES -->
+            <tr class="section-header">
+                <td colspan="3">EXPENSES</td>
+            </tr>
+
+            {% for type_name, accounts in expenses_by_type.items() %}
+            <tr class="type-header">
+                <td colspan="3">{{ type_name }}</td>
+            </tr>
+            {% set type_total = namespace(value=0) %}
+            {% for account in accounts %}
+            <tr class="account-row">
+                <td>{{ account.number }} - {{ account.title }}</td>
+                <td class="text-end">{{ "{:,.2f}".format(account.debit - account.credit) }}</td>
+                <td></td>
+            </tr>
+            {% set type_total.value = type_total.value + (account.debit - account.credit) %}
+            {% endfor %}
+            <tr class="type-total">
+                <td>Total {{ type_name }}</td>
+                <td></td>
+                <td class="text-end">{{ "{:,.2f}".format(type_total.value) }}</td>
+            </tr>
+            {% endfor %}
+
+            <tr class="section-total">
+                <td>TOTAL EXPENSES</td>
+                <td></td>
+                <td class="text-end">{{ "{:,.2f}".format(total_expenses) }}</td>
+            </tr>
+
+            <!-- NET INCOME -->
+            <tr class="grand-total {% if net_income >= 0 %}net-income-positive{% else %}net-income-negative{% endif %}">
+                <td>NET INCOME {% if net_income < 0 %}(LOSS){% endif %}</td>
+                <td></td>
+                <td class="text-end">{{ "{:,.2f}".format(net_income) }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function updateReport() {
+        const fromDate = document.getElementById('from_date').value;
+        const toDate = document.getElementById('to_date').value;
+        window.location.href = `?from_date=${fromDate}&to_date=${toDate}`;
+    }
+</script>
+
+{% endblock %}

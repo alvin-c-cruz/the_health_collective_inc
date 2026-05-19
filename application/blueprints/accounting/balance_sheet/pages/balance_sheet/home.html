@@ -1,0 +1,285 @@
+{% extends "base_financial_report.html" %}
+
+{% block title %}Balance Sheet{% endblock %}
+
+{% block styles %}
+<style>
+    .report-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .report-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .report-header h1 {
+        margin-bottom: 0.5rem;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .report-header h2 {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #666;
+        margin-bottom: 0.25rem;
+    }
+
+    .report-header .report-date {
+        font-size: 0.95rem;
+        color: #888;
+    }
+
+    .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+
+    .toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .form-label {
+        margin-bottom: 0;
+        font-weight: 500;
+    }
+
+    .balance-sheet-table {
+        width: 100%;
+        margin-bottom: 2rem;
+        border-collapse: collapse;
+    }
+
+    .balance-sheet-table th,
+    .balance-sheet-table td {
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .balance-sheet-table thead th {
+        background: #f8f9fa;
+        font-weight: 600;
+        text-align: left;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .balance-sheet-table .text-end {
+        text-align: right;
+    }
+
+    .section-header {
+        font-weight: 600;
+        font-size: 1.1rem;
+        background: #e9ecef;
+        padding: 0.75rem 1rem;
+    }
+
+    .type-header {
+        font-weight: 600;
+        background: #f8f9fa;
+        padding: 0.5rem 1rem;
+        padding-left: 2rem;
+    }
+
+    .account-row td {
+        padding-left: 3rem;
+    }
+
+    .type-total {
+        font-weight: 600;
+        background: #f8f9fa;
+        padding-left: 2rem;
+    }
+
+    .section-total {
+        font-weight: 700;
+        font-size: 1.05rem;
+        background: #e9ecef;
+        border-top: 2px solid #000;
+        border-bottom: 2px solid #000;
+    }
+
+    .grand-total {
+        font-weight: 700;
+        font-size: 1.1rem;
+        background: #d1d5db;
+        border-top: 3px double #000;
+        border-bottom: 3px double #000;
+    }
+
+    .balance-check {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #f0f9ff;
+        border-left: 4px solid #3b82f6;
+        border-radius: 4px;
+    }
+
+    .balance-check.unbalanced {
+        background: #fef2f2;
+        border-left-color: #dc2626;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="report-container">
+    <div class="report-header">
+        <h1>THE HEALTH COLLECTIVE INC.</h1>
+        <h2>BALANCE SHEET</h2>
+        <div class="report-date">As of {{ as_of_date.strftime('%B %d, %Y') }}</div>
+    </div>
+
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <label class="form-label" for="as_of_date">As of Date:</label>
+            <input type="date" id="as_of_date" name="as_of_date" class="form-control form-control-sm"
+                value="{{ as_of_date }}" onchange="updateReport()">
+        </div>
+    </div>
+
+    <table class="balance-sheet-table">
+        <thead>
+            <tr>
+                <th style="width: 60%;">Account</th>
+                <th class="text-end" style="width: 20%;">Amount</th>
+                <th class="text-end" style="width: 20%;">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- ASSETS -->
+            <tr class="section-header">
+                <td colspan="3">ASSETS</td>
+            </tr>
+
+            {% for type_name, accounts in assets_by_type.items() %}
+            <tr class="type-header">
+                <td colspan="3">{{ type_name }}</td>
+            </tr>
+            {% set type_total = namespace(value=0) %}
+            {% for account in accounts %}
+            <tr class="account-row">
+                <td>{{ account.number }} - {{ account.title }}</td>
+                <td class="text-end">{{ "{:,.2f}".format(account.debit - account.credit) }}</td>
+                <td></td>
+            </tr>
+            {% set type_total.value = type_total.value + (account.debit - account.credit) %}
+            {% endfor %}
+            <tr class="type-total">
+                <td>Total {{ type_name }}</td>
+                <td></td>
+                <td class="text-end">{{ "{:,.2f}".format(type_total.value) }}</td>
+            </tr>
+            {% endfor %}
+
+            <tr class="section-total">
+                <td>TOTAL ASSETS</td>
+                <td></td>
+                <td class="text-end">{{ "{:,.2f}".format(total_assets) }}</td>
+            </tr>
+
+            <!-- LIABILITIES -->
+            <tr class="section-header">
+                <td colspan="3">LIABILITIES</td>
+            </tr>
+
+            {% for type_name, accounts in liabilities_by_type.items() %}
+            <tr class="type-header">
+                <td colspan="3">{{ type_name }}</td>
+            </tr>
+            {% set type_total = namespace(value=0) %}
+            {% for account in accounts %}
+            <tr class="account-row">
+                <td>{{ account.number }} - {{ account.title }}</td>
+                <td class="text-end">{{ "{:,.2f}".format(account.credit - account.debit) }}</td>
+                <td></td>
+            </tr>
+            {% set type_total.value = type_total.value + (account.credit - account.debit) %}
+            {% endfor %}
+            <tr class="type-total">
+                <td>Total {{ type_name }}</td>
+                <td></td>
+                <td class="text-end">{{ "{:,.2f}".format(type_total.value) }}</td>
+            </tr>
+            {% endfor %}
+
+            <tr class="section-total">
+                <td>TOTAL LIABILITIES</td>
+                <td></td>
+                <td class="text-end">{{ "{:,.2f}".format(total_liabilities) }}</td>
+            </tr>
+
+            <!-- EQUITY -->
+            <tr class="section-header">
+                <td colspan="3">EQUITY</td>
+            </tr>
+
+            {% for type_name, accounts in equity_by_type.items() %}
+            <tr class="type-header">
+                <td colspan="3">{{ type_name }}</td>
+            </tr>
+            {% set type_total = namespace(value=0) %}
+            {% for account in accounts %}
+            <tr class="account-row">
+                <td>{{ account.number }} - {{ account.title }}</td>
+                <td class="text-end">{{ "{:,.2f}".format(account.credit - account.debit) }}</td>
+                <td></td>
+            </tr>
+            {% set type_total.value = type_total.value + (account.credit - account.debit) %}
+            {% endfor %}
+            <tr class="type-total">
+                <td>Total {{ type_name }}</td>
+                <td></td>
+                <td class="text-end">{{ "{:,.2f}".format(type_total.value) }}</td>
+            </tr>
+            {% endfor %}
+
+            <tr class="section-total">
+                <td>TOTAL EQUITY</td>
+                <td></td>
+                <td class="text-end">{{ "{:,.2f}".format(total_equity) }}</td>
+            </tr>
+
+            <!-- TOTAL LIABILITIES AND EQUITY -->
+            <tr class="grand-total">
+                <td>TOTAL LIABILITIES AND EQUITY</td>
+                <td></td>
+                <td class="text-end">{{ "{:,.2f}".format(total_liabilities_and_equity) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Balance Check -->
+    {% set difference = total_assets - total_liabilities_and_equity %}
+    <div class="balance-check {% if difference|abs > 0.01 %}unbalanced{% endif %}">
+        <strong>Balance Check:</strong>
+        Total Assets: {{ "{:,.2f}".format(total_assets) }} |
+        Total Liabilities & Equity: {{ "{:,.2f}".format(total_liabilities_and_equity) }} |
+        Difference: {{ "{:,.2f}".format(difference) }}
+        {% if difference|abs <= 0.01 %}
+        ✓ Balanced
+        {% else %}
+        ⚠ Not Balanced
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function updateReport() {
+        const date = document.getElementById('as_of_date').value;
+        window.location.href = `?as_of_date=${date}`;
+    }
+</script>
+
+{% endblock %}

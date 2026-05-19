@@ -28,6 +28,8 @@ from .accounting.books_of_accounts_extra import general_extra
 
 from .accounting import trial_balance
 from .accounting import ledger
+from .accounting import balance_sheet
+from .accounting import income_statement
 
 from .operations import daily_sales
 from .operations import transaction_type
