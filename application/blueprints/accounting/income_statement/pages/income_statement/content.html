@@ -193,21 +193,20 @@
 
         {% for type_name, accounts in revenue_by_type.items() %}
         {% set type_id = 'revenue_' ~ loop.index %}
-        <tr class="type-header" onclick="toggleType('{{ type_id }}')" data-type="{{ type_id }}">
-            <td colspan="2">{{ type_name }}<span class="collapse-icon">▼</span></td>
-        </tr>
         {% set type_total = namespace(value=0) %}
+        {% for account in accounts %}
+            {% set type_total.value = type_total.value + (account.credit - account.debit) %}
+        {% endfor %}
+        <tr class="type-header" onclick="toggleType('{{ type_id }}')" data-type="{{ type_id }}">
+            <td>{{ type_name }}<span class="collapse-icon">▼</span></td>
+            <td class="text-end">₱{{ "{:,.2f}".format(type_total.value) }}</td>
+        </tr>
         {% for account in accounts %}
         <tr class="account-row" data-parent="{{ type_id }}">
             <td>{{ account.number }} - {{ account.title }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(account.credit - account.debit) }}</td>
         </tr>
-        {% set type_total.value = type_total.value + (account.credit - account.debit) %}
         {% endfor %}
-        <tr class="type-total">
-            <td>Total {{ type_name }}</td>
-            <td class="text-end">₱{{ "{:,.2f}".format(type_total.value) }}</td>
-        </tr>
         {% endfor %}
 
         <tr class="section-total">
@@ -223,21 +222,20 @@
 
         {% for type_name, accounts in cost_of_sales_by_type.items() %}
         {% set type_id = 'cost_of_sales_' ~ loop.index %}
-        <tr class="type-header" onclick="toggleType('{{ type_id }}')" data-type="{{ type_id }}">
-            <td colspan="2">{{ type_name }}</td>
-        </tr>
         {% set type_total = namespace(value=0) %}
+        {% for account in accounts %}
+            {% set type_total.value = type_total.value + (account.debit - account.credit) %}
+        {% endfor %}
+        <tr class="type-header" onclick="toggleType('{{ type_id }}')" data-type="{{ type_id }}">
+            <td>{{ type_name }}<span class="collapse-icon">▼</span></td>
+            <td class="text-end">₱{{ "{:,.2f}".format(type_total.value) }}</td>
+        </tr>
         {% for account in accounts %}
         <tr class="account-row" data-parent="{{ type_id }}">
             <td>{{ account.number }} - {{ account.title }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(account.debit - account.credit) }}</td>
         </tr>
-        {% set type_total.value = type_total.value + (account.debit - account.credit) %}
         {% endfor %}
-        <tr class="type-total">
-            <td>Total {{ type_name }}</td>
-            <td class="text-end">₱{{ "{:,.2f}".format(type_total.value) }}</td>
-        </tr>
         {% endfor %}
 
         <tr class="section-total">
@@ -258,21 +256,20 @@
 
         {% for type_name, accounts in expenses_by_type.items() %}
         {% set type_id = 'expenses_' ~ loop.index %}
-        <tr class="type-header" onclick="toggleType('{{ type_id }}')" data-type="{{ type_id }}">
-            <td colspan="2">{{ type_name }}</td>
-        </tr>
         {% set type_total = namespace(value=0) %}
+        {% for account in accounts %}
+            {% set type_total.value = type_total.value + (account.debit - account.credit) %}
+        {% endfor %}
+        <tr class="type-header" onclick="toggleType('{{ type_id }}')" data-type="{{ type_id }}">
+            <td>{{ type_name }}<span class="collapse-icon">▼</span></td>
+            <td class="text-end">₱{{ "{:,.2f}".format(type_total.value) }}</td>
+        </tr>
         {% for account in accounts %}
         <tr class="account-row" data-parent="{{ type_id }}">
             <td>{{ account.number }} - {{ account.title }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(account.debit - account.credit) }}</td>
         </tr>
-        {% set type_total.value = type_total.value + (account.debit - account.credit) %}
         {% endfor %}
-        <tr class="type-total">
-            <td>Total {{ type_name }}</td>
-            <td class="text-end">₱{{ "{:,.2f}".format(type_total.value) }}</td>
-        </tr>
         {% endfor %}
 
         <tr class="section-total">
