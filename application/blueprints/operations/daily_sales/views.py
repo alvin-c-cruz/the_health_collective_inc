@@ -360,10 +360,10 @@ def get_undeposited_cash_transactions():
     from sqlalchemy import desc
 
     # Get all submitted transactions
-    transactions = Obj.query.filter(
-        Obj.submitted.isnot(None),
-        Obj.cancelled.is_(None)
-    ).order_by(desc(Obj.id)).all()  # Use ID for ordering to avoid date comparison issues
+    transactions = Transaction.query.filter(
+        Transaction.submitted.isnot(None),
+        Transaction.cancelled.is_(None)
+    ).order_by(desc(Transaction.id)).all()  # Use ID for ordering to avoid date comparison issues
 
     # Filter transactions that have cash tenders
     undeposited = []
