@@ -11,8 +11,7 @@
           
           <!-- Reports Menu -->
             {% if (
-              "Trial Balance" in current_user.user_roles
-              or "Balance Sheet" in current_user.user_roles
+              "Balance Sheet" in current_user.user_roles
               or "Income Statement" in current_user.user_roles
               ) %}
             <li class="nav-item dropdown">
@@ -20,11 +19,6 @@
                 Reports
               </a>
               <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                {% if ("Trial Balance" in current_user.user_roles) %}
-                <li class="nav-item">
-                  <a class="dropdown-item" href="#" onclick="openReportModal('trial_balance'); return false;">Trial Balance</a>
-                </li>
-                {% endif %}
                 {% if ("Balance Sheet" in current_user.user_roles) %}
                 <li class="nav-item">
                   <a class="dropdown-item" href="#" onclick="openReportModal('balance_sheet'); return false;">Balance Sheet</a>
