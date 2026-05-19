@@ -72,6 +72,35 @@ def edit(record_id):
     return render_template(f"{app_name}/form.html", form=form, app_label=app_label, popup=False)
 
 
+@bp.route("/add-popup", methods=["GET", "POST"])
+@login_required
+def add_popup():
+    """Add bank account in popup window - no navbar, modal-style form"""
+    if request.method == "POST":
+        form = Form()
+        form._post(request.form)
+        if form._validate_on_submit():
+            form._save()
+            # Send postMessage to parent window with bank account details
+            bank_account_display = f"{form.bank_name} — {form.account_number}"
+            return render_template_string(
+                '<!doctype html><html><head><meta charset="utf-8"></head><body>'
+                '<script>'
+                'if(window.opener){'
+                'window.opener.postMessage({type:"bank_account_added",bank_account_name:{{ name | tojson }}},"*");'
+                '}'
+                'window.close();'
+                '</script>'
+                '<p style="font-family:sans-serif;padding:2rem;">Bank account saved. This window will close automatically.</p>'
+                '</body></html>',
+                name=bank_account_display
+            )
+    else:
+        form = Form()
+
+    return render_template(f"{app_name}/form_popup.html", form=form)
+
+
 @bp.route("/delete/<int:record_id>", methods=["POST"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])

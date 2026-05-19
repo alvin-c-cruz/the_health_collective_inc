@@ -331,7 +331,7 @@
       addEl.textContent = '+ Add Bank Account';
       addEl.addEventListener('mousedown', function(e) {
         e.preventDefault();
-        window.open('{{ url_for("bank_account.add", popup=1) }}', 'add_bank_account', 'width=640,height=500,resizable=yes,scrollbars=yes');
+        window.open('{{ url_for("bank_account.add_popup") }}', 'add_bank_account', 'width=680,height=600,resizable=yes,scrollbars=yes');
         hide();
       });
       dd.appendChild(addEl);
