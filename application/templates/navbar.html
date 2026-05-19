@@ -35,6 +35,14 @@
               or "Collections" in current_user.user_roles
               or "Bank Account" in current_user.user_roles
               or "APE Batch" in current_user.user_roles
+              or "Customer" in current_user.user_roles
+              or "Sex" in current_user.user_roles
+              or "Vendor" in current_user.user_roles
+              or "Product Type" in current_user.user_roles
+              or "Product" in current_user.user_roles
+              or "Measure" in current_user.user_roles
+              or "Tender" in current_user.user_roles
+              or "Company" in current_user.user_roles
               ) %}
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -46,6 +54,15 @@
               {% include "collections/navbar.html" %}
               {% include "bank_account/navbar.html" %}
               {% include "ape_batch/navbar.html" %}
+              <li><hr class="dropdown-divider"></li>
+              {% include "customer/navbar.html" %}
+              {% include "sex/navbar.html" %}
+              {% include "vendor/navbar.html" %}
+              {% include "product_type/navbar.html" %}
+              {% include "product/navbar.html" %}
+              {% include "measure/navbar.html" %}
+              {% include "tender/navbar.html" %}
+              {% include "company/navbar.html" %}
               </ul>
             </li>
             {% endif %}
@@ -121,32 +138,21 @@
 
           {% endif %}
           <!-- Options Menu -->
+            {% if current_user.admin %}
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                 Options
               </a>
               <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                  {% if current_user.admin %}
                   <li class="nav-item">
                       <a class="dropdown-item" href="{{ url_for('user.user_list') }}">User Register</a>
                   </li>
                   <li class="nav-item">
                       <a class="dropdown-item" href="{{ url_for('user.change_password') }}">User Change Password</a>
                   </li>
-                  {% endif %}
-                  {% include "customer/navbar.html" %}
-                  {% include "sex/navbar.html" %}
-
-                  {% include "vendor/navbar.html" %}
-
-                  {% include "product_type/navbar.html" %}
-                  {% include "product/navbar.html" %}
-
-                  {% include "measure/navbar.html" %}
-                  {% include "tender/navbar.html" %}
-                  {% include "company/navbar.html" %}
               </ul>
           </li>
+            {% endif %}
             <!-- End of Options Menu -->
 
           <li class="nav-item">
