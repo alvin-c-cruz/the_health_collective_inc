@@ -97,10 +97,14 @@
             <div class="col-md-8">{{ deposit.approved_by_user.first_name }}</div>
           </div>
           {% endif %}
-          {% if deposit.status == 'cancelled' and deposit.cancelled_by_user %}
+          {% if deposit.status == 'cancelled' %}
           <div class="row mb-2">
             <div class="col-md-4"><strong>Cancelled By:</strong></div>
-            <div class="col-md-8">{{ deposit.cancelled_by_user.first_name }} on {{ deposit.cancelled_at.strftime('%d-%b-%Y') if deposit.cancelled_at else '-' }}</div>
+            <div class="col-md-8">{{ deposit.cancelled_by_user.first_name if deposit.cancelled_by_user else '-' }} on {{ deposit.cancelled_at.strftime('%d-%b-%Y') if deposit.cancelled_at else '-' }}</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-4"><strong>Cancellation Reason:</strong></div>
+            <div class="col-md-8">{{ deposit.cancellation_reason or '-' }}</div>
           </div>
           {% endif %}
         </div>

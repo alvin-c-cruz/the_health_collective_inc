@@ -159,6 +159,7 @@ class Deposit(db.Model):
     cancelled_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     cancelled_by_user = db.relationship('User', foreign_keys=[cancelled_by_id], backref='deposits_cancelled')
     cancelled_at = db.Column(db.DateTime, nullable=True)
+    cancellation_reason = db.Column(db.String(), nullable=True)  # Why was this deposit cancelled
 
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
 

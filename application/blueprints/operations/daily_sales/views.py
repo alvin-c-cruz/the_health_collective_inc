@@ -474,8 +474,8 @@ def deposit_report():
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
 
-    # Build query - show all deposits except cancelled
-    query = Deposit.query.filter(Deposit.status != 'cancelled')
+    # Build query - show all deposits including cancelled
+    query = Deposit.query
 
     if start_date:
         query = query.filter(Deposit.record_date >= start_date)
@@ -485,9 +485,9 @@ def deposit_report():
     # Get all deposits ordered by date (most recent first)
     deposits = query.order_by(desc(Deposit.record_date), desc(Deposit.id)).all()
 
-    # Calculate totals (exclude cancelled)
-    total_deposits = len(deposits)
-    total_amount = sum(deposit.total_amount for deposit in deposits)
+    # Calculate totals (exclude cancelled deposits from totals)
+    total_deposits = len([d for d in deposits if d.status != 'cancelled'])
+    total_amount = sum(deposit.total_amount for deposit in deposits if deposit.status != 'cancelled')
 
     context = {
         'app_label': app_label,
@@ -584,10 +584,18 @@ def cancel_deposit(deposit_id):
         flash('You can only cancel your own deposits.', 'danger')
         return redirect(url_for(f'{app_name}.deposit_report'))
 
+    # Get cancellation reason from form
+    cancellation_reason = request.form.get('cancellation_reason', '').strip()
+
+    if not cancellation_reason:
+        flash('Cancellation reason is required.', 'danger')
+        return redirect(url_for(f'{app_name}.deposit_report'))
+
     # Soft delete - mark as cancelled instead of deleting
     deposit.status = 'cancelled'
     deposit.cancelled_by_id = current_user.id
     deposit.cancelled_at = datetime.now()
+    deposit.cancellation_reason = cancellation_reason
     deposit.updated_at = datetime.now()
 
     db.session.commit()
