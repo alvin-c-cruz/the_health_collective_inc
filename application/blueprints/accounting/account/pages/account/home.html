@@ -12,7 +12,23 @@
     <div class="thc-card">
         <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
             <a href="{{ url_for('account.add') }}" class="btn btn-primary btn-sm">Add Account</a>
-            <a href="{{ url_for('account.download_accounts') }}" class="btn btn-secondary btn-sm">Download Accounts</a>
+
+            <!-- Date Picker -->
+            <div class="d-flex gap-2 align-items-center">
+                <label for="as_of_date" style="font-size:0.875rem;font-weight:600;white-space:nowrap;">As of Date:</label>
+                <input type="date"
+                       id="as_of_date"
+                       class="form-control form-control-sm"
+                       value="{{ as_of_date.isoformat() }}"
+                       max="{{ today.isoformat() }}"
+                       onchange="window.location.href='{{ url_for('account.home') }}?as_of_date=' + this.value"
+                       style="max-width:150px;">
+                {% if as_of_date != today %}
+                <a href="{{ url_for('account.home') }}" class="btn btn-outline-secondary btn-sm">Today</a>
+                {% endif %}
+            </div>
+
+            <a href="{{ url_for('account.download_accounts', as_of_date=as_of_date.isoformat()) }}" class="btn btn-secondary btn-sm">Download Accounts</a>
             <form method="POST" action="{{ url_for('account.upload') }}" enctype="multipart/form-data" class="d-flex gap-2 align-items-center">
                 <input type="file" name="xlsx_file" accept=".xlsx" class="form-control form-control-sm" required style="max-width:200px;">
                 <button type="submit" class="btn btn-info btn-sm">Upload Excel</button>
@@ -38,8 +54,8 @@
                         <td>{{ row.account_number }}</td>
                         <td>{{ row.account_title }}</td>
                         <td>{{ row.account_type }}</td>
-                        <td class="num">{{ row.formatted_debit_balance() }}</td>
-                        <td class="num">{{ row.formatted_credit_balance() }}</td>
+                        <td class="num">{{ row.formatted_debit_balance(as_of_date.isoformat()) }}</td>
+                        <td class="num">{{ row.formatted_credit_balance(as_of_date.isoformat()) }}</td>
                         <td>
                             {% if not row.approved %}
                                 {{ edit_button(url_for('account.edit', record_id=row.id)) }}

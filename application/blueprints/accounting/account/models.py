@@ -29,45 +29,61 @@ class Account(db.Model):
     def account_name(self):
         return f"{self.account_number}: {self.account_title}"
     
-    def balance(self):
+    def balance(self, as_of_date=None):
+        """
+        Calculate balance up to and including the specified date.
+        If as_of_date is None, calculate all-time balance.
+        """
         books = [
-            "sales", 
+            "sales",
             "receipt",
             "accounts_payable",
-            "disbursement", 
+            "disbursement",
             "general",
-            "sales_extra", 
+            "sales_extra",
             "receipt_extra",
             "accounts_payable_extra",
-            "disbursement_extra", 
+            "disbursement_extra",
             "general_extra",
             ]
 
-        _balance = 0 
+        _balance = 0
         for book in books:
-            _balance += sum(d.debit - d.credit for d in getattr(self,f"{book}_details" ))
-            
+            details = getattr(self, f"{book}_details")
+            for d in details:
+                # Get the parent record (sales, receipt, etc.)
+                parent = getattr(d, book)
+                if parent and hasattr(parent, 'record_date'):
+                    # Filter by date if as_of_date is provided
+                    if as_of_date is None or (parent.record_date and parent.record_date <= as_of_date):
+                        _balance += (d.debit - d.credit)
+                else:
+                    # If no date field, include all records
+                    _balance += (d.debit - d.credit)
+
         return _balance
-    
-    def formatted_balance(self):
-        return '{:,.2f}'.format(self.balance())
-    
-    def debit_balance(self):
-        if self.balance() > 0:
-            return self.balance()
-        else:
-            return 0
-        
-    def credit_balance(self):
-        if self.balance() < 0:
-            return -self.balance()
+
+    def formatted_balance(self, as_of_date=None):
+        return '{:,.2f}'.format(self.balance(as_of_date))
+
+    def debit_balance(self, as_of_date=None):
+        bal = self.balance(as_of_date)
+        if bal > 0:
+            return bal
         else:
             return 0
 
-    def formatted_debit_balance(self):
-        return '{:,.2f}'.format(self.debit_balance())
-    
-    def formatted_credit_balance(self):
-        return '{:,.2f}'.format(self.credit_balance())
+    def credit_balance(self, as_of_date=None):
+        bal = self.balance(as_of_date)
+        if bal < 0:
+            return -bal
+        else:
+            return 0
+
+    def formatted_debit_balance(self, as_of_date=None):
+        return '{:,.2f}'.format(self.debit_balance(as_of_date))
+
+    def formatted_credit_balance(self, as_of_date=None):
+        return '{:,.2f}'.format(self.credit_balance(as_of_date))
         
 

@@ -24,10 +24,22 @@ ROLES_ACCEPTED = app_label
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def home():
+    from datetime import date
+
+    # Get date parameter from query string, default to today
+    today = date.today()
+    date_str = request.args.get('as_of_date', str(today))
+    try:
+        as_of_date = date.fromisoformat(date_str)
+    except ValueError:
+        as_of_date = today
+
     rows = Obj.query.order_by(getattr(Obj, f"account_number")).all()
 
     context = {
-        "rows": rows
+        "rows": rows,
+        "as_of_date": as_of_date,
+        "today": today,
     }
 
     return render_template(f"{app_name}/home.html", **context)
@@ -260,23 +272,33 @@ def download_template():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def download_accounts():
+    from datetime import date
+
+    # Get date parameter from query string, default to today
+    today = date.today()
+    date_str = request.args.get('as_of_date', str(today))
+    try:
+        as_of_date = date.fromisoformat(date_str)
+    except ValueError:
+        as_of_date = today
+
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Chart of Accounts"
 
-    # Header row
-    ws.append(["Account Number", "Account Title", "Debit", "Credit"])
-    
+    # Header row with as_of_date
+    ws.append(["Account Number", "Account Title", "Debit", "Credit", f"As of: {as_of_date.strftime('%B %d, %Y')}"])
+
     rows = Obj.query.order_by(getattr(Obj, f"account_number")).all()
     start_row = 2
     end_row = len(rows) + 1
-    
+
     for row in rows:
         list_row = [
             row.account_number,
             row.account_title,
-            row.debit_balance(),
-            row.credit_balance()
+            row.debit_balance(str(as_of_date)),
+            row.credit_balance(str(as_of_date))
         ]
         ws.append(list_row)
         
