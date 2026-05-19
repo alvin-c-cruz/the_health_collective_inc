@@ -197,7 +197,7 @@
         </tr>
 
         {% for type_name, accounts in assets_by_type.items() %}
-        {% set type_id = 'assets_' ~ loop.index %}
+        {% set type_id = 'assets_' ~ type_name|lower|replace(' ', '_')|replace('-', '_') %}
         {% set type_total = namespace(value=0) %}
         {% for account in accounts %}
             {% set type_total.value = type_total.value + (account.debit - account.credit) %}
@@ -225,7 +225,7 @@
         </tr>
 
         {% for type_name, accounts in liabilities_by_type.items() %}
-        {% set type_id = 'liabilities_' ~ loop.index %}
+        {% set type_id = 'liabilities_' ~ type_name|lower|replace(' ', '_')|replace('-', '_') %}
         {% set type_total = namespace(value=0) %}
         {% for account in accounts %}
             {% set type_total.value = type_total.value + (account.credit - account.debit) %}
@@ -253,7 +253,7 @@
         </tr>
 
         {% for type_name, accounts in equity_by_type.items() %}
-        {% set type_id = 'equity_' ~ loop.index %}
+        {% set type_id = 'equity_' ~ type_name|lower|replace(' ', '_')|replace('-', '_') %}
         {% set type_total = namespace(value=0) %}
         {% for account in accounts %}
             {% set type_total.value = type_total.value + (account.credit - account.debit) %}
