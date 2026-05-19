@@ -18,19 +18,24 @@
             background-color: var(--thc-bg);
             padding: 0;
             margin: 0;
-            overflow-x: hidden;
+            overflow: hidden; /* Remove all scrollbars */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
         }
 
         .popup-container {
             max-width: 600px;
-            margin: 0 auto;
-            padding: 2rem 1.5rem;
+            width: 100%;
+            margin: 0;
+            padding: 1.5rem;
         }
 
         .popup-header {
             text-align: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
             border-bottom: 2px solid var(--thc-primary);
         }
 
@@ -44,8 +49,9 @@
         .form-card {
             background: white;
             border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            border: 1px solid var(--thc-border);
         }
 
         .form-label {
@@ -81,8 +87,8 @@
         }
 
         textarea.form-control {
-            resize: vertical;
-            min-height: 80px;
+            resize: none; /* Disable resize to prevent overflow */
+            height: 70px;
         }
 
         .form-check {
@@ -106,7 +112,7 @@
             display: flex;
             gap: 0.75rem;
             justify-content: center;
-            margin-top: 2rem;
+            margin-top: 1.5rem;
         }
 
         .btn-save {
@@ -131,9 +137,9 @@
         }
 
         .btn-cancel {
-            background-color: #6c757d;
-            color: white;
-            border: none;
+            background-color: transparent;
+            color: #6c757d;
+            border: 2px solid #6c757d;
             padding: 0.75rem 2rem;
             font-size: 1rem;
             font-weight: 600;
@@ -141,17 +147,22 @@
             cursor: pointer;
             text-decoration: none;
             display: inline-block;
-            transition: background-color 0.15s, transform 0.1s;
+            transition: all 0.15s;
         }
 
         .btn-cancel:hover {
-            background-color: #5a6268;
+            background-color: #6c757d;
             color: white;
             transform: translateY(-1px);
         }
 
         .btn-cancel:active {
             transform: translateY(0);
+        }
+
+        /* Prevent user from clicking outside or minimizing */
+        html {
+            overflow: hidden;
         }
 
         .required-mark {
@@ -264,13 +275,25 @@
 
                 <div class="btn-group-popup">
                     <button type="submit" class="btn-save">Save Bank Account</button>
-                    <button type="button" class="btn-cancel" onclick="window.close()">Cancel</button>
+                    <button type="button" class="btn-cancel">Cancel</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
+        // Disable parent window interaction (make this modal)
+        if (window.opener) {
+            try {
+                // Try to disable parent window (may not work due to cross-origin)
+                window.opener.document.body.style.pointerEvents = 'none';
+                window.opener.document.body.style.opacity = '0.7';
+            } catch (e) {
+                // If cross-origin, just ignore
+                console.log('Parent window access restricted');
+            }
+        }
+
         // Auto-focus first input
         document.addEventListener('DOMContentLoaded', function() {
             const firstInput = document.getElementById('bank_name');
@@ -291,13 +314,69 @@
             }
         });
 
-        // Close popup on Escape key
+        // Prevent closing without confirmation
+        window.addEventListener('beforeunload', function(e) {
+            // Only show warning if form has been touched
+            const bankName = document.getElementById('bank_name').value.trim();
+            const accountNumber = document.getElementById('account_number').value.trim();
+
+            if (bankName || accountNumber) {
+                e.preventDefault();
+                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        });
+
+        // Close popup on Escape key with confirmation
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
-                if (confirm('Close without saving?')) {
+                const bankName = document.getElementById('bank_name').value.trim();
+                const accountNumber = document.getElementById('account_number').value.trim();
+
+                if (bankName || accountNumber) {
+                    if (confirm('Close without saving? All entered data will be lost.')) {
+                        restoreParentWindow();
+                        window.close();
+                    }
+                } else {
+                    restoreParentWindow();
                     window.close();
                 }
             }
+        });
+
+        // Restore parent window when closing
+        function restoreParentWindow() {
+            if (window.opener) {
+                try {
+                    window.opener.document.body.style.pointerEvents = '';
+                    window.opener.document.body.style.opacity = '';
+                } catch (e) {
+                    console.log('Parent window access restricted');
+                }
+            }
+        }
+
+        // Handle cancel button
+        window.addEventListener('DOMContentLoaded', function() {
+            const cancelButtons = document.querySelectorAll('.btn-cancel');
+            cancelButtons.forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const bankName = document.getElementById('bank_name').value.trim();
+                    const accountNumber = document.getElementById('account_number').value.trim();
+
+                    if (bankName || accountNumber) {
+                        if (confirm('Close without saving? All entered data will be lost.')) {
+                            restoreParentWindow();
+                            window.close();
+                        }
+                    } else {
+                        restoreParentWindow();
+                        window.close();
+                    }
+                });
+            });
         });
     </script>
 </body>
