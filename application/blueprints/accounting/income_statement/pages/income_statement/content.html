@@ -68,6 +68,29 @@
         letter-spacing: 0.08em;
         padding: 0.6rem 0.75rem !important;
         border-top: 2px solid #135260;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .section-header td:hover {
+        background: #135260;
+    }
+
+    .section-header .collapse-icon {
+        float: right;
+        transition: transform 0.3s ease;
+    }
+
+    .section-header.collapsed .collapse-icon {
+        transform: rotate(-90deg);
+    }
+
+    .section-content {
+        display: none;
+    }
+
+    .section-content.show {
+        display: table-row;
     }
 
     .type-header td {
@@ -162,31 +185,25 @@
 </div>
 
 <table class="income-statement-table">
-    <thead>
-        <tr>
-            <th>Account</th>
-            <th class="text-end">Amount</th>
-        </tr>
-    </thead>
     <tbody>
         <!-- REVENUE -->
-        <tr class="section-header">
-            <td colspan="2">REVENUE</td>
+        <tr class="section-header" onclick="toggleSection('revenue')" data-section="revenue">
+            <td colspan="2">REVENUE<span class="collapse-icon">▼</span></td>
         </tr>
 
         {% for type_name, accounts in revenue_by_type.items() %}
-        <tr class="type-header">
+        <tr class="type-header section-content" data-parent="revenue">
             <td colspan="2">{{ type_name }}</td>
         </tr>
         {% set type_total = namespace(value=0) %}
         {% for account in accounts %}
-        <tr class="account-row">
+        <tr class="account-row section-content" data-parent="revenue">
             <td>{{ account.number }} - {{ account.title }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(account.credit - account.debit) }}</td>
         </tr>
         {% set type_total.value = type_total.value + (account.credit - account.debit) %}
         {% endfor %}
-        <tr class="type-total">
+        <tr class="type-total section-content" data-parent="revenue">
             <td>Total {{ type_name }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(type_total.value) }}</td>
         </tr>
@@ -199,23 +216,23 @@
 
         <!-- COST OF SALES -->
         {% if cost_of_sales_by_type %}
-        <tr class="section-header">
-            <td colspan="2">COST OF SALES</td>
+        <tr class="section-header" onclick="toggleSection('cost_of_sales')" data-section="cost_of_sales">
+            <td colspan="2">COST OF SALES<span class="collapse-icon">▼</span></td>
         </tr>
 
         {% for type_name, accounts in cost_of_sales_by_type.items() %}
-        <tr class="type-header">
+        <tr class="type-header section-content" data-parent="cost_of_sales">
             <td colspan="2">{{ type_name }}</td>
         </tr>
         {% set type_total = namespace(value=0) %}
         {% for account in accounts %}
-        <tr class="account-row">
+        <tr class="account-row section-content" data-parent="cost_of_sales">
             <td>{{ account.number }} - {{ account.title }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(account.debit - account.credit) }}</td>
         </tr>
         {% set type_total.value = type_total.value + (account.debit - account.credit) %}
         {% endfor %}
-        <tr class="type-total">
+        <tr class="type-total section-content" data-parent="cost_of_sales">
             <td>Total {{ type_name }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(type_total.value) }}</td>
         </tr>
@@ -233,23 +250,23 @@
         {% endif %}
 
         <!-- EXPENSES -->
-        <tr class="section-header">
-            <td colspan="2">EXPENSES</td>
+        <tr class="section-header" onclick="toggleSection('expenses')" data-section="expenses">
+            <td colspan="2">EXPENSES<span class="collapse-icon">▼</span></td>
         </tr>
 
         {% for type_name, accounts in expenses_by_type.items() %}
-        <tr class="type-header">
+        <tr class="type-header section-content" data-parent="expenses">
             <td colspan="2">{{ type_name }}</td>
         </tr>
         {% set type_total = namespace(value=0) %}
         {% for account in accounts %}
-        <tr class="account-row">
+        <tr class="account-row section-content" data-parent="expenses">
             <td>{{ account.number }} - {{ account.title }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(account.debit - account.credit) }}</td>
         </tr>
         {% set type_total.value = type_total.value + (account.debit - account.credit) %}
         {% endfor %}
-        <tr class="type-total">
+        <tr class="type-total section-content" data-parent="expenses">
             <td>Total {{ type_name }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(type_total.value) }}</td>
         </tr>
@@ -273,3 +290,42 @@
         </tr>
     </tbody>
 </table>
+
+<script>
+function toggleSection(sectionName) {
+    // Get all section headers
+    const allHeaders = document.querySelectorAll('.section-header');
+    const clickedHeader = document.querySelector(`.section-header[data-section="${sectionName}"]`);
+
+    // Get all content rows for this section
+    const sectionContent = document.querySelectorAll(`.section-content[data-parent="${sectionName}"]`);
+
+    // Check if the clicked section is currently shown
+    const isCurrentlyShown = sectionContent.length > 0 && sectionContent[0].classList.contains('show');
+
+    // Hide all sections first (accordion behavior)
+    document.querySelectorAll('.section-content').forEach(row => {
+        row.classList.remove('show');
+    });
+
+    // Remove collapsed class from all headers
+    allHeaders.forEach(header => {
+        header.classList.remove('collapsed');
+    });
+
+    // If the section wasn't shown, show it now
+    if (!isCurrentlyShown) {
+        sectionContent.forEach(row => {
+            row.classList.add('show');
+        });
+    } else {
+        // If it was shown, collapse it
+        clickedHeader.classList.add('collapsed');
+    }
+}
+
+// Open the first section (REVENUE) by default on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleSection('revenue');
+});
+</script>

@@ -67,6 +67,29 @@
         letter-spacing: 0.08em;
         padding: 0.6rem 0.75rem !important;
         border-top: 2px solid #135260;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .section-header td:hover {
+        background: #135260;
+    }
+
+    .section-header .collapse-icon {
+        float: right;
+        transition: transform 0.3s ease;
+    }
+
+    .section-header.collapsed .collapse-icon {
+        transform: rotate(-90deg);
+    }
+
+    .section-content {
+        display: none;
+    }
+
+    .section-content.show {
+        display: table-row;
     }
 
     .type-header td {
@@ -167,31 +190,25 @@
 </div>
 
 <table class="balance-sheet-table">
-    <thead>
-        <tr>
-            <th>Account</th>
-            <th class="text-end">Amount</th>
-        </tr>
-    </thead>
     <tbody>
         <!-- ASSETS -->
-        <tr class="section-header">
-            <td colspan="2">ASSETS</td>
+        <tr class="section-header" onclick="toggleSection('assets')" data-section="assets">
+            <td colspan="2">ASSETS<span class="collapse-icon">▼</span></td>
         </tr>
 
         {% for type_name, accounts in assets_by_type.items() %}
-        <tr class="type-header">
+        <tr class="type-header section-content" data-parent="assets">
             <td colspan="2">{{ type_name }}</td>
         </tr>
         {% set type_total = namespace(value=0) %}
         {% for account in accounts %}
-        <tr class="account-row">
+        <tr class="account-row section-content" data-parent="assets">
             <td>{{ account.number }} - {{ account.title }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(account.debit - account.credit) }}</td>
         </tr>
         {% set type_total.value = type_total.value + (account.debit - account.credit) %}
         {% endfor %}
-        <tr class="type-total">
+        <tr class="type-total section-content" data-parent="assets">
             <td>Total {{ type_name }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(type_total.value) }}</td>
         </tr>
@@ -203,23 +220,23 @@
         </tr>
 
         <!-- LIABILITIES -->
-        <tr class="section-header">
-            <td colspan="2">LIABILITIES</td>
+        <tr class="section-header" onclick="toggleSection('liabilities')" data-section="liabilities">
+            <td colspan="2">LIABILITIES<span class="collapse-icon">▼</span></td>
         </tr>
 
         {% for type_name, accounts in liabilities_by_type.items() %}
-        <tr class="type-header">
+        <tr class="type-header section-content" data-parent="liabilities">
             <td colspan="2">{{ type_name }}</td>
         </tr>
         {% set type_total = namespace(value=0) %}
         {% for account in accounts %}
-        <tr class="account-row">
+        <tr class="account-row section-content" data-parent="liabilities">
             <td>{{ account.number }} - {{ account.title }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(account.credit - account.debit) }}</td>
         </tr>
         {% set type_total.value = type_total.value + (account.credit - account.debit) %}
         {% endfor %}
-        <tr class="type-total">
+        <tr class="type-total section-content" data-parent="liabilities">
             <td>Total {{ type_name }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(type_total.value) }}</td>
         </tr>
@@ -231,44 +248,44 @@
         </tr>
 
         <!-- EQUITY -->
-        <tr class="section-header">
-            <td colspan="2">EQUITY</td>
+        <tr class="section-header" onclick="toggleSection('equity')" data-section="equity">
+            <td colspan="2">EQUITY<span class="collapse-icon">▼</span></td>
         </tr>
 
         {% for type_name, accounts in equity_by_type.items() %}
-        <tr class="type-header">
+        <tr class="type-header section-content" data-parent="equity">
             <td colspan="2">{{ type_name }}</td>
         </tr>
         {% set type_total = namespace(value=0) %}
         {% for account in accounts %}
-        <tr class="account-row">
+        <tr class="account-row section-content" data-parent="equity">
             <td>{{ account.number }} - {{ account.title }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(account.credit - account.debit) }}</td>
         </tr>
         {% set type_total.value = type_total.value + (account.credit - account.debit) %}
         {% endfor %}
-        <tr class="type-total">
+        <tr class="type-total section-content" data-parent="equity">
             <td>Total {{ type_name }}</td>
             <td class="text-end">₱{{ "{:,.2f}".format(type_total.value) }}</td>
         </tr>
         {% endfor %}
 
         {% if total_equity > 0 %}
-        <tr class="type-total">
+        <tr class="type-total section-content" data-parent="equity">
             <td>Total Capital Accounts</td>
             <td class="text-end">₱{{ "{:,.2f}".format(total_equity) }}</td>
         </tr>
         {% endif %}
 
         <!-- RETAINED EARNINGS -->
-        <tr class="type-header">
+        <tr class="type-header section-content" data-parent="equity">
             <td colspan="2">RETAINED EARNINGS</td>
         </tr>
-        <tr class="account-row">
+        <tr class="account-row section-content" data-parent="equity">
             <td>Beginning Retained Earnings (as of Dec 31, {{ retained_earnings.year - 1 }})</td>
             <td class="text-end">₱{{ "{:,.2f}".format(retained_earnings.beginning) }}</td>
         </tr>
-        <tr class="account-row">
+        <tr class="account-row section-content" data-parent="equity">
             <td>
                 {% if retained_earnings.net_income >= 0 %}
                 Add: Net Income for {{ retained_earnings.year }}
@@ -278,7 +295,7 @@
             </td>
             <td class="text-end">₱{{ "{:,.2f}".format(retained_earnings.net_income|abs) }}</td>
         </tr>
-        <tr class="type-total">
+        <tr class="type-total section-content" data-parent="equity">
             <td>Ending Retained Earnings</td>
             <td class="text-end">₱{{ "{:,.2f}".format(retained_earnings.ending) }}</td>
         </tr>
@@ -305,3 +322,42 @@
     ⚠ Balance Sheet is UNBALANCED - Difference: ₱{{ "{:,.2f}".format((total_assets - total_liabilities_and_equity)|abs) }}
 </div>
 {% endif %}
+
+<script>
+function toggleSection(sectionName) {
+    // Get all section headers
+    const allHeaders = document.querySelectorAll('.section-header');
+    const clickedHeader = document.querySelector(`.section-header[data-section="${sectionName}"]`);
+
+    // Get all content rows for this section
+    const sectionContent = document.querySelectorAll(`.section-content[data-parent="${sectionName}"]`);
+
+    // Check if the clicked section is currently shown
+    const isCurrentlyShown = sectionContent.length > 0 && sectionContent[0].classList.contains('show');
+
+    // Hide all sections first (accordion behavior)
+    document.querySelectorAll('.section-content').forEach(row => {
+        row.classList.remove('show');
+    });
+
+    // Remove collapsed class from all headers
+    allHeaders.forEach(header => {
+        header.classList.remove('collapsed');
+    });
+
+    // If the section wasn't shown, show it now
+    if (!isCurrentlyShown) {
+        sectionContent.forEach(row => {
+            row.classList.add('show');
+        });
+    } else {
+        // If it was shown, collapse it
+        clickedHeader.classList.add('collapsed');
+    }
+}
+
+// Open the first section (ASSETS) by default on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleSection('assets');
+});
+</script>
