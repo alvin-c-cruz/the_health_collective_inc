@@ -11,8 +11,7 @@
           
           <!-- Reports Menu -->
             {% if (
-              "Reports" in current_user.user_roles
-              or "Trial Balance" in current_user.user_roles
+              "Trial Balance" in current_user.user_roles
               or "Balance Sheet" in current_user.user_roles
               or "Income Statement" in current_user.user_roles
               ) %}
@@ -21,8 +20,6 @@
                 Reports
               </a>
               <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-              {% include "reports/navbar.html" %}
-              <li><hr class="dropdown-divider"></li>
               {% include "trial_balance/navbar.html" %}
               {% include "balance_sheet/navbar.html" %}
               {% include "income_statement/navbar.html" %}
