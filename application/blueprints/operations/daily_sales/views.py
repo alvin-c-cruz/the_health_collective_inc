@@ -93,6 +93,10 @@ def home():
     # Build a lookup dict: type_code -> TransactionType for template use
     type_lookup = {tt.type_code: tt for tt in transaction_types}
 
+    # Get count of pending change requests for admins
+    from .change_request_models import ChangeRequest
+    pending_change_requests_count = ChangeRequest.query.filter_by(status='pending').count()
+
     context = {
         "app_label": app_label,
         "today": today,
@@ -105,6 +109,7 @@ def home():
         "txn_type_tenders": txn_type_tenders,
         "transaction_types": transaction_types,
         "type_lookup": type_lookup,
+        "pending_change_requests_count": pending_change_requests_count,
     }
     return render_template("daily_sales/home.html", **context)
 
