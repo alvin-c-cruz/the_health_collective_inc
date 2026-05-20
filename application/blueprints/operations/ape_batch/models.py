@@ -36,3 +36,11 @@ class ApeBatch(db.Model):
             for t in self.transactions
             for td in t.transaction_details
         )
+
+    @property
+    def total_collected(self):
+        return sum(col.total_amount for col in self.collections)
+
+    @property
+    def outstanding_balance(self):
+        return self.total_amount - self.total_collected

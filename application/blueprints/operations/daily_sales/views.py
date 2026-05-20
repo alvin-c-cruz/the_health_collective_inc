@@ -4,7 +4,7 @@ from sqlalchemy import func
 
 from ...user import login_required, roles_accepted, current_user
 from ...register.customer import Customer
-from application.extensions import db
+from application.extensions import db, ph_today
 from ..bank_account.models import BankAccount
 
 from . import app_label, app_name
@@ -16,6 +16,11 @@ from ...register.sex.models import Sex
 
 bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_name}")
 ROLES_ACCEPTED = app_label
+
+
+def _can_transact():
+    """True for SuperAdmin, Admin, and Staff — the levels that may create/edit transactions."""
+    return bool(current_user.superuser or current_user.admin or current_user.staff)
 
 
 # ---------------------------------------------------------------------------
@@ -47,7 +52,7 @@ def _generate_record_number():
 def home():
     from datetime import timedelta
 
-    today = date.today()
+    today = ph_today()
     date_str = request.args.get('date', str(today))
     try:
         selected_date = date.fromisoformat(date_str)
@@ -122,17 +127,44 @@ def home():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def new_transaction():
-    type_id = request.args.get('type_id', type=int)
-    transaction_type = TransactionType.query.get(type_id) if type_id else TransactionType.query.order_by(TransactionType.sort_order).first()
+    if not _can_transact():
+        abort(403)
+
+    ape_batch_id_arg = request.args.get('ape_batch_id', type=int)
+    locked_from_batch = False
+
+    if ape_batch_id_arg:
+        ape_type = TransactionType.query.filter_by(type_code='ape').first()
+        transaction_type = ape_type
+        locked_from_batch = True
+    else:
+        type_id = request.args.get('type_id', type=int)
+        transaction_type = TransactionType.query.get(type_id) if type_id else TransactionType.query.order_by(TransactionType.sort_order).first()
+
     form = Form()
     form.user_prepare_id = current_user.id
-    form.record_date = str(date.today())  # default to today
+    form.record_date = str(ph_today())
     form.record_number = _generate_record_number()
     form.transaction_type_id = transaction_type.id if transaction_type else None
+    if ape_batch_id_arg:
+        form.ape_batch_id = ape_batch_id_arg
 
     prefill_tender_id = request.args.get('prefill_tender_id', type=int)
     if prefill_tender_id:
         form.tenders[0][1].tender_id = prefill_tender_id
+    elif transaction_type and transaction_type.type_code == 'ape':
+        # Default tender to Credit for all APE transactions
+        credit_tender = Tender.query.filter(
+            Tender.tender_name.ilike('credit')
+        ).first()
+        if credit_tender:
+            form.tenders[0][1].tender_id = credit_tender.id
+            # If locked from a batch, also pre-fill the package amount
+            if locked_from_batch and ape_batch_id_arg:
+                from ..ape_batch.models import ApeBatch
+                batch = ApeBatch.query.get(ape_batch_id_arg)
+                if batch and batch.package_amount:
+                    form.tenders[0][1].amount = batch.package_amount
 
     if request.method == 'POST':
         form._post(request.form)
@@ -172,6 +204,7 @@ def new_transaction():
         "ape_batches": ape_batches,
         "app_label": app_label,
         "is_new": True,
+        "locked_from_batch": locked_from_batch,
     }
     return render_template("daily_sales/new_transaction.html", **context)
 
@@ -184,6 +217,8 @@ def new_transaction():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def edit_transaction(transaction_id):
+    if not _can_transact():
+        abort(403)
     record = Transaction.query.get_or_404(transaction_id)
     form = Form()
     form.user_prepare_id = current_user.id
@@ -271,6 +306,8 @@ def view_transaction(transaction_id):
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def cancel_transaction(transaction_id):
+    if not _can_transact():
+        abort(403)
     record = Transaction.query.get_or_404(transaction_id)
 
     if record.cancelled:
@@ -312,6 +349,35 @@ def uncancel_transaction(transaction_id):
 
 
 # ---------------------------------------------------------------------------
+# Bulk submit (APE batch page)
+# ---------------------------------------------------------------------------
+
+@bp.route('/transaction/bulk_submit', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def bulk_submit():
+    if not _can_transact():
+        abort(403)
+    ids = request.form.getlist('transaction_ids')
+    batch_id = request.form.get('batch_id', type=int)
+    submitted_count = 0
+    for tid in ids:
+        record = Transaction.query.get(int(tid))
+        if record and not record.submitted and not record.cancelled:
+            record.submitted = str(ph_today())
+            submitted_count += 1
+    db.session.commit()
+    if submitted_count:
+        flash(f'{submitted_count} transaction(s) submitted successfully.', 'success')
+    else:
+        flash('No eligible draft transactions were selected.', 'warning')
+    if batch_id:
+        from ..ape_batch.views import bp as ape_bp
+        return redirect(url_for('ape_batch.view_batch', batch_id=batch_id))
+    return redirect(url_for(f'{app_name}.home'))
+
+
+# ---------------------------------------------------------------------------
 # Delete (draft only)
 # ---------------------------------------------------------------------------
 
@@ -319,6 +385,8 @@ def uncancel_transaction(transaction_id):
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def delete_transaction(transaction_id):
+    if not _can_transact():
+        abort(403)
     record = Transaction.query.get_or_404(transaction_id)
 
     if record.submitted or record.cancelled:
@@ -338,6 +406,96 @@ def delete_transaction(transaction_id):
 
     flash('Transaction deleted.', 'success')
     return redirect(url_for(f'{app_name}.home'))
+
+
+# ---------------------------------------------------------------------------
+# Pending approval list  (admin + superuser only)
+# ---------------------------------------------------------------------------
+
+@bp.route('/pending_approval', methods=['GET'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def pending_approval():
+    from sqlalchemy import select as sa_select
+    from .admin_models import AdminTransaction
+    from flask import abort
+
+    if not (current_user.admin or current_user.superuser):
+        abort(403)
+
+    approved_ids = sa_select(AdminTransaction.transaction_id)
+    records = (
+        Transaction.query
+        .filter(
+            Transaction.submitted.isnot(None),
+            Transaction.submitted != '',
+            Transaction.cancelled.is_(None),
+            Transaction.id.notin_(approved_ids),
+        )
+        .order_by(Transaction.record_date.asc(), Transaction.id.asc())
+        .all()
+    )
+    return render_template(
+        "daily_sales/pending_approval.html",
+        records=records,
+        app_label=app_label,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Approve transaction  (admin + superuser only)
+# ---------------------------------------------------------------------------
+
+@bp.route('/transaction/<int:transaction_id>/approve', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def approve_transaction(transaction_id):
+    from .admin_models import AdminTransaction
+    from application.extensions import db
+    from flask import abort
+
+    if not (current_user.admin or current_user.superuser):
+        abort(403)
+
+    record = Transaction.query.get_or_404(transaction_id)
+
+    if not record.submitted or record.cancelled:
+        flash('Only submitted, active transactions can be approved.', 'warning')
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+    existing = AdminTransaction.query.filter_by(transaction_id=transaction_id).first()
+    if existing:
+        flash('Transaction is already approved.', 'info')
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+    db.session.add(AdminTransaction(
+        transaction_id=transaction_id,
+        user_id=current_user.id,
+    ))
+    db.session.commit()
+    flash('Transaction approved.', 'success')
+    return redirect(url_for(f'{app_name}.pending_approval'))
+
+
+# ---------------------------------------------------------------------------
+# Unlock transaction  (superuser only)
+# ---------------------------------------------------------------------------
+
+@bp.route('/transaction/<int:transaction_id>/unlock', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def unlock_transaction(transaction_id):
+    from .admin_models import AdminTransaction
+    from application.extensions import db
+    from flask import abort
+
+    if not current_user.superuser:
+        abort(403)
+
+    AdminTransaction.query.filter_by(transaction_id=transaction_id).delete()
+    db.session.commit()
+    flash('Transaction unlocked and returned to pending approval.', 'warning')
+    return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
 
 
 # ---------------------------------------------------------------------------
@@ -408,6 +566,9 @@ def get_undeposited_cash_transactions():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def record_deposit():
+    if not _can_transact():
+        abort(403)
+
     from .models import Deposit, DepositItem
     from flask_login import current_user
     from application.blueprints.operations.bank_account.models import BankAccount
@@ -928,11 +1089,11 @@ def review_deposit_change_request(cr_id):
 def daily_report():
     from datetime import timedelta
 
-    report_date_str = request.args.get('date', str(date.today()))
+    report_date_str = request.args.get('date', str(ph_today()))
     try:
         curr_date = date.fromisoformat(report_date_str)
     except ValueError:
-        curr_date = date.today()
+        curr_date = ph_today()
 
     prev_date = curr_date - timedelta(days=1)
 
@@ -1442,7 +1603,7 @@ def sales_summary_excel():
 
 class _Report:
     def __init__(self):
-        self.report_date: date = date.today()
+        self.report_date: date = ph_today()
         self.sales: dict = {}  # {type_code: {tender_name: amount}}
 
     @property

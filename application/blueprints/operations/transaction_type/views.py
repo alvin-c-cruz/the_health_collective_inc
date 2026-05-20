@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 
 from application.extensions import db
-from application.blueprints.user import login_required, roles_accepted
+from application.blueprints.user import login_required, roles_accepted, current_user
 
 from . import app_name, app_label
 from .models import TransactionType as Obj
@@ -15,8 +15,15 @@ ROLES_ACCEPTED = app_label
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def home():
+    from application.blueprints.operations.daily_sales.models import Transaction
+    from sqlalchemy import func
     types = Obj.query.order_by(Obj.sort_order).all()
-    return render_template('transaction_type/home.html', types=types, app_label=app_label)
+    counts = dict(
+        db.session.query(Transaction.transaction_type_id, func.count(Transaction.id))
+        .group_by(Transaction.transaction_type_id).all()
+    )
+    return render_template('transaction_type/home.html', types=types,
+                           app_label=app_label, txn_counts=counts)
 
 
 @bp.route('/add', methods=['GET', 'POST'])
@@ -147,4 +154,36 @@ def toggle(record_id):
     db.session.commit()
     status = 'enabled' if obj.active else 'disabled'
     flash(f'"{obj.type_name}" {status}.', 'success' if obj.active else 'warning')
+    return redirect(url_for('transaction_type.home'))
+
+
+@bp.route('/reorder', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def reorder():
+    from flask import jsonify
+    ids = request.json.get('ids', [])
+    for i, record_id in enumerate(ids):
+        obj = Obj.query.get(record_id)
+        if obj:
+            obj.sort_order = (i + 1) * 10
+    db.session.commit()
+    return jsonify(ok=True)
+
+
+@bp.route('/delete/<int:record_id>', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def delete(record_id):
+    if not current_user.superuser:
+        abort(403)
+    from application.blueprints.operations.daily_sales.models import Transaction
+    obj = Obj.query.get_or_404(record_id)
+    count = Transaction.query.filter_by(transaction_type_id=record_id).count()
+    if count > 0:
+        flash(f'Cannot delete "{obj.type_name}" — it has {count} linked transaction(s).', 'danger')
+        return redirect(url_for('transaction_type.home'))
+    db.session.delete(obj)
+    db.session.commit()
+    flash(f'Service type "{obj.type_name}" deleted.', 'success')
     return redirect(url_for('transaction_type.home'))

@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, current_app, g
-from datetime import date
 
 from .. user import login_required
 from .extensions import get_dashboard_stats
+from application.extensions import ph_today
 
 
 bp = Blueprint('dashboard', __name__, template_folder="pages")
@@ -11,9 +11,15 @@ bp = Blueprint('dashboard', __name__, template_folder="pages")
 @bp.route("/", methods=["GET"])
 @login_required
 def home():
-    today = date.today()
+    today = ph_today()
     context = get_dashboard_stats(today)
     return render_template("dashboard/home.html", **context)
+
+
+@bp.route("/about")
+@login_required
+def about():
+    return render_template("dashboard/about.html")
 
 
 @bp.before_app_request

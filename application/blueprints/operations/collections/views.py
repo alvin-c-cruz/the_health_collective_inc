@@ -3,11 +3,12 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
 
 from application.blueprints.user import login_required, roles_accepted
-from application.extensions import db
+from application.extensions import db, ph_today
 
 from . import app_name, app_label
 from .models import Collection, CollectionDetail
-from ..daily_sales.models import TransactionTender
+from ..daily_sales.models import TransactionTender, Transaction
+from ..ape_batch.models import ApeBatch
 from ..bank_account.models import BankAccount
 from ...register.tender.models import Tender
 
@@ -23,7 +24,7 @@ def _receivable_tenders():
     return Tender.query.filter_by(is_receivable=True).order_by(Tender.sort_order.desc()).all()
 
 
-def _outstanding_lines(tender_id=None):
+def _outstanding_lines(tender_id=None, ape_batch_id=None):
     """All TransactionTender lines for receivable tenders, with outstanding balance."""
     receivable_ids = {t.id for t in _receivable_tenders()}
     query = TransactionTender.query.filter(
@@ -34,6 +35,8 @@ def _outstanding_lines(tender_id=None):
     )
     if tender_id:
         query = query.filter(TransactionTender.tender_id == tender_id)
+    if ape_batch_id:
+        query = query.filter(Transaction.ape_batch_id == ape_batch_id)
     return query.all()
 
 
@@ -100,19 +103,21 @@ def home():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def new_collection():
-    tenders = _receivable_tenders()
+    tenders      = _receivable_tenders()
     bank_accounts = BankAccount.query.filter_by(active=True).order_by(BankAccount.bank_name).all()
+    ape_batches  = ApeBatch.query.order_by(ApeBatch.batch_date.desc()).all()
 
     if request.method == "POST":
         f = request.form
 
-        collection_date = f.get("collection_date", str(date.today()))
+        collection_date = f.get("collection_date", str(ph_today()))
         tender_id       = f.get("tender_id", type=int)
         bank_account_id = f.get("bank_account_id", type=int) or None
+        ape_batch_id    = f.get("ape_batch_id", type=int) or None
         reference       = (f.get("reference") or "").strip()
         notes           = (f.get("notes") or "").strip()
 
-        line_ids    = f.getlist("line_id")
+        line_ids     = f.getlist("line_id")
         line_amounts = f.getlist("line_amount")
 
         if not tender_id:
@@ -124,11 +129,12 @@ def new_collection():
                 collection_date=collection_date,
                 tender_id=tender_id,
                 bank_account_id=bank_account_id,
+                ape_batch_id=ape_batch_id,
                 reference=reference,
                 notes=notes,
                 status='draft',  # New workflow: start as draft
                 created_by_id=current_user.id,
-                created_at=str(date.today()),
+                created_at=str(ph_today()),
                 updated_at=datetime.now(),
                 # Legacy field for backwards compatibility
                 recorded_by=current_user.id,
@@ -154,8 +160,9 @@ def new_collection():
             flash(f"Collection saved as draft. Total amount: ₱{col.formatted_total_amount}", "success")
             return redirect(url_for(f"{app_name}.view_collection", collection_id=col.id))
 
-    tender_id_pre = request.args.get("tender_id", type=int)
-    lines = _outstanding_lines(tender_id_pre) if tender_id_pre else []
+    tender_id_pre    = request.args.get("tender_id", type=int)
+    ape_batch_id_pre = request.args.get("ape_batch_id", type=int)
+    lines = _outstanding_lines(tender_id_pre, ape_batch_id_pre) if (tender_id_pre or ape_batch_id_pre) else []
     outstanding_rows = []
     for tt in lines:
         collected = _collected(tt.id)
@@ -167,9 +174,11 @@ def new_collection():
         "app_label": app_label,
         "tenders": tenders,
         "bank_accounts": bank_accounts,
+        "ape_batches": ape_batches,
         "outstanding_rows": outstanding_rows,
         "selected_tender_id": tender_id_pre,
-        "today": str(date.today()),
+        "selected_ape_batch_id": ape_batch_id_pre,
+        "today": str(ph_today()),
     }
     return render_template("collections/new_collection.html", **context)
 
@@ -182,10 +191,11 @@ def new_collection():
 @login_required
 def get_lines():
     from flask import jsonify
-    tender_id = request.args.get("tender_id", type=int)
-    if not tender_id:
+    tender_id    = request.args.get("tender_id", type=int)
+    ape_batch_id = request.args.get("ape_batch_id", type=int)
+    if not tender_id and not ape_batch_id:
         return jsonify([])
-    lines = _outstanding_lines(tender_id)
+    lines = _outstanding_lines(tender_id, ape_batch_id)
     result = []
     for tt in lines:
         collected = _collected(tt.id)

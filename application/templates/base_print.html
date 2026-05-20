@@ -1,33 +1,120 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/fonts.css') }}">
 
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <title>{% block title %}Alvin Cruz Accounting Services{% endblock %}</title>
 
-    <title>{% block title %}Alvin Cruz Web Services{% endblock %}</title>
-    {% block styles %}
-    {% endblock %}
+    <style>
+      /* ── ACAS Letterhead ── */
+      .acas-letterhead {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 0 8px;
+        border-bottom: 3px solid #1a3a8c;
+        margin-bottom: 18px;
+      }
+      .acas-name {
+        font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+        font-size: 22pt;
+        font-weight: 700;
+        color: #1a3a8c;
+        letter-spacing: 0.04em;
+        line-height: 1.1;
+        text-transform: uppercase;
+      }
+      .acas-name span.acas-initial {
+        font-size: 28pt;
+      }
+      .acas-details {
+        font-size: 7.5pt;
+        color: #333;
+        margin-top: 4px;
+        letter-spacing: 0.01em;
+      }
+      .acas-details span.sep {
+        margin: 0 5px;
+        color: #1a3a8c;
+        font-weight: 700;
+      }
+      /* Bar-chart icon (pure CSS) */
+      .acas-icon {
+        display: flex;
+        align-items: flex-end;
+        gap: 3px;
+        height: 48px;
+        flex-shrink: 0;
+        margin-left: 16px;
+      }
+      .acas-icon .bar {
+        width: 9px;
+        border-radius: 2px 2px 0 0;
+        background: #c8960c;
+      }
+      .acas-icon .bar-accent {
+        background: #1a3a8c;
+      }
+      .acas-icon .b1 { height: 55%; }
+      .acas-icon .b2 { height: 75%; }
+      .acas-icon .b3 { height: 100%; }
+      .acas-icon .b4 { height: 65%; background: #1a3a8c; }
+      /* Vertical gold stripe beside icon */
+      .acas-stripe {
+        width: 6px;
+        height: 52px;
+        background: linear-gradient(to bottom, #c8960c, #e8b820);
+        border-radius: 3px;
+        margin-left: 4px;
+        flex-shrink: 0;
+      }
+
+      @media print {
+        body { margin: 0; padding: 12px 18px; }
+        .no-print { display: none !important; }
+      }
+    </style>
+
+    {% block styles %}{% endblock %}
   </head>
   <body>
-    {% block content %}
-    <h1>Hello World 2!</h1>
+
+    {% block letterhead %}
+    <div class="acas-letterhead">
+      <div>
+        <div class="acas-name">
+          <span class="acas-initial">A</span>lvin
+          <span class="acas-initial">C</span>ruz
+          <span class="acas-initial">A</span>ccounting
+          <span class="acas-initial">S</span>ervices
+        </div>
+        <div class="acas-details">
+          Address: 575 Gen. Luna St., Guinayang, San Mateo, Rizal
+          <span class="sep">•</span>
+          Mobile No.: 0942-425-2313
+          <span class="sep">•</span>
+          TIN: 251-056-908-000
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:0;">
+        <div class="acas-icon">
+          <div class="bar b1"></div>
+          <div class="bar b2"></div>
+          <div class="bar b3"></div>
+          <div class="bar b4 bar-accent"></div>
+        </div>
+        <div class="acas-stripe"></div>
+      </div>
+    </div>
     {% endblock %}
 
-    <!-- Optional JavaScript; choose one of the two! -->
+    {% block content %}{% endblock %}
 
-    <!-- Option 1: Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script src="{{ url_for('static', filename='vendor/js/bootstrap.bundle.min.js') }}"></script>
+    {% block scripts %}{% endblock %}
 
-    <!-- Option 2: Separate Popper and Bootstrap JS -->
-    <!--
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
-    -->
-
-  
   </body>
 </html>

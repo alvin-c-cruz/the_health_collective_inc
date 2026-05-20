@@ -38,7 +38,6 @@
           <!-- Operations Menu -->
             {% if (
               "Daily Sales" in current_user.user_roles
-              or "Service Types" in current_user.user_roles
               or "Collections" in current_user.user_roles
               or "Bank Account" in current_user.user_roles
               or "APE Batch" in current_user.user_roles
@@ -50,6 +49,7 @@
               or "Measure" in current_user.user_roles
               or "Tender" in current_user.user_roles
               or "Company" in current_user.user_roles
+              or "Service Types" in current_user.user_roles
               ) %}
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -57,10 +57,10 @@
               </a>
               <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
               {% include "daily_sales/navbar.html" %}
-              {% include "transaction_type/navbar.html" %}
               {% include "collections/navbar.html" %}
               {% include "bank_account/navbar.html" %}
               {% include "ape_batch/navbar.html" %}
+              {% include "transaction_type/navbar.html" %}
               <li><hr class="dropdown-divider"></li>
               {% include "customer/navbar.html" %}
               {% include "sex/navbar.html" %}
@@ -157,6 +157,10 @@
                   <li class="nav-item">
                       <a class="dropdown-item" href="{{ url_for('user.change_password') }}">User Change Password</a>
                   </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li class="nav-item">
+                      <a class="dropdown-item" href="{{ url_for('dashboard.about') }}">About</a>
+                  </li>
               </ul>
           </li>
             {% endif %}
@@ -170,7 +174,7 @@
           </li>
         </ul>
       </div>
-      <span class="navbar-version ms-auto d-none d-lg-inline">thci 1.7.0</span>
+      <a href="{{ url_for('dashboard.about') }}" class="navbar-version ms-auto text-decoration-none d-none d-lg-inline">thci 1.1</a>
     </div>
   </nav>
   

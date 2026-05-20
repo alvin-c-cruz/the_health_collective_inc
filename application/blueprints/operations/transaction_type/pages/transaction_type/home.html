@@ -1,10 +1,46 @@
 {% extends "base.html" %}
 {% block title %}Service Types — {{ app_label }}{% endblock %}
 
+{% block styles %}
+<style>
+  .drag-handle {
+    cursor: grab;
+    color: var(--thc-text-muted);
+    padding: 0 4px;
+    font-size: 1rem;
+    line-height: 1;
+    user-select: none;
+  }
+  .drag-handle:active { cursor: grabbing; }
+
+  #sortable-body tr { transition: background 0.1s; }
+  #sortable-body tr.drag-over {
+    background: var(--thc-primary-light) !important;
+    outline: 2px dashed var(--thc-primary);
+    outline-offset: -2px;
+  }
+  #sortable-body tr.dragging {
+    opacity: 0.4;
+  }
+
+  #save-status {
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 4px;
+    display: none;
+  }
+  #save-status.saving { display:inline; background:#fff3cd; color:#856404; }
+  #save-status.saved  { display:inline; background:#d1e7dd; color:#0f5132; }
+  #save-status.error  { display:inline; background:#f8d7da; color:#842029; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="thc-page">
   <div class="thc-page-header">
     <h4>Service Types</h4>
+    <span id="save-status"></span>
   </div>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -27,18 +63,22 @@
       <table class="thc-table">
         <thead>
           <tr>
+            <th style="width:32px;"></th>
             <th style="width:48px;"></th>
             <th>Name</th>
             <th>Code</th>
-
-            <th class="text-center">Sort</th>
             <th class="text-center">Status</th>
             <th>Action</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="sortable-body">
           {% for t in types %}
-          <tr>
+          <tr data-id="{{ t.id }}">
+            <td>
+              <span class="drag-handle" title="Drag to reorder">
+                <i class="bi bi-grip-vertical"></i>
+              </span>
+            </td>
             <td>
               <div style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;" class="{{ t.icon_color }}">
                 <i class="bi {{ t.icon }}"></i>
@@ -51,8 +91,6 @@
               {% endif %}
             </td>
             <td><code style="font-size:.8rem;">{{ t.type_code }}</code></td>
-
-            <td class="text-center" style="font-size:.85rem;">{{ t.sort_order }}</td>
             <td class="text-center">
               {% if t.active %}
               <span class="badge bg-success">Active</span>
@@ -72,6 +110,14 @@
                     <i class="bi {{ 'bi-toggle-on' if t.active else 'bi-toggle-off' }}"></i>
                   </button>
                 </form>
+                {% if current_user.superuser and not txn_counts.get(t.id, 0) %}
+                <form method="POST" action="{{ url_for('transaction_type.delete', record_id=t.id) }}" style="display:inline;"
+                      onsubmit="return confirm('Delete service type {{ t.type_name | e }}? This cannot be undone.')">
+                  <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+                {% endif %}
               </div>
             </td>
           </tr>
@@ -83,6 +129,92 @@
         </tbody>
       </table>
     </div>
+    <p class="text-muted mt-2 mb-0" style="font-size:0.72rem;">
+      <i class="bi bi-grip-vertical"></i> Drag rows to reorder. Order is saved automatically.
+    </p>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const tbody = document.getElementById('sortable-body');
+  if (!tbody) return;
+
+  let dragSrc = null;
+
+  tbody.querySelectorAll('tr').forEach(row => {
+    row.setAttribute('draggable', 'true');
+
+    row.addEventListener('dragstart', function (e) {
+      dragSrc = this;
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    row.addEventListener('dragend', function () {
+      this.classList.remove('dragging');
+      tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
+    });
+
+    row.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
+      if (this !== dragSrc) this.classList.add('drag-over');
+    });
+
+    row.addEventListener('dragleave', function () {
+      this.classList.remove('drag-over');
+    });
+
+    row.addEventListener('drop', function (e) {
+      e.preventDefault();
+      if (dragSrc === this) return;
+      this.classList.remove('drag-over');
+
+      // Reorder DOM
+      const rows = [...tbody.querySelectorAll('tr')];
+      const srcIdx = rows.indexOf(dragSrc);
+      const dstIdx = rows.indexOf(this);
+      if (srcIdx < dstIdx) {
+        tbody.insertBefore(dragSrc, this.nextSibling);
+      } else {
+        tbody.insertBefore(dragSrc, this);
+      }
+
+      saveOrder();
+    });
+  });
+
+  function saveOrder() {
+    const status = document.getElementById('save-status');
+    const ids = [...tbody.querySelectorAll('tr[data-id]')].map(r => parseInt(r.dataset.id));
+
+    status.className = 'saving';
+    status.textContent = 'Saving…';
+
+    fetch('{{ url_for("transaction_type.reorder") }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        status.className = 'saved';
+        status.textContent = 'Order saved';
+        setTimeout(() => { status.style.display = 'none'; }, 2000);
+      } else {
+        throw new Error('Server error');
+      }
+    })
+    .catch(() => {
+      status.className = 'error';
+      status.textContent = 'Save failed — refresh and try again';
+    });
+  }
+})();
+</script>
 {% endblock %}

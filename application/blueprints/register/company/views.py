@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, render_template_string, request, redirect, url_for, flash, jsonify
 from flask_login import current_user
 from sqlalchemy.exc import IntegrityError
 
@@ -26,15 +26,30 @@ def home():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def add():
+    popup = request.args.get('popup') == '1'
     if request.method == "POST":
         form = Form()
         form._post(request.form, current_user.id)
         if form._validate_on_submit():
             form._save()
+            if popup:
+                company = Obj.query.get(form.id)
+                return render_template_string(
+                    '<!doctype html><html><head><meta charset="utf-8"></head><body>'
+                    '<script>'
+                    'if(window.opener){'
+                    'window.opener.postMessage({type:"company_added",id:{{ id }},company_name:{{ name | tojson }}},"*");'
+                    '}'
+                    'window.close();'
+                    '</script>'
+                    '</body></html>',
+                    id=company.id,
+                    name=company.company_name,
+                )
             return redirect(url_for(f"{app_name}.home"))
     else:
         form = Form()
-    return render_template(f"{app_name}/form.html", form=form)
+    return render_template(f"{app_name}/form.html", form=form, popup=popup)
 
 
 @bp.route("/edit/<int:record_id>", methods=["GET", "POST"])
@@ -70,6 +85,26 @@ def delete(record_id):
         db.session.rollback()
         flash(f"Cannot delete {obj} — it has related records.", "danger")
     return redirect(url_for(f"{app_name}.home"))
+
+
+@bp.route("/quick_add", methods=["POST"])
+@login_required
+def quick_add():
+    data = request.json or {}
+    company_name = data.get("company_name", "").strip()
+    if not company_name:
+        return jsonify({"error": "Company name is required."}), 400
+    company = Obj(
+        company_name=company_name,
+        contact_person=data.get("contact_person", "").strip() or None,
+        contact_number=data.get("contact_number", "").strip() or None,
+        address=data.get("address", "").strip() or None,
+        tin=data.get("tin", "").strip() or None,
+        active=True,
+    )
+    db.session.add(company)
+    db.session.commit()
+    return jsonify({"id": company.id, "company_name": company.company_name})
 
 
 @bp.route("/approve/<int:record_id>")

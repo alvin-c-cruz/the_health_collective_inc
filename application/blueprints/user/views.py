@@ -145,8 +145,41 @@ def user_admin():
         user.admin = value
         db.session.commit()
     else:
-        flash("Cannot change super admin status", category="error")
+        flash("Cannot change the master admin account.", category="error")
+    return redirect(url_for('user.user_group', record_id=user_id))
 
+
+@bp.route("user_superuser")
+@login_required
+@roles_accepted(['user'])
+def user_superuser():
+    if not current_user.superuser:
+        flash("Only a SuperAdmin can grant or revoke SuperAdmin status.", category="error")
+        return redirect(url_for('user.user_list'))
+    user_id = request.args.get('user_id')
+    value = int(request.args.get("value"))
+    user = User.query.get(user_id)
+    if user.user_name != "admin":
+        user.superuser = value
+        db.session.commit()
+    else:
+        flash("Cannot change the master admin account.", category="error")
+    return redirect(url_for('user.user_group', record_id=user_id))
+
+
+@bp.route("user_staff")
+@login_required
+@roles_accepted(['user'])
+def user_staff():
+    user_id = request.args.get('user_id')
+    value = int(request.args.get("value"))
+    user = User.query.get(user_id)
+    if user.user_name != "admin":
+        user.staff = value
+        db.session.commit()
+    else:
+        flash("Cannot change the master admin account.", category="error")
+>>>>>>> e05002f1cdc7a9df0260c0cc2ea400b447744f7c
     return redirect(url_for('user.user_group', record_id=user_id))
 
 
@@ -278,7 +311,8 @@ def register():
             
             if form.user_name == "admin":
                 user.active = True
-                user.admin = True                
+                user.superuser = True
+                user.admin = True
                 
             user.set_pass_word(form.pass_word)
             

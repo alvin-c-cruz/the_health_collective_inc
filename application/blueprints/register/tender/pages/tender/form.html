@@ -22,6 +22,33 @@
         {{ text_box(form, "Symbol (badge label)", "symbol", form.symbol) }}
 
         <div class="mb-3">
+            <label class="form-label fw-semibold">Transaction Types</label>
+            <div class="d-flex flex-wrap gap-3">
+                {% set types = (form.transaction_types or '').split(',') %}
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="transaction_types" value="walk_in" id="tt_walk_in"
+                        {{ 'checked' if 'walk_in' in types }}>
+                    <label class="form-check-label" for="tt_walk_in">Walk-in</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="transaction_types" value="home_service" id="tt_home_service"
+                        {{ 'checked' if 'home_service' in types }}>
+                    <label class="form-check-label" for="tt_home_service">Home Service</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="transaction_types" value="ape" id="tt_ape"
+                        {{ 'checked' if 'ape' in types }}>
+                    <label class="form-check-label" for="tt_ape">APE</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="transaction_types" value="dialysis" id="tt_dialysis"
+                        {{ 'checked' if 'dialysis' in types }}>
+                    <label class="form-check-label" for="tt_dialysis">Dialysis</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
             <label class="form-label fw-semibold">Sort Order</label>
             <input type="number" class="form-control" name="sort_order" value="{{ form.sort_order or 0 }}" style="max-width:120px;">
             <div class="form-text">Higher number appears first in lists and the daily report.</div>

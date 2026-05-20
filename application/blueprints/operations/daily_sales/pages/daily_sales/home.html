@@ -186,13 +186,14 @@
     </div>
   </div>
 
-  {# ── New transaction — only shown for today ── #}
-  {% if is_today %}
+  {# ── New transaction — only shown for today, and only for staff/admin/superuser ── #}
+  {% set can_transact = current_user.superuser or current_user.admin or current_user.staff %}
+  {% if is_today and can_transact  %}
   <div class="thc-sec-lbl">New transaction</div>
   <div class="thc-txn-grid">
     {% for txn_type in transaction_types %}
-    {% set _url = url_for('daily_sales.new_transaction', type_id=txn_type.id) %}
-    <div class="thc-txn-card {{ 'featured' if loop.first }}" onclick="window.location.href='{{ _url }}'">
+    <div class="thc-txn-card {{ 'featured' if loop.first }}"
+         onclick="window.location.href='{{ url_for('daily_sales.new_transaction', type_id=txn_type.id) }}'">
       <div class="thc-txn-icon {{ txn_type.icon_color }}">
         <i class="bi {{ txn_type.icon }}"></i>
       </div>
@@ -258,6 +259,16 @@
       </div>
       <i class="bi bi-chevron-right thc-cash-chev"></i>
     </a>
+    {% if "APE Batch" in current_user.user_roles %}
+    <a href="{{ url_for('ape_batch.home') }}" class="thc-cash-card">
+      <div class="thc-cash-icon ic-orange"><i class="bi bi-building"></i></div>
+      <div class="thc-cash-info">
+        <p class="thc-cash-title">APE Batches</p>
+        <p class="thc-cash-desc">Annual physical exam batches</p>
+      </div>
+      <i class="bi bi-chevron-right thc-cash-chev"></i>
+    </a>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -272,7 +283,7 @@
         {% for d in t.transaction_details %}{% set net.val = net.val + d.amount - d.discount %}{% endfor %}
         {% set net.val = net.val - (t.discount or 0) %}
         {% set tt = t.transaction_type %}
-        <a href="{{ url_for('daily_sales.edit_transaction', transaction_id=t.id) if not t.submitted and not t.cancelled else url_for('daily_sales.view_transaction', transaction_id=t.id) }}"
+        <a href="{{ url_for('daily_sales.edit_transaction', transaction_id=t.id) if (not t.submitted and not t.cancelled and can_transact) else url_for('daily_sales.view_transaction', transaction_id=t.id) }}"
            class="thc-rec-row">
           <div class="thc-rec-icon {{ tt.icon_color if tt else 'ic-slate' }}">
             <i class="bi {{ tt.icon if tt else 'bi-tag' }}"></i>

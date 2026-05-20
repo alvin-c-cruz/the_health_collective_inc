@@ -10,6 +10,7 @@ class Company(db.Model):
     contact_person = db.Column(db.String(255))
     contact_number = db.Column(db.String(100))
     address = db.Column(db.String(500))
+    tin = db.Column(db.String(50))
     active = db.Column(db.Boolean(), default=True)
 
     def __str__(self):

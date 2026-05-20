@@ -1,6 +1,6 @@
-from dataclasses import dataclass
+﻿from dataclasses import dataclass
 from sqlalchemy import func
-from application.extensions import db
+from application.extensions import db, ph_today
 from .models import Sales as Obj
 from .models import SalesDetail as ObjDetail
 from .admin_models import UserSales as Preparer
@@ -314,7 +314,7 @@ class Form:
             return True  
     
     def _submit(self):
-        self.submitted = str(datetime.today())[:10]
+        self.submitted = str(ph_today())
 
     @property
     def _locked_(self):

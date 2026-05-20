@@ -39,6 +39,9 @@ class Collection(db.Model):
     # Legacy field for backwards compatibility (renamed from recorded_by)
     recorded_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
 
+    ape_batch_id = db.Column(db.Integer, db.ForeignKey("ape_batch.id"), nullable=True)
+    ape_batch    = db.relationship("ApeBatch", backref="collections", lazy=True)
+
     details = db.relationship("CollectionDetail", backref="collection", lazy=True,
                               cascade="all, delete-orphan")
 

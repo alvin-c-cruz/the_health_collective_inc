@@ -1,8 +1,7 @@
-from datetime import date
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import current_user
 
-from application.extensions import db
+from application.extensions import db, ph_today
 from application.blueprints.user import login_required, roles_accepted
 from .models import ApeBatch
 from ..daily_sales.models import Transaction
@@ -31,7 +30,7 @@ def new_batch():
     if request.method == "POST":
         f = request.form
         company_id = f.get("company_id", type=int)
-        batch_date = f.get("batch_date") or str(date.today())
+        batch_date = f.get("batch_date") or str(ph_today())
         loa_soa_number = (f.get("loa_soa_number") or "").strip()
         try:
             package_amount = float(f.get("package_amount") or 0)
@@ -49,14 +48,14 @@ def new_batch():
                 package_amount=package_amount,
                 notes=notes,
                 created_by=current_user.id,
-                created_at=str(date.today()),
+                created_at=str(ph_today()),
             )
             db.session.add(batch)
             db.session.commit()
             flash("APE Batch created.", "success")
             return redirect(url_for(f"{app_name}.view_batch", batch_id=batch.id))
 
-    return render_template(f"{app_name}/form.html", companies=companies, today=str(date.today()))
+    return render_template(f"{app_name}/form.html", companies=companies, today=str(ph_today()))
 
 
 @bp.route("/<int:batch_id>")
@@ -104,6 +103,15 @@ def delete_batch(batch_id):
     db.session.commit()
     flash("APE Batch deleted.", "warning")
     return redirect(url_for(f"{app_name}.home"))
+
+
+@bp.route("/<int:batch_id>/soa")
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def soa(batch_id):
+    batch = ApeBatch.query.get_or_404(batch_id)
+    transactions = Transaction.query.filter_by(ape_batch_id=batch_id).order_by(Transaction.record_date).all()
+    return render_template(f"{app_name}/soa.html", batch=batch, transactions=transactions)
 
 
 @bp.route("/guide")

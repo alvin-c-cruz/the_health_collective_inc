@@ -3,6 +3,7 @@ from flask_mail import Mail
 from flask_bcrypt import Bcrypt
 from flask_migrate import Migrate
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from flask_login import LoginManager
 
 db = SQLAlchemy()
@@ -11,39 +12,31 @@ bcrypt = Bcrypt()
 migrate = Migrate()
 login_manager = LoginManager()
 
+_PH = ZoneInfo('Asia/Manila')
+
+
+def ph_today():
+    """Return the current date in Philippine time (UTC+8)."""
+    return datetime.now(_PH).date()
+
 
 def year_first_day():
-    date_today = datetime.today()
-    year = date_today.year
-    month = 1
-    day = 1
-    first_day = str(datetime(year, month, day))[:10]
-
-    return first_day
+    date_today = ph_today()
+    return str(datetime(date_today.year, 1, 1))[:10]
 
 
 def month_first_day():
-    date_today = datetime.today()
-    year = date_today.year
-    month = date_today.month
-    day = 1
-    first_day = str(datetime(year, month, day))[:10]
-
-    return first_day
+    date_today = ph_today()
+    return str(datetime(date_today.year, date_today.month, 1))[:10]
 
 
 def year_last_day():
-    date_today = datetime.today()
-    year = date_today.year
-    month = 12
-    day = 31
-    first_day = str(datetime(year, month, day))[:10]
-
-    return first_day
+    date_today = ph_today()
+    return str(datetime(date_today.year, 12, 31))[:10]
 
 
 def month_last_day():
-    date_today = datetime.today()
+    date_today = ph_today()
     year = date_today.year
     month = date_today.month
     if month == 12:
@@ -51,13 +44,10 @@ def month_last_day():
         month = 1
     else:
         month += 1
-    day = 1
 
-    first_day_of_next_month = datetime(year, month, day)
+    first_day_of_next_month = datetime(year, month, 1)
     last_day = first_day_of_next_month - timedelta(days=1)
-    last_day = str(last_day)[:10]
-
-    return last_day
+    return str(last_day)[:10]
 
 
 import re

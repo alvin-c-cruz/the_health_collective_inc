@@ -714,41 +714,38 @@
 
           <label class="form-label">Transaction Type *</label>
 
-          {% if form._locked_ %}
+          {% if form._locked_ or locked_from_batch %}
             <input type="text" class="form-control input-readonly"
               value="{{ transaction_type.type_name if transaction_type else '—' }}" readonly>
-            <input type="hidden" name="transaction_type_id" value="{{ form.transaction_type_id or '' }}">
+            <input type="hidden" id="txn-type-hidden" name="transaction_type_id" value="{{ form.transaction_type_id or '' }}">
           {% else %}
-            <select id="transaction-type-select" name="transaction_type_id" class="form-select">
-              {% for tt in transaction_types %}
-              <option value="{{ tt.id }}" data-code="{{ tt.type_code }}" {{ 'selected' if form.transaction_type_id == tt.id }}>{{ tt.type_name }}</option>
-              {% endfor %}
-            </select>
+            <div style="position:relative;">
+              <input type="text" id="txn-type-display" class="form-control" placeholder="Search type…" autocomplete="off"
+                     value="{{ transaction_types|selectattr('id','equalto',form.transaction_type_id)|map(attribute='type_name')|first if form.transaction_type_id else '' }}">
+              <input type="hidden" id="txn-type-hidden" name="transaction_type_id" value="{{ form.transaction_type_id or '' }}">
+              <div id="txn-type-dropdown" class="co-ac-dropdown"></div>
+            </div>
           {% endif %}
 
         </div>
 
       </div>
 
-      {# APE Batch row — shown only when transaction type code is APE #}
-      <div id="ape-batch-row" class="row g-3 mb-3" style="display:none;">
+      {# APE Batch row — shown only when transaction type code is ape #}
+      <div id="ape-batch-row" class="row g-3 mb-3" {% if not locked_from_batch %}style="display:none"{% endif %}>
         <div class="col-md-8">
           <label class="form-label">APE Batch</label>
-          {% if form._locked_ %}
+          {% if form._locked_ or locked_from_batch %}
             <input type="text" class="form-control input-readonly"
               value="{% for b in ape_batches %}{% if b.id == form.ape_batch_id %}{{ b.company.company_name }} — {{ b.batch_date }}{% endif %}{% endfor %}" readonly>
-            <input type="hidden" name="ape_batch_id" value="{{ form.ape_batch_id or '' }}">
+            <input type="hidden" id="ape-batch-hidden" name="ape_batch_id" value="{{ form.ape_batch_id or '' }}">
           {% else %}
-            <select id="ape-batch-select" name="ape_batch_id" class="form-select">
-              <option value="">— Select APE Batch —</option>
-              {% for b in ape_batches %}
-              <option value="{{ b.id }}"
-                      data-package="{{ b.package_amount }}"
-                      {{ 'selected' if form.ape_batch_id == b.id }}>
-                {{ b.company.company_name }} — {{ b.batch_date }}{% if b.loa_soa_number %} ({{ b.loa_soa_number }}){% endif %}
-              </option>
-              {% endfor %}
-            </select>
+            <div style="position:relative;">
+              <input type="text" id="ape-batch-display" class="form-control" placeholder="Search APE batch…" autocomplete="off"
+                     value="{% for b in ape_batches %}{% if b.id == form.ape_batch_id %}{{ b.company.company_name }} — {{ b.batch_date }}{% endif %}{% endfor %}">
+              <input type="hidden" id="ape-batch-hidden" name="ape_batch_id" value="{{ form.ape_batch_id or '' }}">
+              <div id="ape-batch-dropdown" class="co-ac-dropdown"></div>
+            </div>
             <div class="form-text">Selecting a batch pre-fills the Credit tender with the package amount.</div>
           {% endif %}
         </div>
@@ -1729,17 +1726,23 @@
 
   // ── APE Batch visibility ───────────────────────────────────────────────
 
+  var TXN_TYPE_CODES = {
+    {% for tt in transaction_types %}{{ tt.id }}: {{ tt.type_code | tojson }}{% if not loop.last %},{% endif %}{% endfor %}
+  };
+  var APE_BATCH_PACKAGES = {
+    {% for b in ape_batches %}{{ b.id }}: {{ b.package_amount }}{% if not loop.last %},{% endif %}{% endfor %}
+  };
+
   function getSelectedTypeCode() {
-    var sel = document.getElementById('transaction-type-select');
-    if (!sel) return '';
-    var opt = sel.options[sel.selectedIndex];
-    return opt ? (opt.getAttribute('data-code') || '') : '';
+    var h = document.getElementById('txn-type-hidden');
+    if (!h || !h.value) return '';
+    return TXN_TYPE_CODES[parseInt(h.value)] || '';
   }
 
   function toggleApeBatchRow() {
     var row = document.getElementById('ape-batch-row');
     if (!row) return;
-    row.style.display = getSelectedTypeCode() === 'APE' ? '' : 'none';
+    row.style.display = getSelectedTypeCode() === 'ape' ? '' : 'none';
   }
 
   function applyApeBatchPrefill(packageAmount) {
@@ -1809,22 +1812,8 @@
 
     // APE Batch visibility
     toggleApeBatchRow();
-    var typeSelect = document.getElementById('transaction-type-select');
-    if (typeSelect) {
-      typeSelect.addEventListener('change', function() {
-        toggleApeBatchRow();
-        var batchSel = document.getElementById('ape-batch-select');
-        if (batchSel) batchSel.value = '';
-      });
-    }
-    var batchSelect = document.getElementById('ape-batch-select');
-    if (batchSelect) {
-      batchSelect.addEventListener('change', function() {
-        var opt = this.options[this.selectedIndex];
-        var pkg = opt ? parseFloat(opt.getAttribute('data-package') || 0) : 0;
-        if (pkg > 0) applyApeBatchPrefill(pkg);
-      });
-    }
+    initTxnTypeAutocomplete();
+    initApeBatchAutocomplete();
 
     // Init service and tender autocompletes on Jinja-rendered rows
     document.querySelectorAll('.service-ac-display').forEach(initServiceAutocomplete);
@@ -1917,6 +1906,116 @@
       TENDER_OPTIONS.push({ value: String(e.data.tender_id), label: e.data.tender_name });
     }
   });
+
+  // ── Transaction Type autocomplete ─────────────────────────────────────
+  function initTxnTypeAutocomplete() {
+    var TXN_OPTIONS = [
+      {% for tt in transaction_types %}{ id: {{ tt.id }}, name: {{ tt.type_name | tojson }} }{% if not loop.last %},{% endif %}{% endfor %}
+    ];
+    var display  = document.getElementById('txn-type-display');
+    var hidden   = document.getElementById('txn-type-hidden');
+    var dropdown = document.getElementById('txn-type-dropdown');
+    if (!display) return;
+    var active = -1;
+
+    function hl(text, q) {
+      if (!q) return text;
+      var re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return text.replace(re, '<strong style="font-weight:700;color:var(--thc-primary)">$1</strong>');
+    }
+    function render(q) {
+      var lq = (q || '').toLowerCase();
+      var matches = lq ? TXN_OPTIONS.filter(o => o.name.toLowerCase().includes(lq)) : TXN_OPTIONS;
+      dropdown.innerHTML = '';
+      active = -1;
+      if (!matches.length) { dropdown.innerHTML = '<div class="co-ac-empty">No results.</div>'; }
+      else matches.forEach(o => {
+        var item = document.createElement('div');
+        item.className = 'co-ac-item';
+        item.dataset.id = o.id;
+        item.innerHTML = hl(o.name, q);
+        item.addEventListener('mousedown', e => { e.preventDefault(); selectType(o.id, o.name); });
+        dropdown.appendChild(item);
+      });
+      dropdown.style.display = 'block';
+    }
+    function selectType(id, name) {
+      hidden.value = id;
+      display.value = name;
+      dropdown.style.display = 'none';
+      active = -1;
+      toggleApeBatchRow();
+      // clear batch when type changes
+      var bd = document.getElementById('ape-batch-hidden');
+      var bdisp = document.getElementById('ape-batch-display');
+      if (bd) bd.value = '';
+      if (bdisp) bdisp.value = '';
+    }
+    function hide() { dropdown.style.display = 'none'; active = -1; }
+    display.addEventListener('focus', () => render(display.value));
+    display.addEventListener('input', () => { hidden.value = ''; render(display.value); });
+    display.addEventListener('blur', () => setTimeout(hide, 150));
+    display.addEventListener('keydown', e => {
+      var items = dropdown.querySelectorAll('.co-ac-item');
+      if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(active+1, items.length-1); items.forEach((el,i) => el.classList.toggle('co-ac-item--active', i===active)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(active-1, 0); items.forEach((el,i) => el.classList.toggle('co-ac-item--active', i===active)); }
+      else if (e.key === 'Enter') { e.preventDefault(); if (active>=0 && items[active]) selectType(parseInt(items[active].dataset.id), items[active].textContent); }
+      else if (e.key === 'Escape') hide();
+    });
+  }
+
+  // ── APE Batch autocomplete ─────────────────────────────────────────────
+  function initApeBatchAutocomplete() {
+    var BATCH_OPTIONS = [
+      {% for b in ape_batches %}{ id: {{ b.id }}, name: {{ (b.company.company_name ~ ' — ' ~ b.batch_date ~ (' (' ~ b.loa_soa_number ~ ')' if b.loa_soa_number else '')) | tojson }}, pkg: {{ b.package_amount }} }{% if not loop.last %},{% endif %}{% endfor %}
+    ];
+    var display  = document.getElementById('ape-batch-display');
+    var hidden   = document.getElementById('ape-batch-hidden');
+    var dropdown = document.getElementById('ape-batch-dropdown');
+    if (!display) return;
+    var active = -1;
+
+    function hl(text, q) {
+      if (!q) return text;
+      var re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return text.replace(re, '<strong style="font-weight:700;color:var(--thc-primary)">$1</strong>');
+    }
+    function render(q) {
+      var lq = (q || '').toLowerCase();
+      var matches = lq ? BATCH_OPTIONS.filter(o => o.name.toLowerCase().includes(lq)) : BATCH_OPTIONS;
+      dropdown.innerHTML = '';
+      active = -1;
+      if (!matches.length) { dropdown.innerHTML = '<div class="co-ac-empty">No batches found.</div>'; }
+      else matches.forEach(o => {
+        var item = document.createElement('div');
+        item.className = 'co-ac-item';
+        item.dataset.id = o.id;
+        item.dataset.pkg = o.pkg;
+        item.innerHTML = hl(o.name, q);
+        item.addEventListener('mousedown', e => { e.preventDefault(); selectBatch(o.id, o.name, o.pkg); });
+        dropdown.appendChild(item);
+      });
+      dropdown.style.display = 'block';
+    }
+    function selectBatch(id, name, pkg) {
+      hidden.value = id;
+      display.value = name;
+      dropdown.style.display = 'none';
+      active = -1;
+      if (pkg > 0) applyApeBatchPrefill(pkg);
+    }
+    function hide() { dropdown.style.display = 'none'; active = -1; }
+    display.addEventListener('focus', () => render(display.value));
+    display.addEventListener('input', () => { hidden.value = ''; render(display.value); });
+    display.addEventListener('blur', () => setTimeout(hide, 150));
+    display.addEventListener('keydown', e => {
+      var items = dropdown.querySelectorAll('.co-ac-item');
+      if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(active+1, items.length-1); items.forEach((el,i) => el.classList.toggle('co-ac-item--active', i===active)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(active-1, 0); items.forEach((el,i) => el.classList.toggle('co-ac-item--active', i===active)); }
+      else if (e.key === 'Enter') { e.preventDefault(); if (active>=0 && items[active]) { var el=items[active]; selectBatch(parseInt(el.dataset.id), el.textContent, parseFloat(el.dataset.pkg||0)); } }
+      else if (e.key === 'Escape') hide();
+    });
+  }
 
   function openNewCustomerModal(prefillName) {
     if (!_ncModal) return;
