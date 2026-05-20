@@ -102,7 +102,7 @@ def superuser_required(f):
         user = get_current_user()
         if not is_superuser(user):
             flash('SuperUser access required.', 'danger')
-            return redirect(url_for('daily_sales.index'))
+            return redirect(url_for('daily_sales.home'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -114,7 +114,7 @@ def admin_required(f):
         user = get_current_user()
         if not is_admin(user):
             flash('Admin access required.', 'danger')
-            return redirect(url_for('daily_sales.index'))
+            return redirect(url_for('daily_sales.home'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -126,7 +126,7 @@ def staff_required(f):
         user = get_current_user()
         if not is_staff(user):
             flash('Staff access required.', 'danger')
-            return redirect(url_for('daily_sales.index'))
+            return redirect(url_for('daily_sales.home'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -138,6 +138,6 @@ def view_required(f):
         user = get_current_user()
         if not is_view(user):
             flash('Access denied.', 'danger')
-            return redirect(url_for('daily_sales.index'))
+            return redirect(url_for('daily_sales.home'))
         return f(*args, **kwargs)
     return decorated_function
