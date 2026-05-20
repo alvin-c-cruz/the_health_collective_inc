@@ -98,14 +98,22 @@ def change_requests_list():
     """
     Admin/SuperUser views pending change requests and submitted records.
     """
+    from sqlalchemy import select as sa_select
+    from .admin_models import AdminTransaction
+
     # Get pending change requests (modifications and cancellations)
     pending_requests = ChangeRequest.query.filter_by(status='pending') \
         .order_by(ChangeRequest.requested_at.desc()).all()
 
-    # Get submitted transactions waiting for approval (using new status field)
-    submitted_transactions = Transaction.query.filter_by(
-        status='submitted'
-    ).order_by(Transaction.submitted_at.desc()).all()
+    # Get submitted transactions waiting for approval (using legacy workflow)
+    # Submitted but not yet approved (no AdminTransaction record)
+    approved_ids_select = sa_select(AdminTransaction.transaction_id)
+    submitted_transactions = Transaction.query.filter(
+        Transaction.submitted != None,
+        Transaction.submitted != '',
+        Transaction.cancelled == None,
+        Transaction.id.notin_(approved_ids_select)
+    ).order_by(Transaction.submitted.desc()).all()
 
     # Get submitted deposits waiting for approval
     from .models import Deposit
