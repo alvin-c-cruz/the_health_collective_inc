@@ -88,12 +88,13 @@
       /* ── Mobile Navbar Improvements ── */
       @media (max-width: 991.98px) {
         .thc-navbar .navbar-collapse {
-          max-height: calc(100vh - 60px);
+          max-height: 50vh;
           overflow-y: auto;
           background-color: var(--thc-primary);
-          margin: 0 -12px;
-          padding: 1rem 12px;
+          margin: 0.5rem -12px 0 -12px;
+          padding: 0.5rem 12px;
           border-radius: 0 0 8px 8px;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
 
         .thc-mobile-menu {
@@ -101,39 +102,52 @@
         }
 
         .thc-mobile-menu .nav-item {
-          margin: 0.25rem 0;
+          margin: 0.1rem 0;
+        }
+
+        .thc-mobile-menu .nav-link {
+          padding: 0.4rem 0.75rem;
+          font-size: 0.8rem;
+        }
+
+        .thc-mobile-menu .dropdown-toggle::after {
+          float: right;
+          margin-top: 0.35rem;
         }
 
         .thc-mobile-menu .dropdown-menu {
-          background-color: var(--thc-primary-dark);
+          background-color: rgba(19, 82, 96, 0.95);
           border: none;
-          margin: 0.25rem 0;
+          margin: 0.2rem 0;
+          padding: 0.2rem 0;
         }
 
         .thc-mobile-menu .dropdown-item {
           color: rgba(255,255,255,0.9);
-          padding: 0.5rem 1.5rem;
-          font-size: 0.85rem;
+          padding: 0.35rem 1rem;
+          font-size: 0.75rem;
         }
 
         .thc-mobile-menu .dropdown-item:hover {
-          background-color: rgba(255,255,255,0.1);
+          background-color: rgba(255,255,255,0.15);
           color: #fff;
         }
 
         .thc-mobile-menu .dropdown-divider {
           border-color: rgba(255,255,255,0.2);
+          margin: 0.2rem 0;
         }
 
         .thc-user-info {
-          margin-top: 1rem;
-          padding-top: 1rem;
+          margin-top: 0.5rem;
+          padding-top: 0.5rem;
           border-top: 1px solid rgba(255,255,255,0.2);
         }
 
         .thc-user-info .nav-link {
           font-weight: 600;
-          font-size: 0.9rem;
+          font-size: 0.8rem;
+          padding: 0.35rem 0.75rem;
         }
       }
 
