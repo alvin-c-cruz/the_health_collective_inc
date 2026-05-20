@@ -5,19 +5,25 @@ from application.extensions import db
 
 class ChangeRequest(db.Model):
     """
-    Model for tracking change requests on transactions.
+    Model for tracking change requests on transactions and deposits.
 
     Workflow:
-    - Staff requests to modify a submitted/posted transaction
+    - Staff requests to modify a submitted/posted transaction or deposit
     - Admin reviews and approves/rejects the request
-    - If approved, transaction is updated and requires re-approval
+    - If approved, record is updated and requires re-approval (if applicable)
     """
     __tablename__ = 'change_request'
 
     id = db.Column(db.Integer, primary_key=True)
 
-    # Reference to the transaction being modified
-    transaction_id = db.Column(db.Integer, db.ForeignKey('transaction.id'), nullable=False)
+    # Type of record being changed: 'transaction' or 'deposit'
+    record_type = db.Column(db.String(20), nullable=False)
+
+    # ID of the record being modified (transaction_id or deposit_id)
+    record_id = db.Column(db.Integer, nullable=False)
+
+    # Legacy field for backwards compatibility with existing transaction change requests
+    transaction_id = db.Column(db.Integer, db.ForeignKey('transaction.id'), nullable=True)
     transaction = db.relationship('Transaction', backref='change_requests', lazy=True)
 
     # JSON-encoded old and new values
@@ -76,3 +82,20 @@ class ChangeRequest(db.Model):
     @property
     def is_direct(self):
         return self.status == 'direct'
+
+    @property
+    def deposit(self):
+        """Get the deposit record if record_type is 'deposit'"""
+        if self.record_type == 'deposit':
+            from .models import Deposit
+            return Deposit.query.get(self.record_id)
+        return None
+
+    @property
+    def record(self):
+        """Get the actual record (transaction or deposit) being modified"""
+        if self.record_type == 'transaction':
+            return self.transaction
+        elif self.record_type == 'deposit':
+            return self.deposit
+        return None
