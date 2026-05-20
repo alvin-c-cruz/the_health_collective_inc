@@ -564,6 +564,39 @@ def submit_deposit(deposit_id):
     return redirect(url_for(f'{app_name}.deposit_report'))
 
 
+@bp.route('/transaction/approve/<int:transaction_id>', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def approve_transaction(transaction_id):
+    """Approve submitted transaction (admin only) using legacy workflow"""
+    from .admin_models import AdminTransaction
+
+    transaction = Transaction.query.get_or_404(transaction_id)
+
+    # Only submitted transactions can be approved
+    if not transaction.submitted:
+        flash('Only submitted transactions can be approved.', 'danger')
+        return redirect(url_for('daily_sales.change_requests_list'))
+
+    # Check if already approved
+    existing_approval = AdminTransaction.query.filter_by(transaction_id=transaction.id).first()
+    if existing_approval:
+        flash('Transaction is already approved.', 'warning')
+        return redirect(url_for('daily_sales.change_requests_list'))
+
+    # Create AdminTransaction record to mark as approved
+    admin_txn = AdminTransaction(
+        transaction_id=transaction.id,
+        user_id=current_user.id
+    )
+
+    db.session.add(admin_txn)
+    db.session.commit()
+
+    flash(f'Transaction #{transaction.id} approved successfully!', 'success')
+    return redirect(url_for('daily_sales.change_requests_list'))
+
+
 @bp.route('/deposit/approve/<int:deposit_id>', methods=['POST'])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
