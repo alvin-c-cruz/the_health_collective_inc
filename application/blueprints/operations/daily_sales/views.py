@@ -678,9 +678,20 @@ def request_deposit_change(deposit_id):
         return redirect(url_for(f'{app_name}.view_deposit', deposit_id=deposit_id))
 
     # GET request - show form
+    # Get undeposited transaction tenders for potential addition
+    from .models import TransactionTender, Transaction
+    undeposited_tenders = TransactionTender.query.join(Transaction).filter(
+        Transaction.record_date == deposit.record_date,
+        TransactionTender.tender_id.in_([1, 2]),  # Cash and checks typically
+        TransactionTender.deposited == False,
+        Transaction.submitted != None,
+        Transaction.cancelled == None
+    ).all()
+
     context = {
         'app_label': app_label,
         'deposit': deposit,
+        'undeposited_tenders': undeposited_tenders,
     }
 
     return render_template(f'{app_name}/request_deposit_change.html', **context)

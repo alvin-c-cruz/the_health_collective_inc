@@ -23,6 +23,90 @@
     </div>
   </div>
 
+  <!-- Current Deposit Items -->
+  <div class="row mb-4">
+    <div class="col">
+      <div class="card">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">Current Deposit Items</h5>
+        </div>
+        <div class="card-body">
+          <table class="table table-sm mb-0">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>OR #</th>
+                <th>Customer</th>
+                <th>Tender</th>
+                <th class="text-end">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in deposit.deposit_items %}
+              <tr>
+                <td>{{ item.transaction.formatted_record_date }}</td>
+                <td class="font-monospace small">{{ item.transaction.record_number or '-' }}</td>
+                <td>{{ item.transaction.customer.customer_name if item.transaction.customer else '-' }}</td>
+                <td>
+                  {% for tt in item.transaction.transaction_tenders %}
+                    {{ tt.tender.tender_name if tt.tender else '-' }}{% if not loop.last %}, {% endif %}
+                  {% endfor %}
+                </td>
+                <td class="text-end font-monospace">₱{{ '{:,.2f}'.format(item.amount) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr class="fw-bold">
+                <td colspan="4" class="text-end">Total</td>
+                <td class="text-end font-monospace">₱{{ deposit.formatted_total_amount }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Available Undeposited Tenders -->
+  {% if undeposited_tenders %}
+  <div class="row mb-4">
+    <div class="col">
+      <div class="card border-success">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">Available Undeposited Tenders (Same Date)</h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted small mb-3">These tenders from {{ deposit.formatted_record_date }} are not yet deposited and could be included:</p>
+          <table class="table table-sm mb-0">
+            <thead>
+              <tr>
+                <th>OR #</th>
+                <th>Customer</th>
+                <th>Tender</th>
+                <th class="text-end">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for tt in undeposited_tenders %}
+              <tr>
+                <td class="font-monospace small">{{ tt.transaction.record_number or '-' }}</td>
+                <td>{{ tt.transaction.customer.customer_name if tt.transaction.customer else '-' }}</td>
+                <td>{{ tt.tender.tender_name if tt.tender else '-' }}</td>
+                <td class="text-end font-monospace">₱{{ '{:,.2f}'.format(tt.amount) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <p class="text-muted small mt-2 mb-0">
+            <i class="bi bi-info-circle"></i> To add/remove items, explain in the "Reason for Change Request" below.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <form method="POST">
     <div class="row">
       <!-- Current Values (Left Column) -->
