@@ -1747,35 +1747,57 @@ def new_fund_disbursed():
     return redirect(url_for('daily_sales.accountabilities'))
 
 
-@bp.route("/fund_received/<int:id>/delete", methods=["POST"])
+@bp.route("/fund_received/<int:id>/cancel", methods=["POST"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
-def delete_fund_received(id):
-    """Delete fund received record"""
+def cancel_fund_received(id):
+    """Cancel fund received record (soft delete)"""
     fund = FundReceived.query.get_or_404(id)
+
+    if fund.status == 'cancelled':
+        flash("Record is already cancelled", "warning")
+        return redirect(url_for('daily_sales.accountabilities'))
+
     try:
-        db.session.delete(fund)
+        reason = request.form.get('reason', '').strip()
+
+        fund.status = 'cancelled'
+        fund.cancelled_by_id = current_user.id
+        fund.cancelled_at = datetime.now()
+        fund.cancellation_reason = reason if reason else 'Cancelled by user'
+
         db.session.commit()
-        flash("Fund received record deleted successfully", "success")
+        flash("Fund received record cancelled successfully", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"Error deleting record: {str(e)}", "danger")
+        flash(f"Error cancelling record: {str(e)}", "danger")
     return redirect(url_for('daily_sales.accountabilities'))
 
 
-@bp.route("/fund_disbursed/<int:id>/delete", methods=["POST"])
+@bp.route("/fund_disbursed/<int:id>/cancel", methods=["POST"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
-def delete_fund_disbursed(id):
-    """Delete fund disbursed record"""
+def cancel_fund_disbursed(id):
+    """Cancel fund disbursed record (soft delete)"""
     fund = FundDisbursed.query.get_or_404(id)
+
+    if fund.status == 'cancelled':
+        flash("Record is already cancelled", "warning")
+        return redirect(url_for('daily_sales.accountabilities'))
+
     try:
-        db.session.delete(fund)
+        reason = request.form.get('reason', '').strip()
+
+        fund.status = 'cancelled'
+        fund.cancelled_by_id = current_user.id
+        fund.cancelled_at = datetime.now()
+        fund.cancellation_reason = reason if reason else 'Cancelled by user'
+
         db.session.commit()
-        flash("Fund disbursed record deleted successfully", "success")
+        flash("Fund disbursed record cancelled successfully", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"Error deleting record: {str(e)}", "danger")
+        flash(f"Error cancelling record: {str(e)}", "danger")
     return redirect(url_for('daily_sales.accountabilities'))
 
 

@@ -279,11 +279,14 @@
                   <span class="status-badge {{ fund.status }}">{{ fund.status }}</span>
                 </td>
                 <td class="actions-col">
-                  <form method="POST" action="{{ url_for('daily_sales.delete_fund_received', id=fund.id) }}" style="display: inline;">
-                    <button type="submit" class="btn-delete" onclick="return confirm('Delete this record?')">
-                      <i class="bi bi-trash"></i>
+                  {% if fund.status != 'cancelled' %}
+                  <form method="POST" action="{{ url_for('daily_sales.cancel_fund_received', id=fund.id) }}" style="display: inline;" onsubmit="return confirm('Cancel this record? This action cannot be undone.')">
+                    <input type="hidden" name="reason" value="Cancelled by {{ current_user.user_name }}">
+                    <button type="submit" class="btn-delete" title="Cancel">
+                      <i class="bi bi-x-circle"></i>
                     </button>
                   </form>
+                  {% endif %}
                 </td>
               </tr>
             {% endfor %}
@@ -330,11 +333,14 @@
                   <span class="status-badge {{ fund.status }}">{{ fund.status }}</span>
                 </td>
                 <td class="actions-col">
-                  <form method="POST" action="{{ url_for('daily_sales.delete_fund_disbursed', id=fund.id) }}" style="display: inline;">
-                    <button type="submit" class="btn-delete" onclick="return confirm('Delete this record?')">
-                      <i class="bi bi-trash"></i>
+                  {% if fund.status != 'cancelled' %}
+                  <form method="POST" action="{{ url_for('daily_sales.cancel_fund_disbursed', id=fund.id) }}" style="display: inline;" onsubmit="return confirm('Cancel this record? This action cannot be undone.')">
+                    <input type="hidden" name="reason" value="Cancelled by {{ current_user.user_name }}">
+                    <button type="submit" class="btn-delete" title="Cancel">
+                      <i class="bi bi-x-circle"></i>
                     </button>
                   </form>
+                  {% endif %}
                 </td>
               </tr>
             {% endfor %}
