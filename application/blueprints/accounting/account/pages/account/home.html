@@ -169,8 +169,8 @@
                         <td>{{ row.account_number }}</td>
                         <td>{{ row.account_title }}</td>
                         <td>{{ row.account_type }}</td>
-                        <td class="num">{{ row.formatted_debit_balance(as_of_date.isoformat()) }}</td>
-                        <td class="num">{{ row.formatted_credit_balance(as_of_date.isoformat()) }}</td>
+                        <td class="num">{{ row.formatted_debit_balance(as_of_date) }}</td>
+                        <td class="num">{{ row.formatted_credit_balance(as_of_date) }}</td>
                         <td>
                             {% if not row.approved %}
                                 {{ edit_button(url_for('account.edit', record_id=row.id)) }}

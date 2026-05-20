@@ -155,7 +155,12 @@
 
       <button class="btn btn-sm" style="background:var(--thc-primary);color:#fff;font-weight:600;border:none;" type="button"
         onclick="window.open('{{ url_for('daily_sales.daily_report', date=selected_date.isoformat()) }}','_blank','width=1200,height=700,scrollbars=yes,resizable=yes')">
-        <i class="bi bi-file-earmark-text me-1"></i> Generate report
+        <i class="bi bi-file-earmark-text me-1"></i> Daily Report
+      </button>
+
+      <button class="btn btn-sm" style="background:#217346;color:#fff;font-weight:600;border:none;" type="button"
+        onclick="window.open('{{ url_for('daily_sales.sales_summary_report') }}','_blank','width=1400,height=800,scrollbars=yes,resizable=yes')">
+        <i class="bi bi-bar-chart-line me-1"></i> Sales Summary
       </button>
 
     </div>
@@ -222,37 +227,16 @@
     <a href="{{ url_for('daily_sales.record_deposit') }}" class="thc-cash-card">
       <div class="thc-cash-icon ic-blue"><i class="bi bi-bank2"></i></div>
       <div class="thc-cash-info">
-        <p class="thc-cash-title">Record deposit</p>
+        <p class="thc-cash-title">Deposits</p>
         <p class="thc-cash-desc">Log cash deposited to bank</p>
       </div>
       <i class="bi bi-chevron-right thc-cash-chev"></i>
     </a>
-    <a href="{{ url_for('daily_sales.deposit_report') }}" class="thc-cash-card">
-      <div class="thc-cash-icon ic-purple"><i class="bi bi-file-earmark-bar-graph"></i></div>
+    <a href="{{ url_for('daily_sales.accountabilities') }}" class="thc-cash-card">
+      <div class="thc-cash-icon ic-amber"><i class="bi bi-wallet2"></i></div>
       <div class="thc-cash-info">
-        <p class="thc-cash-title">Deposit report</p>
-        <p class="thc-cash-desc">View deposit history</p>
-      </div>
-      <i class="bi bi-chevron-right thc-cash-chev"></i>
-    </a>
-    <a href="{{ url_for('daily_sales.change_requests_list') }}" class="thc-cash-card">
-      <div class="thc-cash-icon ic-rose"><i class="bi bi-arrow-left-right"></i></div>
-      <div class="thc-cash-info">
-        <p class="thc-cash-title">
-          Change Requests
-          {% if pending_change_requests_count > 0 %}
-            <span class="badge bg-danger ms-2">{{ pending_change_requests_count }}</span>
-          {% endif %}
-        </p>
-        <p class="thc-cash-desc">Review all pending requests</p>
-      </div>
-      <i class="bi bi-chevron-right thc-cash-chev"></i>
-    </a>
-    <a href="#" class="thc-cash-card">
-      <div class="thc-cash-icon ic-amber"><i class="bi bi-receipt"></i></div>
-      <div class="thc-cash-info">
-        <p class="thc-cash-title">Log expense</p>
-        <p class="thc-cash-desc">Petty cash disbursement</p>
+        <p class="thc-cash-title">Accountabilities</p>
+        <p class="thc-cash-desc">Funds received and going out</p>
       </div>
       <i class="bi bi-chevron-right thc-cash-chev"></i>
     </a>
@@ -266,6 +250,14 @@
       <i class="bi bi-chevron-right thc-cash-chev"></i>
     </a>
     {% endif %}
+    <a href="{{ url_for('daily_sales.petty_cash_management') }}" class="thc-cash-card">
+      <div class="thc-cash-icon ic-purple"><i class="bi bi-wallet"></i></div>
+      <div class="thc-cash-info">
+        <p class="thc-cash-title">Petty Cash Management</p>
+        <p class="thc-cash-desc">Manage petty cash expenses</p>
+      </div>
+      <i class="bi bi-chevron-right thc-cash-chev"></i>
+    </a>
   </div>
   {% endif %}
 

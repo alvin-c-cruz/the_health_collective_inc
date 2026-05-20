@@ -325,8 +325,8 @@ def download_accounts():
         list_row = [
             row.account_number,
             row.account_title,
-            row.debit_balance(str(as_of_date)),
-            row.credit_balance(str(as_of_date))
+            row.debit_balance(as_of_date),
+            row.credit_balance(as_of_date)
         ]
         ws.append(list_row)
         

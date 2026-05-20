@@ -209,3 +209,131 @@ class DepositItem(db.Model):
     @property
     def formatted_amount(self):
         return '{:,.2f}'.format(self.amount)
+
+
+class FundCategory(db.Model):
+    """Categories of funds: Petty Cash, Change Fund, etc."""
+    id = db.Column(db.Integer, primary_key=True)
+    category_name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.String())
+    sort_order = db.Column(db.Integer, default=0)
+    active = db.Column(db.Boolean, default=True)
+
+    def __repr__(self):
+        return f'<FundCategory {self.category_name}>'
+
+
+class FundReceived(db.Model):
+    """Funds received (incoming funds like replenishments)"""
+    id = db.Column(db.Integer, primary_key=True)
+    record_date = db.Column(db.String(), nullable=False)
+
+    fund_category_id = db.Column(db.Integer, db.ForeignKey('fund_category.id'), nullable=False)
+    fund_category = db.relationship('FundCategory', backref='funds_received', lazy=True)
+
+    amount = db.Column(db.Float, default=0)
+    reference_number = db.Column(db.String())
+    description = db.Column(db.String())
+
+    # Workflow fields
+    status = db.Column(db.String(20), default='draft')  # draft | submitted | posted | cancelled
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    created_by_user = db.relationship('User', foreign_keys=[created_by_id], backref='funds_received_created')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    submitted_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    submitted_by_user = db.relationship('User', foreign_keys=[submitted_by_id], backref='funds_received_submitted')
+    submitted_at = db.Column(db.DateTime, nullable=True)
+
+    approved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    approved_by_user = db.relationship('User', foreign_keys=[approved_by_id], backref='funds_received_approved')
+    approved_at = db.Column(db.DateTime, nullable=True)
+
+    cancelled_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    cancelled_by_user = db.relationship('User', foreign_keys=[cancelled_by_id], backref='funds_received_cancelled')
+    cancelled_at = db.Column(db.DateTime, nullable=True)
+    cancellation_reason = db.Column(db.String(), nullable=True)
+
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def formatted_record_date(self):
+        return short_date(self.record_date) if self.record_date else None
+
+    @property
+    def formatted_amount(self):
+        return '{:,.2f}'.format(self.amount)
+
+    @property
+    def is_draft(self):
+        return self.status == 'draft'
+
+    @property
+    def is_submitted(self):
+        return self.status == 'submitted'
+
+    @property
+    def is_posted(self):
+        return self.status == 'posted'
+
+    @property
+    def is_cancelled(self):
+        return self.status == 'cancelled'
+
+
+class FundDisbursed(db.Model):
+    """Funds disbursed (outgoing funds like expenses)"""
+    id = db.Column(db.Integer, primary_key=True)
+    record_date = db.Column(db.String(), nullable=False)
+
+    fund_category_id = db.Column(db.Integer, db.ForeignKey('fund_category.id'), nullable=False)
+    fund_category = db.relationship('FundCategory', backref='funds_disbursed', lazy=True)
+
+    amount = db.Column(db.Float, default=0)
+    reference_number = db.Column(db.String())
+    description = db.Column(db.String())
+
+    # Workflow fields
+    status = db.Column(db.String(20), default='draft')  # draft | submitted | posted | cancelled
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    created_by_user = db.relationship('User', foreign_keys=[created_by_id], backref='funds_disbursed_created')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    submitted_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    submitted_by_user = db.relationship('User', foreign_keys=[submitted_by_id], backref='funds_disbursed_submitted')
+    submitted_at = db.Column(db.DateTime, nullable=True)
+
+    approved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    approved_by_user = db.relationship('User', foreign_keys=[approved_by_id], backref='funds_disbursed_approved')
+    approved_at = db.Column(db.DateTime, nullable=True)
+
+    cancelled_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    cancelled_by_user = db.relationship('User', foreign_keys=[cancelled_by_id], backref='funds_disbursed_cancelled')
+    cancelled_at = db.Column(db.DateTime, nullable=True)
+    cancellation_reason = db.Column(db.String(), nullable=True)
+
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def formatted_record_date(self):
+        return short_date(self.record_date) if self.record_date else None
+
+    @property
+    def formatted_amount(self):
+        return '{:,.2f}'.format(self.amount)
+
+    @property
+    def is_draft(self):
+        return self.status == 'draft'
+
+    @property
+    def is_submitted(self):
+        return self.status == 'submitted'
+
+    @property
+    def is_posted(self):
+        return self.status == 'posted'
+
+    @property
+    def is_cancelled(self):
+        return self.status == 'cancelled'

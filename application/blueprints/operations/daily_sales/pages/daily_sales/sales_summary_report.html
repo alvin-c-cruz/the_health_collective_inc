@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sales Summary Report – The Health Collective Inc.</title>
+  <style>
+    :root {
+      --bg: #f5f2ec;
+      --surface: #fff;
+      --border: #ccc8c0;
+      --border-dark: #999690;
+      --text: #1a1714;
+      --muted: #888480;
+      --accent: #c8a96e;
+      --accent-dk: #9e7d44;
+      --highlight: #fff8e1;
+      --green-bg: #e8f5e9;
+      --green-txt: #2e7d32;
+      --blue-bg: #e3f2fd;
+      --blue-txt: #1565c0;
+      --red: #c0392b;
+      --ink: #2c2825;
+      --rule: 1px solid var(--border);
+      --rule-dk: 1px solid var(--border-dark);
+      --mono: ui-monospace, 'Cascadia Code', Consolas, 'Courier New', monospace;
+      --sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--sans);
+      font-size: 8.5pt;
+      background: var(--bg);
+      color: var(--text);
+      padding: 1rem 1rem 2rem;
+    }
+
+    /* DATE RANGE PICKER */
+    .date-range-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+      padding: 0.5rem;
+      background: var(--surface);
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .date-range-bar label {
+      font-family: var(--mono);
+      font-size: 7pt;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-right: 0.25rem;
+    }
+    .date-range-bar input[type="date"] {
+      font-family: var(--mono);
+      font-size: 7.5pt;
+      padding: 4px 8px;
+      border: var(--rule);
+      border-radius: 4px;
+      background: var(--surface);
+    }
+    .date-range-bar button {
+      font-family: var(--mono);
+      font-size: 7pt;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 5px 16px;
+      border: none;
+      border-radius: 4px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .date-range-bar button:hover {
+      background: var(--accent-dk);
+    }
+
+    .page {
+      background: var(--surface);
+      width: 297mm;
+      min-height: 210mm;
+      margin: 0 auto;
+      padding: 11mm 13mm 10mm;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+    }
+
+    @media print {
+      @page { size: A4 landscape; margin: 10mm 12mm 10mm; }
+      body { background: #fff; padding: 0; font-size: 8pt; }
+      .page { box-shadow: none; padding: 0; width: 100%; min-height: unset; }
+      .no-print { display: none !important; }
+    }
+
+    /* HEADER */
+    .hdr {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-top: 3px solid var(--ink);
+      border-bottom: var(--rule-dk);
+      padding: 5px 0 4px;
+      margin-bottom: 8px;
+    }
+    .org { font-size: 10.5pt; font-weight: 700; letter-spacing: 0.02em; color: var(--ink); }
+    .sub { font-family: var(--mono); font-size: 6pt; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+    .date-badges { display: flex; gap: 4px; flex-direction: column; align-items: flex-end; }
+    .dbadge { text-align: right; padding: 3px 0; }
+    .dbadge .dl { font-family: var(--mono); font-size: 5.5pt; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); display: block; }
+    .dbadge .ds { font-size: 8pt; font-weight: 600; color: var(--ink); display: block; margin-top: 1px; }
+
+    /* SUMMARY METRICS */
+    .metrics-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+    .metric-card {
+      border: var(--rule);
+      border-radius: 4px;
+      padding: 6px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface);
+    }
+    .metric-card.grand {
+      background: var(--highlight);
+      border-color: var(--accent-dk);
+    }
+    .metric-lbl {
+      font-family: var(--mono);
+      font-size: 6pt;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .metric-amt {
+      font-family: var(--mono);
+      font-size: 11pt;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .metric-card.grand .metric-amt {
+      color: var(--accent-dk);
+      font-size: 12pt;
+    }
+
+    /* SECTION */
+    .sec {
+      border: var(--rule);
+      border-radius: 4px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    .sec-title {
+      font-family: var(--mono);
+      font-size: 7pt;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #fff;
+      background: var(--ink);
+      padding: 4px 8px;
+    }
+    .sec-title.diagnostics {
+      background: #1565c0;
+    }
+    .sec-title.dialysis {
+      background: #0f6e56;
+    }
+
+    /* TABLE */
+    .tbl {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .tbl td, .tbl th {
+      padding: 2px 6px;
+      border-bottom: var(--rule);
+      font-size: 7.5pt;
+      line-height: 1.4;
+    }
+    .tbl th {
+      font-family: var(--mono);
+      font-size: 6pt;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      text-align: right;
+      border-bottom: var(--rule-dk);
+      padding-bottom: 3px;
+      background: #faf8f4;
+    }
+    .tbl th:first-child {
+      text-align: left;
+    }
+    .tbl td {
+      text-align: right;
+      font-family: var(--mono);
+      font-size: 7.5pt;
+    }
+    .tbl td:first-child {
+      text-align: left;
+      font-family: var(--sans);
+      padding-left: 12px;
+    }
+    .tbl tr:last-child td {
+      border-bottom: none;
+    }
+    .tbl tr.total-row td {
+      font-weight: 700;
+      background: #f0ede7;
+      border-top: var(--rule-dk);
+      border-bottom: none;
+      font-size: 8pt;
+      padding-top: 4px;
+      padding-bottom: 4px;
+    }
+    .tbl tr.total-row td:first-child {
+      padding-left: 8px;
+    }
+    .zero {
+      color: var(--border-dark);
+    }
+    .empty-cell {
+      color: var(--border-dark);
+    }
+
+    /* PRINT BUTTONS */
+    .action-bar {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 18px;
+      font-family: var(--mono);
+      font-size: 7pt;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--ink);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .action-btn:hover {
+      background: var(--accent-dk);
+      text-decoration: none;
+      color: #fff;
+    }
+    .action-btn.excel {
+      background: #217346;
+    }
+    .action-btn.excel:hover {
+      background: #1a5c37;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- DATE RANGE PICKER -->
+  <div class="date-range-bar no-print">
+    <form method="GET" action="{{ url_for('daily_sales.sales_summary_report') }}" style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+      <label for="start_date">From:</label>
+      <input type="date" id="start_date" name="start_date" value="{{ start_date }}" required>
+
+      <label for="end_date">To:</label>
+      <input type="date" id="end_date" name="end_date" value="{{ end_date }}" required>
+
+      <button type="submit">Generate Report</button>
+
+      <span style="color: var(--muted); font-size: 7pt; font-family: var(--mono);">
+        {{ transaction_count }} transactions
+      </span>
+    </form>
+  </div>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div>
+      <div class="org">The Health Collective Inc.</div>
+      <div class="sub">Sales Summary Report</div>
+    </div>
+    <div class="date-badges">
+      <div class="dbadge">
+        <span class="dl">Date Range</span>
+        <span class="ds">{{ start_date.strftime("%b %d, %Y") }} — {{ end_date.strftime("%b %d, %Y") }}</span>
+      </div>
+      <div class="dbadge">
+        <span class="dl">Generated</span>
+        <span class="ds">{{ generated_at.strftime("%b %d, %Y %I:%M %p") }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUMMARY METRICS -->
+  <div class="metrics-strip">
+    <div class="metric-card">
+      <div class="metric-lbl">Diagnostics Sales</div>
+      <div class="metric-amt">{{ "{:,.2f}".format(totals['Diagnostics']['total']) }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-lbl">Dialysis Sales</div>
+      <div class="metric-amt">{{ "{:,.2f}".format(totals['Dialysis']['total']) }}</div>
+    </div>
+    <div class="metric-card grand">
+      <div class="metric-lbl">Grand Total</div>
+      <div class="metric-amt">{{ "{:,.2f}".format(totals['grand_total']) }}</div>
+    </div>
+  </div>
+
+  <!-- DIAGNOSTICS SECTION -->
+  <div class="sec">
+    <div class="sec-title diagnostics">Diagnostics — Sales by Transaction Type &amp; Tender</div>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:20%">Transaction Type</th>
+          {% for tender in sorted_tenders %}
+          <th style="width:{{ 80 // (sorted_tenders|length + 1) }}%">{{ tender }}</th>
+          {% endfor %}
+          <th style="width:{{ 80 // (sorted_tenders|length + 1) }}%">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tt in transaction_types %}
+        {% if totals['Diagnostics'].get(tt.type_code, 0) > 0 %}
+        <tr>
+          <td>{{ tt.type_name }}</td>
+          {% for tender in sorted_tenders %}
+          {% set amount = sales_data['Diagnostics'][tt.type_code].get(tender, 0) %}
+          <td class="{% if amount == 0 %}empty-cell{% endif %}">
+            {% if amount > 0 %}
+            {{ "{:,.2f}".format(amount) }}
+            {% else %}
+            —
+            {% endif %}
+          </td>
+          {% endfor %}
+          <td style="font-weight: 600;">{{ "{:,.2f}".format(totals['Diagnostics'][tt.type_code]) }}</td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+        <tr class="total-row">
+          <td>Diagnostics Total</td>
+          {% for tender in sorted_tenders %}
+          {% set tender_total = namespace(sum=0) %}
+          {% for tt in transaction_types %}
+          {% set tender_total.sum = tender_total.sum + sales_data['Diagnostics'][tt.type_code].get(tender, 0) %}
+          {% endfor %}
+          <td>{{ "{:,.2f}".format(tender_total.sum) if tender_total.sum > 0 else "—" }}</td>
+          {% endfor %}
+          <td>{{ "{:,.2f}".format(totals['Diagnostics']['total']) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- DIALYSIS SECTION -->
+  <div class="sec">
+    <div class="sec-title dialysis">Dialysis — Sales by Transaction Type &amp; Tender</div>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:20%">Transaction Type</th>
+          {% for tender in sorted_tenders %}
+          <th style="width:{{ 80 // (sorted_tenders|length + 1) }}%">{{ tender }}</th>
+          {% endfor %}
+          <th style="width:{{ 80 // (sorted_tenders|length + 1) }}%">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tt in transaction_types %}
+        {% if totals['Dialysis'].get(tt.type_code, 0) > 0 %}
+        <tr>
+          <td>{{ tt.type_name }}</td>
+          {% for tender in sorted_tenders %}
+          {% set amount = sales_data['Dialysis'][tt.type_code].get(tender, 0) %}
+          <td class="{% if amount == 0 %}empty-cell{% endif %}">
+            {% if amount > 0 %}
+            {{ "{:,.2f}".format(amount) }}
+            {% else %}
+            —
+            {% endif %}
+          </td>
+          {% endfor %}
+          <td style="font-weight: 600;">{{ "{:,.2f}".format(totals['Dialysis'][tt.type_code]) }}</td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+        <tr class="total-row">
+          <td>Dialysis Total</td>
+          {% for tender in sorted_tenders %}
+          {% set tender_total = namespace(sum=0) %}
+          {% for tt in transaction_types %}
+          {% set tender_total.sum = tender_total.sum + sales_data['Dialysis'][tt.type_code].get(tender, 0) %}
+          {% endfor %}
+          <td>{{ "{:,.2f}".format(tender_total.sum) if tender_total.sum > 0 else "—" }}</td>
+          {% endfor %}
+          <td>{{ "{:,.2f}".format(totals['Dialysis']['total']) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<div class="action-bar no-print">
+  <button class="action-btn" onclick="window.print()">&#x2399;&nbsp; Print / Save PDF</button>
+  <a class="action-btn excel" href="{{ url_for('daily_sales.sales_summary_excel', start_date=start_date, end_date=end_date) }}">
+    &#x1F4CA;&nbsp; Download Excel
+  </a>
+  <a class="action-btn" href="{{ url_for('daily_sales.home') }}">
+    &#x2190;&nbsp; Back to Home
+  </a>
+</div>
+
+</body>
+</html>

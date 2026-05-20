@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+{% block title %}Accountabilities — The Health Collective Inc.{% endblock %}
+
+{% block styles %}
+<style>
+  .thc-wrap { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
+  /* ── top bar ── */
+  .thc-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: .75rem; }
+  .thc-brand-name { font-family: var(--thc-font-heading); font-size: 1.05rem; font-weight: 600; color: var(--thc-text); margin: 0; }
+  .thc-brand-sub { font-size: .75rem; color: var(--thc-text-muted); margin: 2px 0 0; }
+  .thc-back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--thc-text-muted); text-decoration: none; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--thc-border); background: #fff; transition: all .15s; }
+  .thc-back-btn:hover { border-color: var(--thc-primary); color: var(--thc-primary); background: var(--thc-primary-light); text-decoration: none; }
+
+  /* ── summary cards ── */
+  .summary-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+  .summary-card { background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; padding: 16px; }
+  .summary-card-label { font-size: .7rem; color: var(--thc-text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .05em; }
+  .summary-card-value { font-size: 1.5rem; font-weight: 600; font-family: monospace; }
+  .summary-card.received .summary-card-value { color: #0f6e56; }
+  .summary-card.disbursed .summary-card-value { color: #993c1d; }
+  .summary-card.balance .summary-card-value { color: var(--thc-primary); }
+
+  /* ── forms section ── */
+  .forms-section { margin-bottom: 2rem; }
+  .forms-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .form-card { background: #fff; border: 1px solid var(--thc-border); border-radius: 10px; padding: 20px; }
+  .form-card-title { font-size: .95rem; font-weight: 600; color: var(--thc-text); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .form-card-title i { font-size: 1.1rem; }
+  .form-card.received .form-card-title { color: #0f6e56; }
+  .form-card.disbursed .form-card-title { color: #993c1d; }
+
+  /* ── form elements ── */
+  .form-group { margin-bottom: 14px; }
+  .form-label { display: block; font-size: .8rem; font-weight: 600; color: var(--thc-text); margin-bottom: 5px; }
+  .form-label.required::after { content: " *"; color: #dc3545; }
+  .form-control { width: 100%; padding: 8px 12px; border: 1px solid var(--thc-border); border-radius: 6px; font-size: .85rem; transition: border-color .15s; }
+  .form-control:focus { outline: none; border-color: var(--thc-primary); box-shadow: 0 0 0 3px var(--thc-primary-light); }
+  .form-select { width: 100%; padding: 8px 12px; border: 1px solid var(--thc-border); border-radius: 6px; font-size: .85rem; background: #fff; cursor: pointer; }
+  .form-select:focus { outline: none; border-color: var(--thc-primary); box-shadow: 0 0 0 3px var(--thc-primary-light); }
+  textarea.form-control { resize: vertical; min-height: 70px; }
+
+  .btn-submit { width: 100%; padding: 10px; border: none; border-radius: 6px; font-size: .85rem; font-weight: 600; cursor: pointer; transition: all .15s; }
+  .btn-submit.received { background: #0f6e56; color: #fff; }
+  .btn-submit.received:hover { background: #0d5c49; }
+  .btn-submit.disbursed { background: #993c1d; color: #fff; }
+  .btn-submit.disbursed:hover { background: #7a2f16; }
+
+  /* ── filters ── */
+  .filters-bar { background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; padding: 14px 16px; margin-bottom: 1rem; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+  .filter-group { flex: 1; min-width: 150px; }
+  .filter-label { display: block; font-size: .75rem; font-weight: 600; color: var(--thc-text-muted); margin-bottom: 4px; }
+  .filter-input { width: 100%; padding: 7px 10px; border: 1px solid var(--thc-border); border-radius: 6px; font-size: .82rem; }
+  .filter-btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: .82rem; font-weight: 600; background: var(--thc-primary); color: #fff; cursor: pointer; }
+  .filter-btn:hover { background: #1d5c6a; }
+  .filter-btn-clear { padding: 8px 16px; border: 1px solid var(--thc-border); border-radius: 6px; font-size: .82rem; font-weight: 600; background: #fff; color: var(--thc-text-muted); cursor: pointer; }
+  .filter-btn-clear:hover { border-color: var(--thc-primary); color: var(--thc-primary); }
+
+  /* ── transactions list ── */
+  .transactions-section { margin-bottom: 2rem; }
+  .section-title { font-size: .9rem; font-weight: 600; color: var(--thc-text); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .section-title i { font-size: 1rem; }
+
+  .transactions-table { width: 100%; background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; overflow: hidden; }
+  .transactions-table table { width: 100%; border-collapse: collapse; }
+  .transactions-table thead { background: #f8f9fa; }
+  .transactions-table th { padding: 10px 12px; text-align: left; font-size: .75rem; font-weight: 600; color: var(--thc-text-muted); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--thc-border); }
+  .transactions-table td { padding: 12px; font-size: .85rem; border-bottom: 1px solid #f0f0f0; }
+  .transactions-table tbody tr:last-child td { border-bottom: none; }
+  .transactions-table tbody tr:hover { background: #f8f9fa; }
+
+  .date-col { width: 100px; color: var(--thc-text-muted); font-size: .8rem; }
+  .category-col { width: 140px; }
+  .amount-col { width: 120px; text-align: right; font-family: monospace; font-weight: 600; }
+  .amount-col.received { color: #0f6e56; }
+  .amount-col.disbursed { color: #993c1d; }
+  .ref-col { width: 120px; font-size: .8rem; color: var(--thc-text-muted); }
+  .desc-col { min-width: 200px; }
+  .status-col { width: 90px; }
+  .actions-col { width: 80px; text-align: center; }
+
+  .status-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+  .status-badge.posted { background: #d1f4e0; color: #0f6e56; }
+  .status-badge.draft { background: #e9ecef; color: #6c757d; }
+
+  .btn-delete { padding: 4px 10px; border: 1px solid #dc3545; border-radius: 4px; background: #fff; color: #dc3545; font-size: .75rem; font-weight: 600; cursor: pointer; transition: all .15s; }
+  .btn-delete:hover { background: #dc3545; color: #fff; }
+
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--thc-text-muted); font-size: .9rem; }
+  .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: .3; }
+
+  @media (max-width: 768px) {
+    .summary-cards { grid-template-columns: 1fr; }
+    .forms-grid { grid-template-columns: 1fr; }
+    .filters-bar { flex-direction: column; align-items: stretch; }
+    .filter-group { width: 100%; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="thc-wrap">
+  <!-- Top Bar -->
+  <div class="thc-topbar">
+    <div>
+      <h1 class="thc-brand-name">Accountabilities</h1>
+      <p class="thc-brand-sub">Manage funds received and disbursed</p>
+    </div>
+    <a href="{{ url_for('daily_sales.home') }}" class="thc-back-btn">
+      <i class="bi bi-arrow-left"></i> Back to Daily Sales
+    </a>
+  </div>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert" style="margin-bottom: 1rem;">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- Summary Cards -->
+  <div class="summary-cards">
+    <div class="summary-card received">
+      <div class="summary-card-label">Total Received</div>
+      <div class="summary-card-value">₱{{ "{:,.2f}".format(total_received) }}</div>
+    </div>
+    <div class="summary-card disbursed">
+      <div class="summary-card-label">Total Disbursed</div>
+      <div class="summary-card-value">₱{{ "{:,.2f}".format(total_disbursed) }}</div>
+    </div>
+    <div class="summary-card balance">
+      <div class="summary-card-label">Net Balance</div>
+      <div class="summary-card-value">₱{{ "{:,.2f}".format(total_received - total_disbursed) }}</div>
+    </div>
+  </div>
+
+  <!-- Forms Section -->
+  <div class="forms-section">
+    <div class="forms-grid">
+      <!-- Fund Received Form -->
+      <div class="form-card received">
+        <div class="form-card-title">
+          <i class="bi bi-arrow-down-circle"></i>
+          Record Fund Received
+        </div>
+        <form method="POST" action="{{ url_for('daily_sales.new_fund_received') }}">
+          <div class="form-group">
+            <label class="form-label required">Category</label>
+            <select name="fund_category_id" class="form-select" required>
+              <option value="">Select category</option>
+              {% for category in fund_categories %}
+                <option value="{{ category.id }}">{{ category.category_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Amount</label>
+            <input type="number" name="amount" class="form-control" step="0.01" min="0.01" placeholder="0.00" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Date</label>
+            <input type="date" name="record_date" class="form-control" value="{{ start_date }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Reference Number</label>
+            <input type="text" name="reference_number" class="form-control" placeholder="Optional">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-control" placeholder="Optional notes"></textarea>
+          </div>
+          <button type="submit" class="btn-submit received">
+            <i class="bi bi-check-circle"></i> Record Received
+          </button>
+        </form>
+      </div>
+
+      <!-- Fund Disbursed Form -->
+      <div class="form-card disbursed">
+        <div class="form-card-title">
+          <i class="bi bi-arrow-up-circle"></i>
+          Record Fund Disbursed
+        </div>
+        <form method="POST" action="{{ url_for('daily_sales.new_fund_disbursed') }}">
+          <div class="form-group">
+            <label class="form-label required">Category</label>
+            <select name="fund_category_id" class="form-select" required>
+              <option value="">Select category</option>
+              {% for category in fund_categories %}
+                <option value="{{ category.id }}">{{ category.category_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Amount</label>
+            <input type="number" name="amount" class="form-control" step="0.01" min="0.01" placeholder="0.00" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Date</label>
+            <input type="date" name="record_date" class="form-control" value="{{ start_date }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Reference Number</label>
+            <input type="text" name="reference_number" class="form-control" placeholder="Optional">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-control" placeholder="Optional notes"></textarea>
+          </div>
+          <button type="submit" class="btn-submit disbursed">
+            <i class="bi bi-check-circle"></i> Record Disbursed
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    <div class="filter-group">
+      <label class="filter-label">Start Date</label>
+      <input type="date" id="filter_start_date" class="filter-input" value="{{ start_date }}">
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">End Date</label>
+      <input type="date" id="filter_end_date" class="filter-input" value="{{ end_date }}">
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">Category</label>
+      <select id="filter_category" class="filter-input">
+        <option value="">All categories</option>
+        {% for category in fund_categories %}
+          <option value="{{ category.id }}" {% if selected_category_id == category.id %}selected{% endif %}>
+            {{ category.category_name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="filter-btn" onclick="applyFilters()">
+      <i class="bi bi-funnel"></i> Filter
+    </button>
+    <button class="filter-btn-clear" onclick="clearFilters()">Clear</button>
+  </div>
+
+  <!-- Funds Received List -->
+  <div class="transactions-section">
+    <div class="section-title">
+      <i class="bi bi-arrow-down-circle" style="color: #0f6e56;"></i>
+      Funds Received ({{ funds_received|length }})
+    </div>
+    <div class="transactions-table">
+      {% if funds_received %}
+        <table>
+          <thead>
+            <tr>
+              <th class="date-col">Date</th>
+              <th class="category-col">Category</th>
+              <th class="amount-col">Amount</th>
+              <th class="ref-col">Reference</th>
+              <th class="desc-col">Description</th>
+              <th class="status-col">Status</th>
+              <th class="actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for fund in funds_received %}
+              <tr>
+                <td class="date-col">{{ fund.formatted_record_date }}</td>
+                <td class="category-col">{{ fund.fund_category.category_name if fund.fund_category else '—' }}</td>
+                <td class="amount-col received">₱{{ fund.formatted_amount }}</td>
+                <td class="ref-col">{{ fund.reference_number or '—' }}</td>
+                <td class="desc-col">{{ fund.description or '—' }}</td>
+                <td class="status-col">
+                  <span class="status-badge {{ fund.status }}">{{ fund.status }}</span>
+                </td>
+                <td class="actions-col">
+                  <form method="POST" action="{{ url_for('daily_sales.delete_fund_received', id=fund.id) }}" style="display: inline;">
+                    <button type="submit" class="btn-delete" onclick="return confirm('Delete this record?')">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="empty-state">
+          <div><i class="bi bi-inbox"></i></div>
+          <div>No funds received records found for the selected period</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Funds Disbursed List -->
+  <div class="transactions-section">
+    <div class="section-title">
+      <i class="bi bi-arrow-up-circle" style="color: #993c1d;"></i>
+      Funds Disbursed ({{ funds_disbursed|length }})
+    </div>
+    <div class="transactions-table">
+      {% if funds_disbursed %}
+        <table>
+          <thead>
+            <tr>
+              <th class="date-col">Date</th>
+              <th class="category-col">Category</th>
+              <th class="amount-col">Amount</th>
+              <th class="ref-col">Reference</th>
+              <th class="desc-col">Description</th>
+              <th class="status-col">Status</th>
+              <th class="actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for fund in funds_disbursed %}
+              <tr>
+                <td class="date-col">{{ fund.formatted_record_date }}</td>
+                <td class="category-col">{{ fund.fund_category.category_name if fund.fund_category else '—' }}</td>
+                <td class="amount-col disbursed">₱{{ fund.formatted_amount }}</td>
+                <td class="ref-col">{{ fund.reference_number or '—' }}</td>
+                <td class="desc-col">{{ fund.description or '—' }}</td>
+                <td class="status-col">
+                  <span class="status-badge {{ fund.status }}">{{ fund.status }}</span>
+                </td>
+                <td class="actions-col">
+                  <form method="POST" action="{{ url_for('daily_sales.delete_fund_disbursed', id=fund.id) }}" style="display: inline;">
+                    <button type="submit" class="btn-delete" onclick="return confirm('Delete this record?')">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="empty-state">
+          <div><i class="bi bi-inbox"></i></div>
+          <div>No funds disbursed records found for the selected period</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+function applyFilters() {
+  const startDate = document.getElementById('filter_start_date').value;
+  const endDate = document.getElementById('filter_end_date').value;
+  const category = document.getElementById('filter_category').value;
+
+  const params = new URLSearchParams();
+  if (startDate) params.append('start_date', startDate);
+  if (endDate) params.append('end_date', endDate);
+  if (category) params.append('category_id', category);
+
+  window.location.href = '{{ url_for("daily_sales.accountabilities") }}?' + params.toString();
+}
+
+function clearFilters() {
+  window.location.href = '{{ url_for("daily_sales.accountabilities") }}';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,1101 @@
+{% extends "base.html" %}
+{% block title %}Petty Cash Management — The Health Collective Inc.{% endblock %}
+
+{% block styles %}
+<style>
+  .thc-wrap { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
+  /* ── top bar ── */
+  .thc-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: .75rem; }
+  .thc-brand-name { font-family: var(--thc-font-heading); font-size: 1.05rem; font-weight: 600; color: var(--thc-text); margin: 0; }
+  .thc-brand-sub { font-size: .75rem; color: var(--thc-text-muted); margin: 2px 0 0; }
+  .thc-back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--thc-text-muted); text-decoration: none; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--thc-border); background: #fff; transition: all .15s; }
+  .thc-back-btn:hover { border-color: var(--thc-primary); color: var(--thc-primary); background: var(--thc-primary-light); text-decoration: none; }
+
+  /* ── forms section ── */
+  .forms-section { margin-bottom: 2rem; }
+  .forms-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .form-card { background: #fff; border: 1px solid var(--thc-border); border-radius: 10px; padding: 20px; }
+  .form-card-title { font-size: .95rem; font-weight: 600; color: var(--thc-text); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .form-card-title i { font-size: 1.1rem; }
+  .form-card.expenses .form-card-title { color: #0f6e56; }
+  .form-card.reimbursement .form-card-title { color: #993c1d; }
+
+  /* ── form elements ── */
+  .form-group { margin-bottom: 14px; }
+  .form-label { display: block; font-size: .8rem; font-weight: 600; color: var(--thc-text); margin-bottom: 5px; }
+  .form-label.required::after { content: " *"; color: #dc3545; }
+  .form-control { width: 100%; padding: 8px 12px; border: 1px solid var(--thc-border); border-radius: 6px; font-size: .85rem; transition: border-color .15s; }
+  .form-control:focus { outline: none; border-color: var(--thc-primary); box-shadow: 0 0 0 3px var(--thc-primary-light); }
+  .form-select { width: 100%; padding: 8px 12px; border: 1px solid var(--thc-border); border-radius: 6px; font-size: .85rem; background: #fff; cursor: pointer; }
+  .form-select:focus { outline: none; border-color: var(--thc-primary); box-shadow: 0 0 0 3px var(--thc-primary-light); }
+  textarea.form-control { resize: vertical; min-height: 70px; }
+
+  .btn-submit { width: 100%; padding: 10px; border: none; border-radius: 6px; font-size: .85rem; font-weight: 600; cursor: pointer; transition: all .15s; }
+  .btn-submit.expenses { background: #0f6e56; color: #fff; }
+  .btn-submit.expenses:hover { background: #0d5c49; }
+  .btn-submit.reimbursement { background: #993c1d; color: #fff; }
+  .btn-submit.reimbursement:hover { background: #7a2f16; }
+
+  /* ── filters ── */
+  .filters-bar { background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; padding: 14px 16px; margin-bottom: 1rem; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+  .filter-group { flex: 1; min-width: 150px; }
+  .filter-label { display: block; font-size: .75rem; font-weight: 600; color: var(--thc-text-muted); margin-bottom: 4px; }
+  .filter-input { width: 100%; padding: 7px 10px; border: 1px solid var(--thc-border); border-radius: 6px; font-size: .82rem; }
+  .filter-btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: .82rem; font-weight: 600; background: var(--thc-primary); color: #fff; cursor: pointer; }
+  .filter-btn:hover { background: #1d5c6a; }
+  .filter-btn-clear { padding: 8px 16px; border: 1px solid var(--thc-border); border-radius: 6px; font-size: .82rem; font-weight: 600; background: #fff; color: var(--thc-text-muted); cursor: pointer; }
+  .filter-btn-clear:hover { border-color: var(--thc-primary); color: var(--thc-primary); }
+
+  /* ── transactions list ── */
+  .transactions-section { margin-bottom: 2rem; }
+  .section-title { font-size: .9rem; font-weight: 600; color: var(--thc-text); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .section-title i { font-size: 1rem; }
+
+  .transactions-table { width: 100%; background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; overflow: hidden; }
+  .transactions-table table { width: 100%; border-collapse: collapse; }
+  .transactions-table thead { background: #f8f9fa; }
+  .transactions-table th { padding: 10px 12px; text-align: left; font-size: .75rem; font-weight: 600; color: var(--thc-text-muted); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--thc-border); }
+  .transactions-table td { padding: 12px; font-size: .85rem; border-bottom: 1px solid #f0f0f0; }
+  .transactions-table tbody tr:last-child td { border-bottom: none; }
+  .transactions-table tbody tr:hover { background: #f8f9fa; }
+
+  .checkbox-col { width: 40px; text-align: center; }
+  .date-col { width: 100px; color: var(--thc-text-muted); font-size: .8rem; }
+  .pcv-col { width: 100px; font-size: .8rem; color: var(--thc-text-muted); }
+  .category-col { width: 140px; }
+  .amount-col { width: 120px; text-align: right; font-family: monospace; font-weight: 600; }
+  .amount-col.expenses { color: #0f6e56; }
+  .amount-col.reimbursement { color: #993c1d; }
+  .desc-col { min-width: 200px; }
+  .status-col { width: 130px; }
+  .actions-col { width: 80px; text-align: center; }
+
+  .pcv-checkbox { width: 18px; height: 18px; cursor: pointer; }
+
+  /* ── auto-increment fields ── */
+  .input-readonly { background: #f9f8f5 !important; color: var(--thc-text-muted) !important; cursor: not-allowed; border-color: #e2e8f0 !important; }
+
+  /* ── payee autocomplete ── */
+  .payee-wrapper { position: relative; }
+  .payee-ac-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: #fff;
+    border: 1px solid var(--thc-border);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.10);
+    max-height: 240px;
+    overflow-y: auto;
+    display: none;
+    font-size: 0.875rem;
+  }
+  .payee-ac-item {
+    padding: 7px 14px;
+    cursor: pointer;
+    color: var(--thc-text);
+  }
+  .payee-ac-item:hover,
+  .payee-ac-item--active {
+    background: var(--thc-accent-light, #e6f3f5);
+    color: var(--thc-accent, #1a6473);
+    font-weight: 500;
+  }
+
+  .status-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+  .status-badge.draft { background: #e9ecef; color: #6c757d; }
+  .status-badge.submitted { background: #cfe2ff; color: #084298; }
+  .status-badge.posted { background: #d1f4e0; color: #0f6e56; }
+  .status-badge.for_reimbursement { background: #fff3cd; color: #856404; }
+  .status-badge.reimbursed { background: #d1e7dd; color: #0a3622; }
+  .status-badge.cancelled { background: #f8d7da; color: #842029; }
+
+  .btn-delete { padding: 4px 10px; border: 1px solid #dc3545; border-radius: 4px; background: #fff; color: #dc3545; font-size: .75rem; font-weight: 600; cursor: pointer; transition: all .15s; }
+  .btn-delete:hover { background: #dc3545; color: #fff; }
+
+  .btn-print { padding: 4px 10px; border: 1px solid #1a6473; border-radius: 4px; background: #fff; color: #1a6473; font-size: .75rem; font-weight: 600; cursor: pointer; transition: all .15s; margin-right: 4px; }
+  .btn-print:hover { background: #1a6473; color: #fff; }
+
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--thc-text-muted); font-size: .9rem; }
+  .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: .3; }
+
+  /* ── reimbursement report button ── */
+  .reimbursement-actions { margin-bottom: 1rem; display: flex; justify-content: flex-end; gap: 10px; }
+  .btn-reimbursement-report { padding: 8px 16px; border: none; border-radius: 6px; font-size: .85rem; font-weight: 600; background: #1a6473; color: #fff; cursor: pointer; transition: all .15s; }
+  .btn-reimbursement-report:hover { background: #135260; }
+  .btn-reimbursement-report:disabled { background: #ccc; cursor: not-allowed; }
+
+  /* ── bank account autocomplete ── */
+  .bank-account-wrapper { position: relative; }
+  .bank-ac-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: #fff;
+    border: 1px solid var(--thc-border);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.10);
+    max-height: 240px;
+    overflow-y: auto;
+    display: none;
+    font-size: 0.875rem;
+  }
+  .bank-ac-item {
+    padding: 7px 14px;
+    cursor: pointer;
+    color: var(--thc-text);
+  }
+  .bank-ac-item:hover,
+  .bank-ac-item--active {
+    background: var(--thc-accent-light, #e6f3f5);
+    color: var(--thc-accent, #1a6473);
+    font-weight: 500;
+  }
+  .bank-ac-add {
+    color: var(--thc-accent, #1a6473) !important;
+    font-weight: 600 !important;
+    border-bottom: 1px solid var(--thc-border);
+  }
+
+  @media (max-width: 768px) {
+    .forms-grid { grid-template-columns: 1fr; }
+    .filters-bar { flex-direction: column; align-items: stretch; }
+    .filter-group { width: 100%; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="thc-wrap">
+  <!-- Top Bar -->
+  <div class="thc-topbar">
+    <div>
+      <h1 class="thc-brand-name">Petty Cash Management</h1>
+      <p class="thc-brand-sub">Manage petty cash expenses and reimbursements</p>
+    </div>
+    <a href="{{ url_for('daily_sales.home') }}" class="thc-back-btn">
+      <i class="bi bi-arrow-left"></i> Back to Daily Sales
+    </a>
+  </div>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert" style="margin-bottom: 1rem;">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- Filters at Top -->
+  <div class="filters-bar">
+    <div class="filter-group">
+      <label class="filter-label">Start Date</label>
+      <input type="date" id="filter_start_date" class="filter-input" value="2026-05-01">
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">End Date</label>
+      <input type="date" id="filter_end_date" class="filter-input" value="2026-05-21">
+    </div>
+    <button class="filter-btn" onclick="alert('Filter functionality will be implemented')">
+      <i class="bi bi-funnel"></i> Filter
+    </button>
+    <button class="filter-btn-clear" onclick="alert('Clear functionality will be implemented')">Clear</button>
+  </div>
+
+  <!-- Forms Section -->
+  <div class="forms-section">
+    <div class="forms-grid">
+      <!-- Petty Cash Voucher Form -->
+      <div class="form-card expenses">
+        <div class="form-card-title">
+          <i class="bi bi-arrow-up-circle"></i>
+          Petty Cash Voucher
+        </div>
+        <form method="POST" action="#">
+          <div class="form-group">
+            <label class="form-label required">Date</label>
+            <input type="date" name="date" class="form-control" value="2026-05-21" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">PCV No.</label>
+            <input type="text" name="pcv_number" class="form-control input-readonly" value="PCV-0005" readonly>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Payee</label>
+            <div class="payee-wrapper">
+              <input type="text" name="payee" id="payee-input" class="form-control" placeholder="Search payee..." autocomplete="off" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Amount</label>
+            <input type="number" name="amount" class="form-control" step="0.01" min="0.01" placeholder="0.00" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-control" placeholder="Optional notes"></textarea>
+          </div>
+          <button type="submit" class="btn-submit expenses">
+            <i class="bi bi-check-circle"></i> Record Voucher
+          </button>
+        </form>
+      </div>
+
+      <!-- Reimbursements Received Form -->
+      <div class="form-card reimbursement">
+        <div class="form-card-title">
+          <i class="bi bi-arrow-down-circle"></i>
+          Reimbursements Received
+        </div>
+
+        <form method="POST" action="#">
+          <div class="form-group">
+            <label class="form-label required">Date</label>
+            <input type="date" name="date" class="form-control" value="2026-05-21" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Reference No.</label>
+            <input type="text" name="reference" class="form-control input-readonly" value="REF-0002" readonly>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Bank / Account</label>
+            <div class="bank-account-wrapper">
+              <input type="text" name="bank_account" id="bank-account-input" class="form-control" placeholder="e.g. BDO Savings - 1234" autocomplete="off" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Amount</label>
+            <input type="number" name="amount" id="reimbursement-amount" class="form-control input-readonly" step="0.01" min="0.01" placeholder="0.00" value="0.00" readonly required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-control" placeholder="Optional notes"></textarea>
+          </div>
+          <button type="submit" class="btn-submit reimbursement">
+            <i class="bi bi-check-circle"></i> Record Reimbursement
+          </button>
+        </form>
+
+        <!-- Pending Reimbursement Reports -->
+        <div style="margin-top: 1rem; padding: 10px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px;">
+          <div style="font-size: 0.8rem; font-weight: 600; margin-bottom: 8px;">Pending Reimbursement Reports:</div>
+          <div style="max-height: 150px; overflow-y: auto;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; margin-bottom: 6px; cursor: pointer;">
+              <input type="checkbox" class="pcv-checkbox reimbursement-report-check" data-amount="6000.00" value="RPT-001" onchange="updateReimbursementAmount()">
+              <span>RPT-001 (May 19-21, 2026) - ₱6,000.00</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; margin-bottom: 6px; cursor: pointer;">
+              <input type="checkbox" class="pcv-checkbox reimbursement-report-check" data-amount="2500.00" value="RPT-002" onchange="updateReimbursementAmount()">
+              <span>RPT-002 (May 15-18, 2026) - ₱2,500.00</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Petty Cash Vouchers List -->
+  <div class="transactions-section">
+    <div class="section-title">
+      <i class="bi bi-arrow-up-circle" style="color: #0f6e56;"></i>
+      Petty Cash Vouchers (4)
+    </div>
+
+    <!-- Reimbursement Actions -->
+    <div class="reimbursement-actions">
+      <button type="button" class="btn-reimbursement-report" id="createReimbursementBtn" onclick="openReimbursementReport()">
+        <i class="bi bi-file-earmark-text"></i> Create Reimbursement Report
+      </button>
+    </div>
+
+    <div class="transactions-table">
+      <table>
+        <thead>
+          <tr>
+            <th class="checkbox-col">
+              <input type="checkbox" id="selectAllPCV" class="pcv-checkbox" onclick="toggleSelectAllPCV()">
+            </th>
+            <th class="date-col">Date</th>
+            <th class="pcv-col">PCV No.</th>
+            <th class="category-col">Payee</th>
+            <th class="amount-col">Amount</th>
+            <th class="desc-col">Description</th>
+            <th class="status-col">Status</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="checkbox-col">
+              <input type="checkbox" class="pcv-checkbox pcv-select" data-pcv-id="1" onclick="updateReimbursementBtn()">
+            </td>
+            <td class="date-col">19-May-2026</td>
+            <td class="pcv-col">PCV-0001</td>
+            <td class="category-col">Juan Dela Cruz</td>
+            <td class="amount-col expenses">₱1,000.00</td>
+            <td class="desc-col">Office supplies</td>
+            <td class="status-col">
+              <span class="status-badge posted">posted</span>
+            </td>
+            <td class="actions-col">
+              <button type="button" class="btn-print" onclick="printPCV('PCV-0001')">
+                <i class="bi bi-printer"></i>
+              </button>
+              <button type="button" class="btn-delete" onclick="alert('Delete functionality will be implemented')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+          <tr>
+            <td class="checkbox-col">
+              <input type="checkbox" class="pcv-checkbox pcv-select" data-pcv-id="2" onclick="updateReimbursementBtn()">
+            </td>
+            <td class="date-col">19-May-2026</td>
+            <td class="pcv-col">PCV-0002</td>
+            <td class="category-col">Maria Santos</td>
+            <td class="amount-col expenses">₱5,000.00</td>
+            <td class="desc-col">Transportation</td>
+            <td class="status-col">
+              <span class="status-badge posted">posted</span>
+            </td>
+            <td class="actions-col">
+              <button type="button" class="btn-print" onclick="printPCV('PCV-0002')">
+                <i class="bi bi-printer"></i>
+              </button>
+              <button type="button" class="btn-delete" onclick="alert('Delete functionality will be implemented')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+          <tr>
+            <td class="checkbox-col">—</td>
+            <td class="date-col">20-May-2026</td>
+            <td class="pcv-col">PCV-0003</td>
+            <td class="category-col">Pedro Reyes</td>
+            <td class="amount-col expenses">₱2,500.00</td>
+            <td class="desc-col">Utilities payment</td>
+            <td class="status-col">
+              <span class="status-badge for_reimbursement">for reimbursement</span>
+            </td>
+            <td class="actions-col">
+              <button type="button" class="btn-print" onclick="printPCV('PCV-0003')">
+                <i class="bi bi-printer"></i>
+              </button>
+              <button type="button" class="btn-delete" onclick="alert('Delete functionality will be implemented')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+          <tr>
+            <td class="checkbox-col">—</td>
+            <td class="date-col">18-May-2026</td>
+            <td class="pcv-col">PCV-0004</td>
+            <td class="category-col">Anna Garcia</td>
+            <td class="amount-col expenses">₱3,200.00</td>
+            <td class="desc-col">Medical supplies</td>
+            <td class="status-col">
+              <span class="status-badge reimbursed">reimbursed</span>
+            </td>
+            <td class="actions-col">
+              <button type="button" class="btn-print" onclick="printPCV('PCV-0004')">
+                <i class="bi bi-printer"></i>
+              </button>
+              <button type="button" class="btn-delete" onclick="alert('Delete functionality will be implemented')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Reimbursements List -->
+  <div class="transactions-section">
+    <div class="section-title">
+      <i class="bi bi-arrow-down-circle" style="color: #993c1d;"></i>
+      Reimbursements Received (1)
+    </div>
+    <div class="transactions-table">
+      <table>
+        <thead>
+          <tr>
+            <th class="date-col">Date</th>
+            <th class="pcv-col">PCV No.</th>
+            <th class="category-col">Bank / Account</th>
+            <th class="amount-col">Amount</th>
+            <th class="desc-col">Description</th>
+            <th class="status-col">Status</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="date-col">20-May-2026</td>
+            <td class="pcv-col">REF-001</td>
+            <td class="category-col">BDO Savings Account</td>
+            <td class="amount-col reimbursement">₱3,000.00</td>
+            <td class="desc-col">Petty cash replenishment</td>
+            <td class="status-col">
+              <span class="status-badge posted">posted</span>
+            </td>
+            <td class="actions-col">
+              <button type="button" class="btn-delete" onclick="alert('Delete functionality will be implemented')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Reimbursement Reports List -->
+  <div class="transactions-section">
+    <div class="section-title">
+      <i class="bi bi-file-earmark-text" style="color: #1a6473;"></i>
+      Reimbursement Reports (3)
+    </div>
+    <div class="transactions-table">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 100px;">Report No.</th>
+            <th class="date-col">Created Date</th>
+            <th style="width: 150px;">Period</th>
+            <th class="amount-col">Total Amount</th>
+            <th class="status-col">Status</th>
+            <th style="width: 150px;">Prepared By</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>RPT-001</td>
+            <td class="date-col">21-May-2026</td>
+            <td>May 19-21, 2026</td>
+            <td class="amount-col" style="color: #856404;">₱6,000.00</td>
+            <td class="status-col">
+              <span class="status-badge for_reimbursement">pending</span>
+            </td>
+            <td>Juan Admin</td>
+            <td class="actions-col">
+              <button type="button" class="btn-print" onclick="viewReportDetails('RPT-001')">
+                <i class="bi bi-eye"></i>
+              </button>
+            </td>
+          </tr>
+          <tr>
+            <td>RPT-002</td>
+            <td class="date-col">20-May-2026</td>
+            <td>May 15-18, 2026</td>
+            <td class="amount-col" style="color: #856404;">₱2,500.00</td>
+            <td class="status-col">
+              <span class="status-badge for_reimbursement">pending</span>
+            </td>
+            <td>Juan Admin</td>
+            <td class="actions-col">
+              <button type="button" class="btn-print" onclick="viewReportDetails('RPT-002')">
+                <i class="bi bi-eye"></i>
+              </button>
+            </td>
+          </tr>
+          <tr>
+            <td>RPT-003</td>
+            <td class="date-col">18-May-2026</td>
+            <td>May 12-15, 2026</td>
+            <td class="amount-col" style="color: #0a3622;">₱3,200.00</td>
+            <td class="status-col">
+              <span class="status-badge reimbursed">reimbursed</span>
+            </td>
+            <td>Juan Admin</td>
+            <td class="actions-col">
+              <button type="button" class="btn-print" onclick="viewReportDetails('RPT-003')">
+                <i class="bi bi-eye"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Reimbursement Report Modal -->
+<div class="modal fade" id="reimbursementReportModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Petty Cash Reimbursement Report</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Report Header -->
+        <div style="text-align: center; margin-bottom: 2rem;">
+          <h6 style="margin: 0; font-weight: 700;">THE HEALTH COLLECTIVE INC.</h6>
+          <p style="margin: 0; font-size: 0.9rem;">Petty Cash Reimbursement Report</p>
+          <p style="margin: 0; font-size: 0.85rem; color: #6c757d;">Period: <span id="reportPeriod">May 19-21, 2026</span></p>
+        </div>
+
+        <!-- Selected Vouchers Table -->
+        <table class="table table-bordered table-sm" style="font-size: 0.85rem;">
+          <thead style="background: #f8f9fa;">
+            <tr>
+              <th style="width: 100px;">PCV No.</th>
+              <th style="width: 100px;">Date</th>
+              <th>Payee</th>
+              <th>Description</th>
+              <th style="width: 120px; text-align: right;">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="reportVouchersBody">
+            <tr>
+              <td>PCV-0001</td>
+              <td>19-May-2026</td>
+              <td>Juan Dela Cruz</td>
+              <td>Office supplies</td>
+              <td style="text-align: right;">₱1,000.00</td>
+            </tr>
+            <tr>
+              <td>PCV-0002</td>
+              <td>19-May-2026</td>
+              <td>Maria Santos</td>
+              <td>Transportation</td>
+              <td style="text-align: right;">₱5,000.00</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr style="font-weight: 600; background: #f8f9fa;">
+              <td colspan="4" style="text-align: right;">Total Amount for Reimbursement:</td>
+              <td style="text-align: right;" id="reportTotalAmount">₱6,000.00</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- Signatories -->
+        <div style="margin-top: 3rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+          <div>
+            <p style="margin-bottom: 2rem; font-size: 0.85rem;"><strong>Prepared by:</strong></p>
+            <div style="border-top: 1px solid #000; padding-top: 5px; text-align: center;">
+              <p style="margin: 0; font-weight: 600;" id="preparedBy">Juan Admin</p>
+              <p style="margin: 0; font-size: 0.8rem; color: #6c757d;">Name and Signature</p>
+            </div>
+          </div>
+          <div>
+            <p style="margin-bottom: 2rem; font-size: 0.85rem;"><strong>Approved by:</strong></p>
+            <div style="border-top: 1px solid #000; padding-top: 5px; text-align: center;">
+              <p style="margin: 0; font-weight: 600;">DGO</p>
+              <p style="margin: 0; font-size: 0.8rem; color: #6c757d;">Director General Operations</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="submitReimbursementReport()">
+          <i class="bi bi-check-circle"></i> Submit for Reimbursement
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Print PCV Modal -->
+<div class="modal fade" id="printPCVModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Petty Cash Voucher - <span id="pcvPrintNo">PCV-0001</span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="pcvPrintContent">
+        <!-- PCV Header -->
+        <div style="text-align: center; margin-bottom: 2rem; border-bottom: 2px solid #000; padding-bottom: 1rem;">
+          <h5 style="margin: 0; font-weight: 700; font-size: 1.2rem;">THE HEALTH COLLECTIVE INC.</h5>
+          <p style="margin: 0; font-size: 0.9rem; color: #6c757d;">Petty Cash Voucher</p>
+        </div>
+
+        <!-- PCV Details -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+          <div>
+            <table style="width: 100%; font-size: 0.9rem;">
+              <tr>
+                <td style="padding: 8px 0; width: 120px;"><strong>PCV No.:</strong></td>
+                <td style="padding: 8px 0;" id="pcvDetailNo">PCV-0001</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0;"><strong>Date:</strong></td>
+                <td style="padding: 8px 0;" id="pcvDetailDate">19-May-2026</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0;"><strong>Payee:</strong></td>
+                <td style="padding: 8px 0;" id="pcvDetailPayee">Juan Dela Cruz</td>
+              </tr>
+            </table>
+          </div>
+          <div>
+            <table style="width: 100%; font-size: 0.9rem;">
+              <tr>
+                <td style="padding: 8px 0; width: 120px;"><strong>Amount:</strong></td>
+                <td style="padding: 8px 0; font-weight: 700; font-size: 1.1rem;" id="pcvDetailAmount">₱1,000.00</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div style="margin-bottom: 2rem;">
+          <p style="font-size: 0.9rem; margin-bottom: 0.5rem;"><strong>Description:</strong></p>
+          <p style="padding: 12px; background: #f8f9fa; border-radius: 6px; font-size: 0.9rem; min-height: 80px;" id="pcvDetailDesc">Office supplies</p>
+        </div>
+
+        <!-- Amount in Words -->
+        <div style="margin-bottom: 2rem; padding: 12px; border: 1px solid #dee2e6; border-radius: 6px;">
+          <p style="font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Amount in Words:</p>
+          <p style="font-size: 0.9rem; font-style: italic; margin: 0;" id="pcvDetailAmountWords">One Thousand Pesos Only</p>
+        </div>
+
+        <!-- Signatures -->
+        <div style="margin-top: 3rem; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2rem;">
+          <div>
+            <p style="margin-bottom: 2.5rem; font-size: 0.85rem;"><strong>Requested by:</strong></p>
+            <div style="border-top: 1px solid #000; padding-top: 5px; text-align: center;">
+              <p style="margin: 0; font-weight: 600;" id="pcvDetailRequestedBy">Juan Dela Cruz</p>
+              <p style="margin: 0; font-size: 0.8rem; color: #6c757d;">Signature over Printed Name</p>
+            </div>
+          </div>
+          <div>
+            <p style="margin-bottom: 2.5rem; font-size: 0.85rem;"><strong>Approved by:</strong></p>
+            <div style="border-top: 1px solid #000; padding-top: 5px; text-align: center;">
+              <p style="margin: 0; font-weight: 600;">DGO</p>
+              <p style="margin: 0; font-size: 0.8rem; color: #6c757d;">Signature over Printed Name</p>
+            </div>
+          </div>
+          <div>
+            <p style="margin-bottom: 2.5rem; font-size: 0.85rem;"><strong>Received by:</strong></p>
+            <div style="border-top: 1px solid #000; padding-top: 5px; text-align: center;">
+              <p style="margin: 0; font-weight: 600;" id="pcvDetailReceivedBy">Juan Dela Cruz</p>
+              <p style="margin: 0; font-size: 0.8rem; color: #6c757d;">Signature over Printed Name</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="window.print()">
+          <i class="bi bi-printer"></i> Print
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Report Details Modal -->
+<div class="modal fade" id="viewReportDetailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Reimbursement Report - <span id="detailReportNo">RPT-001</span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Report Header -->
+        <div style="text-align: center; margin-bottom: 2rem;">
+          <h6 style="margin: 0; font-weight: 700;">THE HEALTH COLLECTIVE INC.</h6>
+          <p style="margin: 0; font-size: 0.9rem;">Petty Cash Reimbursement Report</p>
+          <p style="margin: 0; font-size: 0.85rem; color: #6c757d;">Report No.: <span id="detailReportNo2">RPT-001</span></p>
+          <p style="margin: 0; font-size: 0.85rem; color: #6c757d;">Period: <span id="detailPeriod">May 19-21, 2026</span></p>
+          <p style="margin: 0; font-size: 0.85rem; color: #6c757d;">Created: <span id="detailCreated">21-May-2026</span></p>
+        </div>
+
+        <!-- Vouchers in Report -->
+        <table class="table table-bordered table-sm" style="font-size: 0.85rem;">
+          <thead style="background: #f8f9fa;">
+            <tr>
+              <th style="width: 100px;">PCV No.</th>
+              <th style="width: 100px;">Date</th>
+              <th>Payee</th>
+              <th>Description</th>
+              <th style="width: 120px; text-align: right;">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="detailVouchersBody">
+            <tr>
+              <td>PCV-0001</td>
+              <td>19-May-2026</td>
+              <td>Juan Dela Cruz</td>
+              <td>Office supplies</td>
+              <td style="text-align: right;">₱1,000.00</td>
+            </tr>
+            <tr>
+              <td>PCV-0002</td>
+              <td>19-May-2026</td>
+              <td>Maria Santos</td>
+              <td>Transportation</td>
+              <td style="text-align: right;">₱5,000.00</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr style="font-weight: 600; background: #f8f9fa;">
+              <td colspan="4" style="text-align: right;">Total Amount:</td>
+              <td style="text-align: right;" id="detailTotalAmount">₱6,000.00</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- Signatories -->
+        <div style="margin-top: 3rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+          <div>
+            <p style="margin-bottom: 2rem; font-size: 0.85rem;"><strong>Prepared by:</strong></p>
+            <div style="border-top: 1px solid #000; padding-top: 5px; text-align: center;">
+              <p style="margin: 0; font-weight: 600;" id="detailPreparedBy">Juan Admin</p>
+              <p style="margin: 0; font-size: 0.8rem; color: #6c757d;">Name and Signature</p>
+            </div>
+          </div>
+          <div>
+            <p style="margin-bottom: 2rem; font-size: 0.85rem;"><strong>Approved by:</strong></p>
+            <div style="border-top: 1px solid #000; padding-top: 5px; text-align: center;">
+              <p style="margin: 0; font-weight: 600;">DGO</p>
+              <p style="margin: 0; font-size: 0.8rem; color: #6c757d;">Director General Operations</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="printReport()">
+          <i class="bi bi-printer"></i> Print
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Bank account options (mock data - will be populated from server later)
+  const BANK_ACCOUNT_OPTIONS = [
+    'BDO Savings Account — 1234567890',
+    'BPI Current Account — 0987654321',
+    'BANCO DE ORO — 284-7-28485633-0',
+    'Metrobank Savings — 1122334455',
+    'Security Bank — 9988776655'
+  ];
+
+  // Payee options (mock data - will be populated from server later)
+  const PAYEE_OPTIONS = [
+    'Juan Dela Cruz',
+    'Maria Santos',
+    'Pedro Reyes',
+    'Anna Garcia',
+    'Carlos Mendoza',
+    'Lisa Fernandez'
+  ];
+
+  // Bank account autocomplete
+  function initBankAccountAutocomplete() {
+    const input = document.getElementById('bank-account-input');
+    if (!input) return;
+
+    const wrap = input.parentNode;
+    const dd = document.createElement('div');
+    dd.className = 'bank-ac-dropdown';
+    wrap.appendChild(dd);
+
+    let active = -1;
+
+    function getMatches(q) {
+      if (!q) return BANK_ACCOUNT_OPTIONS.slice(0, 100);
+      const lq = q.toLowerCase();
+      return BANK_ACCOUNT_OPTIONS.filter(function(n) { return n.toLowerCase().includes(lq); });
+    }
+
+    function hl(text, q) {
+      if (!q) return text;
+      const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return text.replace(re, '<strong style="font-weight:700;color:#1a6473">$1</strong>');
+    }
+
+    function render(q) {
+      const matches = getMatches(q);
+      dd.innerHTML = '';
+      active = -1;
+
+      // Add "Add Bank Account" button at the top
+      const addEl = document.createElement('div');
+      addEl.className = 'bank-ac-item bank-ac-add';
+      addEl.textContent = '+ Add Bank Account';
+      addEl.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        alert('Add Bank Account functionality will be implemented');
+        hide();
+      });
+      dd.appendChild(addEl);
+
+      matches.forEach(function(name) {
+        const item = document.createElement('div');
+        item.className = 'bank-ac-item';
+        item.innerHTML = hl(name, q);
+        item.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          input.value = name;
+          hide();
+        });
+        dd.appendChild(item);
+      });
+
+      dd.style.display = 'block';
+    }
+
+    function hide() { dd.style.display = 'none'; active = -1; }
+
+    function setActive(i) {
+      const items = dd.querySelectorAll('.bank-ac-item');
+      items.forEach(function(el, idx) {
+        el.classList.toggle('bank-ac-item--active', idx === i);
+      });
+      active = i;
+    }
+
+    input.addEventListener('input', function() { render(this.value.trim()); });
+    input.addEventListener('focus', function() { render(this.value.trim()); });
+    input.addEventListener('blur', function() { setTimeout(hide, 150); });
+    input.addEventListener('keydown', function(e) {
+      if (dd.style.display === 'none') return;
+      const items = dd.querySelectorAll('.bank-ac-item');
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(active + 1, items.length - 1)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(active - 1, 0)); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (active >= 0 && items[active]) items[active].dispatchEvent(new MouseEvent('mousedown'));
+      } else if (e.key === 'Escape') { hide(); }
+    });
+  }
+
+  // Payee autocomplete
+  function initPayeeAutocomplete() {
+    const input = document.getElementById('payee-input');
+    if (!input) return;
+
+    const wrap = input.parentNode;
+    const dd = document.createElement('div');
+    dd.className = 'payee-ac-dropdown';
+    wrap.appendChild(dd);
+
+    let active = -1;
+
+    function getMatches(q) {
+      if (!q) return PAYEE_OPTIONS.slice(0, 100);
+      const lq = q.toLowerCase();
+      return PAYEE_OPTIONS.filter(function(n) { return n.toLowerCase().includes(lq); });
+    }
+
+    function hl(text, q) {
+      if (!q) return text;
+      const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return text.replace(re, '<strong style="font-weight:700;color:#1a6473">$1</strong>');
+    }
+
+    function render(q) {
+      const matches = getMatches(q);
+      dd.innerHTML = '';
+      active = -1;
+
+      // Add "+ Add Payee" option at the top
+      const addEl = document.createElement('div');
+      addEl.className = 'payee-ac-item';
+      addEl.style.color = '#1a6473';
+      addEl.style.fontWeight = '600';
+      addEl.style.borderBottom = '1px solid #dee2e6';
+      addEl.textContent = '+ Add Payee';
+      addEl.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        alert('Add Payee functionality will be implemented');
+        hide();
+      });
+      dd.appendChild(addEl);
+
+      matches.forEach(function(name) {
+        const item = document.createElement('div');
+        item.className = 'payee-ac-item';
+        item.innerHTML = hl(name, q);
+        item.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          input.value = name;
+          hide();
+        });
+        dd.appendChild(item);
+      });
+
+      dd.style.display = 'block';
+    }
+
+    function hide() { dd.style.display = 'none'; active = -1; }
+
+    function setActive(i) {
+      const items = dd.querySelectorAll('.payee-ac-item');
+      items.forEach(function(el, idx) {
+        el.classList.toggle('payee-ac-item--active', idx === i);
+      });
+      active = i;
+    }
+
+    input.addEventListener('input', function() { render(this.value.trim()); });
+    input.addEventListener('focus', function() { render(this.value.trim()); });
+    input.addEventListener('blur', function() { setTimeout(hide, 150); });
+    input.addEventListener('keydown', function(e) {
+      if (dd.style.display === 'none') return;
+      const items = dd.querySelectorAll('.payee-ac-item');
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(active + 1, items.length - 1)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(active - 1, 0)); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (active >= 0 && items[active]) items[active].dispatchEvent(new MouseEvent('mousedown'));
+      } else if (e.key === 'Escape') { hide(); }
+    });
+  }
+
+  // PCV Selection and Reimbursement Report functions
+  function toggleSelectAllPCV() {
+    const selectAll = document.getElementById('selectAllPCV');
+    const checkboxes = document.querySelectorAll('.pcv-select');
+    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+    updateReimbursementBtn();
+  }
+
+  function updateReimbursementBtn() {
+    const checkboxes = document.querySelectorAll('.pcv-select:checked');
+    const btn = document.getElementById('createReimbursementBtn');
+    btn.disabled = checkboxes.length === 0;
+  }
+
+  function openReimbursementReport() {
+    const checkboxes = document.querySelectorAll('.pcv-select:checked');
+    if (checkboxes.length === 0) {
+      alert('Please select at least one voucher');
+      return;
+    }
+
+    // In real implementation, populate the modal with selected vouchers
+    const modal = new bootstrap.Modal(document.getElementById('reimbursementReportModal'));
+    modal.show();
+  }
+
+  function submitReimbursementReport() {
+    alert('Reimbursement report submitted! The selected vouchers will be marked as "For Reimbursement"');
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('reimbursementReportModal'));
+    modal.hide();
+
+    // In real implementation: submit to server and update voucher statuses
+  }
+
+  // Update reimbursement amount based on checked reports
+  function updateReimbursementAmount() {
+    const checkboxes = document.querySelectorAll('.reimbursement-report-check:checked');
+    let total = 0;
+
+    checkboxes.forEach(cb => {
+      const amount = parseFloat(cb.dataset.amount) || 0;
+      total += amount;
+    });
+
+    const amountInput = document.getElementById('reimbursement-amount');
+    if (amountInput) {
+      amountInput.value = total.toFixed(2);
+    }
+  }
+
+  // View specific report details
+  function viewReportDetails(reportNo) {
+    // In real implementation, fetch report data from server
+    // For now, just show the modal with mock data
+    document.getElementById('detailReportNo').textContent = reportNo;
+    document.getElementById('detailReportNo2').textContent = reportNo;
+
+    const modal = new bootstrap.Modal(document.getElementById('viewReportDetailsModal'));
+    modal.show();
+  }
+
+  // Print PCV
+  function printPCV(pcvNo) {
+    // In real implementation, fetch PCV data from server
+    // For now, show modal with mock data based on PCV number
+    document.getElementById('pcvPrintNo').textContent = pcvNo;
+    document.getElementById('pcvDetailNo').textContent = pcvNo;
+
+    // Mock data mapping
+    const pcvData = {
+      'PCV-0001': {
+        date: '19-May-2026',
+        payee: 'Juan Dela Cruz',
+        amount: '₱1,000.00',
+        amountWords: 'One Thousand Pesos Only',
+        description: 'Office supplies',
+        status: 'posted'
+      },
+      'PCV-0002': {
+        date: '19-May-2026',
+        payee: 'Maria Santos',
+        amount: '₱5,000.00',
+        amountWords: 'Five Thousand Pesos Only',
+        description: 'Transportation',
+        status: 'posted'
+      },
+      'PCV-0003': {
+        date: '20-May-2026',
+        payee: 'Pedro Reyes',
+        amount: '₱2,500.00',
+        amountWords: 'Two Thousand Five Hundred Pesos Only',
+        description: 'Utilities payment',
+        status: 'for_reimbursement'
+      },
+      'PCV-0004': {
+        date: '18-May-2026',
+        payee: 'Anna Garcia',
+        amount: '₱3,200.00',
+        amountWords: 'Three Thousand Two Hundred Pesos Only',
+        description: 'Medical supplies',
+        status: 'reimbursed'
+      }
+    };
+
+    const data = pcvData[pcvNo] || pcvData['PCV-0001'];
+
+    document.getElementById('pcvDetailDate').textContent = data.date;
+    document.getElementById('pcvDetailPayee').textContent = data.payee;
+    document.getElementById('pcvDetailAmount').textContent = data.amount;
+    document.getElementById('pcvDetailDesc').textContent = data.description;
+    document.getElementById('pcvDetailAmountWords').textContent = data.amountWords;
+    document.getElementById('pcvDetailRequestedBy').textContent = data.payee;
+    document.getElementById('pcvDetailReceivedBy').textContent = data.payee;
+
+    const modal = new bootstrap.Modal(document.getElementById('printPCVModal'));
+    modal.show();
+  }
+
+  // Print report
+  function printReport() {
+    alert('Print functionality will be implemented');
+    // In real implementation: window.print() or generate PDF
+  }
+
+  // Initialize on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    initBankAccountAutocomplete();
+    initPayeeAutocomplete();
+    updateReimbursementBtn();
+    updateReimbursementAmount(); // Initialize amount on page load
+  });
+</script>
+{% endblock %}

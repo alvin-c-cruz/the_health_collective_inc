@@ -28,63 +28,81 @@
         </div>
     </div>
 
-    {# ── Today ── #}
-    <div style="margin-bottom:0.4rem;">
-        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
-                    color:var(--thc-text-muted);margin-bottom:0.6rem;">Today</div>
-        <div class="dash-grid">
-
-            <div class="dash-card">
-                <div class="dash-card__icon" style="background:var(--thc-primary-light);color:var(--thc-primary);">
-                    <i class="bi bi-receipt"></i>
-                </div>
-                <div class="dash-card__body">
-                    <div class="dash-card__label">Transactions</div>
-                    <div class="dash-card__value">{{ today_count }}</div>
-                </div>
+    {# ── Sales Summary (Month to Date) ── #}
+    <div style="margin-bottom:1.5rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
+            <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--thc-text-muted);">
+                Sales Summary &mdash; {{ month_start.strftime("%B %d") }} to {{ today.strftime("%B %d, %Y") }}
             </div>
-
-            <div class="dash-card">
-                <div class="dash-card__icon" style="background:#dcfce7;color:#166534;">
-                    <i class="bi bi-cash-stack"></i>
-                </div>
-                <div class="dash-card__body">
-                    <div class="dash-card__label">Net Sales</div>
-                    <div class="dash-card__value">{{ "{:,.2f}".format(today_net_sales) }}</div>
-                </div>
-            </div>
-
+            <a href="{{ url_for('daily_sales.sales_summary_report') }}" target="_blank"
+               style="font-size:0.72rem;color:var(--thc-primary);text-decoration:none;font-weight:600;">
+                <i class="bi bi-bar-chart-line"></i> Full Report &rarr;
+            </a>
         </div>
-    </div>
 
-    {# ── Month to Date ── #}
-    <div style="margin-bottom:0.4rem;">
-        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
-                    color:var(--thc-text-muted);margin-bottom:0.6rem;">
-            Month to Date &mdash; {{ today.strftime("%B %Y") }}
+        {# Summary Cards #}
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;margin-bottom:1rem;">
+            <div class="summary-metric">
+                <div class="summary-metric__label">Diagnostics</div>
+                <div class="summary-metric__value">₱{{ "{:,.2f}".format(diagnostics_total) }}</div>
+            </div>
+            <div class="summary-metric">
+                <div class="summary-metric__label">Dialysis</div>
+                <div class="summary-metric__value">₱{{ "{:,.2f}".format(dialysis_total) }}</div>
+            </div>
+            <div class="summary-metric summary-metric--total">
+                <div class="summary-metric__label">Total Sales</div>
+                <div class="summary-metric__value">₱{{ "{:,.2f}".format(mtd_net_sales) }}</div>
+            </div>
         </div>
-        <div class="dash-grid">
 
-            <div class="dash-card">
-                <div class="dash-card__icon" style="background:var(--thc-primary-light);color:var(--thc-primary);">
-                    <i class="bi bi-calendar3"></i>
+        {# Sales Tables #}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.5rem;">
+            {# Diagnostics Table #}
+            <div class="sales-table-card">
+                <div class="sales-table-header" style="background:#e3f2fd;color:#1565c0;">
+                    <i class="bi bi-clipboard2-pulse"></i> Diagnostics
                 </div>
-                <div class="dash-card__body">
-                    <div class="dash-card__label">Transactions</div>
-                    <div class="dash-card__value">{{ mtd_count }}</div>
-                </div>
+                <table class="sales-table">
+                    <tbody>
+                        {% for tt in transaction_types %}
+                        {% if sales_summary['Diagnostics'][tt.type_code]['total'] > 0 %}
+                        <tr>
+                            <td class="sales-table__label">{{ tt.type_name }}</td>
+                            <td class="sales-table__value">₱{{ "{:,.2f}".format(sales_summary['Diagnostics'][tt.type_code]['total']) }}</td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                        <tr class="sales-table__total">
+                            <td>Total</td>
+                            <td>₱{{ "{:,.2f}".format(diagnostics_total) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
-            <div class="dash-card">
-                <div class="dash-card__icon" style="background:#dcfce7;color:#166534;">
-                    <i class="bi bi-graph-up-arrow"></i>
+            {# Dialysis Table #}
+            <div class="sales-table-card">
+                <div class="sales-table-header" style="background:#e8f5e9;color:#2e7d32;">
+                    <i class="bi bi-heart-pulse"></i> Dialysis
                 </div>
-                <div class="dash-card__body">
-                    <div class="dash-card__label">Net Sales</div>
-                    <div class="dash-card__value">{{ "{:,.2f}".format(mtd_net_sales) }}</div>
-                </div>
+                <table class="sales-table">
+                    <tbody>
+                        {% for tt in transaction_types %}
+                        {% if sales_summary['Dialysis'][tt.type_code]['total'] > 0 %}
+                        <tr>
+                            <td class="sales-table__label">{{ tt.type_name }}</td>
+                            <td class="sales-table__value">₱{{ "{:,.2f}".format(sales_summary['Dialysis'][tt.type_code]['total']) }}</td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                        <tr class="sales-table__total">
+                            <td>Total</td>
+                            <td>₱{{ "{:,.2f}".format(dialysis_total) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-
         </div>
     </div>
 
@@ -204,6 +222,89 @@
 
     @media (max-width: 576px) {
         .dash-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* Sales Summary Styles */
+    .summary-metric {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.85rem 1rem;
+        text-align: center;
+    }
+    .summary-metric--total {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: #667eea;
+    }
+    .summary-metric__label {
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--thc-text-muted);
+        margin-bottom: 0.3rem;
+    }
+    .summary-metric--total .summary-metric__label {
+        color: rgba(255,255,255,0.9);
+    }
+    .summary-metric__value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--thc-text);
+        font-family: monospace;
+    }
+    .summary-metric--total .summary-metric__value {
+        color: #fff;
+    }
+
+    .sales-table-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .sales-table-header {
+        padding: 0.6rem 0.85rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .sales-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .sales-table td {
+        padding: 0.5rem 0.85rem;
+        font-size: 0.8rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .sales-table__label {
+        color: var(--thc-text);
+    }
+    .sales-table__value {
+        text-align: right;
+        font-family: monospace;
+        font-weight: 600;
+        color: var(--thc-text);
+    }
+    .sales-table__total td {
+        background: #f8fafc;
+        font-weight: 700;
+        border-bottom: none;
+        padding-top: 0.6rem;
+        padding-bottom: 0.6rem;
+    }
+    .sales-table tr:last-child:not(.sales-table__total) td {
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    @media (max-width: 768px) {
+        .summary-metric__value {
+            font-size: 1.1rem;
+        }
     }
 </style>
 {% endblock %}

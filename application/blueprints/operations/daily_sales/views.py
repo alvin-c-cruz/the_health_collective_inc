@@ -8,7 +8,7 @@ from application.extensions import db
 from ..bank_account.models import BankAccount
 
 from . import app_label, app_name
-from .models import Transaction, TransactionDetail, TransactionTender, TransactionType, Deposit, DepositItem
+from .models import Transaction, TransactionDetail, TransactionTender, TransactionType, Deposit, DepositItem, FundCategory, FundReceived, FundDisbursed
 from .forms import Form
 from ...register.product_type import ProductType
 from ...register.tender import Tender
@@ -978,27 +978,18 @@ def daily_report():
             keys.update(static)
         return sorted(keys, key=lambda k: tender_order.get(k, 0), reverse=True)
 
-    receivable_names = {t.tender_name for t in all_tenders if t.is_receivable}
-
     # Build one section entry per active transaction type
     report_sections = []
     for tt in transaction_types:
         prev_sales = prev_report.sales.get(tt.type_code, {})
         curr_sales = curr_report.sales.get(tt.type_code, {})
         tenders = ordered_keys(prev_sales, curr_sales, static=static_for(tt.type_code))
-        curr_receivable = sum(
-            amt for name, amt in curr_sales.items() if name in receivable_names
-        )
-        prev_receivable = sum(
-            amt for name, amt in prev_sales.items() if name in receivable_names
-        )
+
         report_sections.append({
             'type_code': tt.type_code,
             'type_name': tt.type_name,
             'tenders': tenders,
             'is_dialysis': tt.type_code == 'dialysis',
-            'curr_receivable': curr_receivable,
-            'prev_receivable': prev_receivable,
         })
 
     # Cash on hand = CASH tender across diagnostic sections only (dialysis is Philhealth)
@@ -1009,19 +1000,440 @@ def daily_report():
             if code != 'dialysis'
         )
 
+    # Calculate fund movements for display in "Cash on Hand" section (daily amounts)
+    def calculate_daily_fund_movements(target_date):
+        """Calculate fund received and disbursed for a specific date only"""
+        funds_received = FundReceived.query.filter(
+            FundReceived.record_date == str(target_date),
+            FundReceived.status == 'posted'
+        ).all()
+
+        funds_disbursed = FundDisbursed.query.filter(
+            FundDisbursed.record_date == str(target_date),
+            FundDisbursed.status == 'posted'
+        ).all()
+
+        total_received = sum(f.amount for f in funds_received)
+        total_disbursed = sum(f.amount for f in funds_disbursed)
+
+        return {
+            'total_received': total_received,
+            'total_disbursed': total_disbursed,
+        }
+
+    # Calculate running balances for "Accountabilities" section (cumulative up to date)
+    def calculate_fund_running_balance(target_date):
+        """Calculate running balance for each fund category as of target_date"""
+        # Get all fund transactions up to and including target_date
+        funds_received = FundReceived.query.filter(
+            FundReceived.record_date <= str(target_date),
+            FundReceived.status == 'posted'
+        ).all()
+
+        funds_disbursed = FundDisbursed.query.filter(
+            FundDisbursed.record_date <= str(target_date),
+            FundDisbursed.status == 'posted'
+        ).all()
+
+        # Calculate running balance by category
+        balance_by_category = {}
+        for fr in funds_received:
+            cat_name = fr.fund_category.category_name if fr.fund_category else 'Unknown'
+            balance_by_category[cat_name] = balance_by_category.get(cat_name, 0) + fr.amount
+
+        for fd in funds_disbursed:
+            cat_name = fd.fund_category.category_name if fd.fund_category else 'Unknown'
+            balance_by_category[cat_name] = balance_by_category.get(cat_name, 0) - fd.amount
+
+        return balance_by_category
+
+    # Calculate undeposited cash sales running balance
+    def calculate_undeposited_cash(target_date):
+        """Calculate running balance of undeposited cash sales as of target_date"""
+        # Get all cash sales up to and including target_date
+        cash_sales = Transaction.query.filter(
+            Transaction.record_date <= str(target_date),
+            Transaction.submitted.isnot(None),
+            Transaction.cancelled.is_(None)
+        ).all()
+
+        total_cash = 0
+        for txn in cash_sales:
+            for tender in txn.transaction_tenders:
+                if tender.tender and 'cash' in tender.tender.tender_name.lower():
+                    # Only count diagnostics cash (not dialysis)
+                    if txn.transaction_type and txn.transaction_type.type_code != 'dialysis':
+                        total_cash += tender.amount
+
+        # Subtract all posted deposits up to and including target_date
+        deposits = Deposit.query.filter(
+            Deposit.record_date <= str(target_date),
+            Deposit.status == 'posted'
+        ).all()
+
+        total_deposited = sum(d.total_amount for d in deposits)
+
+        return total_cash - total_deposited
+
+    # Calculate cash deposited for a specific date
+    def calculate_cash_deposited(target_date):
+        """Calculate total cash deposited on a specific date"""
+        deposits = Deposit.query.filter(
+            Deposit.record_date == str(target_date),
+            Deposit.status == 'posted'
+        ).all()
+        return sum(d.total_amount for d in deposits)
+
+    # Calculate beginning cash balance (ending cash from previous date)
+    def calculate_cash_on_hand(target_date):
+        """
+        Calculate cash on hand balance as of target_date
+        Formula: Fund balances + Undeposited cash sales
+        """
+        fund_balances = calculate_fund_running_balance(target_date)
+        undeposited = calculate_undeposited_cash(target_date)
+        total_funds = sum(fund_balances.values())
+        return total_funds + undeposited
+
+    prev_daily_funds = calculate_daily_fund_movements(prev_date)
+    curr_daily_funds = calculate_daily_fund_movements(curr_date)
+
+    prev_fund_balances = calculate_fund_running_balance(prev_date)
+    curr_fund_balances = calculate_fund_running_balance(curr_date)
+
+    prev_undeposited = calculate_undeposited_cash(prev_date)
+    curr_undeposited = calculate_undeposited_cash(curr_date)
+
+    # Calculate cash deposited on each date
+    prev_cash_deposited = calculate_cash_deposited(prev_date)
+    curr_cash_deposited = calculate_cash_deposited(curr_date)
+
+    # Calculate beginning and ending cash
+    # Beginning cash for prev_date = ending cash from day before prev_date
+    from datetime import timedelta
+    day_before_prev = prev_date - timedelta(days=1)
+    prev_beginning_cash = calculate_cash_on_hand(day_before_prev)
+    prev_ending_cash = calculate_cash_on_hand(prev_date)
+
+    # Beginning cash for curr_date = ending cash from prev_date
+    curr_beginning_cash = prev_ending_cash
+    curr_ending_cash = calculate_cash_on_hand(curr_date)
+
+    # Get all fund categories for display
+    fund_categories = FundCategory.query.filter_by(active=True).order_by(FundCategory.sort_order).all()
+
     context = {
         "prev_report": prev_report,
         "curr_report": curr_report,
         "report_sections": report_sections,
-        "receivable_names": receivable_names,
         "prev_cash": cash_total(prev_report),
         "curr_cash": cash_total(curr_report),
+        "prev_daily_funds": prev_daily_funds,
+        "curr_daily_funds": curr_daily_funds,
+        "prev_fund_balances": prev_fund_balances,
+        "curr_fund_balances": curr_fund_balances,
+        "prev_undeposited": prev_undeposited,
+        "curr_undeposited": curr_undeposited,
+        "prev_cash_deposited": prev_cash_deposited,
+        "curr_cash_deposited": curr_cash_deposited,
+        "prev_beginning_cash": prev_beginning_cash,
+        "curr_beginning_cash": curr_beginning_cash,
+        "prev_ending_cash": prev_ending_cash,
+        "curr_ending_cash": curr_ending_cash,
+        "fund_categories": fund_categories,
         "app_label": app_label,
         "report_date": curr_date,
         "prev_date": prev_date,
         "next_date": curr_date + timedelta(days=1),
     }
     return render_template("daily_sales/daily_sales_report.html", **context)
+
+
+@bp.route("/sales_summary_report", methods=["GET"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def sales_summary_report():
+    """
+    Sales Summary Report - categorized by service type (Dialysis/Diagnostics)
+    and transaction type (Walk-in, Home Service, etc.) with date range picker
+    """
+    from datetime import timedelta
+    from ...register.product import Product
+
+    # Get date range from query params or default to current month
+    today = date.today()
+    start_date_str = request.args.get('start_date', str(date(today.year, today.month, 1)))
+    end_date_str = request.args.get('end_date', str(today))
+
+    try:
+        start_date = date.fromisoformat(start_date_str)
+        end_date = date.fromisoformat(end_date_str)
+    except ValueError:
+        start_date = date(today.year, today.month, 1)
+        end_date = today
+
+    # Ensure start_date <= end_date
+    if start_date > end_date:
+        start_date, end_date = end_date, start_date
+
+    # Query transactions in date range
+    transactions = Transaction.query.filter(
+        Transaction.record_date >= str(start_date),
+        Transaction.record_date <= str(end_date),
+        Transaction.submitted.isnot(None),
+        Transaction.cancelled.is_(None),
+    ).all()
+
+    # Get products for categorization
+    dialysis_product = Product.query.filter(
+        (Product.product_name == 'Dialysis') |
+        (Product.product_name == 'HEMO DIALYSIS')
+    ).first()
+
+    # Build sales data structure:
+    # sales[service_type][transaction_type][tender_name] = amount
+    sales_data = {
+        'Dialysis': {},      # Dialysis services
+        'Diagnostics': {},   # All other services (Various Services, etc.)
+    }
+
+    # Get all transaction types
+    transaction_types = TransactionType.query.filter_by(active=True).order_by(
+        TransactionType.sort_order.desc()
+    ).all()
+
+    # Initialize structure
+    for tt in transaction_types:
+        sales_data['Dialysis'][tt.type_code] = {}
+        sales_data['Diagnostics'][tt.type_code] = {}
+
+    # Process transactions
+    for txn in transactions:
+        txn_type_code = txn.transaction_type.type_code if txn.transaction_type else 'walk_in'
+
+        # Determine if this transaction has dialysis services
+        is_dialysis = False
+        if dialysis_product and txn.transaction_details:
+            is_dialysis = any(
+                detail.product_id == dialysis_product.id
+                for detail in txn.transaction_details
+            )
+
+        service_category = 'Dialysis' if is_dialysis else 'Diagnostics'
+
+        # Add tender amounts
+        for tender_record in txn.transaction_tenders:
+            tender_name = tender_record.tender.tender_name if tender_record.tender else 'Unknown'
+
+            if txn_type_code not in sales_data[service_category]:
+                sales_data[service_category][txn_type_code] = {}
+
+            current_amount = sales_data[service_category][txn_type_code].get(tender_name, 0)
+            sales_data[service_category][txn_type_code][tender_name] = current_amount + tender_record.amount
+
+    # Calculate totals
+    totals = {
+        'Dialysis': {},
+        'Diagnostics': {},
+        'grand_total': 0,
+    }
+
+    for service_type in ['Dialysis', 'Diagnostics']:
+        service_total = 0
+        for txn_type_code in sales_data[service_type]:
+            txn_type_total = sum(sales_data[service_type][txn_type_code].values())
+            totals[service_type][txn_type_code] = txn_type_total
+            service_total += txn_type_total
+        totals[service_type]['total'] = service_total
+        totals['grand_total'] += service_total
+
+    # Get all tenders for consistent ordering
+    all_tenders = Tender.query.order_by(Tender.sort_order.desc()).all()
+    tender_order = {t.tender_name: t.sort_order for t in all_tenders}
+
+    # Get unique tenders used in this report
+    all_tender_names = set()
+    for service_type in sales_data:
+        for txn_type in sales_data[service_type]:
+            all_tender_names.update(sales_data[service_type][txn_type].keys())
+
+    # Sort tenders by their sort_order
+    sorted_tenders = sorted(all_tender_names, key=lambda t: tender_order.get(t, 0), reverse=True)
+
+    context = {
+        'start_date': start_date,
+        'end_date': end_date,
+        'transaction_types': transaction_types,
+        'sales_data': sales_data,
+        'totals': totals,
+        'sorted_tenders': sorted_tenders,
+        'app_label': app_label,
+        'transaction_count': len(transactions),
+        'generated_at': datetime.now(),
+    }
+
+    return render_template("daily_sales/sales_summary_report.html", **context)
+
+
+@bp.route("/sales_summary_excel", methods=["GET"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def sales_summary_excel():
+    """Export sales summary report to Excel"""
+    from datetime import timedelta
+    from ...register.product import Product
+    import io
+    from flask import send_file
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    except ImportError:
+        flash('openpyxl library not installed. Cannot export to Excel.', 'danger')
+        return redirect(url_for('daily_sales.sales_summary_report'))
+
+    # Get date range from query params
+    today = date.today()
+    start_date_str = request.args.get('start_date', str(date(today.year, today.month, 1)))
+    end_date_str = request.args.get('end_date', str(today))
+
+    try:
+        start_date = date.fromisoformat(start_date_str)
+        end_date = date.fromisoformat(end_date_str)
+    except ValueError:
+        start_date = date(today.year, today.month, 1)
+        end_date = today
+
+    if start_date > end_date:
+        start_date, end_date = end_date, start_date
+
+    # Query transactions (same logic as report)
+    transactions = Transaction.query.filter(
+        Transaction.record_date >= str(start_date),
+        Transaction.record_date <= str(end_date),
+        Transaction.submitted.isnot(None),
+        Transaction.cancelled.is_(None),
+    ).all()
+
+    dialysis_product = Product.query.filter(
+        (Product.product_name == 'Dialysis') |
+        (Product.product_name == 'HEMO DIALYSIS')
+    ).first()
+
+    sales_data = {'Dialysis': {}, 'Diagnostics': {}}
+    transaction_types = TransactionType.query.filter_by(active=True).order_by(
+        TransactionType.sort_order.desc()
+    ).all()
+
+    for tt in transaction_types:
+        sales_data['Dialysis'][tt.type_code] = {}
+        sales_data['Diagnostics'][tt.type_code] = {}
+
+    for txn in transactions:
+        txn_type_code = txn.transaction_type.type_code if txn.transaction_type else 'walk_in'
+        is_dialysis = False
+        if dialysis_product and txn.transaction_details:
+            is_dialysis = any(detail.product_id == dialysis_product.id for detail in txn.transaction_details)
+
+        service_category = 'Dialysis' if is_dialysis else 'Diagnostics'
+
+        for tender_record in txn.transaction_tenders:
+            tender_name = tender_record.tender.tender_name if tender_record.tender else 'Unknown'
+            if txn_type_code not in sales_data[service_category]:
+                sales_data[service_category][txn_type_code] = {}
+            current_amount = sales_data[service_category][txn_type_code].get(tender_name, 0)
+            sales_data[service_category][txn_type_code][tender_name] = current_amount + tender_record.amount
+
+    # Create Excel workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Sales Summary"
+
+    # Styles
+    header_font = Font(bold=True, size=12)
+    title_font = Font(bold=True, size=14)
+    section_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    section_font = Font(bold=True, color="FFFFFF")
+    total_fill = PatternFill(start_color="E7E6E6", end_color="E7E6E6", fill_type="solid")
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+
+    # Title
+    ws['A1'] = 'Sales Summary Report'
+    ws['A1'].font = title_font
+    ws['A2'] = f'{start_date.strftime("%B %d, %Y")} - {end_date.strftime("%B %d, %Y")}'
+    ws['A3'] = f'Generated: {datetime.now().strftime("%Y-%m-%d %H:%M")}'
+
+    # Get tenders
+    all_tenders = Tender.query.order_by(Tender.sort_order.desc()).all()
+    tender_order = {t.tender_name: t.sort_order for t in all_tenders}
+    all_tender_names = set()
+    for service_type in sales_data:
+        for txn_type in sales_data[service_type]:
+            all_tender_names.update(sales_data[service_type][txn_type].keys())
+    sorted_tenders = sorted(all_tender_names, key=lambda t: tender_order.get(t, 0), reverse=True)
+
+    row = 5
+
+    # For each service type
+    for service_type in ['Diagnostics', 'Dialysis']:
+        # Service type header
+        ws.cell(row, 1, service_type).font = section_font
+        ws.cell(row, 1).fill = section_fill
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=len(sorted_tenders)+2)
+        row += 1
+
+        # Column headers
+        ws.cell(row, 1, 'Transaction Type').font = header_font
+        for col_idx, tender in enumerate(sorted_tenders, start=2):
+            ws.cell(row, col_idx, tender).font = header_font
+        ws.cell(row, len(sorted_tenders)+2, 'Total').font = header_font
+        row += 1
+
+        # Transaction type rows
+        service_total = 0
+        for tt in transaction_types:
+            if tt.type_code in sales_data[service_type]:
+                ws.cell(row, 1, tt.type_name)
+                row_total = 0
+                for col_idx, tender in enumerate(sorted_tenders, start=2):
+                    amount = sales_data[service_type][tt.type_code].get(tender, 0)
+                    if amount > 0:
+                        ws.cell(row, col_idx, amount).number_format = '#,##0.00'
+                    row_total += amount
+                ws.cell(row, len(sorted_tenders)+2, row_total).number_format = '#,##0.00'
+                ws.cell(row, len(sorted_tenders)+2).font = Font(bold=True)
+                service_total += row_total
+                row += 1
+
+        # Service total
+        ws.cell(row, 1, f'{service_type} Total').font = Font(bold=True)
+        ws.cell(row, 1).fill = total_fill
+        ws.cell(row, len(sorted_tenders)+2, service_total).number_format = '#,##0.00'
+        ws.cell(row, len(sorted_tenders)+2).font = Font(bold=True)
+        ws.cell(row, len(sorted_tenders)+2).fill = total_fill
+        row += 2
+
+    # Adjust column widths
+    ws.column_dimensions['A'].width = 25
+    for col_idx in range(2, len(sorted_tenders)+3):
+        ws.column_dimensions[chr(64+col_idx)].width = 15
+
+    # Save to BytesIO
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f'sales_summary_{start_date}_{end_date}.xlsx'
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1046,6 +1458,210 @@ class _Report:
     @property
     def total_dialysis_sales(self):
         return sum(self.sales.get('dialysis', {}).values())
+
+
+# ---------------------------------------------------------------------------
+# Accountabilities Routes
+# ---------------------------------------------------------------------------
+
+@bp.route("/accountabilities", methods=["GET"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def accountabilities():
+    """Main accountabilities page"""
+    # Get filter parameters
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    category_id = request.args.get('category_id')
+
+    # Default to current month if no dates provided
+    today = date.today()
+    if not start_date_str:
+        start_date = date(today.year, today.month, 1)
+    else:
+        start_date = date.fromisoformat(start_date_str)
+
+    if not end_date_str:
+        end_date = today
+    else:
+        end_date = date.fromisoformat(end_date_str)
+
+    # Get all fund categories
+    fund_categories = FundCategory.query.filter_by(active=True).order_by(FundCategory.sort_order).all()
+
+    # Build query for funds received
+    received_query = FundReceived.query.filter(
+        FundReceived.record_date >= str(start_date),
+        FundReceived.record_date <= str(end_date)
+    )
+    if category_id:
+        received_query = received_query.filter_by(fund_category_id=int(category_id))
+    funds_received = received_query.order_by(FundReceived.record_date.desc(), FundReceived.id.desc()).all()
+
+    # Build query for funds disbursed
+    disbursed_query = FundDisbursed.query.filter(
+        FundDisbursed.record_date >= str(start_date),
+        FundDisbursed.record_date <= str(end_date)
+    )
+    if category_id:
+        disbursed_query = disbursed_query.filter_by(fund_category_id=int(category_id))
+    funds_disbursed = disbursed_query.order_by(FundDisbursed.record_date.desc(), FundDisbursed.id.desc()).all()
+
+    # Calculate totals
+    total_received = sum(f.amount for f in funds_received if f.status == 'posted')
+    total_disbursed = sum(f.amount for f in funds_disbursed if f.status == 'posted')
+
+    context = {
+        'fund_categories': fund_categories,
+        'funds_received': funds_received,
+        'funds_disbursed': funds_disbursed,
+        'total_received': total_received,
+        'total_disbursed': total_disbursed,
+        'start_date': start_date,
+        'end_date': end_date,
+        'selected_category_id': int(category_id) if category_id else None,
+        'app_label': app_label,
+    }
+    return render_template("daily_sales/accountabilities.html", **context)
+
+
+@bp.route("/fund_received/new", methods=["GET", "POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def new_fund_received():
+    """Create new fund received record"""
+    if request.method == "POST":
+        try:
+            fund_category_id = request.form.get('fund_category_id')
+            amount = float(request.form.get('amount', 0))
+            record_date = request.form.get('record_date')
+            reference_number = request.form.get('reference_number', '').strip()
+            description = request.form.get('description', '').strip()
+
+            if not fund_category_id or not record_date or amount <= 0:
+                flash("Please provide category, date, and valid amount", "danger")
+                return redirect(url_for('daily_sales.accountabilities'))
+
+            fund_received = FundReceived(
+                fund_category_id=int(fund_category_id),
+                amount=amount,
+                record_date=record_date,
+                reference_number=reference_number,
+                description=description,
+                status='posted',  # Auto-post for simplicity
+                created_by_id=current_user.id,
+                submitted_by_id=current_user.id,
+                submitted_at=datetime.utcnow(),
+                approved_by_id=current_user.id,
+                approved_at=datetime.utcnow(),
+            )
+
+            db.session.add(fund_received)
+            db.session.commit()
+
+            flash("Fund received record created successfully", "success")
+            return redirect(url_for('daily_sales.accountabilities'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error creating fund received: {str(e)}", "danger")
+            return redirect(url_for('daily_sales.accountabilities'))
+
+    # GET request - redirect to main page
+    return redirect(url_for('daily_sales.accountabilities'))
+
+
+@bp.route("/fund_disbursed/new", methods=["GET", "POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def new_fund_disbursed():
+    """Create new fund disbursed record"""
+    if request.method == "POST":
+        try:
+            fund_category_id = request.form.get('fund_category_id')
+            amount = float(request.form.get('amount', 0))
+            record_date = request.form.get('record_date')
+            reference_number = request.form.get('reference_number', '').strip()
+            description = request.form.get('description', '').strip()
+
+            if not fund_category_id or not record_date or amount <= 0:
+                flash("Please provide category, date, and valid amount", "danger")
+                return redirect(url_for('daily_sales.accountabilities'))
+
+            fund_disbursed = FundDisbursed(
+                fund_category_id=int(fund_category_id),
+                amount=amount,
+                record_date=record_date,
+                reference_number=reference_number,
+                description=description,
+                status='posted',  # Auto-post for simplicity
+                created_by_id=current_user.id,
+                submitted_by_id=current_user.id,
+                submitted_at=datetime.utcnow(),
+                approved_by_id=current_user.id,
+                approved_at=datetime.utcnow(),
+            )
+
+            db.session.add(fund_disbursed)
+            db.session.commit()
+
+            flash("Fund disbursed record created successfully", "success")
+            return redirect(url_for('daily_sales.accountabilities'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error creating fund disbursed: {str(e)}", "danger")
+            return redirect(url_for('daily_sales.accountabilities'))
+
+    # GET request - redirect to main page
+    return redirect(url_for('daily_sales.accountabilities'))
+
+
+@bp.route("/fund_received/<int:id>/delete", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def delete_fund_received(id):
+    """Delete fund received record"""
+    fund = FundReceived.query.get_or_404(id)
+    try:
+        db.session.delete(fund)
+        db.session.commit()
+        flash("Fund received record deleted successfully", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting record: {str(e)}", "danger")
+    return redirect(url_for('daily_sales.accountabilities'))
+
+
+@bp.route("/fund_disbursed/<int:id>/delete", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def delete_fund_disbursed(id):
+    """Delete fund disbursed record"""
+    fund = FundDisbursed.query.get_or_404(id)
+    try:
+        db.session.delete(fund)
+        db.session.commit()
+        flash("Fund disbursed record deleted successfully", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting record: {str(e)}", "danger")
+    return redirect(url_for('daily_sales.accountabilities'))
+
+
+# ---------------------------------------------------------------------------
+# Petty Cash Management Routes
+# ---------------------------------------------------------------------------
+
+@bp.route("/petty_cash_management", methods=["GET"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def petty_cash_management():
+    """Petty Cash Management page (placeholder)"""
+    context = {
+        'app_label': app_label,
+    }
+    return render_template("daily_sales/petty_cash_management.html", **context)
 
 
 # ---------------------------------------------------------------------------

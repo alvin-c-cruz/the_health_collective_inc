@@ -195,39 +195,26 @@
     <table class="tbl">
       <thead>
         <tr>
-          <th style="width:44%"></th>
-          <th style="width:16%;text-align:right">Receivable</th>
-          <th style="width:20%">{{ prev_report.report_date.strftime("%b %d") }}</th>
-          <th style="width:20%">{{ curr_report.report_date.strftime("%b %d") }}</th>
+          <th style="width:50%"></th>
+          <th style="width:25%">{{ prev_report.report_date.strftime("%b %d") }}</th>
+          <th style="width:25%">{{ curr_report.report_date.strftime("%b %d") }}</th>
         </tr>
       </thead>
       <tbody>
         {% for section in report_sections if not section.is_dialysis %}
-        <tr class="sub-hdr"><td colspan="4">{{ section.type_name }}</td></tr>
+        <tr class="sub-hdr"><td colspan="3">{{ section.type_name }}</td></tr>
         {% for t in section.tenders %}
         {% set prev_amt = prev_report.sales.get(section.type_code, {}).get(t, 0.0) %}
         {% set curr_amt = curr_report.sales.get(section.type_code, {}).get(t, 0.0) %}
         <tr>
           <td class="lbl2">{{ t }}</td>
-          <td class="num rcv">
-            {% if t in receivable_names and curr_amt > 0 %}{{ "{:,.2f}".format(curr_amt) }}{% endif %}
-          </td>
           <td class="num {% if prev_amt == 0 %}zero{% endif %}">{{ "{:,.2f}".format(prev_amt) }}</td>
           <td class="num {% if curr_amt == 0 %}zero{% endif %}">{{ "{:,.2f}".format(curr_amt) }}</td>
         </tr>
         {% endfor %}
-        {% if section.curr_receivable > 0 or section.prev_receivable > 0 %}
-        <tr class="total-row">
-          <td style="padding-left:5px">{{ section.type_name }} Receivable</td>
-          <td class="num rcv">{{ "{:,.2f}".format(section.curr_receivable) }}</td>
-          <td class="num">{{ "{:,.2f}".format(section.prev_receivable) }}</td>
-          <td class="num">{{ "{:,.2f}".format(section.curr_receivable) }}</td>
-        </tr>
-        {% endif %}
         {% endfor %}
         <tr class="total-row">
           <td style="padding-left:5px">Total Diagnostics Sales</td>
-          <td class="num"></td>
           <td class="num">{{ "{:,.2f}".format(prev_report.total_diagnostic_sales) }}</td>
           <td class="num">{{ "{:,.2f}".format(curr_report.total_diagnostic_sales) }}</td>
         </tr>
@@ -242,10 +229,9 @@
     <table class="tbl">
       <thead>
         <tr>
-          <th style="width:44%"></th>
-          <th style="width:16%;text-align:right">Receivable</th>
-          <th style="width:20%">{{ prev_report.report_date.strftime("%b %d") }}</th>
-          <th style="width:20%">{{ curr_report.report_date.strftime("%b %d") }}</th>
+          <th style="width:50%"></th>
+          <th style="width:25%">{{ prev_report.report_date.strftime("%b %d") }}</th>
+          <th style="width:25%">{{ curr_report.report_date.strftime("%b %d") }}</th>
         </tr>
       </thead>
       <tbody>
@@ -254,16 +240,12 @@
         {% set curr_amt = curr_report.sales.get(section.type_code, {}).get(t, 0.0) %}
         <tr>
           <td class="lbl2">{{ t }}</td>
-          <td class="num rcv">
-            {% if t in receivable_names and curr_amt > 0 %}{{ "{:,.2f}".format(curr_amt) }}{% endif %}
-          </td>
           <td class="num {% if prev_amt == 0 %}zero{% endif %}">{{ "{:,.2f}".format(prev_amt) }}</td>
           <td class="num {% if curr_amt == 0 %}zero{% endif %}">{{ "{:,.2f}".format(curr_amt) }}</td>
         </tr>
         {% endfor %}
         <tr class="total-row">
           <td style="padding-left:5px">Total {{ section.type_name }} Sales</td>
-          <td class="num rcv">{{ "{:,.2f}".format(section.curr_receivable) }}</td>
           <td class="num">{{ "{:,.2f}".format(prev_report.total_dialysis_sales) }}</td>
           <td class="num">{{ "{:,.2f}".format(curr_report.total_dialysis_sales) }}</td>
         </tr>
@@ -285,18 +267,35 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td class="lbl">Beginning Cash</td><td class="num zero">—</td><td class="num zero">—</td></tr>
-          <tr><td class="lbl">Funds Received</td><td class="num zero">—</td><td class="num zero">—</td></tr>
-          <tr><td class="lbl">Cash Sales</td>
-            <td class="num">{{ "{:,.2f}".format(prev_cash) }}</td>
-            <td class="num">{{ "{:,.2f}".format(curr_cash) }}</td>
+          <tr>
+            <td class="lbl">Beginning Cash</td>
+            <td class="num {% if prev_beginning_cash == 0 %}zero{% endif %}">{{ "{:,.2f}".format(prev_beginning_cash) }}</td>
+            <td class="num {% if curr_beginning_cash == 0 %}zero{% endif %}">{{ "{:,.2f}".format(curr_beginning_cash) }}</td>
           </tr>
-          <tr><td class="lbl">Cash Deposited</td><td class="num zero">—</td><td class="num zero">—</td></tr>
-          <tr><td class="lbl">Expenses</td><td class="num zero">—</td><td class="num zero">—</td></tr>
+          <tr>
+            <td class="lbl">Funds Received</td>
+            <td class="num {% if prev_daily_funds.total_received == 0 %}zero{% endif %}">{{ "{:,.2f}".format(prev_daily_funds.total_received) }}</td>
+            <td class="num {% if curr_daily_funds.total_received == 0 %}zero{% endif %}">{{ "{:,.2f}".format(curr_daily_funds.total_received) }}</td>
+          </tr>
+          <tr>
+            <td class="lbl">Cash Sales</td>
+            <td class="num {% if prev_cash == 0 %}zero{% endif %}">{{ "{:,.2f}".format(prev_cash) }}</td>
+            <td class="num {% if curr_cash == 0 %}zero{% endif %}">{{ "{:,.2f}".format(curr_cash) }}</td>
+          </tr>
+          <tr>
+            <td class="lbl">Cash Deposited</td>
+            <td class="num {% if prev_cash_deposited == 0 %}zero{% endif %}">{{ "{:,.2f}".format(prev_cash_deposited) }}</td>
+            <td class="num {% if curr_cash_deposited == 0 %}zero{% endif %}">{{ "{:,.2f}".format(curr_cash_deposited) }}</td>
+          </tr>
+          <tr>
+            <td class="lbl">Expenses</td>
+            <td class="num {% if prev_daily_funds.total_disbursed == 0 %}zero{% endif %}">{{ "{:,.2f}".format(prev_daily_funds.total_disbursed) }}</td>
+            <td class="num {% if curr_daily_funds.total_disbursed == 0 %}zero{% endif %}">{{ "{:,.2f}".format(curr_daily_funds.total_disbursed) }}</td>
+          </tr>
           <tr class="ending-row">
             <td style="padding-left:5px">Ending Cash</td>
-            <td class="num zero">—</td>
-            <td class="num zero">—</td>
+            <td class="num {% if prev_ending_cash == 0 %}zero{% endif %}">{{ "{:,.2f}".format(prev_ending_cash) }}</td>
+            <td class="num {% if curr_ending_cash == 0 %}zero{% endif %}">{{ "{:,.2f}".format(curr_ending_cash) }}</td>
           </tr>
         </tbody>
       </table>
@@ -312,17 +311,39 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td class="lbl">Petty Cash Fund</td><td class="num zero">—</td><td class="num zero">—</td></tr>
-          <tr><td class="lbl">Unreimbursed Expenses</td><td class="num zero">—</td><td class="num zero">—</td></tr>
-          <tr><td class="lbl">Cash Fund</td><td class="num zero">—</td><td class="num zero">—</td></tr>
-          <tr><td class="lbl">Undeposited Cash Sales</td>
-            <td class="num">{{ "{:,.2f}".format(prev_cash) }}</td>
-            <td class="num">{{ "{:,.2f}".format(curr_cash) }}</td>
+          {% for category in fund_categories %}
+          <tr>
+            <td class="lbl">{{ category.category_name }}</td>
+            <td class="num {% if prev_fund_balances.get(category.category_name, 0) == 0 %}zero{% endif %}">
+              {% set prev_balance = prev_fund_balances.get(category.category_name, 0) %}
+              {{ "{:,.2f}".format(prev_balance) }}
+            </td>
+            <td class="num {% if curr_fund_balances.get(category.category_name, 0) == 0 %}zero{% endif %}">
+              {% set curr_balance = curr_fund_balances.get(category.category_name, 0) %}
+              {{ "{:,.2f}".format(curr_balance) }}
+            </td>
+          </tr>
+          {% endfor %}
+          <tr>
+            <td class="lbl">Unreimbursed Expenses</td>
+            <td class="num zero">0.00</td>
+            <td class="num zero">0.00</td>
+          </tr>
+          <tr>
+            <td class="lbl">Undeposited Cash Sales</td>
+            <td class="num {% if prev_undeposited == 0 %}zero{% endif %}">{{ "{:,.2f}".format(prev_undeposited) }}</td>
+            <td class="num {% if curr_undeposited == 0 %}zero{% endif %}">{{ "{:,.2f}".format(curr_undeposited) }}</td>
           </tr>
           <tr class="total-row">
             <td style="padding-left:5px">Total Accountabilities</td>
-            <td class="num zero">—</td>
-            <td class="num zero">—</td>
+            <td class="num {% if (prev_fund_balances.values()|sum + prev_undeposited) == 0 %}zero{% endif %}">
+              {% set prev_total = prev_fund_balances.values()|sum + prev_undeposited %}
+              {{ "{:,.2f}".format(prev_total) }}
+            </td>
+            <td class="num {% if (curr_fund_balances.values()|sum + curr_undeposited) == 0 %}zero{% endif %}">
+              {% set curr_total = curr_fund_balances.values()|sum + curr_undeposited %}
+              {{ "{:,.2f}".format(curr_total) }}
+            </td>
           </tr>
         </tbody>
       </table>
