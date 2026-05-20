@@ -39,8 +39,8 @@
                     <span class="badge bg-info me-2">Transaction</span>
                     <strong>{{ txn.transaction_type.type_name if txn.transaction_type else 'Transaction' }} #{{ txn.id }}</strong>
                     <div class="text-muted" style="font-size:0.8rem;">
-                        Submitted by {{ txn.submitted_by.user_name if txn.submitted_by else 'Unknown' }} on
-                        {{ txn.submitted.strftime("%b %d, %Y at %H:%M") if txn.submitted else 'N/A' }}
+                        Submitted by {{ txn.submitted_by_user.user_name if txn.submitted_by_user else 'Unknown' }} on
+                        {{ txn.submitted_at.strftime("%b %d, %Y at %H:%M") if txn.submitted_at else 'N/A' }}
                     </div>
                 </div>
                 <a href="{{ url_for('daily_sales.view_transaction', transaction_id=txn.id) }}" class="btn btn-sm btn-outline-primary">
@@ -84,8 +84,8 @@
                     <span class="badge bg-primary me-2">Deposit</span>
                     <strong>Deposit #{{ dep.id }}</strong>
                     <div class="text-muted" style="font-size:0.8rem;">
-                        Submitted by {{ dep.submitted_by.user_name if dep.submitted_by else 'Unknown' }} on
-                        {{ dep.submitted.strftime("%b %d, %Y at %H:%M") if dep.submitted else 'N/A' }}
+                        Submitted by {{ dep.submitted_by_user.user_name if dep.submitted_by_user else 'Unknown' }} on
+                        {{ dep.submitted_at.strftime("%b %d, %Y at %H:%M") if dep.submitted_at else 'N/A' }}
                     </div>
                 </div>
                 <a href="{{ url_for('daily_sales.view_deposit', deposit_id=dep.id) }}" class="btn btn-sm btn-outline-primary">
@@ -125,8 +125,8 @@
                     <span class="badge bg-success me-2">Collection</span>
                     <strong>Collection #{{ col.id }}</strong>
                     <div class="text-muted" style="font-size:0.8rem;">
-                        Submitted by {{ col.submitted_by.user_name if col.submitted_by else 'Unknown' }} on
-                        {{ col.submitted.strftime("%b %d, %Y at %H:%M") if col.submitted else 'N/A' }}
+                        Submitted by {{ col.submitted_by_user.user_name if col.submitted_by_user else 'Unknown' }} on
+                        {{ col.submitted_at.strftime("%b %d, %Y at %H:%M") if col.submitted_at else 'N/A' }}
                     </div>
                 </div>
                 <a href="{{ url_for('collections.view_collection', collection_id=col.id) }}" class="btn btn-sm btn-outline-primary">

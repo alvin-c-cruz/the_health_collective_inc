@@ -102,24 +102,22 @@ def change_requests_list():
     pending_requests = ChangeRequest.query.filter_by(status='pending') \
         .order_by(ChangeRequest.requested_at.desc()).all()
 
-    # Get submitted transactions waiting for approval
+    # Get submitted transactions waiting for approval (using new status field)
     submitted_transactions = Transaction.query.filter_by(
-        submitted=db.func.not_(None),
-        approved=None,
-        cancelled=None
-    ).order_by(Transaction.submitted.desc()).all()
+        status='submitted'
+    ).order_by(Transaction.submitted_at.desc()).all()
 
     # Get submitted deposits waiting for approval
     from .models import Deposit
-    submitted_deposits = Deposit.query.filter(
-        Deposit.status == 'submitted'
-    ).order_by(Deposit.created_at.desc()).all()
+    submitted_deposits = Deposit.query.filter_by(
+        status='submitted'
+    ).order_by(Deposit.submitted_at.desc()).all()
 
     # Get submitted collections waiting for approval
     from ..collections.models import Collection
-    submitted_collections = Collection.query.filter(
-        Collection.status == 'submitted'
-    ).order_by(Collection.created_at.desc()).all()
+    submitted_collections = Collection.query.filter_by(
+        status='submitted'
+    ).order_by(Collection.submitted_at.desc()).all()
 
     return render_template(
         'daily_sales/change_requests.html',
