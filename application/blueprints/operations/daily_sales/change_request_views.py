@@ -94,7 +94,6 @@ def request_transaction_change(transaction_id):
     )
 
 
-@admin_required
 def change_requests_list():
     """
     Admin/SuperUser views pending change requests.
@@ -108,7 +107,6 @@ def change_requests_list():
     )
 
 
-@admin_required
 def review_change_request(request_id):
     """
     Admin/SuperUser approves or rejects a change request.
@@ -179,7 +177,6 @@ def review_change_request(request_id):
     return redirect(url_for('daily_sales.change_requests_list'))
 
 
-@admin_required
 def change_history():
     """
     Admin/SuperUser views history of all change requests.
