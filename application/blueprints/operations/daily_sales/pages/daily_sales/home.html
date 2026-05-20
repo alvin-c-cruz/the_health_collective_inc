@@ -202,6 +202,14 @@
              onclick="event.stopPropagation()">{{ t.symbol or t.tender_name }}</a>
           {% endif %}
           {% endfor %}
+          {# Add APE Batch link for APE transaction type #}
+          {% if txn_type.type_code == 'APE' %}
+          <a href="{{ url_for('ape_batch.home') }}"
+             class="thc-badge thc-badge-coral"
+             onclick="event.stopPropagation()">
+            <i class="bi bi-collection"></i> APE Batch
+          </a>
+          {% endif %}
         </div>
       </div>
     </div>
