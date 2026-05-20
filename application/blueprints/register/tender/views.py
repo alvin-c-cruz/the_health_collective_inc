@@ -13,6 +13,7 @@ from .forms import Form
 from application.extensions import db
 from application.blueprints.user import login_required, roles_accepted
 from flask_login import current_user
+from application.blueprints.operations.transaction_type.models import TransactionType
 
 from . import app_name, app_label
 
@@ -67,9 +68,13 @@ def add():
     else:
         form = Form()
 
+    # Fetch all active transaction types ordered by sort_order
+    transaction_types = TransactionType.query.filter_by(active=True).order_by(TransactionType.sort_order).all()
+
     context = {
         "form": form,
         "popup": popup,
+        "transaction_types": transaction_types,
     }
 
     return render_template(f"{app_name}/form.html", **context)
@@ -78,7 +83,7 @@ def add():
 @bp.route(f"/edit/<int:record_id>", methods=["POST", "GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
-def edit(record_id):   
+def edit(record_id):
     if request.method == "POST":
         form = Form()
         form._post(request.form, current_user.id)
@@ -92,8 +97,12 @@ def edit(record_id):
         form = Form()
         form._populate(obj)
 
+    # Fetch all active transaction types ordered by sort_order
+    transaction_types = TransactionType.query.filter_by(active=True).order_by(TransactionType.sort_order).all()
+
     context = {
         "form": form,
+        "transaction_types": transaction_types,
     }
 
     return render_template(f"{app_name}/form.html", **context)

@@ -25,26 +25,13 @@
             <label class="form-label fw-semibold">Transaction Types</label>
             <div class="d-flex flex-wrap gap-3">
                 {% set types = (form.transaction_types or '').split(',') %}
+                {% for tt in transaction_types %}
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="transaction_types" value="walk_in" id="tt_walk_in"
-                        {{ 'checked' if 'walk_in' in types }}>
-                    <label class="form-check-label" for="tt_walk_in">Walk-in</label>
+                    <input class="form-check-input" type="checkbox" name="transaction_types" value="{{ tt.type_code }}" id="tt_{{ tt.type_code }}"
+                        {{ 'checked' if tt.type_code in types }}>
+                    <label class="form-check-label" for="tt_{{ tt.type_code }}">{{ tt.type_name }}</label>
                 </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="transaction_types" value="home_service" id="tt_home_service"
-                        {{ 'checked' if 'home_service' in types }}>
-                    <label class="form-check-label" for="tt_home_service">Home Service</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="transaction_types" value="hmo_ape" id="tt_hmo_ape"
-                        {{ 'checked' if 'hmo_ape' in types }}>
-                    <label class="form-check-label" for="tt_hmo_ape">APE</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="transaction_types" value="dialysis" id="tt_dialysis"
-                        {{ 'checked' if 'dialysis' in types }}>
-                    <label class="form-check-label" for="tt_dialysis">Dialysis</label>
-                </div>
+                {% endfor %}
             </div>
         </div>
 
