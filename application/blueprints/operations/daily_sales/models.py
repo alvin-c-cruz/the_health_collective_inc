@@ -337,3 +337,215 @@ class FundDisbursed(db.Model):
     @property
     def is_cancelled(self):
         return self.status == 'cancelled'
+
+
+# =============================================================================
+# Petty Cash Management Models
+# =============================================================================
+
+class Payee(db.Model):
+    """Payee for petty cash vouchers"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False, unique=True)
+    description = db.Column(db.String(500))
+    active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __str__(self):
+        return self.name
+
+
+class PettyCashVoucher(db.Model):
+    """Petty Cash Voucher (PCV)"""
+    __tablename__ = 'petty_cash_voucher'
+
+    id = db.Column(db.Integer, primary_key=True)
+    pcv_number = db.Column(db.String(50), unique=True, nullable=False)
+    record_date = db.Column(db.String(10), nullable=False)  # YYYY-MM-DD format
+
+    payee_id = db.Column(db.Integer, db.ForeignKey('payee.id'), nullable=False)
+    payee = db.relationship('Payee', backref='vouchers')
+
+    amount = db.Column(db.Float, nullable=False)
+    description = db.Column(db.Text)
+
+    # Status workflow: draft -> submitted -> posted -> for_reimbursement -> reimbursed
+    status = db.Column(db.String(20), default='draft')
+
+    # Audit fields
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    created_by = db.relationship('User', foreign_keys=[created_by_id], backref='pcvs_created')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    submitted_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    submitted_by = db.relationship('User', foreign_keys=[submitted_by_id], backref='pcvs_submitted')
+    submitted_at = db.Column(db.DateTime)
+
+    posted_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    posted_by = db.relationship('User', foreign_keys=[posted_by_id], backref='pcvs_posted')
+    posted_at = db.Column(db.DateTime)
+
+    cancelled_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    cancelled_by = db.relationship('User', foreign_keys=[cancelled_by_id], backref='pcvs_cancelled')
+    cancelled_at = db.Column(db.DateTime)
+    cancelled_reason = db.Column(db.Text)
+
+    # Link to reimbursement report when status becomes for_reimbursement
+    reimbursement_report_id = db.Column(db.Integer, db.ForeignKey('reimbursement_report.id'))
+
+    def __str__(self):
+        return f"{self.pcv_number} - {self.payee.name if self.payee else 'N/A'}"
+
+    @property
+    def formatted_amount(self):
+        return f"₱{self.amount:,.2f}"
+
+    @property
+    def formatted_date(self):
+        return short_date(self.record_date)
+
+    @property
+    def is_draft(self):
+        return self.status == 'draft'
+
+    @property
+    def is_submitted(self):
+        return self.status == 'submitted'
+
+    @property
+    def is_posted(self):
+        return self.status == 'posted'
+
+    @property
+    def is_for_reimbursement(self):
+        return self.status == 'for_reimbursement'
+
+    @property
+    def is_reimbursed(self):
+        return self.status == 'reimbursed'
+
+    @property
+    def is_cancelled(self):
+        return self.status == 'cancelled'
+
+    @property
+    def can_edit(self):
+        """Can only edit draft vouchers"""
+        return self.status == 'draft'
+
+    @property
+    def can_submit(self):
+        """Can submit draft vouchers"""
+        return self.status == 'draft'
+
+    @property
+    def can_post(self):
+        """Can post submitted vouchers"""
+        return self.status == 'submitted'
+
+    @property
+    def can_cancel(self):
+        """Can cancel before reimbursement"""
+        return self.status in ['draft', 'submitted', 'posted']
+
+    @property
+    def can_add_to_reimbursement(self):
+        """Can add to reimbursement report when posted"""
+        return self.status == 'posted'
+
+
+class ReimbursementReport(db.Model):
+    """Reimbursement Report aggregating multiple PCVs"""
+    __tablename__ = 'reimbursement_report'
+
+    id = db.Column(db.Integer, primary_key=True)
+    report_number = db.Column(db.String(50), unique=True, nullable=False)
+    created_date = db.Column(db.String(10), nullable=False)
+
+    period_start = db.Column(db.String(10))
+    period_end = db.Column(db.String(10))
+
+    total_amount = db.Column(db.Float, default=0)
+
+    # Status: pending -> submitted -> reimbursed
+    status = db.Column(db.String(20), default='pending')
+
+    # Signatories
+    prepared_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    prepared_by = db.relationship('User', foreign_keys=[prepared_by_id], backref='reimbursement_reports_prepared')
+
+    approved_by = db.Column(db.String(100), default='DGO')  # Default approver
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    submitted_at = db.Column(db.DateTime)
+
+    # Relationships
+    vouchers = db.relationship('PettyCashVoucher', backref='reimbursement_report', lazy=True)
+
+    def __str__(self):
+        return f"{self.report_number} - ₱{self.formatted_total_amount}"
+
+    @property
+    def formatted_total_amount(self):
+        return f"{self.total_amount:,.2f}"
+
+    @property
+    def formatted_created_date(self):
+        return short_date(self.created_date)
+
+    @property
+    def formatted_period(self):
+        if self.period_start and self.period_end:
+            return f"{short_date(self.period_start)} - {short_date(self.period_end)}"
+        return "N/A"
+
+    @property
+    def is_pending(self):
+        return self.status == 'pending'
+
+    @property
+    def is_submitted(self):
+        return self.status == 'submitted'
+
+    @property
+    def is_reimbursed(self):
+        return self.status == 'reimbursed'
+
+    def calculate_total(self):
+        """Calculate total from all linked vouchers"""
+        self.total_amount = sum(v.amount for v in self.vouchers if v.amount)
+        return self.total_amount
+
+
+class ReimbursementReceived(db.Model):
+    """Reimbursement received from bank/account"""
+    __tablename__ = 'reimbursement_received'
+
+    id = db.Column(db.Integer, primary_key=True)
+    reference_number = db.Column(db.String(50), unique=True, nullable=False)
+    record_date = db.Column(db.String(10), nullable=False)
+
+    bank_account_id = db.Column(db.Integer, db.ForeignKey('bank_account.id'), nullable=False)
+    bank_account = db.relationship('BankAccount', backref='reimbursements')
+
+    amount = db.Column(db.Float, nullable=False)
+    notes = db.Column(db.Text)
+
+    # Link to reimbursement report(s)
+    reimbursement_report_id = db.Column(db.Integer, db.ForeignKey('reimbursement_report.id'))
+    reimbursement_report = db.relationship('ReimbursementReport', backref='reimbursements_received')
+
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    created_by = db.relationship('User', foreign_keys=[created_by_id], backref='reimbursements_created')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __str__(self):
+        return f"{self.reference_number} - ₱{self.formatted_amount}"
+
+    @property
+    def formatted_amount(self):
+        return f"{self.amount:,.2f}"
+
+    @property
+    def formatted_date(self):
+        return short_date(self.record_date)

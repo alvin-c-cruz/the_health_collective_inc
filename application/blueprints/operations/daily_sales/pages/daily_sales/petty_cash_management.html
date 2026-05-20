@@ -220,14 +220,14 @@
           <i class="bi bi-arrow-up-circle"></i>
           Petty Cash Voucher
         </div>
-        <form method="POST" action="#">
+        <form method="POST" action="{{ url_for('daily_sales.new_petty_cash_voucher') }}">
           <div class="form-group">
             <label class="form-label required">Date</label>
-            <input type="date" name="date" class="form-control" value="2026-05-21" required>
+            <input type="date" name="date" class="form-control" value="{{ today }}" required>
           </div>
           <div class="form-group">
             <label class="form-label">PCV No.</label>
-            <input type="text" name="pcv_number" class="form-control input-readonly" value="PCV-0005" readonly>
+            <input type="text" name="pcv_number" class="form-control input-readonly" value="{{ next_pcv }}" readonly>
           </div>
           <div class="form-group">
             <label class="form-label required">Payee</label>
@@ -256,14 +256,14 @@
           Reimbursements Received
         </div>
 
-        <form method="POST" action="#">
+        <form method="POST" action="{{ url_for('daily_sales.new_reimbursement_received') }}">
           <div class="form-group">
             <label class="form-label required">Date</label>
-            <input type="date" name="date" class="form-control" value="2026-05-21" required>
+            <input type="date" name="date" class="form-control" value="{{ today }}" required>
           </div>
           <div class="form-group">
             <label class="form-label">Reference No.</label>
-            <input type="text" name="reference" class="form-control input-readonly" value="REF-0002" readonly>
+            <input type="text" name="reference" class="form-control input-readonly" value="{{ next_ref }}" readonly>
           </div>
           <div class="form-group">
             <label class="form-label required">Bank / Account</label>
@@ -276,8 +276,8 @@
             <input type="number" name="amount" id="reimbursement-amount" class="form-control input-readonly" step="0.01" min="0.01" placeholder="0.00" value="0.00" readonly required>
           </div>
           <div class="form-group">
-            <label class="form-label">Description</label>
-            <textarea name="description" class="form-control" placeholder="Optional notes"></textarea>
+            <label class="form-label">Notes</label>
+            <textarea name="notes" class="form-control" placeholder="Optional notes"></textarea>
           </div>
           <button type="submit" class="btn-submit reimbursement">
             <i class="bi bi-check-circle"></i> Record Reimbursement
@@ -285,19 +285,23 @@
         </form>
 
         <!-- Pending Reimbursement Reports -->
+        {% if pending_reports %}
         <div style="margin-top: 1rem; padding: 10px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px;">
           <div style="font-size: 0.8rem; font-weight: 600; margin-bottom: 8px;">Pending Reimbursement Reports:</div>
           <div style="max-height: 150px; overflow-y: auto;">
+            {% for report in pending_reports %}
             <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; margin-bottom: 6px; cursor: pointer;">
-              <input type="checkbox" class="pcv-checkbox reimbursement-report-check" data-amount="6000.00" value="RPT-001" onchange="updateReimbursementAmount()">
-              <span>RPT-001 (May 19-21, 2026) - ₱6,000.00</span>
+              <input type="checkbox" class="pcv-checkbox reimbursement-report-check"
+                     name="report_ids[]"
+                     data-amount="{{ report.total_amount }}"
+                     value="{{ report.id }}"
+                     onchange="updateReimbursementAmount()">
+              <span>{{ report.report_number }} ({{ report.formatted_period }}) - ₱{{ report.formatted_total_amount }}</span>
             </label>
-            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; margin-bottom: 6px; cursor: pointer;">
-              <input type="checkbox" class="pcv-checkbox reimbursement-report-check" data-amount="2500.00" value="RPT-002" onchange="updateReimbursementAmount()">
-              <span>RPT-002 (May 15-18, 2026) - ₱2,500.00</span>
-            </label>
+            {% endfor %}
           </div>
         </div>
+        {% endif %}
       </div>
     </div>
   </div>

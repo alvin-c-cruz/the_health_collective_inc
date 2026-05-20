@@ -8,7 +8,9 @@ from application.extensions import db, ph_today
 from ..bank_account.models import BankAccount
 
 from . import app_label, app_name
-from .models import Transaction, TransactionDetail, TransactionTender, TransactionType, Deposit, DepositItem, FundCategory, FundReceived, FundDisbursed
+from .models import (Transaction, TransactionDetail, TransactionTender, TransactionType, Deposit, DepositItem,
+                     FundCategory, FundReceived, FundDisbursed, PettyCashVoucher, Payee,
+                     ReimbursementReport, ReimbursementReceived)
 from .forms import Form
 from ...register.product_type import ProductType
 from ...register.tender import Tender
@@ -1785,11 +1787,333 @@ def delete_fund_disbursed(id):
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def petty_cash_management():
-    """Petty Cash Management page (placeholder)"""
+    """Petty Cash Management page"""
+    from application.extensions import next_control_number
+
+    # Get filter parameters
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+
+    today = ph_today()
+    if not start_date_str:
+        start_date = date(today.year, today.month, 1)
+    else:
+        start_date = date.fromisoformat(start_date_str)
+
+    if not end_date_str:
+        end_date = today
+    else:
+        end_date = date.fromisoformat(end_date_str)
+
+    # Get vouchers within date range
+    vouchers = PettyCashVoucher.query.filter(
+        PettyCashVoucher.record_date >= str(start_date),
+        PettyCashVoucher.record_date <= str(end_date)
+    ).order_by(PettyCashVoucher.record_date.desc(), PettyCashVoucher.id.desc()).all()
+
+    # Get reimbursement reports
+    reports = ReimbursementReport.query.order_by(
+        ReimbursementReport.created_date.desc()
+    ).all()
+
+    # Get pending reports (for reimbursement linking)
+    pending_reports = ReimbursementReport.query.filter_by(status='pending').all()
+
+    # Generate next numbers
+    next_pcv = next_control_number(PettyCashVoucher, 'pcv_number') if PettyCashVoucher.query.count() > 0 else "PCV-0001"
+    next_ref = next_control_number(ReimbursementReceived, 'reference_number') if ReimbursementReceived.query.count() > 0 else "REF-0001"
+
+    # Get all payees for autocomplete
+    payees = Payee.query.filter_by(active=True).order_by(Payee.name).all()
+
+    # Get all bank accounts for autocomplete
+    bank_accounts = BankAccount.query.filter_by(active=True).order_by(BankAccount.account_name).all()
+
     context = {
         'app_label': app_label,
+        'vouchers': vouchers,
+        'reports': reports,
+        'pending_reports': pending_reports,
+        'next_pcv': next_pcv,
+        'next_ref': next_ref,
+        'payees': payees,
+        'bank_accounts': bank_accounts,
+        'start_date': str(start_date),
+        'end_date': str(end_date),
+        'today': str(today),
     }
     return render_template("daily_sales/petty_cash_management.html", **context)
+
+
+@bp.route("/petty_cash/voucher/new", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def new_petty_cash_voucher():
+    """Create new petty cash voucher"""
+    from application.extensions import next_control_number
+
+    try:
+        record_date = request.form.get('date')
+        payee_name = request.form.get('payee', '').strip()
+        amount = float(request.form.get('amount', 0))
+        description = request.form.get('description', '').strip()
+
+        if not record_date or not payee_name or amount <= 0:
+            flash("Please provide date, payee, and valid amount", "danger")
+            return redirect(url_for('daily_sales.petty_cash_management'))
+
+        # Get or create payee
+        payee = Payee.query.filter_by(name=payee_name).first()
+        if not payee:
+            payee = Payee(name=payee_name, active=True)
+            db.session.add(payee)
+            db.session.flush()
+
+        # Generate PCV number
+        pcv_number = next_control_number(PettyCashVoucher, 'pcv_number') if PettyCashVoucher.query.count() > 0 else "PCV-0001"
+
+        # Create voucher
+        voucher = PettyCashVoucher(
+            pcv_number=pcv_number,
+            record_date=record_date,
+            payee_id=payee.id,
+            amount=amount,
+            description=description,
+            status='draft',
+            created_by_id=current_user.id
+        )
+
+        db.session.add(voucher)
+        db.session.commit()
+
+        flash(f'Petty Cash Voucher {pcv_number} created successfully!', 'success')
+        return redirect(url_for('daily_sales.petty_cash_management'))
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error creating voucher: {str(e)}', 'danger')
+        return redirect(url_for('daily_sales.petty_cash_management'))
+
+
+@bp.route("/petty_cash/voucher/<int:voucher_id>/submit", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def submit_petty_cash_voucher(voucher_id):
+    """Submit draft voucher"""
+    voucher = PettyCashVoucher.query.get_or_404(voucher_id)
+
+    if not voucher.can_submit:
+        flash('Only draft vouchers can be submitted', 'warning')
+        return redirect(url_for('daily_sales.petty_cash_management'))
+
+    voucher.status = 'submitted'
+    voucher.submitted_by_id = current_user.id
+    voucher.submitted_at = datetime.now()
+
+    db.session.commit()
+    flash(f'Voucher {voucher.pcv_number} submitted successfully!', 'success')
+    return redirect(url_for('daily_sales.petty_cash_management'))
+
+
+@bp.route("/petty_cash/voucher/<int:voucher_id>/post", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def post_petty_cash_voucher(voucher_id):
+    """Post submitted voucher (admin only)"""
+    if not current_user.admin and not current_user.superuser:
+        flash('Only admins can post vouchers', 'danger')
+        return redirect(url_for('daily_sales.petty_cash_management'))
+
+    voucher = PettyCashVoucher.query.get_or_404(voucher_id)
+
+    if not voucher.can_post:
+        flash('Only submitted vouchers can be posted', 'warning')
+        return redirect(url_for('daily_sales.petty_cash_management'))
+
+    voucher.status = 'posted'
+    voucher.posted_by_id = current_user.id
+    voucher.posted_at = datetime.now()
+
+    db.session.commit()
+    flash(f'Voucher {voucher.pcv_number} posted successfully!', 'success')
+    return redirect(url_for('daily_sales.petty_cash_management'))
+
+
+@bp.route("/petty_cash/voucher/<int:voucher_id>/cancel", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def cancel_petty_cash_voucher(voucher_id):
+    """Cancel voucher"""
+    voucher = PettyCashVoucher.query.get_or_404(voucher_id)
+
+    if not voucher.can_cancel:
+        flash('This voucher cannot be cancelled', 'warning')
+        return redirect(url_for('daily_sales.petty_cash_management'))
+
+    reason = request.form.get('reason', '').strip()
+
+    voucher.status = 'cancelled'
+    voucher.cancelled_by_id = current_user.id
+    voucher.cancelled_at = datetime.now()
+    voucher.cancelled_reason = reason
+
+    db.session.commit()
+    flash(f'Voucher {voucher.pcv_number} cancelled', 'info')
+    return redirect(url_for('daily_sales.petty_cash_management'))
+
+
+@bp.route("/petty_cash/reimbursement_report/create", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def create_reimbursement_report():
+    """Create reimbursement report from selected vouchers"""
+    from application.extensions import next_control_number
+
+    try:
+        voucher_ids = request.form.getlist('voucher_ids[]')
+
+        if not voucher_ids:
+            flash('No vouchers selected', 'warning')
+            return redirect(url_for('daily_sales.petty_cash_management'))
+
+        # Get selected vouchers
+        vouchers = PettyCashVoucher.query.filter(
+            PettyCashVoucher.id.in_(voucher_ids),
+            PettyCashVoucher.status == 'posted'
+        ).all()
+
+        if not vouchers:
+            flash('No valid posted vouchers found', 'warning')
+            return redirect(url_for('daily_sales.petty_cash_management'))
+
+        # Calculate period
+        dates = [datetime.strptime(v.record_date, '%Y-%m-%d').date() for v in vouchers]
+        period_start = str(min(dates))
+        period_end = str(max(dates))
+
+        # Generate report number
+        report_number = next_control_number(ReimbursementReport, 'report_number') if ReimbursementReport.query.count() > 0 else "RPT-001"
+
+        # Create report
+        report = ReimbursementReport(
+            report_number=report_number,
+            created_date=str(ph_today()),
+            period_start=period_start,
+            period_end=period_end,
+            status='pending',
+            prepared_by_id=current_user.id
+        )
+
+        db.session.add(report)
+        db.session.flush()
+
+        # Link vouchers to report
+        total = 0
+        for voucher in vouchers:
+            voucher.status = 'for_reimbursement'
+            voucher.reimbursement_report_id = report.id
+            total += voucher.amount
+
+        report.total_amount = total
+
+        db.session.commit()
+        flash(f'Reimbursement Report {report_number} created with {len(vouchers)} vouchers (₱{total:,.2f})', 'success')
+        return redirect(url_for('daily_sales.petty_cash_management'))
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error creating report: {str(e)}', 'danger')
+        return redirect(url_for('daily_sales.petty_cash_management'))
+
+
+@bp.route("/petty_cash/reimbursement/new", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def new_reimbursement_received():
+    """Record reimbursement received"""
+    from application.extensions import next_control_number
+
+    try:
+        record_date = request.form.get('date')
+        bank_account_name = request.form.get('bank_account', '').strip()
+        amount = float(request.form.get('amount', 0))
+        notes = request.form.get('notes', '').strip()
+        report_ids = request.form.getlist('report_ids[]')
+
+        if not record_date or not bank_account_name or amount <= 0:
+            flash("Please provide date, bank account, and valid amount", "danger")
+            return redirect(url_for('daily_sales.petty_cash_management'))
+
+        # Get bank account
+        bank_account = BankAccount.query.filter_by(account_name=bank_account_name).first()
+        if not bank_account:
+            flash("Bank account not found", "danger")
+            return redirect(url_for('daily_sales.petty_cash_management'))
+
+        # Generate reference number
+        ref_number = next_control_number(ReimbursementReceived, 'reference_number') if ReimbursementReceived.query.count() > 0 else "REF-0001"
+
+        # Create reimbursement received record
+        reimbursement = ReimbursementReceived(
+            reference_number=ref_number,
+            record_date=record_date,
+            bank_account_id=bank_account.id,
+            amount=amount,
+            notes=notes,
+            created_by_id=current_user.id
+        )
+
+        db.session.add(reimbursement)
+        db.session.flush()
+
+        # Update linked reports status to reimbursed
+        if report_ids:
+            reports = ReimbursementReport.query.filter(ReimbursementReport.id.in_(report_ids)).all()
+            for report in reports:
+                report.status = 'reimbursed'
+                # Update vouchers under this report
+                for voucher in report.vouchers:
+                    voucher.status = 'reimbursed'
+
+        db.session.commit()
+        flash(f'Reimbursement {ref_number} recorded successfully!', 'success')
+        return redirect(url_for('daily_sales.petty_cash_management'))
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error recording reimbursement: {str(e)}', 'danger')
+        return redirect(url_for('daily_sales.petty_cash_management'))
+
+
+@bp.route("/petty_cash/payees", methods=["GET"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def get_payees():
+    """API endpoint for payee autocomplete"""
+    payees = Payee.query.filter_by(active=True).order_by(Payee.name).all()
+    return {'payees': [p.name for p in payees]}
+
+
+@bp.route("/petty_cash/payee/add", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def add_payee():
+    """Add new payee"""
+    name = request.form.get('name', '').strip()
+
+    if not name:
+        return {'success': False, 'message': 'Payee name is required'}
+
+    # Check if exists
+    existing = Payee.query.filter_by(name=name).first()
+    if existing:
+        return {'success': False, 'message': 'Payee already exists'}
+
+    payee = Payee(name=name, active=True)
+    db.session.add(payee)
+    db.session.commit()
+
+    return {'success': True, 'payee': name}
 
 
 # ---------------------------------------------------------------------------
