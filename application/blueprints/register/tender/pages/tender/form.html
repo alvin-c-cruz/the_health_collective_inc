@@ -22,20 +22,6 @@
         {{ text_box(form, "Symbol (badge label)", "symbol", form.symbol) }}
 
         <div class="mb-3">
-            <label class="form-label fw-semibold">Transaction Types</label>
-            <div class="d-flex flex-wrap gap-3">
-                {% set types = (form.transaction_types or '').split(',') %}
-                {% for tt in transaction_types %}
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="transaction_types" value="{{ tt.type_code }}" id="tt_{{ tt.type_code }}"
-                        {{ 'checked' if tt.type_code in types }}>
-                    <label class="form-check-label" for="tt_{{ tt.type_code }}">{{ tt.type_name }}</label>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <div class="mb-3">
             <label class="form-label fw-semibold">Sort Order</label>
             <input type="number" class="form-control" name="sort_order" value="{{ form.sort_order or 0 }}" style="max-width:120px;">
             <div class="form-text">Higher number appears first in lists and the daily report.</div>

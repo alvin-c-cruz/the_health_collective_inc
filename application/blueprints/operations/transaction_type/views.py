@@ -5,6 +5,7 @@ from application.blueprints.user import login_required, roles_accepted
 
 from . import app_name, app_label
 from .models import TransactionType as Obj
+from application.blueprints.register.tender.models import Tender
 
 bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_name}")
 ROLES_ACCEPTED = app_label
@@ -26,6 +27,9 @@ def add():
     obj = Obj()
     obj.active = True
 
+    # Get all tenders for the checkbox list
+    tenders = Tender.query.order_by(Tender.sort_order.desc()).all()
+
     if request.method == 'POST':
         obj.type_code = request.form.get('type_code', '').strip().lower().replace(' ', '_')
         obj.type_name = request.form.get('type_name', '').strip()
@@ -46,11 +50,30 @@ def add():
         if not errors:
             db.session.add(obj)
             db.session.commit()
+
+            # Update tender transaction_types based on checkboxes
+            selected_tender_ids = request.form.getlist('tenders')
+            for tender in tenders:
+                existing_types = (tender.transaction_types or '').split(',')
+                existing_types = [t for t in existing_types if t]  # Remove empty strings
+
+                if str(tender.id) in selected_tender_ids:
+                    # Add this type if not already present
+                    if obj.type_code not in existing_types:
+                        existing_types.append(obj.type_code)
+                else:
+                    # Remove this type if present
+                    if obj.type_code in existing_types:
+                        existing_types.remove(obj.type_code)
+
+                tender.transaction_types = ','.join(existing_types) if existing_types else None
+
+            db.session.commit()
             flash(f'Service type "{obj.type_name}" added.', 'success')
             return redirect(url_for('transaction_type.home'))
 
     return render_template('transaction_type/form.html',
-                           obj=obj, errors=errors, is_new=True, app_label=app_label)
+                           obj=obj, errors=errors, is_new=True, app_label=app_label, tenders=tenders)
 
 
 @bp.route('/edit/<int:record_id>', methods=['GET', 'POST'])
@@ -60,7 +83,11 @@ def edit(record_id):
     obj = Obj.query.get_or_404(record_id)
     errors = {}
 
+    # Get all tenders for the checkbox list
+    tenders = Tender.query.order_by(Tender.sort_order.desc()).all()
+
     if request.method == 'POST':
+        old_code = obj.type_code
         new_code = request.form.get('type_code', '').strip().lower().replace(' ', '_')
         obj.type_name = request.form.get('type_name', '').strip()
         obj.description = request.form.get('description', '').strip()
@@ -82,12 +109,33 @@ def edit(record_id):
             errors['type_name'] = 'Type name is required.'
 
         if not errors:
+            # Update tender transaction_types based on checkboxes
+            selected_tender_ids = request.form.getlist('tenders')
+            for tender in tenders:
+                existing_types = (tender.transaction_types or '').split(',')
+                existing_types = [t for t in existing_types if t]  # Remove empty strings
+
+                # If type_code changed, update old references
+                if old_code != new_code and old_code in existing_types:
+                    existing_types.remove(old_code)
+
+                if str(tender.id) in selected_tender_ids:
+                    # Add this type if not already present
+                    if new_code not in existing_types:
+                        existing_types.append(new_code)
+                else:
+                    # Remove this type if present
+                    if new_code in existing_types:
+                        existing_types.remove(new_code)
+
+                tender.transaction_types = ','.join(existing_types) if existing_types else None
+
             db.session.commit()
             flash(f'Service type "{obj.type_name}" updated.', 'success')
             return redirect(url_for('transaction_type.home'))
 
     return render_template('transaction_type/form.html',
-                           obj=obj, errors=errors, is_new=False, app_label=app_label)
+                           obj=obj, errors=errors, is_new=False, app_label=app_label, tenders=tenders)
 
 
 @bp.route('/toggle/<int:record_id>', methods=['POST'])

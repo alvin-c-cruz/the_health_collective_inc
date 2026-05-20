@@ -98,6 +98,20 @@
         </div>
       </div>
 
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Applicable Tenders</label>
+        <div class="form-text mb-2">Select which payment tenders can use this service type</div>
+        <div class="d-flex flex-wrap gap-3">
+          {% for tender in tenders %}
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="tenders" value="{{ tender.id }}" id="tender_{{ tender.id }}"
+                   {{ 'checked' if tender.has_transaction_type(obj.type_code) }}>
+            <label class="form-check-label" for="tender_{{ tender.id }}">{{ tender.tender_name }}</label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
     </div>
 
     <div class="d-flex gap-2">
