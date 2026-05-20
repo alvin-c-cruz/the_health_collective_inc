@@ -1751,26 +1751,39 @@ def new_fund_disbursed():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def cancel_fund_received(id):
-    """Cancel fund received record (soft delete)"""
+    """Request cancellation of fund received record"""
     fund = FundReceived.query.get_or_404(id)
 
     if fund.status == 'cancelled':
         flash("Record is already cancelled", "warning")
         return redirect(url_for('daily_sales.accountabilities'))
 
+    if fund.status == 'pending_cancellation':
+        flash("Cancellation request already pending approval", "warning")
+        return redirect(url_for('daily_sales.accountabilities'))
+
     try:
         reason = request.form.get('reason', '').strip()
 
-        fund.status = 'cancelled'
-        fund.cancelled_by_id = current_user.id
-        fund.cancelled_at = datetime.now()
-        fund.cancellation_reason = reason if reason else 'Cancelled by user'
+        # Admin/SuperUser can cancel immediately
+        if current_user.admin or current_user.superuser:
+            fund.status = 'cancelled'
+            fund.cancelled_by_id = current_user.id
+            fund.cancelled_at = datetime.now()
+            fund.cancellation_reason = reason if reason else 'Cancelled by admin'
+            db.session.commit()
+            flash("Fund received record cancelled successfully", "success")
+        else:
+            # Staff must request cancellation
+            fund.status = 'pending_cancellation'
+            fund.cancelled_by_id = current_user.id  # Who requested
+            fund.cancellation_reason = reason if reason else 'Cancellation requested by user'
+            db.session.commit()
+            flash("Cancellation request submitted. Waiting for admin approval.", "info")
 
-        db.session.commit()
-        flash("Fund received record cancelled successfully", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"Error cancelling record: {str(e)}", "danger")
+        flash(f"Error submitting cancellation request: {str(e)}", "danger")
     return redirect(url_for('daily_sales.accountabilities'))
 
 
@@ -1778,27 +1791,187 @@ def cancel_fund_received(id):
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def cancel_fund_disbursed(id):
-    """Cancel fund disbursed record (soft delete)"""
+    """Request cancellation of fund disbursed record"""
     fund = FundDisbursed.query.get_or_404(id)
 
     if fund.status == 'cancelled':
         flash("Record is already cancelled", "warning")
         return redirect(url_for('daily_sales.accountabilities'))
 
+    if fund.status == 'pending_cancellation':
+        flash("Cancellation request already pending approval", "warning")
+        return redirect(url_for('daily_sales.accountabilities'))
+
     try:
         reason = request.form.get('reason', '').strip()
 
-        fund.status = 'cancelled'
-        fund.cancelled_by_id = current_user.id
-        fund.cancelled_at = datetime.now()
-        fund.cancellation_reason = reason if reason else 'Cancelled by user'
+        # Admin/SuperUser can cancel immediately
+        if current_user.admin or current_user.superuser:
+            fund.status = 'cancelled'
+            fund.cancelled_by_id = current_user.id
+            fund.cancelled_at = datetime.now()
+            fund.cancellation_reason = reason if reason else 'Cancelled by admin'
+            db.session.commit()
+            flash("Fund disbursed record cancelled successfully", "success")
+        else:
+            # Staff must request cancellation
+            fund.status = 'pending_cancellation'
+            fund.cancelled_by_id = current_user.id  # Who requested
+            fund.cancellation_reason = reason if reason else 'Cancellation requested by user'
+            db.session.commit()
+            flash("Cancellation request submitted. Waiting for admin approval.", "info")
 
-        db.session.commit()
-        flash("Fund disbursed record cancelled successfully", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"Error cancelling record: {str(e)}", "danger")
+        flash(f"Error submitting cancellation request: {str(e)}", "danger")
     return redirect(url_for('daily_sales.accountabilities'))
+
+
+@bp.route("/fund_received/<int:id>/approve_cancellation", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def approve_fund_received_cancellation(id):
+    """Approve cancellation request for fund received (admin only)"""
+    if not (current_user.admin or current_user.superuser):
+        flash("Only admins can approve cancellations", "danger")
+        return redirect(url_for('daily_sales.pending_fund_cancellations'))
+
+    fund = FundReceived.query.get_or_404(id)
+
+    if fund.status != 'pending_cancellation':
+        flash("No pending cancellation request for this record", "warning")
+        return redirect(url_for('daily_sales.pending_fund_cancellations'))
+
+    try:
+        fund.status = 'cancelled'
+        fund.cancelled_at = datetime.now()
+        # cancelled_by_id already set by requester, we track approval in notes
+        if fund.cancellation_reason:
+            fund.cancellation_reason += f" | Approved by {current_user.user_name}"
+        else:
+            fund.cancellation_reason = f"Approved by {current_user.user_name}"
+
+        db.session.commit()
+        flash("Cancellation request approved", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error approving cancellation: {str(e)}", "danger")
+
+    return redirect(url_for('daily_sales.pending_fund_cancellations'))
+
+
+@bp.route("/fund_received/<int:id>/reject_cancellation", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def reject_fund_received_cancellation(id):
+    """Reject cancellation request for fund received (admin only)"""
+    if not (current_user.admin or current_user.superuser):
+        flash("Only admins can reject cancellations", "danger")
+        return redirect(url_for('daily_sales.pending_fund_cancellations'))
+
+    fund = FundReceived.query.get_or_404(id)
+
+    if fund.status != 'pending_cancellation':
+        flash("No pending cancellation request for this record", "warning")
+        return redirect(url_for('daily_sales.pending_fund_cancellations'))
+
+    try:
+        # Revert to previous status (assume it was posted)
+        fund.status = 'posted'
+        fund.cancelled_by_id = None
+        fund.cancellation_reason = f"Cancellation rejected by {current_user.user_name}"
+
+        db.session.commit()
+        flash("Cancellation request rejected", "info")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error rejecting cancellation: {str(e)}", "danger")
+
+    return redirect(url_for('daily_sales.pending_fund_cancellations'))
+
+
+@bp.route("/fund_disbursed/<int:id>/approve_cancellation", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def approve_fund_disbursed_cancellation(id):
+    """Approve cancellation request for fund disbursed (admin only)"""
+    if not (current_user.admin or current_user.superuser):
+        flash("Only admins can approve cancellations", "danger")
+        return redirect(url_for('daily_sales.pending_fund_cancellations'))
+
+    fund = FundDisbursed.query.get_or_404(id)
+
+    if fund.status != 'pending_cancellation':
+        flash("No pending cancellation request for this record", "warning")
+        return redirect(url_for('daily_sales.pending_fund_cancellations'))
+
+    try:
+        fund.status = 'cancelled'
+        fund.cancelled_at = datetime.now()
+        if fund.cancellation_reason:
+            fund.cancellation_reason += f" | Approved by {current_user.user_name}"
+        else:
+            fund.cancellation_reason = f"Approved by {current_user.user_name}"
+
+        db.session.commit()
+        flash("Cancellation request approved", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error approving cancellation: {str(e)}", "danger")
+
+    return redirect(url_for('daily_sales.pending_fund_cancellations'))
+
+
+@bp.route("/fund_disbursed/<int:id>/reject_cancellation", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def reject_fund_disbursed_cancellation(id):
+    """Reject cancellation request for fund disbursed (admin only)"""
+    if not (current_user.admin or current_user.superuser):
+        flash("Only admins can reject cancellations", "danger")
+        return redirect(url_for('daily_sales.pending_fund_cancellations'))
+
+    fund = FundDisbursed.query.get_or_404(id)
+
+    if fund.status != 'pending_cancellation':
+        flash("No pending cancellation request for this record", "warning")
+        return redirect(url_for('daily_sales.pending_fund_cancellations'))
+
+    try:
+        # Revert to previous status (assume it was posted)
+        fund.status = 'posted'
+        fund.cancelled_by_id = None
+        fund.cancellation_reason = f"Cancellation rejected by {current_user.user_name}"
+
+        db.session.commit()
+        flash("Cancellation request rejected", "info")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error rejecting cancellation: {str(e)}", "danger")
+
+    return redirect(url_for('daily_sales.pending_fund_cancellations'))
+
+
+@bp.route("/pending_fund_cancellations", methods=["GET"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def pending_fund_cancellations():
+    """View all pending cancellation requests (admin only)"""
+    if not (current_user.admin or current_user.superuser):
+        flash("Only admins can view pending cancellations", "danger")
+        return redirect(url_for('daily_sales.accountabilities'))
+
+    # Get all pending cancellation requests
+    pending_received = FundReceived.query.filter_by(status='pending_cancellation').order_by(FundReceived.record_date.desc()).all()
+    pending_disbursed = FundDisbursed.query.filter_by(status='pending_cancellation').order_by(FundDisbursed.record_date.desc()).all()
+
+    context = {
+        'app_label': app_label,
+        'pending_received': pending_received,
+        'pending_disbursed': pending_disbursed,
+        'total_pending': len(pending_received) + len(pending_disbursed)
+    }
+    return render_template("daily_sales/pending_fund_cancellations.html", **context)
 
 
 # ---------------------------------------------------------------------------

@@ -2,7 +2,8 @@ from datetime import date
 from sqlalchemy import func, select as sa_select
 
 from application.extensions import db
-from ..operations.daily_sales.models import Transaction, TransactionDetail, TransactionTender, TransactionType
+from ..operations.daily_sales.models import (Transaction, TransactionDetail, TransactionTender, TransactionType,
+                                              FundReceived, FundDisbursed)
 from ..operations.daily_sales.admin_models import AdminTransaction
 from ..register.product.models import Product
 from ..register.tender.models import Tender
@@ -134,6 +135,12 @@ def get_dashboard_stats(today: date) -> dict:
         for tt in sales_summary['Dialysis']
     )
 
+    # Pending fund cancellations
+    pending_fund_cancellations = (
+        FundReceived.query.filter_by(status='pending_cancellation').count() +
+        FundDisbursed.query.filter_by(status='pending_cancellation').count()
+    )
+
     return {
         "today": today,
         "today_count": today_count,
@@ -142,6 +149,7 @@ def get_dashboard_stats(today: date) -> dict:
         "mtd_net_sales": round(mtd_sales - mtd_discounts, 2),
         "drafts_count": drafts_count,
         "pending_approval_count": pending_approval_count,
+        "pending_fund_cancellations": pending_fund_cancellations,
         "sales_summary": sales_summary,
         "transaction_types": transaction_types,
         "diagnostics_total": round(diagnostics_total, 2),

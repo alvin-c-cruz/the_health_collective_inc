@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Pending Cancellation Requests — The Health Collective Inc.{% endblock %}
+
+{% block styles %}
+<style>
+  .thc-wrap { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
+  /* ── top bar ── */
+  .thc-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: .75rem; }
+  .thc-brand-name { font-family: var(--thc-font-heading); font-size: 1.05rem; font-weight: 600; color: var(--thc-text); margin: 0; }
+  .thc-brand-sub { font-size: .75rem; color: var(--thc-text-muted); margin: 2px 0 0; }
+  .thc-back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--thc-text-muted); text-decoration: none; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--thc-border); background: #fff; transition: all .15s; }
+  .thc-back-btn:hover { border-color: var(--thc-primary); color: var(--thc-primary); background: var(--thc-primary-light); text-decoration: none; }
+
+  /* ── sections ── */
+  .section-title { font-size: .95rem; font-weight: 600; color: var(--thc-text); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .section-title i { color: #f59e0b; }
+  .section-count { background: #f59e0b; color: white; padding: 2px 8px; border-radius: 12px; font-size: .75rem; }
+
+  /* ── tables ── */
+  .transactions-table { background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; overflow: hidden; margin-bottom: 2rem; }
+  .transactions-table table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+  .transactions-table thead { background: #f8f9fa; }
+  .transactions-table th { padding: 10px 12px; text-align: left; font-weight: 600; color: var(--thc-text-muted); border-bottom: 1px solid var(--thc-border); }
+  .transactions-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+  .transactions-table tbody tr:hover { background: #f8f9fa; }
+
+  /* ── columns ── */
+  .date-col { width: 110px; }
+  .type-col { width: 100px; }
+  .category-col { width: 150px; }
+  .amount-col { width: 120px; text-align: right; font-family: monospace; font-weight: 600; }
+  .amount-col.received { color: #0f6e56; }
+  .amount-col.disbursed { color: #993c1d; }
+  .ref-col { width: 120px; }
+  .desc-col { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .requested-col { width: 120px; font-size: .75rem; color: var(--thc-text-muted); }
+  .actions-col { width: 140px; text-align: center; }
+
+  /* ── status badges ── */
+  .status-badge { padding: 3px 10px; border-radius: 12px; font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+  .status-badge.pending_cancellation { background: #fff3cd; color: #856404; }
+
+  /* ── buttons ── */
+  .btn-approve { padding: 4px 12px; border: none; border-radius: 4px; font-size: .75rem; background: #10b981; color: white; cursor: pointer; margin-right: 4px; }
+  .btn-approve:hover { background: #059669; }
+  .btn-reject { padding: 4px 12px; border: none; border-radius: 4px; font-size: .75rem; background: #ef4444; color: white; cursor: pointer; }
+  .btn-reject:hover { background: #dc2626; }
+
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--thc-text-muted); }
+  .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: .3; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="thc-wrap">
+  <!-- Top bar -->
+  <div class="thc-topbar">
+    <div>
+      <h1 class="thc-brand-name">Pending Cancellation Requests</h1>
+      <p class="thc-brand-sub">Review and approve/reject cancellation requests</p>
+    </div>
+    <a href="{{ url_for('daily_sales.accountabilities') }}" class="thc-back-btn">
+      <i class="bi bi-arrow-left"></i> Back to Accountabilities
+    </a>
+  </div>
+
+  <!-- Pending Funds Received Cancellations -->
+  {% if pending_received %}
+  <div class="section-title">
+    <i class="bi bi-exclamation-triangle"></i>
+    Funds Received - Pending Cancellations
+    <span class="section-count">{{ pending_received|length }}</span>
+  </div>
+  <div class="transactions-table">
+    <table>
+      <thead>
+        <tr>
+          <th class="date-col">DATE</th>
+          <th class="category-col">CATEGORY</th>
+          <th class="amount-col">AMOUNT</th>
+          <th class="ref-col">REFERENCE</th>
+          <th class="desc-col">REASON</th>
+          <th class="requested-col">REQUESTED BY</th>
+          <th class="actions-col">ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for fund in pending_received %}
+        <tr>
+          <td class="date-col">{{ fund.formatted_date }}</td>
+          <td class="category-col">{{ fund.fund_category.category_name if fund.fund_category else '—' }}</td>
+          <td class="amount-col received">₱{{ fund.formatted_amount }}</td>
+          <td class="ref-col">{{ fund.reference_number or '—' }}</td>
+          <td class="desc-col" title="{{ fund.cancellation_reason }}">{{ fund.cancellation_reason or '—' }}</td>
+          <td class="requested-col">{{ fund.created_by_user.user_name if fund.cancelled_by_id and fund.created_by_user else '—' }}</td>
+          <td class="actions-col">
+            <form method="POST" action="{{ url_for('daily_sales.approve_fund_received_cancellation', id=fund.id) }}" style="display: inline;">
+              <button type="submit" class="btn-approve" onclick="return confirm('Approve this cancellation?')">
+                <i class="bi bi-check-lg"></i> Approve
+              </button>
+            </form>
+            <form method="POST" action="{{ url_for('daily_sales.reject_fund_received_cancellation', id=fund.id) }}" style="display: inline;">
+              <button type="submit" class="btn-reject" onclick="return confirm('Reject this cancellation request?')">
+                <i class="bi bi-x-lg"></i> Reject
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Pending Funds Disbursed Cancellations -->
+  {% if pending_disbursed %}
+  <div class="section-title">
+    <i class="bi bi-exclamation-triangle"></i>
+    Funds Disbursed - Pending Cancellations
+    <span class="section-count">{{ pending_disbursed|length }}</span>
+  </div>
+  <div class="transactions-table">
+    <table>
+      <thead>
+        <tr>
+          <th class="date-col">DATE</th>
+          <th class="category-col">CATEGORY</th>
+          <th class="amount-col">AMOUNT</th>
+          <th class="ref-col">REFERENCE</th>
+          <th class="desc-col">REASON</th>
+          <th class="requested-col">REQUESTED BY</th>
+          <th class="actions-col">ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for fund in pending_disbursed %}
+        <tr>
+          <td class="date-col">{{ fund.formatted_date }}</td>
+          <td class="category-col">{{ fund.fund_category.category_name if fund.fund_category else '—' }}</td>
+          <td class="amount-col disbursed">₱{{ fund.formatted_amount }}</td>
+          <td class="ref-col">{{ fund.reference_number or '—' }}</td>
+          <td class="desc-col" title="{{ fund.cancellation_reason }}">{{ fund.cancellation_reason or '—' }}</td>
+          <td class="requested-col">{{ fund.created_by_user.user_name if fund.cancelled_by_id and fund.created_by_user else '—' }}</td>
+          <td class="actions-col">
+            <form method="POST" action="{{ url_for('daily_sales.approve_fund_disbursed_cancellation', id=fund.id) }}" style="display: inline;">
+              <button type="submit" class="btn-approve" onclick="return confirm('Approve this cancellation?')">
+                <i class="bi bi-check-lg"></i> Approve
+              </button>
+            </form>
+            <form method="POST" action="{{ url_for('daily_sales.reject_fund_disbursed_cancellation', id=fund.id) }}" style="display: inline;">
+              <button type="submit" class="btn-reject" onclick="return confirm('Reject this cancellation request?')">
+                <i class="bi bi-x-lg"></i> Reject
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Empty state -->
+  {% if not pending_received and not pending_disbursed %}
+  <div class="empty-state">
+    <i class="bi bi-check-circle"></i>
+    <p>No pending cancellation requests</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

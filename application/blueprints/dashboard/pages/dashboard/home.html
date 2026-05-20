@@ -138,6 +138,19 @@
                        class="dash-card__link">View &rarr;</a>
                 </div>
             </div>
+
+            <div class="dash-card {% if pending_fund_cancellations > 0 %}dash-card--warn{% endif %}">
+                <div class="dash-card__icon"
+                     style="background:#fef3c7;color:#f59e0b;">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <div class="dash-card__body">
+                    <div class="dash-card__label">Pending Cancellations</div>
+                    <div class="dash-card__value">{{ pending_fund_cancellations }}</div>
+                    <a href="{{ url_for('daily_sales.pending_fund_cancellations') }}"
+                       class="dash-card__link">View &rarr;</a>
+                </div>
+            </div>
             {% endif %}
 
         </div>
