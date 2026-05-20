@@ -179,7 +179,6 @@ def user_staff():
         db.session.commit()
     else:
         flash("Cannot change the master admin account.", category="error")
->>>>>>> e05002f1cdc7a9df0260c0cc2ea400b447744f7c
     return redirect(url_for('user.user_group', record_id=user_id))
 
 
