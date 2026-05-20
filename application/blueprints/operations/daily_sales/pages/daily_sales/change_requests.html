@@ -84,8 +84,8 @@
                     <span class="badge bg-primary me-2">Deposit</span>
                     <strong>Deposit #{{ dep.id }}</strong>
                     <div class="text-muted" style="font-size:0.8rem;">
-                        Submitted by {{ dep.submitted_by_user.user_name if dep.submitted_by_user else 'Unknown' }} on
-                        {{ dep.submitted_at.strftime("%b %d, %Y at %H:%M") if dep.submitted_at else 'N/A' }}
+                        Submitted by {{ dep.submitted_by_user.user_name if dep.submitted_by_user else 'Unknown' }}
+                        {% if dep.submitted_at %} on {{ dep.submitted_at.strftime("%b %d, %Y at %H:%M") }}{% endif %}
                     </div>
                 </div>
                 <a href="{{ url_for('daily_sales.view_deposit', deposit_id=dep.id) }}" class="btn btn-sm btn-outline-primary">
@@ -125,8 +125,8 @@
                     <span class="badge bg-success me-2">Collection</span>
                     <strong>Collection #{{ col.id }}</strong>
                     <div class="text-muted" style="font-size:0.8rem;">
-                        Submitted by {{ col.submitted_by_user.user_name if col.submitted_by_user else 'Unknown' }} on
-                        {{ col.submitted_at.strftime("%b %d, %Y at %H:%M") if col.submitted_at else 'N/A' }}
+                        Submitted by {{ col.submitted_by_user.user_name if col.submitted_by_user else 'Unknown' }}
+                        {% if col.submitted_at %} on {{ col.submitted_at.strftime("%b %d, %Y at %H:%M") }}{% endif %}
                     </div>
                 </div>
                 <a href="{{ url_for('collections.view_collection', collection_id=col.id) }}" class="btn btn-sm btn-outline-primary">
