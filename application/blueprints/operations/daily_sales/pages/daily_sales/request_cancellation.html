@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Request Transaction Cancellation{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+    <div class="thc-page-header">
+        <h4><i class="bi bi-x-circle"></i> Request Cancellation of Transaction #{{ transaction.id }}</h4>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i>
+        <strong>Warning:</strong> You are requesting to cancel this transaction. If approved by an admin, this transaction will be marked as cancelled and will no longer appear in reports.
+    </div>
+
+    <div class="thc-card">
+        <h6 class="mb-3">Transaction Details</h6>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label text-muted" style="font-size:0.75rem;">Date</label>
+                <div><strong>{{ transaction.formatted_record_date }}</strong></div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label text-muted" style="font-size:0.75rem;">OR Number</label>
+                <div><strong>{{ transaction.record_number or 'N/A' }}</strong></div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label text-muted" style="font-size:0.75rem;">Customer</label>
+                <div><strong>{{ transaction.customer.customer_name if transaction.customer else 'N/A' }}</strong></div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label text-muted" style="font-size:0.75rem;">Amount</label>
+                <div><strong>₱{{ '{:,.2f}'.format(transaction.total_amount) }}</strong></div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label text-muted" style="font-size:0.75rem;">Type</label>
+                <div><strong>{{ transaction.transaction_type.type_name if transaction.transaction_type else 'N/A' }}</strong></div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label text-muted" style="font-size:0.75rem;">Status</label>
+                <div><strong class="text-success">Posted</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST">
+        <div class="thc-card">
+            <h6 class="mb-3">Reason for Cancellation <span class="text-danger">*</span></h6>
+            <textarea name="reason" class="form-control" rows="4" required placeholder="Please explain why this transaction should be cancelled..."></textarea>
+            <small class="form-text text-muted mt-2">
+                This cancellation request will be sent to an administrator for review. The transaction will remain active until the request is approved.
+            </small>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-danger">
+                <i class="bi bi-x-circle"></i> Submit Cancellation Request
+            </button>
+            <a href="{{ url_for('daily_sales.view_transaction', transaction_id=transaction.id) }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Transaction
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

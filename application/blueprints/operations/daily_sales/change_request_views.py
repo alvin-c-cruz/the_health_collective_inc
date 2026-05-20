@@ -122,27 +122,44 @@ def review_change_request(request_id):
     review_notes = request.form.get('review_notes', '').strip()
 
     if action == 'approve':
-        transaction = Transaction.query.get(change_request.transaction_id)
+        # Handle cancellation requests differently
+        if change_request.is_cancellation:
+            record = change_request.record
 
-        if transaction:
-            new_vals = change_request.new_values
+            if record:
+                # Cancel the record
+                record.cancelled = datetime.utcnow()
+                record.cancelled_by_id = user.id
+                record.cancellation_reason = change_request.reason
 
-            # Apply changes
-            transaction.record_date = new_vals.get('record_date', transaction.record_date)
-            transaction.dashlabs_number = new_vals.get('dashlabs_number', transaction.dashlabs_number)
-            transaction.pos_number = new_vals.get('pos_number', transaction.pos_number)
-            transaction.customer_id = new_vals.get('customer_id', transaction.customer_id)
-            transaction.description = new_vals.get('description', transaction.description)
-            transaction.discount = new_vals.get('discount', transaction.discount)
-            transaction.updated_at = datetime.utcnow()
+                change_request.status = 'approved'
+                flash('Cancellation request approved. Record has been cancelled.', 'success')
+            else:
+                flash('Record not found for cancellation.', 'danger')
+                return redirect(url_for('daily_sales.change_requests_list'))
+        else:
+            # Handle modification requests
+            transaction = Transaction.query.get(change_request.transaction_id)
 
-            # Mark transaction as needing re-approval (back to submitted)
-            transaction.status = 'submitted'
-            transaction.submitted_by_id = user.id
-            transaction.submitted_at = datetime.utcnow()
+            if transaction:
+                new_vals = change_request.new_values
 
-        change_request.status = 'approved'
-        flash('Change request approved. Transaction requires re-approval.', 'success')
+                # Apply changes
+                transaction.record_date = new_vals.get('record_date', transaction.record_date)
+                transaction.dashlabs_number = new_vals.get('dashlabs_number', transaction.dashlabs_number)
+                transaction.pos_number = new_vals.get('pos_number', transaction.pos_number)
+                transaction.customer_id = new_vals.get('customer_id', transaction.customer_id)
+                transaction.description = new_vals.get('description', transaction.description)
+                transaction.discount = new_vals.get('discount', transaction.discount)
+                transaction.updated_at = datetime.utcnow()
+
+                # Mark transaction as needing re-approval (back to submitted)
+                transaction.status = 'submitted'
+                transaction.submitted_by_id = user.id
+                transaction.submitted_at = datetime.utcnow()
+
+            change_request.status = 'approved'
+            flash('Change request approved. Transaction requires re-approval.', 'success')
 
     elif action == 'reject':
         change_request.status = 'rejected'
@@ -190,4 +207,74 @@ def transaction_history(transaction_id):
         'daily_sales/transaction_history.html',
         transaction=transaction,
         change_log=change_log
+    )
+
+
+def request_transaction_cancellation(transaction_id):
+    """
+    Staff/Supervisor requests cancellation of a posted transaction.
+
+    GET: Show form with transaction details and reason input
+    POST: Create cancellation request
+    """
+    user = get_current_user()
+
+    if not can_request_changes(user):
+        flash('You do not have permission to request cancellations.', 'danger')
+        return redirect(url_for('daily_sales.home'))
+
+    transaction = Transaction.query.get_or_404(transaction_id)
+
+    # Can only request cancellation on posted transactions
+    if not transaction.is_posted:
+        flash('Can only request cancellation on posted transactions.', 'warning')
+        return redirect(url_for('daily_sales.view_transaction', transaction_id=transaction_id))
+
+    # Check if there's already a pending cancellation request
+    existing_request = ChangeRequest.query.filter_by(
+        record_type='transaction',
+        record_id=transaction.id,
+        request_action='cancellation',
+        status='pending'
+    ).first()
+
+    if existing_request:
+        flash('There is already a pending cancellation request for this transaction.', 'warning')
+        return redirect(url_for('daily_sales.view_transaction', transaction_id=transaction_id))
+
+    if request.method == 'POST':
+        reason = request.form.get('reason', '').strip()
+
+        if not reason:
+            flash('Please provide a reason for the cancellation request.', 'warning')
+            return render_template(
+                'daily_sales/request_cancellation.html',
+                transaction=transaction
+            )
+
+        # Create cancellation request
+        change_request = ChangeRequest(
+            record_type='transaction',
+            record_id=transaction.id,
+            transaction_id=transaction.id,  # For backwards compatibility
+            request_action='cancellation',
+            reason=reason,
+            status='pending',
+            requested_by_id=user.id,
+            requested_at=datetime.utcnow()
+        )
+
+        # No need for old/new values for cancellation
+        change_request.old_values = {}
+        change_request.new_values = {}
+
+        db.session.add(change_request)
+        db.session.commit()
+
+        flash('Cancellation request submitted. An admin will review it.', 'success')
+        return redirect(url_for('daily_sales.view_transaction', transaction_id=transaction_id))
+
+    return render_template(
+        'daily_sales/request_cancellation.html',
+        transaction=transaction
     )

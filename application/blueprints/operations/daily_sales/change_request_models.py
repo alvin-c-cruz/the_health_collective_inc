@@ -30,6 +30,9 @@ class ChangeRequest(db.Model):
     _old_values = db.Column('old_values', db.Text)
     _new_values = db.Column('new_values', db.Text)
 
+    # Action requested: 'modification' or 'cancellation'
+    request_action = db.Column(db.String(20), default='modification')
+
     # Reason for the change request
     reason = db.Column(db.String(500), nullable=False)
 
@@ -82,6 +85,14 @@ class ChangeRequest(db.Model):
     @property
     def is_direct(self):
         return self.status == 'direct'
+
+    @property
+    def is_cancellation(self):
+        return self.request_action == 'cancellation'
+
+    @property
+    def is_modification(self):
+        return self.request_action == 'modification'
 
     @property
     def deposit(self):

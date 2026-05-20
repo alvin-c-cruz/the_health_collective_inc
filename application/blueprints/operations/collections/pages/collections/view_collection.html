@@ -45,8 +45,14 @@
                 </a>
             {% endif %}
 
-            {% if col.status != 'cancelled' %}
-                <!-- Cancel button (available for all non-cancelled collections) -->
+            {% if col.status == 'posted' %}
+                <!-- Request cancellation button for posted collections -->
+                <a href="{{ url_for('collections.request_collection_cancellation', collection_id=col.id) }}"
+                   class="thc-btn thc-btn-danger">
+                    <i class="bi bi-x-circle"></i> Request Cancellation
+                </a>
+            {% elif col.status == 'draft' %}
+                <!-- Cancel button for draft collections (direct cancellation) -->
                 <a href="{{ url_for('collections.cancel_collection', collection_id=col.id) }}"
                    class="thc-btn thc-btn-danger">
                     <i class="bi bi-x-circle"></i> Cancel

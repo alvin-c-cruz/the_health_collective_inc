@@ -439,6 +439,69 @@ def request_collection_change(collection_id):
     return render_template('collections/request_collection_change.html', **context)
 
 
+@bp.route("/<int:collection_id>/request-cancellation", methods=["GET", "POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def request_collection_cancellation(collection_id):
+    """Staff/supervisor requests cancellation of a posted collection"""
+    from ..daily_sales.change_request_models import ChangeRequest
+
+    col = Collection.query.get_or_404(collection_id)
+
+    # Can only request cancellation on posted collections
+    if col.status != 'posted':
+        flash('Can only request cancellation on posted collections.', 'warning')
+        return redirect(url_for(f'{app_name}.view_collection', collection_id=collection_id))
+
+    # Check if there's already a pending cancellation request
+    existing_request = ChangeRequest.query.filter_by(
+        record_type='collection',
+        record_id=col.id,
+        request_action='cancellation',
+        status='pending'
+    ).first()
+
+    if existing_request:
+        flash('There is already a pending cancellation request for this collection.', 'warning')
+        return redirect(url_for(f'{app_name}.view_collection', collection_id=collection_id))
+
+    if request.method == 'POST':
+        reason = request.form.get('reason', '').strip()
+
+        if not reason:
+            flash('Please provide a reason for the cancellation request.', 'warning')
+            context = {
+                'app_label': app_label,
+                'col': col,
+            }
+            return render_template('collections/request_collection_cancellation.html', **context)
+
+        # Create cancellation request
+        cr = ChangeRequest()
+        cr.record_type = 'collection'
+        cr.record_id = collection_id
+        cr.request_action = 'cancellation'
+        cr.reason = reason
+        cr.status = 'pending'
+        cr.requested_by_id = current_user.id
+        cr.requested_at = datetime.now()
+        cr.old_values = {}
+        cr.new_values = {}
+
+        db.session.add(cr)
+        db.session.commit()
+
+        flash('Cancellation request submitted. An admin will review it.', 'success')
+        return redirect(url_for(f'{app_name}.view_collection', collection_id=collection_id))
+
+    context = {
+        'app_label': app_label,
+        'col': col,
+    }
+
+    return render_template('collections/request_collection_cancellation.html', **context)
+
+
 @bp.route("/change-requests", methods=["GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])

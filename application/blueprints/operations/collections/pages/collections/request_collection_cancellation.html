@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Request Collection Cancellation{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+    <div class="thc-page-header">
+        <h4><i class="bi bi-x-circle"></i> Request Cancellation of Collection #{{ col.id }}</h4>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i>
+        <strong>Warning:</strong> You are requesting to cancel this collection. If approved by an admin, this collection will be marked as cancelled and will no longer appear in reports.
+    </div>
+
+    <div class="thc-card">
+        <h6 class="mb-3">Collection Details</h6>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label text-muted" style="font-size:0.75rem;">Collection Date</label>
+                <div><strong>{{ col.formatted_collection_date }}</strong></div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label text-muted" style="font-size:0.75rem;">Tender</label>
+                <div><strong>{{ col.tender.tender_name if col.tender else 'N/A' }}</strong></div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label text-muted" style="font-size:0.75rem;">Bank Account</label>
+                <div><strong>{{ col.bank_account.account_name if col.bank_account else 'N/A' }}</strong></div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label text-muted" style="font-size:0.75rem;">Reference</label>
+                <div><strong>{{ col.reference or 'N/A' }}</strong></div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label text-muted" style="font-size:0.75rem;">Total Amount</label>
+                <div><strong>₱{{ '{:,.2f}'.format(col.total_amount) }}</strong></div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label text-muted" style="font-size:0.75rem;">Status</label>
+                <div><strong class="text-success">Posted</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Show collection items -->
+    {% if col.collection_items %}
+    <div class="thc-card">
+        <h6 class="mb-3">Collection Items</h6>
+        <table class="table table-sm mb-0">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Invoice #</th>
+                    <th>Customer</th>
+                    <th class="text-end">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in col.collection_items %}
+                <tr>
+                    <td>{{ item.invoice.invoice_date if item.invoice else '-' }}</td>
+                    <td class="font-monospace small">{{ item.invoice.invoice_number if item.invoice else '-' }}</td>
+                    <td>{{ item.invoice.customer.customer_name if item.invoice and item.invoice.customer else '-' }}</td>
+                    <td class="text-end font-monospace">₱{{ '{:,.2f}'.format(item.amount) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <form method="POST">
+        <div class="thc-card">
+            <h6 class="mb-3">Reason for Cancellation <span class="text-danger">*</span></h6>
+            <textarea name="reason" class="form-control" rows="4" required placeholder="Please explain why this collection should be cancelled..."></textarea>
+            <small class="form-text text-muted mt-2">
+                This cancellation request will be sent to an administrator for review. The collection will remain active until the request is approved.
+            </small>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-danger">
+                <i class="bi bi-x-circle"></i> Submit Cancellation Request
+            </button>
+            <a href="{{ url_for('collections.view_collection', collection_id=col.id) }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Collection
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -702,6 +702,69 @@ def request_deposit_change(deposit_id):
     return render_template(f'{app_name}/request_deposit_change.html', **context)
 
 
+@bp.route('/deposit/request-cancellation/<int:deposit_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def request_deposit_cancellation(deposit_id):
+    """Staff/supervisor requests cancellation of a posted deposit"""
+    from .change_request_models import ChangeRequest
+
+    deposit = Deposit.query.get_or_404(deposit_id)
+
+    # Can only request cancellation on posted deposits
+    if deposit.status != 'posted':
+        flash('Can only request cancellation on posted deposits.', 'warning')
+        return redirect(url_for(f'{app_name}.view_deposit', deposit_id=deposit_id))
+
+    # Check if there's already a pending cancellation request
+    existing_request = ChangeRequest.query.filter_by(
+        record_type='deposit',
+        record_id=deposit.id,
+        request_action='cancellation',
+        status='pending'
+    ).first()
+
+    if existing_request:
+        flash('There is already a pending cancellation request for this deposit.', 'warning')
+        return redirect(url_for(f'{app_name}.view_deposit', deposit_id=deposit_id))
+
+    if request.method == 'POST':
+        reason = request.form.get('reason', '').strip()
+
+        if not reason:
+            flash('Please provide a reason for the cancellation request.', 'warning')
+            context = {
+                'app_label': app_label,
+                'deposit': deposit,
+            }
+            return render_template(f'{app_name}/request_deposit_cancellation.html', **context)
+
+        # Create cancellation request
+        cr = ChangeRequest()
+        cr.record_type = 'deposit'
+        cr.record_id = deposit_id
+        cr.request_action = 'cancellation'
+        cr.reason = reason
+        cr.status = 'pending'
+        cr.requested_by_id = current_user.id
+        cr.requested_at = datetime.now()
+        cr.old_values = {}
+        cr.new_values = {}
+
+        db.session.add(cr)
+        db.session.commit()
+
+        flash('Cancellation request submitted. An admin will review it.', 'success')
+        return redirect(url_for(f'{app_name}.view_deposit', deposit_id=deposit_id))
+
+    context = {
+        'app_label': app_label,
+        'deposit': deposit,
+    }
+
+    return render_template(f'{app_name}/request_deposit_cancellation.html', **context)
+
+
 @bp.route('/deposit/change-requests', methods=['GET'])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
@@ -909,6 +972,7 @@ class _Report:
 
 from .change_request_views import (
     request_transaction_change,
+    request_transaction_cancellation,
     change_requests_list,
     review_change_request,
     change_history,
@@ -917,6 +981,10 @@ from .change_request_views import (
 
 bp.route('/transaction/<int:transaction_id>/request_change', methods=['GET', 'POST'])(
     login_required(roles_accepted([ROLES_ACCEPTED])(request_transaction_change))
+)
+
+bp.route('/transaction/<int:transaction_id>/request_cancellation', methods=['GET', 'POST'])(
+    login_required(roles_accepted([ROLES_ACCEPTED])(request_transaction_cancellation))
 )
 
 bp.route('/change_requests', methods=['GET'])(
