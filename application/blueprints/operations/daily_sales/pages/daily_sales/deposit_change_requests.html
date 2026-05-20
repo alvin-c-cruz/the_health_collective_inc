@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Deposit Change Requests{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+
+  <!-- Header -->
+  <div class="row mb-3">
+    <div class="col-md-8">
+      <h4>Pending Deposit Change Requests</h4>
+      <p class="text-muted">Review and approve/reject change requests from staff</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <a href="{{ url_for('daily_sales.deposit_report') }}" class="btn btn-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Back to Deposits
+      </a>
+    </div>
+  </div>
+  <hr>
+
+  {% if change_requests %}
+  <div class="row">
+    <div class="col">
+      <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> <strong>{{ change_requests|length }}</strong> pending request(s) waiting for review.
+      </div>
+
+      {% for cr in change_requests %}
+      <div class="card mb-4">
+        <div class="card-header bg-light">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <h5 class="mb-0">
+                <i class="bi bi-file-earmark-text"></i> Deposit #{{ cr.record_id }}
+              </h5>
+              <small class="text-muted">
+                Requested by <strong>{{ cr.requested_by.first_name if cr.requested_by else 'Unknown' }}</strong>
+                on {{ cr.requested_at.strftime('%d-%b-%Y %I:%M %p') if cr.requested_at else '-' }}
+              </small>
+            </div>
+            <div class="col-md-6 text-end">
+              <span class="badge bg-warning text-dark">Pending Review</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- Reason -->
+          <div class="alert alert-warning mb-3">
+            <strong>Reason for Change:</strong><br>
+            {{ cr.reason }}
+          </div>
+
+          <!-- Changes Table -->
+          <h6>Proposed Changes:</h6>
+          <table class="table table-bordered table-sm">
+            <thead>
+              <tr>
+                <th style="width: 25%;">Field</th>
+                <th style="width: 37.5%;">Current Value</th>
+                <th style="width: 37.5%;">New Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% set old = cr.old_values %}
+              {% set new = cr.new_values %}
+
+              {% if old.record_date != new.record_date %}
+              <tr class="table-warning">
+                <td><strong>Deposit Date</strong></td>
+                <td>{{ old.record_date }}</td>
+                <td><strong>{{ new.record_date }}</strong></td>
+              </tr>
+              {% endif %}
+
+              {% if old.bank_account != new.bank_account %}
+              <tr class="table-warning">
+                <td><strong>Bank / Account</strong></td>
+                <td>{{ old.bank_account or '-' }}</td>
+                <td><strong>{{ new.bank_account or '-' }}</strong></td>
+              </tr>
+              {% endif %}
+
+              {% if old.reference_number != new.reference_number %}
+              <tr class="table-warning">
+                <td><strong>Reference Number</strong></td>
+                <td>{{ old.reference_number or '-' }}</td>
+                <td><strong>{{ new.reference_number or '-' }}</strong></td>
+              </tr>
+              {% endif %}
+
+              {% if old.notes != new.notes %}
+              <tr class="table-warning">
+                <td><strong>Notes</strong></td>
+                <td>{{ old.notes or '-' }}</td>
+                <td><strong>{{ new.notes or '-' }}</strong></td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+
+          <!-- Review Form -->
+          <form method="POST" action="{{ url_for('daily_sales.review_deposit_change_request', cr_id=cr.id) }}">
+            <div class="row mt-3">
+              <div class="col-md-8">
+                <label for="review_notes_{{ cr.id }}" class="form-label">Review Notes (optional)</label>
+                <textarea class="form-control" id="review_notes_{{ cr.id }}" name="review_notes" rows="2"
+                          placeholder="Add any comments about your decision..."></textarea>
+              </div>
+              <div class="col-md-4 text-end d-flex flex-column justify-content-end">
+                <div class="btn-group" role="group">
+                  <button type="submit" name="action" value="approve" class="btn btn-success"
+                          onclick="return confirm('Approve this change request? The deposit will be updated and set back to submitted status for re-approval.');">
+                    <i class="bi bi-check-circle"></i> Approve
+                  </button>
+                  <button type="submit" name="action" value="reject" class="btn btn-danger"
+                          onclick="return confirm('Reject this change request?');">
+                    <i class="bi bi-x-circle"></i> Reject
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div class="row">
+    <div class="col">
+      <div class="alert alert-success">
+        <i class="bi bi-check-circle"></i> No pending change requests. All caught up!
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<style>
+  .card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  .card-header {
+    padding: 1rem;
+    background-color: #f8f9fa;
+  }
+
+  .card-body {
+    padding: 1.5rem;
+  }
+
+  .table-warning {
+    background-color: #fff3cd;
+  }
+
+  .table-warning td {
+    vertical-align: middle;
+  }
+
+  .badge {
+    font-size: 0.875rem;
+    padding: 0.5em 0.75em;
+  }
+</style>
+
+{% endblock %}

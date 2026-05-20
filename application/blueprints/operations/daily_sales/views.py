@@ -533,14 +533,29 @@ def submit_deposit(deposit_id):
         flash('You can only submit your own deposits.', 'danger')
         return redirect(url_for(f'{app_name}.deposit_report'))
 
-    deposit.status = 'submitted'
-    deposit.submitted_by_id = current_user.id
-    deposit.submitted_at = datetime.now()
-    deposit.updated_at = datetime.now()
+    # Admin auto-approve: If user is admin, automatically approve deposit
+    if current_user.is_admin:
+        deposit.status = 'posted'
+        deposit.submitted_by_id = current_user.id
+        deposit.submitted_at = datetime.now()
+        deposit.approved_by_id = current_user.id
+        deposit.approved_at = datetime.now()
+        deposit.updated_at = datetime.now()
 
-    db.session.commit()
+        db.session.commit()
 
-    flash(f'Deposit submitted successfully! Total amount: ₱{deposit.formatted_total_amount}', 'success')
+        flash(f'Deposit auto-approved and posted! Total amount: ₱{deposit.formatted_total_amount}', 'success')
+    else:
+        # Regular user: submit for approval
+        deposit.status = 'submitted'
+        deposit.submitted_by_id = current_user.id
+        deposit.submitted_at = datetime.now()
+        deposit.updated_at = datetime.now()
+
+        db.session.commit()
+
+        flash(f'Deposit submitted successfully! Waiting for admin approval. Total amount: ₱{deposit.formatted_total_amount}', 'success')
+
     return redirect(url_for(f'{app_name}.deposit_report'))
 
 
@@ -602,6 +617,148 @@ def cancel_deposit(deposit_id):
 
     flash('Deposit cancelled successfully.', 'info')
     return redirect(url_for(f'{app_name}.deposit_report'))
+
+
+# ---------------------------------------------------------------------------
+# Change Requests for Deposits
+# ---------------------------------------------------------------------------
+
+@bp.route('/deposit/request-change/<int:deposit_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def request_deposit_change(deposit_id):
+    """Staff/supervisor requests change to a posted deposit"""
+    from .change_request_models import ChangeRequest
+
+    deposit = Deposit.query.get_or_404(deposit_id)
+
+    # Only posted deposits can have change requests
+    if deposit.status != 'posted':
+        flash('Only posted deposits can have change requests.', 'danger')
+        return redirect(url_for(f'{app_name}.view_deposit', deposit_id=deposit_id))
+
+    if request.method == 'POST':
+        # Capture old values
+        old_values = {
+            'record_date': deposit.record_date,
+            'bank_account': deposit.bank_account,
+            'reference_number': deposit.reference_number,
+            'notes': deposit.notes,
+        }
+
+        # Capture new values from form
+        new_values = {
+            'record_date': request.form.get('record_date', ''),
+            'bank_account': request.form.get('bank_account', ''),
+            'reference_number': request.form.get('reference_number', ''),
+            'notes': request.form.get('notes', ''),
+        }
+
+        reason = request.form.get('reason', '').strip()
+
+        if not reason:
+            flash('Please provide a reason for the change request.', 'danger')
+            return redirect(url_for(f'{app_name}.request_deposit_change', deposit_id=deposit_id))
+
+        # Create change request
+        cr = ChangeRequest()
+        cr.record_type = 'deposit'
+        cr.record_id = deposit_id
+        cr.old_values = old_values
+        cr.new_values = new_values
+        cr.reason = reason
+        cr.status = 'pending'
+        cr.requested_by_id = current_user.id
+        cr.requested_at = datetime.now()
+
+        db.session.add(cr)
+        db.session.commit()
+
+        flash('Change request submitted successfully. Waiting for admin approval.', 'success')
+        return redirect(url_for(f'{app_name}.view_deposit', deposit_id=deposit_id))
+
+    # GET request - show form
+    context = {
+        'app_label': app_label,
+        'deposit': deposit,
+    }
+
+    return render_template(f'{app_name}/request_deposit_change.html', **context)
+
+
+@bp.route('/deposit/change-requests', methods=['GET'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def deposit_change_requests():
+    """Admin views pending deposit change requests"""
+    from .change_request_models import ChangeRequest
+
+    # Get all pending change requests for deposits
+    change_requests = ChangeRequest.query.filter(
+        ChangeRequest.record_type == 'deposit',
+        ChangeRequest.status == 'pending'
+    ).order_by(ChangeRequest.requested_at.desc()).all()
+
+    context = {
+        'app_label': app_label,
+        'change_requests': change_requests,
+    }
+
+    return render_template(f'{app_name}/deposit_change_requests.html', **context)
+
+
+@bp.route('/deposit/change-requests/<int:cr_id>/review', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def review_deposit_change_request(cr_id):
+    """Admin approves or rejects deposit change request"""
+    from .change_request_models import ChangeRequest
+
+    cr = ChangeRequest.query.get_or_404(cr_id)
+
+    # Only pending requests can be reviewed
+    if cr.status != 'pending':
+        flash('This change request has already been reviewed.', 'warning')
+        return redirect(url_for(f'{app_name}.deposit_change_requests'))
+
+    action = request.form.get('action')  # 'approve' or 'reject'
+    review_notes = request.form.get('review_notes', '').strip()
+
+    if action == 'approve':
+        # Apply the changes to the deposit
+        deposit = Deposit.query.get(cr.record_id)
+        if deposit:
+            nv = cr.new_values
+            deposit.record_date = nv.get('record_date') or deposit.record_date
+            deposit.bank_account = nv.get('bank_account')
+            deposit.reference_number = nv.get('reference_number')
+            deposit.notes = nv.get('notes')
+            deposit.updated_at = datetime.now()
+
+            # Set deposit back to submitted status for re-approval
+            deposit.status = 'submitted'
+            deposit.submitted_by_id = current_user.id
+            deposit.submitted_at = datetime.now()
+
+        cr.status = 'approved'
+        flash('Change request approved. Deposit updated and set to submitted status for re-approval.', 'success')
+
+    elif action == 'reject':
+        cr.status = 'rejected'
+        flash('Change request rejected.', 'info')
+
+    else:
+        flash('Invalid action.', 'danger')
+        return redirect(url_for(f'{app_name}.deposit_change_requests'))
+
+    # Record review details
+    cr.reviewed_by_id = current_user.id
+    cr.reviewed_at = datetime.now()
+    cr.review_notes = review_notes
+
+    db.session.commit()
+
+    return redirect(url_for(f'{app_name}.deposit_change_requests'))
 
 
 @bp.route("/daily_report", methods=["GET"])

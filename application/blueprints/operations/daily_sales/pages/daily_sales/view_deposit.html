@@ -41,6 +41,10 @@
             <i class="bi bi-check2-all"></i> Approve Deposit
           </button>
         </form>
+      {% elif deposit.status == 'posted' %}
+        <a href="{{ url_for('daily_sales.request_deposit_change', deposit_id=deposit.id) }}" class="btn btn-warning btn-sm">
+          <i class="bi bi-pencil-square"></i> Request Change
+        </a>
       {% endif %}
     </div>
   </div>
