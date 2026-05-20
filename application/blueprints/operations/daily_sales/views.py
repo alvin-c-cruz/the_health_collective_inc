@@ -685,14 +685,13 @@ def request_deposit_change(deposit_id):
     deposited_transaction_ids = db.session.query(DepositItem.transaction_id).distinct().all()
     deposited_transaction_ids = [tid[0] for tid in deposited_transaction_ids]
 
-    # Query for tenders from same date that aren't yet deposited
+    # Query for ALL undeposited tenders (not just same date)
     undeposited_tenders = TransactionTender.query.join(Transaction).filter(
-        Transaction.record_date == deposit.record_date,
         TransactionTender.tender_id.in_([1, 2]),  # Cash and checks typically
         ~Transaction.id.in_(deposited_transaction_ids) if deposited_transaction_ids else True,  # Not in any deposit
         Transaction.submitted != None,
         Transaction.cancelled == None
-    ).all()
+    ).order_by(Transaction.record_date.desc()).all()
 
     context = {
         'app_label': app_label,

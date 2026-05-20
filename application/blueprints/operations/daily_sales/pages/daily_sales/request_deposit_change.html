@@ -23,14 +23,17 @@
     </div>
   </div>
 
-  <!-- Current Deposit Items -->
+  <!-- Current Deposit Items (Editable) -->
   <div class="row mb-4">
     <div class="col">
       <div class="card">
         <div class="card-header bg-info text-white">
-          <h5 class="mb-0">Current Deposit Items</h5>
+          <h5 class="mb-0">Current Deposit Items (Editable)</h5>
         </div>
         <div class="card-body">
+          <p class="text-muted small mb-3">
+            <i class="bi bi-info-circle"></i> Modify amounts below and explain changes in the "Reason for Change Request" section.
+          </p>
           <table class="table table-sm mb-0">
             <thead>
               <tr>
@@ -52,13 +55,23 @@
                     {{ tt.tender.tender_name if tt.tender else '-' }}{% if not loop.last %}, {% endif %}
                   {% endfor %}
                 </td>
-                <td class="text-end font-monospace">₱{{ '{:,.2f}'.format(item.amount) }}</td>
+                <td class="text-end">
+                  <div class="input-group input-group-sm" style="width: 150px; margin-left: auto;">
+                    <span class="input-group-text">₱</span>
+                    <input type="number"
+                           class="form-control text-end"
+                           name="item_amount_{{ item.id }}"
+                           value="{{ '{:.2f}'.format(item.amount) }}"
+                           step="0.01"
+                           min="0">
+                  </div>
+                </td>
               </tr>
               {% endfor %}
             </tbody>
             <tfoot>
               <tr class="fw-bold">
-                <td colspan="4" class="text-end">Total</td>
+                <td colspan="4" class="text-end">Current Total</td>
                 <td class="text-end font-monospace">₱{{ deposit.formatted_total_amount }}</td>
               </tr>
             </tfoot>
@@ -74,13 +87,14 @@
     <div class="col">
       <div class="card border-success">
         <div class="card-header bg-success text-white">
-          <h5 class="mb-0">Available Undeposited Tenders (Same Date)</h5>
+          <h5 class="mb-0">Available Undeposited Tenders (All Dates)</h5>
         </div>
         <div class="card-body">
-          <p class="text-muted small mb-3">These tenders from {{ deposit.formatted_record_date }} are not yet deposited and could be included:</p>
+          <p class="text-muted small mb-3">These tenders are not yet deposited and could be included:</p>
           <table class="table table-sm mb-0">
             <thead>
               <tr>
+                <th>Date</th>
                 <th>OR #</th>
                 <th>Customer</th>
                 <th>Tender</th>
@@ -90,6 +104,7 @@
             <tbody>
               {% for tt in undeposited_tenders %}
               <tr>
+                <td>{{ tt.transaction.formatted_record_date }}</td>
                 <td class="font-monospace small">{{ tt.transaction.record_number or '-' }}</td>
                 <td>{{ tt.transaction.customer.customer_name if tt.transaction.customer else '-' }}</td>
                 <td>{{ tt.tender.tender_name if tt.tender else '-' }}</td>
