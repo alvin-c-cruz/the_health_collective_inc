@@ -679,11 +679,17 @@ def request_deposit_change(deposit_id):
 
     # GET request - show form
     # Get undeposited transaction tenders for potential addition
-    from .models import TransactionTender, Transaction
+    from .models import TransactionTender, Transaction, DepositItem
+
+    # Get IDs of transactions already in ANY deposit
+    deposited_transaction_ids = db.session.query(DepositItem.transaction_id).distinct().all()
+    deposited_transaction_ids = [tid[0] for tid in deposited_transaction_ids]
+
+    # Query for tenders from same date that aren't yet deposited
     undeposited_tenders = TransactionTender.query.join(Transaction).filter(
         Transaction.record_date == deposit.record_date,
         TransactionTender.tender_id.in_([1, 2]),  # Cash and checks typically
-        TransactionTender.deposited == False,
+        ~Transaction.id.in_(deposited_transaction_ids) if deposited_transaction_ids else True,  # Not in any deposit
         Transaction.submitted != None,
         Transaction.cancelled == None
     ).all()
