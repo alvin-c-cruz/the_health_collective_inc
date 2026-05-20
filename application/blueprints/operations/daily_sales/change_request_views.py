@@ -96,14 +96,37 @@ def request_transaction_change(transaction_id):
 
 def change_requests_list():
     """
-    Admin/SuperUser views pending change requests.
+    Admin/SuperUser views pending change requests and submitted records.
     """
-    pending = ChangeRequest.query.filter_by(status='pending') \
+    # Get pending change requests (modifications and cancellations)
+    pending_requests = ChangeRequest.query.filter_by(status='pending') \
         .order_by(ChangeRequest.requested_at.desc()).all()
+
+    # Get submitted transactions waiting for approval
+    submitted_transactions = Transaction.query.filter_by(
+        submitted=db.func.not_(None),
+        approved=None,
+        cancelled=None
+    ).order_by(Transaction.submitted.desc()).all()
+
+    # Get submitted deposits waiting for approval
+    from .models import Deposit
+    submitted_deposits = Deposit.query.filter(
+        Deposit.status == 'submitted'
+    ).order_by(Deposit.created_at.desc()).all()
+
+    # Get submitted collections waiting for approval
+    from ..collections.models import Collection
+    submitted_collections = Collection.query.filter(
+        Collection.status == 'submitted'
+    ).order_by(Collection.created_at.desc()).all()
 
     return render_template(
         'daily_sales/change_requests.html',
-        pending=pending
+        pending_requests=pending_requests,
+        submitted_transactions=submitted_transactions,
+        submitted_deposits=submitted_deposits,
+        submitted_collections=submitted_collections
     )
 
 
