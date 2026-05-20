@@ -68,11 +68,18 @@
                 </div>
             </div>
 
-            <form method="POST" action="{{ url_for('daily_sales.approve_transaction', transaction_id=txn.id) }}" class="d-flex gap-2">
-                <button type="submit" class="btn btn-success btn-sm">
-                    <i class="bi bi-check-lg"></i> Approve
-                </button>
-            </form>
+            <div class="d-flex gap-2">
+                <form method="POST" action="{{ url_for('daily_sales.approve_transaction', transaction_id=txn.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="bi bi-check-lg"></i> Approve
+                    </button>
+                </form>
+                <form method="POST" action="{{ url_for('daily_sales.reject_transaction', transaction_id=txn.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Reject this transaction? It will be sent back as draft.')">
+                        <i class="bi bi-x-lg"></i> Reject
+                    </button>
+                </form>
+            </div>
         </div>
         {% endfor %}
 
@@ -109,11 +116,18 @@
                 </div>
             </div>
 
-            <form method="POST" action="{{ url_for('daily_sales.approve_deposit', deposit_id=dep.id) }}" class="d-flex gap-2">
-                <button type="submit" class="btn btn-success btn-sm">
-                    <i class="bi bi-check-lg"></i> Approve
-                </button>
-            </form>
+            <div class="d-flex gap-2">
+                <form method="POST" action="{{ url_for('daily_sales.approve_deposit', deposit_id=dep.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="bi bi-check-lg"></i> Approve
+                    </button>
+                </form>
+                <form method="POST" action="{{ url_for('daily_sales.reject_deposit', deposit_id=dep.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Reject this deposit? It will be sent back as draft.')">
+                        <i class="bi bi-x-lg"></i> Reject
+                    </button>
+                </form>
+            </div>
         </div>
         {% endfor %}
 
@@ -150,11 +164,18 @@
                 </div>
             </div>
 
-            <form method="POST" action="{{ url_for('collections.approve_collection', collection_id=col.id) }}" class="d-flex gap-2">
-                <button type="submit" class="btn btn-success btn-sm">
-                    <i class="bi bi-check-lg"></i> Approve
-                </button>
-            </form>
+            <div class="d-flex gap-2">
+                <form method="POST" action="{{ url_for('collections.approve_collection', collection_id=col.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="bi bi-check-lg"></i> Approve
+                    </button>
+                </form>
+                <form method="POST" action="{{ url_for('collections.reject_collection', collection_id=col.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Reject this collection? It will be sent back as draft.')">
+                        <i class="bi bi-x-lg"></i> Reject
+                    </button>
+                </form>
+            </div>
         </div>
         {% endfor %}
     </div>

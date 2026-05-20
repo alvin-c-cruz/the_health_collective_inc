@@ -324,6 +324,26 @@ def approve_collection(collection_id):
     return redirect(url_for(f'{app_name}.view_collection', collection_id=collection_id))
 
 
+@bp.route("/<int:collection_id>/reject", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def reject_collection(collection_id):
+    """Reject submitted collection - send back to draft"""
+    col = Collection.query.get_or_404(collection_id)
+
+    if col.status != 'submitted':
+        flash('Only submitted collections can be rejected.', 'danger')
+        return redirect(url_for('daily_sales.change_requests_list'))
+
+    col.status = 'draft'
+    col.updated_at = datetime.now()
+
+    db.session.commit()
+
+    flash(f'Collection #{col.id} rejected and sent back to draft.', 'warning')
+    return redirect(url_for('daily_sales.change_requests_list'))
+
+
 # ---------------------------------------------------------------------------
 # Cancel collection (soft delete with reason)
 # ---------------------------------------------------------------------------

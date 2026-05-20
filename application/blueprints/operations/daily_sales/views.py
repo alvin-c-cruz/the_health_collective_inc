@@ -597,6 +597,28 @@ def approve_transaction(transaction_id):
     return redirect(url_for('daily_sales.change_requests_list'))
 
 
+@bp.route('/transaction/reject/<int:transaction_id>', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def reject_transaction(transaction_id):
+    """Reject submitted transaction - send back to draft"""
+    transaction = Transaction.query.get_or_404(transaction_id)
+
+    # Only submitted transactions can be rejected
+    if not transaction.submitted:
+        flash('Only submitted transactions can be rejected.', 'danger')
+        return redirect(url_for('daily_sales.change_requests_list'))
+
+    # Clear submitted status to send back to draft
+    transaction.submitted = None
+    transaction.updated_at = datetime.now()
+
+    db.session.commit()
+
+    flash(f'Transaction #{transaction.id} rejected and sent back to draft.', 'warning')
+    return redirect(url_for('daily_sales.change_requests_list'))
+
+
 @bp.route('/deposit/approve/<int:deposit_id>', methods=['POST'])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
@@ -618,6 +640,28 @@ def approve_deposit(deposit_id):
 
     flash(f'Deposit approved successfully! Total amount: ₱{deposit.formatted_total_amount}', 'success')
     return redirect(url_for(f'{app_name}.deposit_report'))
+
+
+@bp.route('/deposit/reject/<int:deposit_id>', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def reject_deposit(deposit_id):
+    """Reject submitted deposit - send back to draft"""
+    deposit = Deposit.query.get_or_404(deposit_id)
+
+    # Only submitted deposits can be rejected
+    if deposit.status != 'submitted':
+        flash('Only submitted deposits can be rejected.', 'danger')
+        return redirect(url_for('daily_sales.change_requests_list'))
+
+    # Send back to draft
+    deposit.status = 'draft'
+    deposit.updated_at = datetime.now()
+
+    db.session.commit()
+
+    flash(f'Deposit #{deposit.id} rejected and sent back to draft.', 'warning')
+    return redirect(url_for('daily_sales.change_requests_list'))
 
 
 @bp.route('/deposit/cancel/<int:deposit_id>', methods=['POST'])
