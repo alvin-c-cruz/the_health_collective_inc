@@ -37,8 +37,8 @@
                         <i class="bi bi-check-circle"></i> Approve
                     </button>
                 </form>
-            {% elif col.status == 'posted' %}
-                <!-- Request change button for posted collections -->
+            {% elif col.status in ['submitted', 'posted'] %}
+                <!-- Request change button for submitted/posted collections -->
                 <a href="{{ url_for('collections.request_collection_change', collection_id=col.id) }}"
                    class="thc-btn thc-btn-warning">
                     <i class="bi bi-pencil-square"></i> Request Change

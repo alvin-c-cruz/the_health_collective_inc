@@ -46,9 +46,9 @@ def request_transaction_change(transaction_id):
 
     transaction = Transaction.query.get_or_404(transaction_id)
 
-    # Can only request changes on posted transactions
-    if not transaction.is_posted:
-        flash('Can only request changes on posted transactions.', 'warning')
+    # Can only request changes on submitted or posted transactions
+    if not (transaction.is_submitted or transaction.is_posted):
+        flash('Can only request changes on submitted or posted transactions.', 'warning')
         return redirect(url_for('daily_sales.view_transaction', transaction_id=transaction_id))
 
     if request.method == 'POST':

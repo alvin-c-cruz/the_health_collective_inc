@@ -632,9 +632,9 @@ def request_deposit_change(deposit_id):
 
     deposit = Deposit.query.get_or_404(deposit_id)
 
-    # Only posted deposits can have change requests
-    if deposit.status != 'posted':
-        flash('Only posted deposits can have change requests.', 'danger')
+    # Only submitted or posted deposits can have change requests
+    if deposit.status not in ['submitted', 'posted']:
+        flash('Only submitted or posted deposits can have change requests.', 'danger')
         return redirect(url_for(f'{app_name}.view_deposit', deposit_id=deposit_id))
 
     if request.method == 'POST':

@@ -378,9 +378,9 @@ def request_collection_change(collection_id):
 
     col = Collection.query.get_or_404(collection_id)
 
-    # Only posted collections can have change requests
-    if col.status != 'posted':
-        flash('Only posted collections can have change requests.', 'danger')
+    # Only submitted or posted collections can have change requests
+    if col.status not in ['submitted', 'posted']:
+        flash('Only submitted or posted collections can have change requests.', 'danger')
         return redirect(url_for(f'{app_name}.view_collection', collection_id=collection_id))
 
     if request.method == 'POST':
