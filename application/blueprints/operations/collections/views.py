@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
 
@@ -126,8 +126,12 @@ def new_collection():
                 bank_account_id=bank_account_id,
                 reference=reference,
                 notes=notes,
-                recorded_by=current_user.id,
+                status='draft',  # New workflow: start as draft
+                created_by_id=current_user.id,
                 created_at=str(date.today()),
+                updated_at=datetime.now(),
+                # Legacy field for backwards compatibility
+                recorded_by=current_user.id,
             )
             db.session.add(col)
             db.session.flush()
@@ -147,7 +151,7 @@ def new_collection():
                 db.session.add(detail)
 
             db.session.commit()
-            flash("Collection recorded successfully.", "success")
+            flash(f"Collection saved as draft. Total amount: ₱{col.formatted_total_amount}", "success")
             return redirect(url_for(f"{app_name}.view_collection", collection_id=col.id))
 
     tender_id_pre = request.args.get("tender_id", type=int)
@@ -246,4 +250,268 @@ def delete_collection(collection_id):
     db.session.commit()
     flash("Collection deleted.", "warning")
     return redirect(url_for(f"{app_name}.history"))
+
+
+# ---------------------------------------------------------------------------
+# Submit collection (draft → submitted or posted if admin)
+# ---------------------------------------------------------------------------
+
+@bp.route("/<int:collection_id>/submit", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def submit_collection(collection_id):
+    """Submit a draft collection for approval (or auto-approve if admin)"""
+    col = Collection.query.get_or_404(collection_id)
+
+    if col.status != 'draft':
+        flash('Only draft collections can be submitted.', 'danger')
+        return redirect(url_for(f'{app_name}.view_collection', collection_id=collection_id))
+
+    # Check ownership
+    if col.created_by_id != current_user.id and not current_user.is_admin:
+        flash('You can only submit your own collections.', 'danger')
+        return redirect(url_for(f'{app_name}.history'))
+
+    # Admin auto-approve: If user is admin, automatically approve collection
+    if current_user.is_admin:
+        col.status = 'posted'
+        col.submitted_by_id = current_user.id
+        col.submitted_at = datetime.now()
+        col.approved_by_id = current_user.id
+        col.approved_at = datetime.now()
+        col.updated_at = datetime.now()
+
+        db.session.commit()
+
+        flash(f'Collection auto-approved and posted! Total amount: ₱{col.formatted_total_amount}', 'success')
+    else:
+        # Regular user: submit for approval
+        col.status = 'submitted'
+        col.submitted_by_id = current_user.id
+        col.submitted_at = datetime.now()
+        col.updated_at = datetime.now()
+
+        db.session.commit()
+
+        flash(f'Collection submitted successfully! Waiting for admin approval. Total amount: ₱{col.formatted_total_amount}', 'success')
+
+    return redirect(url_for(f'{app_name}.view_collection', collection_id=collection_id))
+
+
+# ---------------------------------------------------------------------------
+# Approve collection (submitted → posted)
+# ---------------------------------------------------------------------------
+
+@bp.route("/<int:collection_id>/approve", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def approve_collection(collection_id):
+    """Admin approves a submitted collection"""
+    col = Collection.query.get_or_404(collection_id)
+
+    if col.status != 'submitted':
+        flash('Only submitted collections can be approved.', 'danger')
+        return redirect(url_for(f'{app_name}.view_collection', collection_id=collection_id))
+
+    col.status = 'posted'
+    col.approved_by_id = current_user.id
+    col.approved_at = datetime.now()
+    col.updated_at = datetime.now()
+
+    db.session.commit()
+
+    flash(f'Collection approved and posted! Total amount: ₱{col.formatted_total_amount}', 'success')
+    return redirect(url_for(f'{app_name}.view_collection', collection_id=collection_id))
+
+
+# ---------------------------------------------------------------------------
+# Cancel collection (soft delete with reason)
+# ---------------------------------------------------------------------------
+
+@bp.route("/<int:collection_id>/cancel", methods=["GET", "POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def cancel_collection(collection_id):
+    """Cancel a collection with a reason (soft delete)"""
+    col = Collection.query.get_or_404(collection_id)
+
+    if col.status == 'cancelled':
+        flash('This collection is already cancelled.', 'warning')
+        return redirect(url_for(f'{app_name}.view_collection', collection_id=collection_id))
+
+    if request.method == 'POST':
+        reason = request.form.get('reason', '').strip()
+
+        if not reason:
+            flash('Please provide a cancellation reason.', 'danger')
+            return redirect(url_for(f'{app_name}.cancel_collection', collection_id=collection_id))
+
+        col.status = 'cancelled'
+        col.cancelled_by_id = current_user.id
+        col.cancelled_at = datetime.now()
+        col.cancellation_reason = reason
+        col.updated_at = datetime.now()
+
+        db.session.commit()
+
+        flash(f'Collection cancelled successfully. Reason: {reason}', 'info')
+        return redirect(url_for(f'{app_name}.history'))
+
+    # GET request - show cancellation form
+    context = {
+        'app_label': app_label,
+        'col': col,
+    }
+    return render_template('collections/cancel_collection.html', **context)
+
+
+# ---------------------------------------------------------------------------
+# Change Requests for Collections
+# ---------------------------------------------------------------------------
+
+@bp.route("/<int:collection_id>/request-change", methods=["GET", "POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def request_collection_change(collection_id):
+    """Staff/supervisor requests change to a posted collection"""
+    from ..daily_sales.change_request_models import ChangeRequest
+
+    col = Collection.query.get_or_404(collection_id)
+
+    # Only posted collections can have change requests
+    if col.status != 'posted':
+        flash('Only posted collections can have change requests.', 'danger')
+        return redirect(url_for(f'{app_name}.view_collection', collection_id=collection_id))
+
+    if request.method == 'POST':
+        # Capture old values
+        old_values = {
+            'collection_date': col.collection_date,
+            'tender_id': col.tender_id,
+            'bank_account_id': col.bank_account_id,
+            'reference': col.reference,
+            'notes': col.notes,
+        }
+
+        # Capture new values from form
+        new_values = {
+            'collection_date': request.form.get('collection_date', ''),
+            'tender_id': request.form.get('tender_id', type=int),
+            'bank_account_id': request.form.get('bank_account_id', type=int) or None,
+            'reference': request.form.get('reference', ''),
+            'notes': request.form.get('notes', ''),
+        }
+
+        reason = request.form.get('reason', '').strip()
+
+        if not reason:
+            flash('Please provide a reason for the change request.', 'danger')
+            return redirect(url_for(f'{app_name}.request_collection_change', collection_id=collection_id))
+
+        # Create change request
+        cr = ChangeRequest()
+        cr.record_type = 'collection'
+        cr.record_id = collection_id
+        cr.old_values = old_values
+        cr.new_values = new_values
+        cr.reason = reason
+        cr.status = 'pending'
+        cr.requested_by_id = current_user.id
+        cr.requested_at = datetime.now()
+
+        db.session.add(cr)
+        db.session.commit()
+
+        flash('Change request submitted successfully. Waiting for admin approval.', 'success')
+        return redirect(url_for(f'{app_name}.view_collection', collection_id=collection_id))
+
+    # GET request - show form
+    tenders = _receivable_tenders()
+    bank_accounts = BankAccount.query.filter_by(active=True).order_by(BankAccount.bank_name).all()
+
+    context = {
+        'app_label': app_label,
+        'col': col,
+        'tenders': tenders,
+        'bank_accounts': bank_accounts,
+    }
+
+    return render_template('collections/request_collection_change.html', **context)
+
+
+@bp.route("/change-requests", methods=["GET"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def collection_change_requests():
+    """Admin views pending collection change requests"""
+    from ..daily_sales.change_request_models import ChangeRequest
+
+    # Get all pending change requests for collections
+    change_requests = ChangeRequest.query.filter(
+        ChangeRequest.record_type == 'collection',
+        ChangeRequest.status == 'pending'
+    ).order_by(ChangeRequest.requested_at.desc()).all()
+
+    context = {
+        'app_label': app_label,
+        'change_requests': change_requests,
+    }
+
+    return render_template('collections/collection_change_requests.html', **context)
+
+
+@bp.route("/change-requests/<int:cr_id>/review", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def review_collection_change_request(cr_id):
+    """Admin approves or rejects collection change request"""
+    from ..daily_sales.change_request_models import ChangeRequest
+
+    cr = ChangeRequest.query.get_or_404(cr_id)
+
+    # Only pending requests can be reviewed
+    if cr.status != 'pending':
+        flash('This change request has already been reviewed.', 'warning')
+        return redirect(url_for(f'{app_name}.collection_change_requests'))
+
+    action = request.form.get('action')  # 'approve' or 'reject'
+    review_notes = request.form.get('review_notes', '').strip()
+
+    if action == 'approve':
+        # Apply the changes to the collection
+        col = Collection.query.get(cr.record_id)
+        if col:
+            nv = cr.new_values
+            col.collection_date = nv.get('collection_date') or col.collection_date
+            col.tender_id = nv.get('tender_id') or col.tender_id
+            col.bank_account_id = nv.get('bank_account_id')
+            col.reference = nv.get('reference')
+            col.notes = nv.get('notes')
+            col.updated_at = datetime.now()
+
+            # Set collection back to submitted status for re-approval
+            col.status = 'submitted'
+            col.submitted_by_id = current_user.id
+            col.submitted_at = datetime.now()
+
+        cr.status = 'approved'
+        flash('Change request approved. Collection updated and set to submitted status for re-approval.', 'success')
+
+    elif action == 'reject':
+        cr.status = 'rejected'
+        flash('Change request rejected.', 'info')
+
+    else:
+        flash('Invalid action.', 'danger')
+        return redirect(url_for(f'{app_name}.collection_change_requests'))
+
+    # Record review details
+    cr.reviewed_by_id = current_user.id
+    cr.reviewed_at = datetime.now()
+    cr.review_notes = review_notes
+
+    db.session.commit()
+
+    return redirect(url_for(f'{app_name}.collection_change_requests'))
+
 

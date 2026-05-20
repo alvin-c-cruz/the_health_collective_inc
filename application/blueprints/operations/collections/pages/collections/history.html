@@ -23,6 +23,7 @@
                     <th>Reference</th>
                     <th class="text-end">Total Applied</th>
                     <th>Lines</th>
+                    <th>Status</th>
                     <th></th>
                 </tr>
             </thead>
@@ -36,6 +37,19 @@
                     <td class="font-monospace small">{{ col.reference or '—' }}</td>
                     <td class="text-end font-monospace fw-semibold">{{ col.formatted_total }}</td>
                     <td class="text-muted small">{{ col.details | length }}</td>
+                    <td>
+                        {% if col.status == 'draft' %}
+                            <span class="badge bg-secondary">Draft</span>
+                        {% elif col.status == 'submitted' %}
+                            <span class="badge bg-info">Submitted</span>
+                        {% elif col.status == 'posted' %}
+                            <span class="badge bg-success">Posted</span>
+                        {% elif col.status == 'cancelled' %}
+                            <span class="badge bg-danger">Cancelled</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Unknown</span>
+                        {% endif %}
+                    </td>
                     <td class="text-end">
                         <a href="{{ url_for('collections.view_collection', collection_id=col.id) }}"
                            class="thc-btn thc-btn-sm thc-btn-secondary">View</a>
@@ -43,7 +57,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="8" class="text-center text-muted py-4">No collections recorded yet.</td>
+                    <td colspan="9" class="text-center text-muted py-4">No collections recorded yet.</td>
                 </tr>
                 {% endfor %}
             </tbody>

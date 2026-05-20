@@ -92,10 +92,20 @@ class ChangeRequest(db.Model):
         return None
 
     @property
+    def collection(self):
+        """Get the collection record if record_type is 'collection'"""
+        if self.record_type == 'collection':
+            from ..collections.models import Collection
+            return Collection.query.get(self.record_id)
+        return None
+
+    @property
     def record(self):
-        """Get the actual record (transaction or deposit) being modified"""
+        """Get the actual record (transaction, deposit, or collection) being modified"""
         if self.record_type == 'transaction':
             return self.transaction
         elif self.record_type == 'deposit':
             return self.deposit
+        elif self.record_type == 'collection':
+            return self.collection
         return None

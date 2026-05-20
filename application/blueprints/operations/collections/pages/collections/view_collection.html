@@ -5,24 +5,71 @@
 {% block content %}
 <div class="thc-page">
     <div class="thc-page-header">
-        <h4>Collection #{{ col.id }}</h4>
+        <h4>
+            Collection #{{ col.id }}
+            {% if col.status == 'draft' %}
+                <span class="badge bg-secondary">Draft</span>
+            {% elif col.status == 'submitted' %}
+                <span class="badge bg-info">Submitted</span>
+            {% elif col.status == 'posted' %}
+                <span class="badge bg-success">Posted</span>
+            {% elif col.status == 'cancelled' %}
+                <span class="badge bg-danger">Cancelled</span>
+            {% endif %}
+        </h4>
         <div class="d-flex gap-2">
             <a href="{{ url_for('collections.home') }}" class="thc-btn thc-btn-secondary">Receivables</a>
             <a href="{{ url_for('collections.history') }}" class="thc-btn thc-btn-secondary">History</a>
-            <form action="{{ url_for('collections.delete_collection', collection_id=col.id) }}" method="post"
-                  onsubmit="return confirm('Delete this collection record?')">
-                <button type="submit" class="thc-btn thc-btn-danger">Delete</button>
-            </form>
+
+            {% if col.status == 'draft' %}
+                <!-- Submit button for draft collections -->
+                <form action="{{ url_for('collections.submit_collection', collection_id=col.id) }}" method="post"
+                      onsubmit="return confirm('Submit this collection for approval?');">
+                    <button type="submit" class="thc-btn thc-btn-primary">
+                        <i class="bi bi-send"></i> Submit
+                    </button>
+                </form>
+            {% elif col.status == 'submitted' %}
+                <!-- Approve button for submitted collections (admin only) -->
+                <form action="{{ url_for('collections.approve_collection', collection_id=col.id) }}" method="post"
+                      onsubmit="return confirm('Approve this collection?');">
+                    <button type="submit" class="thc-btn thc-btn-success">
+                        <i class="bi bi-check-circle"></i> Approve
+                    </button>
+                </form>
+            {% elif col.status == 'posted' %}
+                <!-- Request change button for posted collections -->
+                <a href="{{ url_for('collections.request_collection_change', collection_id=col.id) }}"
+                   class="thc-btn thc-btn-warning">
+                    <i class="bi bi-pencil-square"></i> Request Change
+                </a>
+            {% endif %}
+
+            {% if col.status != 'cancelled' %}
+                <!-- Cancel button (available for all non-cancelled collections) -->
+                <a href="{{ url_for('collections.cancel_collection', collection_id=col.id) }}"
+                   class="thc-btn thc-btn-danger">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </a>
+            {% endif %}
+
+            {% if col.status == 'draft' %}
+                <!-- Delete button only for drafts -->
+                <form action="{{ url_for('collections.delete_collection', collection_id=col.id) }}" method="post"
+                      onsubmit="return confirm('Delete this collection record?');">
+                    <button type="submit" class="thc-btn thc-btn-danger">Delete</button>
+                </form>
+            {% endif %}
         </div>
     </div>
 
     <div class="thc-card mb-3">
         <div class="row g-3">
-            <div class="col-sm-3">
+            <div class="col-sm-2">
                 <div class="text-muted small">Date</div>
                 <div class="fw-semibold">{{ col.formatted_collection_date }}</div>
             </div>
-            <div class="col-sm-3">
+            <div class="col-sm-2">
                 <div class="text-muted small">Tender / Payer</div>
                 <div class="fw-semibold">{{ col.tender.tender_name if col.tender else '—' }}</div>
             </div>
@@ -34,9 +81,27 @@
                     {% endif %}
                 </div>
             </div>
-            <div class="col-sm-3">
+            <div class="col-sm-2">
                 <div class="text-muted small">Reference</div>
                 <div class="font-monospace">{{ col.reference or '—' }}</div>
+            </div>
+            <div class="col-sm-2">
+                <div class="text-muted small">Total Amount</div>
+                <div class="fw-semibold font-monospace">₱{{ col.formatted_total }}</div>
+            </div>
+            <div class="col-sm-1">
+                <div class="text-muted small">Status</div>
+                <div>
+                    {% if col.status == 'draft' %}
+                        <span class="badge bg-secondary">Draft</span>
+                    {% elif col.status == 'submitted' %}
+                        <span class="badge bg-info">Submitted</span>
+                    {% elif col.status == 'posted' %}
+                        <span class="badge bg-success">Posted</span>
+                    {% elif col.status == 'cancelled' %}
+                        <span class="badge bg-danger">Cancelled</span>
+                    {% endif %}
+                </div>
             </div>
             {% if col.notes %}
             <div class="col-12">

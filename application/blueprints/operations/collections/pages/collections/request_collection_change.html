@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Request Collection Change{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+
+  <!-- Header -->
+  <div class="row mb-3">
+    <div class="col">
+      <h4>Request Change to Collection</h4>
+      <p class="text-muted">Submit a request to modify this posted collection</p>
+      <hr>
+    </div>
+  </div>
+
+  <!-- Back Button -->
+  <div class="row mb-3">
+    <div class="col">
+      <a href="{{ url_for('collections.view_collection', collection_id=col.id) }}" class="btn btn-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Back to Collection
+      </a>
+    </div>
+  </div>
+
+  <form method="POST">
+    <div class="row">
+      <!-- Current Values (Left Column) -->
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header bg-light">
+            <h5 class="mb-0">Current Values</h5>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Collection Date</label>
+              <p class="form-control-plaintext">{{ col.formatted_collection_date }}</p>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Tender / Payer</label>
+              <p class="form-control-plaintext">{{ col.tender.tender_name if col.tender else '-' }}</p>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Bank Account</label>
+              <p class="form-control-plaintext">
+                {% if col.bank_account %}
+                  {{ col.bank_account.bank_name }}
+                  {% if col.bank_account.account_number %}
+                    ({{ col.bank_account.account_number }})
+                  {% endif %}
+                {% else %}
+                  -
+                {% endif %}
+              </p>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Reference</label>
+              <p class="form-control-plaintext">{{ col.reference or '-' }}</p>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Notes</label>
+              <p class="form-control-plaintext">{{ col.notes or '-' }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- New Values (Right Column) -->
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">New Values (Proposed Changes)</h5>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label for="collection_date" class="form-label fw-bold">Collection Date</label>
+              <input type="date" class="form-control" id="collection_date" name="collection_date"
+                     value="{{ col.collection_date }}">
+            </div>
+
+            <div class="mb-3">
+              <label for="tender_id" class="form-label fw-bold">Tender / Payer</label>
+              <select class="form-select" id="tender_id" name="tender_id">
+                {% for t in tenders %}
+                  <option value="{{ t.id }}" {{ 'selected' if t.id == col.tender_id }}>
+                    {{ t.tender_name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="bank_account_id" class="form-label fw-bold">Bank Account</label>
+              <select class="form-select" id="bank_account_id" name="bank_account_id">
+                <option value="">None</option>
+                {% for ba in bank_accounts %}
+                  <option value="{{ ba.id }}" {{ 'selected' if ba.id == col.bank_account_id }}>
+                    {{ ba.bank_name }}
+                    {% if ba.account_number %}({{ ba.account_number }}){% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="reference" class="form-label fw-bold">Reference</label>
+              <input type="text" class="form-control" id="reference" name="reference"
+                     value="{{ col.reference or '' }}" placeholder="Bank ref / check no.">
+            </div>
+
+            <div class="mb-3">
+              <label for="notes" class="form-label fw-bold">Notes</label>
+              <textarea class="form-control" id="notes" name="notes" rows="3"
+                        placeholder="Optional notes">{{ col.notes or '' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reason for Change (Full Width) -->
+    <div class="row mt-4">
+      <div class="col">
+        <div class="card border-warning">
+          <div class="card-header bg-warning">
+            <h5 class="mb-0">Reason for Change Request *</h5>
+          </div>
+          <div class="card-body">
+            <textarea class="form-control" name="reason" rows="4" required
+                      placeholder="Please explain why this change is needed..."></textarea>
+            <small class="form-text text-muted">
+              This reason will be reviewed by an administrator. Be clear and specific.
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit Buttons -->
+    <div class="row mt-4">
+      <div class="col">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-send"></i> Submit Change Request
+        </button>
+        <a href="{{ url_for('collections.view_collection', collection_id=col.id) }}" class="btn btn-secondary ms-2">
+          Cancel
+        </a>
+      </div>
+    </div>
+  </form>
+
+</div>
+{% endblock %}
