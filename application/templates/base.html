@@ -85,6 +85,58 @@
       }
       .custom-border:hover { border-color: rgba(255,255,255,0.6); }
 
+      /* ── Mobile Navbar Improvements ── */
+      @media (max-width: 991.98px) {
+        .thc-navbar .navbar-collapse {
+          max-height: calc(100vh - 60px);
+          overflow-y: auto;
+          background-color: var(--thc-primary);
+          margin: 0 -12px;
+          padding: 1rem 12px;
+          border-radius: 0 0 8px 8px;
+        }
+
+        .thc-mobile-menu {
+          width: 100%;
+        }
+
+        .thc-mobile-menu .nav-item {
+          margin: 0.25rem 0;
+        }
+
+        .thc-mobile-menu .dropdown-menu {
+          background-color: var(--thc-primary-dark);
+          border: none;
+          margin: 0.25rem 0;
+        }
+
+        .thc-mobile-menu .dropdown-item {
+          color: rgba(255,255,255,0.9);
+          padding: 0.5rem 1.5rem;
+          font-size: 0.85rem;
+        }
+
+        .thc-mobile-menu .dropdown-item:hover {
+          background-color: rgba(255,255,255,0.1);
+          color: #fff;
+        }
+
+        .thc-mobile-menu .dropdown-divider {
+          border-color: rgba(255,255,255,0.2);
+        }
+
+        .thc-user-info {
+          margin-top: 1rem;
+          padding-top: 1rem;
+          border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .thc-user-info .nav-link {
+          font-weight: 600;
+          font-size: 0.9rem;
+        }
+      }
+
       /* ── THC Global Button System ──────────────────────────────────────
          Family: flat solid, no gradients, 6px radius, 600 weight, 0.875rem
          Modeled after the custom btn-save / btn-submit / btn-back family.
