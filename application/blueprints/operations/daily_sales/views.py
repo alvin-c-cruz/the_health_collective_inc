@@ -480,6 +480,92 @@ def approve_transaction(transaction_id):
 
 
 # ---------------------------------------------------------------------------
+# Disapprove transaction (return to draft) - (admin + superuser only)
+# ---------------------------------------------------------------------------
+
+@bp.route('/transaction/<int:transaction_id>/disapprove', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def disapprove_transaction(transaction_id):
+    """
+    Admin/SuperUser disapproves a submitted transaction, returning it to draft.
+    This allows the staff member to make corrections and re-submit.
+    Requires a reason that will be logged for audit purposes and displayed to staff.
+
+    Args:
+        transaction_id: ID of the transaction to disapprove
+
+    Form Data:
+        reason: Required text field explaining why transaction was disapproved
+
+    Returns:
+        Redirect to pending_approval list with flash message
+
+    Raises:
+        403: If user is not admin or superuser
+        404: If transaction not found
+    """
+    from .admin_models import AdminTransaction, UserTransaction
+    from application.extensions import db
+    from flask import abort
+
+    # Permission check: Admin or SuperUser only
+    if not (current_user.admin or current_user.superuser):
+        abort(403)
+
+    record = Transaction.query.get_or_404(transaction_id)
+
+    # Get reason from form (required)
+    reason = request.form.get('reason', '').strip()
+    if not reason:
+        flash('A reason is required to return a transaction to draft.', 'danger')
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+    # Validate current state: must be submitted
+    if not record.submitted:
+        flash('Only submitted transactions can be returned to draft.', 'warning')
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+    # Validate not cancelled
+    if record.cancelled:
+        flash('Cannot return a cancelled transaction to draft.', 'warning')
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+    # Check if already approved
+    existing_approval = AdminTransaction.query.filter_by(transaction_id=transaction_id).first()
+    if existing_approval:
+        flash('Transaction is already approved. Use "Unlock" to reverse approval.', 'warning')
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+    # Audit logging: Store disapproval reason in description field or add as note
+    disapproval_note = f"\n\n[RETURNED TO DRAFT {datetime.now().strftime('%Y-%m-%d %H:%M')} by {current_user.user_name}]\nReason: {reason}"
+
+    if record.description:
+        record.description = record.description + disapproval_note
+    else:
+        record.description = disapproval_note.strip()
+
+    # Revert to draft status
+    record.submitted = None  # Clear legacy submitted field
+    record.status = 'draft'   # Set modern status field to draft
+
+    # Clear UserTransaction submission record (if exists)
+    UserTransaction.query.filter_by(transaction_id=transaction_id).delete()
+
+    db.session.commit()
+
+    # Notification via flash message (staff will see when they next login/view their transactions)
+    flash(
+        f'Transaction #{record.record_number or transaction_id} returned to draft. '
+        f'Reason: {reason}. The staff member will be notified.',
+        'warning'
+    )
+
+    # Return to pending approval list
+    return redirect(url_for(f'{app_name}.pending_approval'))
+
+
+# ---------------------------------------------------------------------------
 # Unlock transaction  (superuser only)
 # ---------------------------------------------------------------------------
 

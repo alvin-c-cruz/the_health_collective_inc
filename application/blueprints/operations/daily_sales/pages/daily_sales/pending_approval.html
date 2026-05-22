@@ -47,13 +47,7 @@
                     <td class="text-end font-monospace">{{ '{:,.2f}'.format(net) }}</td>
                     <td class="text-end" style="white-space:nowrap;">
                         <a href="{{ url_for('daily_sales.view_transaction', transaction_id=record.id) }}"
-                           class="thc-btn thc-btn-sm thc-btn-secondary me-1">View</a>
-                        <form method="POST"
-                              action="{{ url_for('daily_sales.approve_transaction', transaction_id=record.id) }}"
-                              style="display:inline;"
-                              onsubmit="return confirm('Approve transaction #{{ record.record_number or record.id }}?')">
-                            <button type="submit" class="thc-btn thc-btn-sm thc-btn-primary">Approve</button>
-                        </form>
+                           class="thc-btn thc-btn-sm thc-btn-secondary">View</a>
                     </td>
                 </tr>
                 {% else %}

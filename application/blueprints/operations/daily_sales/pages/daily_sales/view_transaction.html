@@ -241,7 +241,80 @@
       <button type="submit" class="btn-danger-outline">&#128275; Unlock</button>
     </form>
     {% endif %}
+
+    {# Approve and Return to Draft buttons for pending approval transactions #}
+    {% if record.submitted and not record.cancelled and not record.user_approved and (current_user.admin or current_user.superuser) %}
+    <form method="POST" action="{{ url_for('daily_sales.approve_transaction', transaction_id=record.id) }}"
+      style="margin-left:auto;" onsubmit="return confirm('Approve transaction #{{ record.record_number or record.id }}?')">
+      <button type="submit" class="btn-edit">✓ Approve</button>
+    </form>
+
+    <button type="button" class="btn-danger-outline" onclick="showReturnToDraftModal()">↩ Return to Draft</button>
+    {% endif %}
   </div>
 
 </div>
+
+{# Modal for Return to Draft - requires reason #}
+{% if record.submitted and not record.cancelled and not record.user_approved and (current_user.admin or current_user.superuser) %}
+<!-- Return to Draft Modal -->
+<div id="returnToDraftModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:white; border-radius:var(--thc-radius); padding:2rem; max-width:500px; width:90%; box-shadow:0 4px 20px rgba(0,0,0,0.15);">
+    <h5 style="margin:0 0 1rem; font-size:1.1rem; font-weight:600;">Return Transaction to Draft</h5>
+    <p style="color:var(--thc-text-muted); font-size:0.875rem; margin-bottom:1.5rem;">
+      Please provide a reason for returning this transaction to draft. The staff member will see this message and can make corrections before re-submitting.
+    </p>
+    <form method="POST" action="{{ url_for('daily_sales.disapprove_transaction', transaction_id=record.id) }}" id="returnToDraftForm">
+      <div style="margin-bottom:1.5rem;">
+        <label for="returnReason" style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.5rem;">Reason <span style="color:var(--thc-danger);">*</span></label>
+        <textarea
+          id="returnReason"
+          name="reason"
+          required
+          rows="4"
+          placeholder="e.g., Incorrect customer name, wrong service amounts, missing required information..."
+          style="width:100%; padding:0.75rem; border:1px solid var(--thc-border); border-radius:var(--thc-radius-sm); font-family:inherit; font-size:0.875rem; resize:vertical;"
+        ></textarea>
+      </div>
+      <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+        <button type="button" onclick="closeReturnToDraftModal()" class="btn-back" style="margin:0;">Cancel</button>
+        <button type="submit" class="btn-danger-outline" style="margin:0; background:var(--thc-danger); color:white; border:none;">↩ Return to Draft</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function showReturnToDraftModal() {
+  const modal = document.getElementById('returnToDraftModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    document.getElementById('returnReason').focus();
+  }
+}
+
+function closeReturnToDraftModal() {
+  const modal = document.getElementById('returnToDraftModal');
+  if (modal) {
+    modal.style.display = 'none';
+    document.getElementById('returnReason').value = '';
+  }
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeReturnToDraftModal();
+  }
+});
+
+// Close modal when clicking outside
+document.getElementById('returnToDraftModal')?.addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeReturnToDraftModal();
+  }
+});
+</script>
+{% endif %}
+
 {% endblock %}
