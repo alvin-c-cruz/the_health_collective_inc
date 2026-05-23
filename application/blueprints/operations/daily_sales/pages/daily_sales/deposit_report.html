@@ -40,7 +40,7 @@
 
   <!-- Summary Cards -->
   <div class="row mb-4">
-    <div class="col-md-6">
+    <div class="col-md-3">
       <div class="card">
         <div class="card-body">
           <h6 class="card-subtitle mb-2 text-muted">Total Deposits</h6>
@@ -48,11 +48,27 @@
         </div>
       </div>
     </div>
-    <div class="col-md-6">
+    <div class="col-md-3">
       <div class="card">
         <div class="card-body">
-          <h6 class="card-subtitle mb-2 text-muted">Total Amount</h6>
+          <h6 class="card-subtitle mb-2 text-muted">Cash Deposited</h6>
           <h3 class="card-title mb-0">₱{{ "{:,.2f}".format(total_amount) }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-body">
+          <h6 class="card-subtitle mb-2 text-muted" style="color: #dc3545;">Deductions</h6>
+          <h3 class="card-title mb-0" style="color: #dc3545;">₱{{ "{:,.2f}".format(total_deductions) }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-body">
+          <h6 class="card-subtitle mb-2 text-muted" style="color: #0066cc;">Net Bank Credit</h6>
+          <h3 class="card-title mb-0" style="color: #0066cc;">₱{{ "{:,.2f}".format(total_amount - total_deductions) }}</h3>
         </div>
       </div>
     </div>
@@ -69,7 +85,9 @@
               <th>Date</th>
               <th>Bank / Account</th>
               <th>Reference #</th>
-              <th class="text-end">Amount</th>
+              <th class="text-end">Cash Deposited</th>
+              <th class="text-end">Deductions</th>
+              <th class="text-end">Net Bank Credit</th>
               <th>Status</th>
               <th>Transactions</th>
               <th>Notes</th>
@@ -84,6 +102,19 @@
               <td>{{ deposit.bank_account or '-' }}</td>
               <td>{{ deposit.reference_number or '-' }}</td>
               <td class="text-end fw-bold">₱{{ deposit.formatted_total_amount }}</td>
+              <td class="text-end" style="color: #dc3545;">
+                {% if deposit.deductions and deposit.deductions > 0 %}
+                  ₱{{ "{:,.2f}".format(deposit.deductions) }}
+                  {% if deposit.deduction_details %}
+                    <br><small class="text-muted">{{ deposit.deduction_details }}</small>
+                  {% endif %}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="text-end fw-bold" style="color: #0066cc;">
+                ₱{{ "{:,.2f}".format((deposit.total_amount or 0) - (deposit.deductions or 0)) }}
+              </td>
               <td>
                 {% if deposit.status == 'draft' %}
                   <span class="badge bg-secondary">Draft</span>
@@ -149,6 +180,8 @@
             <tr class="table-active">
               <td colspan="3" class="text-end fw-bold">TOTAL:</td>
               <td class="text-end fw-bold">₱{{ "{:,.2f}".format(total_amount) }}</td>
+              <td class="text-end fw-bold" style="color: #dc3545;">₱{{ "{:,.2f}".format(total_deductions) }}</td>
+              <td class="text-end fw-bold" style="color: #0066cc;">₱{{ "{:,.2f}".format(total_amount - total_deductions) }}</td>
               <td colspan="5"></td>
             </tr>
           </tfoot>

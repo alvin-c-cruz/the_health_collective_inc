@@ -999,12 +999,14 @@ def deposit_report():
     # Calculate totals (exclude cancelled deposits from totals)
     total_deposits = len([d for d in deposits if d.status != 'cancelled'])
     total_amount = sum(deposit.total_amount for deposit in deposits if deposit.status != 'cancelled')
+    total_deductions = sum((deposit.deductions or 0) for deposit in deposits if deposit.status != 'cancelled')
 
     context = {
         'app_label': app_label,
         'deposits': deposits,
         'total_deposits': total_deposits,
         'total_amount': total_amount,
+        'total_deductions': total_deductions,
         'start_date': start_date,
         'end_date': end_date,
     }
