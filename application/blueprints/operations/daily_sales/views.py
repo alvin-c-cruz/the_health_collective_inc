@@ -12,6 +12,7 @@ from .models import (Transaction, TransactionDetail, TransactionTender, Transact
                      FundCategory, FundReceived, FundDisbursed, PettyCashVoucher, Payee,
                      ReimbursementReport, ReimbursementReceived)
 from .forms import Form
+from .audit_logger import log_status_change
 from ...register.product_type import ProductType
 from ...register.tender import Tender
 from ...register.sex.models import Sex
@@ -61,9 +62,20 @@ def home():
     except ValueError:
         selected_date = today
 
+    # Get transactions for the selected date
     transactions = Transaction.query.filter(
         Transaction.record_date == str(selected_date)
     ).order_by(Transaction.id.desc()).all()
+
+    # Get all draft transactions (regardless of date) that are not cancelled
+    draft_transactions = Transaction.query.filter(
+        Transaction.submitted == None,
+        Transaction.cancelled == None
+    ).order_by(Transaction.record_date.desc(), Transaction.id.desc()).all()
+
+    # Combine: date-specific transactions + all drafts (avoiding duplicates)
+    draft_ids = {t.id for t in draft_transactions}
+    all_transactions = transactions + [t for t in draft_transactions if t.id not in {tx.id for tx in transactions}]
 
     total_sales = sum(
         sum(d.amount - d.discount for d in t.transaction_details) - (t.discount or 0)
@@ -112,13 +124,40 @@ def home():
         "prev_date": selected_date - timedelta(days=1),
         "next_date": selected_date + timedelta(days=1),
         "summary": summary,
-        "transactions": transactions,
+        "transactions": all_transactions,  # Include both date-specific and all drafts
         "txn_type_tenders": txn_type_tenders,
         "transaction_types": transaction_types,
         "type_lookup": type_lookup,
         "pending_change_requests_count": pending_change_requests_count,
     }
     return render_template("daily_sales/home.html", **context)
+
+
+# ---------------------------------------------------------------------------
+# Drafts - Show all draft transactions
+# ---------------------------------------------------------------------------
+
+@bp.route("/drafts", methods=["GET"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def drafts():
+    """Show all draft transactions (not submitted)"""
+    # Get all transactions where submitted is NULL (draft status)
+    draft_transactions = Transaction.query.filter(
+        Transaction.submitted == None,
+        Transaction.cancelled == None
+    ).order_by(Transaction.record_date.desc(), Transaction.id.desc()).all()
+
+    transaction_types = TransactionType.query.filter_by(active=True).order_by(TransactionType.sort_order).all()
+    type_lookup = {tt.type_code: tt for tt in transaction_types}
+
+    context = {
+        "app_label": app_label,
+        "transactions": draft_transactions,
+        "type_lookup": type_lookup,
+        "page_title": "Draft Transactions",
+    }
+    return render_template("daily_sales/drafts.html", **context)
 
 
 # ---------------------------------------------------------------------------
@@ -190,7 +229,7 @@ def new_transaction():
     product_types = ProductType.query.order_by(ProductType.product_type_name).all()
     tenders = Tender.query.order_by(Tender.tender_name).all()
     sexes = Sex.query.order_by(Sex.sex_name).all()
-    customers = Customer.query.order_by(Customer.customer_name).all()
+    customers = Customer.query.order_by(Customer.last_name, Customer.first_name, Customer.middle_name).all()
     transaction_types = TransactionType.query.filter_by(active=True).order_by(TransactionType.sort_order).all()
     from ..ape_batch.models import ApeBatch
     ape_batches = ApeBatch.query.order_by(ApeBatch.batch_date.desc()).all()
@@ -225,6 +264,9 @@ def edit_transaction(transaction_id):
     form = Form()
     form.user_prepare_id = current_user.id
 
+    # Get return URL from query parameter or referer
+    return_url = request.args.get('return_url') or request.referrer or url_for('daily_sales.home')
+
     if record.submitted or record.cancelled:
         flash('This transaction is locked and cannot be edited.', 'warning')
         return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
@@ -234,6 +276,11 @@ def edit_transaction(transaction_id):
         form.id = transaction_id
 
         action = request.form.get('action', 'save')
+        cancel_action = request.form.get('cancel')  # Check if Cancel button was clicked
+
+        # If Cancel was clicked, redirect to return URL
+        if cancel_action:
+            return redirect(return_url)
 
         if form._validate_on_submit():
             form._save()
@@ -241,10 +288,12 @@ def edit_transaction(transaction_id):
             if action == 'submit':
                 form._submit()
                 flash('Transaction submitted successfully.', 'success')
-                return redirect(url_for(f'{app_name}.view_transaction', transaction_id=form.id))
+                # After submit, go to return URL (usually dashboard or daily sales)
+                return redirect(return_url)
             else:
                 flash('Transaction updated.', 'success')
-                return redirect(url_for(f'{app_name}.edit_transaction', transaction_id=form.id))
+                # After save draft, stay on edit page
+                return redirect(url_for(f'{app_name}.edit_transaction', transaction_id=form.id, return_url=return_url))
     else:
         form._populate(record)
 
@@ -252,7 +301,7 @@ def edit_transaction(transaction_id):
     product_types = ProductType.query.order_by(ProductType.product_type_name).all()
     tenders = Tender.query.order_by(Tender.tender_name).all()
     sexes = Sex.query.order_by(Sex.sex_name).all()
-    customers = Customer.query.order_by(Customer.customer_name).all()
+    customers = Customer.query.order_by(Customer.last_name, Customer.first_name, Customer.middle_name).all()
     transaction_types = TransactionType.query.filter_by(active=True).order_by(TransactionType.sort_order).all()
     from ..ape_batch.models import ApeBatch
     ape_batches = ApeBatch.query.order_by(ApeBatch.batch_date.desc()).all()
@@ -269,6 +318,7 @@ def edit_transaction(transaction_id):
         "app_label": app_label,
         "is_new": False,
         "record": record,
+        "return_url": return_url,
     }
     return render_template("daily_sales/new_transaction.html", **context)
 
@@ -347,6 +397,158 @@ def uncancel_transaction(transaction_id):
         else:
             flash('Unable to un-cancel this transaction.', 'danger')
 
+    return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+
+# ---------------------------------------------------------------------------
+# Audit History - View audit trail for a transaction
+# ---------------------------------------------------------------------------
+
+@bp.route('/transaction/<int:transaction_id>/audit_history', methods=['GET'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def transaction_audit_history(transaction_id):
+    """View complete audit history for a specific transaction"""
+    from .audit_logger import get_audit_history
+
+    record = Transaction.query.get_or_404(transaction_id)
+    audit_logs = get_audit_history('transaction', transaction_id)
+
+    context = {
+        "app_label": app_label,
+        "record": record,
+        "audit_logs": audit_logs,
+        "page_title": f"Audit History - Transaction #{record.record_number or transaction_id}",
+    }
+    return render_template("daily_sales/audit_history.html", **context)
+
+
+# ---------------------------------------------------------------------------
+# Request cancellation (staff can request cancellation of submitted transaction)
+# ---------------------------------------------------------------------------
+
+@bp.route('/transaction/<int:transaction_id>/request_cancellation', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def request_cancellation(transaction_id):
+    """Staff requests cancellation of a submitted transaction"""
+    from datetime import datetime
+    from application.extensions import db
+
+    record = Transaction.query.get_or_404(transaction_id)
+
+    if not record.submitted or record.cancelled:
+        flash('Only submitted, active transactions can have cancellation requested.', 'warning')
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+    if record.cancellation_requested_at:
+        flash('Cancellation has already been requested for this transaction.', 'info')
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+    reason = request.form.get('reason', '').strip()
+    if not reason:
+        flash('A reason is required to request cancellation.', 'danger')
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+    # Record the cancellation request
+    record.cancellation_requested_by_id = current_user.id
+    record.cancellation_requested_at = datetime.now()
+    record.cancellation_reason = reason
+
+    db.session.commit()
+
+    # Audit logging
+    try:
+        log_status_change('transaction', record, 'cancellation_requested', reason=reason)
+        db.session.commit()
+    except Exception as e:
+        print(f"Audit logging failed: {e}")
+
+    flash('Cancellation request submitted. Waiting for admin approval.', 'success')
+    return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+
+# ---------------------------------------------------------------------------
+# Approve cancellation (admin approves cancellation request)
+# ---------------------------------------------------------------------------
+
+@bp.route('/transaction/<int:transaction_id>/approve_cancellation', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def approve_cancellation(transaction_id):
+    """Admin approves cancellation request and cancels the transaction"""
+    from datetime import datetime
+    from application.extensions import db
+    from flask import abort
+
+    if not (current_user.admin or current_user.superuser):
+        abort(403)
+
+    record = Transaction.query.get_or_404(transaction_id)
+
+    if not record.cancellation_requested_at:
+        flash('No cancellation request found for this transaction.', 'warning')
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+    if record.cancelled:
+        flash('Transaction is already cancelled.', 'info')
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+    # Approve cancellation and cancel the transaction
+    record.cancellation_approved_by_id = current_user.id
+    record.cancellation_approved_at = datetime.now()
+    record.cancelled = str(datetime.now().date())
+
+    db.session.commit()
+
+    # Audit logging
+    try:
+        log_status_change('transaction', record, 'cancellation_approved', reason=record.cancellation_reason)
+        db.session.commit()
+    except Exception as e:
+        print(f"Audit logging failed: {e}")
+
+    flash('Cancellation approved. Transaction has been cancelled.', 'success')
+    return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+
+# ---------------------------------------------------------------------------
+# Reject cancellation (admin rejects cancellation request)
+# ---------------------------------------------------------------------------
+
+@bp.route('/transaction/<int:transaction_id>/reject_cancellation', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def reject_cancellation(transaction_id):
+    """Admin rejects cancellation request"""
+    from application.extensions import db
+    from flask import abort
+
+    if not (current_user.admin or current_user.superuser):
+        abort(403)
+
+    record = Transaction.query.get_or_404(transaction_id)
+
+    if not record.cancellation_requested_at:
+        flash('No cancellation request found for this transaction.', 'warning')
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+    # Clear cancellation request
+    reason_text = record.cancellation_reason  # Save before clearing
+    record.cancellation_requested_by_id = None
+    record.cancellation_requested_at = None
+    record.cancellation_reason = None
+
+    db.session.commit()
+
+    # Audit logging
+    try:
+        log_status_change('transaction', record, 'cancellation_rejected', reason=reason_text)
+        db.session.commit()
+    except Exception as e:
+        print(f"Audit logging failed: {e}")
+
+    flash('Cancellation request rejected.', 'success')
     return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
 
 
@@ -475,8 +677,46 @@ def approve_transaction(transaction_id):
         user_id=current_user.id,
     ))
     db.session.commit()
+
+    # Audit logging
+    try:
+        log_status_change('transaction', record, 'approved')
+        db.session.commit()
+    except Exception as e:
+        print(f"Audit logging failed: {e}")
+
     flash('Transaction approved.', 'success')
     return redirect(url_for(f'{app_name}.pending_approval'))
+
+
+# ---------------------------------------------------------------------------
+# Unapprove transaction (for testing - superuser only)
+# ---------------------------------------------------------------------------
+
+@bp.route('/transaction/<int:transaction_id>/unapprove', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def unapprove_transaction(transaction_id):
+    """Superuser unapproves an approved transaction (for testing purposes)"""
+    from .admin_models import AdminTransaction
+    from application.extensions import db
+    from flask import abort
+
+    if not current_user.superuser:
+        abort(403)
+
+    record = Transaction.query.get_or_404(transaction_id)
+
+    if not record.submitted or record.cancelled:
+        flash('Only submitted, active transactions can be unapproved.', 'warning')
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
+    # Remove the approval record
+    AdminTransaction.query.filter_by(transaction_id=transaction_id).delete()
+    db.session.commit()
+
+    flash('Transaction approval removed. Transaction is now pending approval.', 'success')
+    return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
 
 
 # ---------------------------------------------------------------------------
@@ -554,6 +794,13 @@ def disapprove_transaction(transaction_id):
 
     db.session.commit()
 
+    # Audit logging
+    try:
+        log_status_change('transaction', record, 'returned_to_draft', reason=reason)
+        db.session.commit()
+    except Exception as e:
+        print(f"Audit logging failed: {e}")
+
     # Notification via flash message (staff will see when they next login/view their transactions)
     flash(
         f'Transaction #{record.record_number or transaction_id} returned to draft. '
@@ -595,11 +842,19 @@ def unlock_transaction(transaction_id):
 def customer_search():
     from flask import jsonify
     from ...register.customer import Customer
+    from sqlalchemy import or_
     q = request.args.get('q', '').strip()
+    # Search across last_name, first_name, middle_name, and legacy customer_name
     results = Customer.query.filter(
-        Customer.customer_name.ilike(f'%{q}%')
-    ).order_by(Customer.customer_name).limit(20).all()
-    return jsonify([c.customer_name for c in results])
+        or_(
+            Customer.last_name.ilike(f'%{q}%'),
+            Customer.first_name.ilike(f'%{q}%'),
+            Customer.middle_name.ilike(f'%{q}%'),
+            Customer.customer_name.ilike(f'%{q}%')
+        )
+    ).order_by(Customer.last_name, Customer.first_name, Customer.middle_name).limit(20).all()
+    # Return formatted names: Last Name, First Name Middle Name
+    return jsonify([str(c) for c in results])
 
 
 # ---------------------------------------------------------------------------
@@ -669,6 +924,8 @@ def record_deposit():
             deposit.reference_number = request.form.get('reference_number', '')
             deposit.bank_account = request.form.get('bank_account', '')
             deposit.notes = request.form.get('notes', '')
+            deposit.deductions = float(request.form.get('deductions', 0))
+            deposit.deduction_details = request.form.get('deduction_details', '')
             deposit.status = 'draft'  # Deposits start as draft
             deposit.created_by_id = current_user.id
             deposit.created_at = datetime.now()

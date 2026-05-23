@@ -48,6 +48,15 @@ class Transaction(db.Model):
     approved_by_user = db.relationship('User', foreign_keys=[approved_by_id], backref='transactions_approved')
     approved_at = db.Column(db.DateTime, nullable=True)
 
+    # Cancellation request fields
+    cancellation_requested_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    cancellation_requested_by_user = db.relationship('User', foreign_keys=[cancellation_requested_by_id], backref='cancellation_requests_made')
+    cancellation_requested_at = db.Column(db.DateTime, nullable=True)
+    cancellation_reason = db.Column(db.String(), nullable=True)
+    cancellation_approved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    cancellation_approved_by_user = db.relationship('User', foreign_keys=[cancellation_approved_by_id], backref='cancellation_requests_approved')
+    cancellation_approved_at = db.Column(db.DateTime, nullable=True)
+
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     @property
@@ -141,6 +150,8 @@ class Deposit(db.Model):
     reference_number = db.Column(db.String())  # Bank slip / ref no.
     bank_account = db.Column(db.String())  # Bank / Account name
     notes = db.Column(db.String())  # Optional notes
+    deductions = db.Column(db.Numeric(12, 2), default=0.00)  # Bank charges, fees, etc.
+    deduction_details = db.Column(db.String())  # Description of what the deduction is for
 
     # Workflow fields
     status = db.Column(db.String(20), default='draft')  # draft | submitted | posted | cancelled

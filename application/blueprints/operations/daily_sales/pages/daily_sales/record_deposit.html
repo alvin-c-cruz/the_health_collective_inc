@@ -114,6 +114,19 @@
       </div>
     </div>
 
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <label class="form-label">Deductions</label>
+        <input type="number" name="deductions" id="deductions" class="form-control" step="0.01" min="0" value="0.00" placeholder="0.00">
+        <small class="text-muted">Bank charges, fees, etc.</small>
+      </div>
+      <div class="col-md-8">
+        <label class="form-label">Deduction Details</label>
+        <input type="text" name="deduction_details" id="deduction_details" class="form-control" placeholder="e.g., Bank transfer fee, Check clearing fee">
+        <small class="text-muted">Describe what the deduction is for</small>
+      </div>
+    </div>
+
     <div class="row mb-4">
       <div class="col-md-12">
         <label class="form-label">Notes</label>
@@ -141,13 +154,26 @@
 
     <!-- Deposit Summary -->
     <div class="deposit-summary">
-      <div class="row align-items-center">
-        <div class="col-md-6">
+      <div class="row">
+        <div class="col-md-4">
           <h5>Deposit Summary</h5>
           <p class="mb-0"><span id="selected_count">0</span> transaction(s) selected</p>
         </div>
-        <div class="col-md-3 text-end">
-          <div class="total">₱<span id="total_amount">0.00</span></div>
+        <div class="col-md-5">
+          <div style="font-size: 0.9rem;">
+            <div class="d-flex justify-content-between mb-1">
+              <span>Total Cash Deposited:</span>
+              <span style="font-weight: 600;">₱<span id="total_amount">0.00</span></span>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+              <span>Less: Deductions:</span>
+              <span style="font-weight: 600; color: #dc3545;">₱<span id="deductions_display">0.00</span></span>
+            </div>
+            <div class="d-flex justify-content-between pt-2" style="border-top: 2px solid #0066cc;">
+              <span style="font-weight: 700;">Net Bank Credit:</span>
+              <span class="total" style="font-size: 1.3rem;">₱<span id="net_amount">0.00</span></span>
+            </div>
+          </div>
         </div>
         <div class="col-md-3 text-end">
           <a href="{{ url_for('daily_sales.deposit_report') }}" class="btn btn-outline-primary btn-sm">
@@ -168,7 +194,7 @@
               </th>
               <th>Date</th>
               <th>Trans #</th>
-              <th>Customer</th>
+              <th>Patient</th>
               <th class="text-end">Cash Amount</th>
               <th class="text-end">Deposited</th>
               <th class="text-end">Remaining</th>
@@ -232,6 +258,9 @@
   // Set today's date as default
   document.getElementById('record_date').valueAsDate = new Date();
 
+  // Update totals when deductions change
+  document.getElementById('deductions').addEventListener('input', updateTotal);
+
   function toggleRow(transactionId) {
     const checkbox = document.querySelector(`input[value="${transactionId}"]`);
     const amountInput = document.getElementById(`amount_${transactionId}`);
@@ -290,9 +319,25 @@
       count++;
     });
 
+    // Get deductions
+    const deductionsInput = document.getElementById('deductions');
+    const deductions = parseFloat(deductionsInput.value) || 0;
+
+    // Calculate net amount (total - deductions)
+    const netAmount = total - deductions;
+
+    // Update display
     document.getElementById('total_amount').textContent = total.toLocaleString('en-PH', {
       minimumFractionDigits: 2,
-      maximumFractionDigals: 2
+      maximumFractionDigits: 2
+    });
+    document.getElementById('deductions_display').textContent = deductions.toLocaleString('en-PH', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    document.getElementById('net_amount').textContent = netAmount.toLocaleString('en-PH', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     });
     document.getElementById('selected_count').textContent = count;
 
