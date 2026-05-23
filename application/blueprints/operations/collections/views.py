@@ -108,30 +108,53 @@ def new_collection():
     ape_batches  = ApeBatch.query.order_by(ApeBatch.batch_date.desc()).all()
 
     if request.method == "POST":
+        import json
         f = request.form
 
         collection_date = f.get("collection_date", str(ph_today()))
-        tender_id       = f.get("tender_id", type=int)
-        bank_account_id = f.get("bank_account_id", type=int) or None
+        bank_account_name = (f.get("bank_account") or "").strip()  # Store as text, not FK
         ape_batch_id    = f.get("ape_batch_id", type=int) or None
         reference       = (f.get("reference") or "").strip()
         notes           = (f.get("notes") or "").strip()
 
+        # Get deductions
+        deduction_descriptions = f.getlist("deduction_description[]")
+        deduction_amounts = f.getlist("deduction_amount[]")
+
+        # Build deductions JSON
+        deductions_list = []
+        for desc, amt in zip(deduction_descriptions, deduction_amounts):
+            try:
+                amount = float(amt or 0)
+                if amount > 0:  # Only include non-zero deductions
+                    deductions_list.append({
+                        "description": desc.strip(),
+                        "amount": amount
+                    })
+            except (ValueError, TypeError):
+                continue
+
+        deductions_json = json.dumps(deductions_list)
+
         line_ids     = f.getlist("line_id")
         line_amounts = f.getlist("line_amount")
 
-        if not tender_id:
-            flash("Please select a tender.", "danger")
-        elif not line_ids:
+        if not line_ids:
             flash("Please select at least one transaction line.", "danger")
         else:
+            # Collections are always CASH (tender_id = 1, assuming Cash is ID 1)
+            # We can hardcode or query for cash tender
+            cash_tender = Tender.query.filter(Tender.tender_name.ilike('%cash%')).first()
+            tender_id = cash_tender.id if cash_tender else 1  # Fallback to ID 1
+
             col = Collection(
                 collection_date=collection_date,
-                tender_id=tender_id,
-                bank_account_id=bank_account_id,
+                tender_id=tender_id,  # Always cash
+                bank_account_name=bank_account_name,
                 ape_batch_id=ape_batch_id,
                 reference=reference,
                 notes=notes,
+                deductions=deductions_json,
                 status='draft',  # New workflow: start as draft
                 created_by_id=current_user.id,
                 created_at=str(ph_today()),
@@ -157,7 +180,7 @@ def new_collection():
                 db.session.add(detail)
 
             db.session.commit()
-            flash(f"Collection saved as draft. Total amount: ₱{col.formatted_total_amount}", "success")
+            flash(f"Collection saved as draft. Net amount: ₱{col.formatted_net_amount}", "success")
             return redirect(url_for(f"{app_name}.view_collection", collection_id=col.id))
 
     tender_id_pre    = request.args.get("tender_id", type=int)

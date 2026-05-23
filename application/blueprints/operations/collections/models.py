@@ -10,8 +10,12 @@ class Collection(db.Model):
     tender          = db.relationship("Tender", lazy=True)
     bank_account_id = db.Column(db.Integer, db.ForeignKey("bank_account.id"), nullable=True)
     bank_account    = db.relationship("BankAccount", lazy=True)
+    bank_account_name = db.Column(db.String())  # Store bank account as text (not FK)
     reference       = db.Column(db.String())
     notes           = db.Column(db.String())
+
+    # Deductions stored as JSON array of objects: [{"description": "...", "amount": 0.00}, ...]
+    deductions = db.Column(db.Text, default='[]')  # JSON string
 
     # Status workflow fields (matching Deposit model)
     status = db.Column(db.String(20), default='draft')  # draft | submitted | posted | cancelled
@@ -50,6 +54,21 @@ class Collection(db.Model):
         return sum(d.amount_applied for d in self.details)
 
     @property
+    def total_deductions(self):
+        """Calculate total deductions from JSON"""
+        import json
+        try:
+            deductions_list = json.loads(self.deductions or '[]')
+            return sum(float(d.get('amount', 0)) for d in deductions_list)
+        except (json.JSONDecodeError, ValueError):
+            return 0.0
+
+    @property
+    def net_amount(self):
+        """Net amount after deductions"""
+        return self.total_amount - self.total_deductions
+
+    @property
     def formatted_collection_date(self):
         return short_date(self.collection_date) if self.collection_date else ""
 
@@ -61,6 +80,14 @@ class Collection(db.Model):
     def formatted_total_amount(self):
         """Alias for formatted_total to match Deposit model"""
         return self.formatted_total
+
+    @property
+    def formatted_total_deductions(self):
+        return "{:,.2f}".format(self.total_deductions)
+
+    @property
+    def formatted_net_amount(self):
+        return "{:,.2f}".format(self.net_amount)
 
 
 class CollectionDetail(db.Model):

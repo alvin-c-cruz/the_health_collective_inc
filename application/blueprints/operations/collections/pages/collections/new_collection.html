@@ -4,154 +4,364 @@
 
 {% block styles %}
 <style>
-  .ac-wrap     { position: relative; }
-  .ac-dropdown { position:absolute; top:100%; left:0; right:0; z-index:9999;
-                 background:#fff; border:1px solid var(--thc-border);
-                 border-radius:var(--thc-radius-sm);
-                 box-shadow:0 4px 12px rgba(0,0,0,.10);
-                 max-height:220px; overflow-y:auto; display:none;
-                 font-size:0.875rem; }
-  .ac-item     { padding:7px 14px; cursor:pointer; color:var(--thc-text); }
-  .ac-item:hover, .ac-item--active { background:var(--thc-primary-light); color:var(--thc-primary); font-weight:500; }
-  .ac-empty    { padding:7px 14px; color:var(--thc-text-muted); font-style:italic; }
+  .line-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+
+  .amount-input {
+    width: 150px;
+    text-align: right;
+  }
+
+  .line-row {
+    background: white;
+  }
+
+  .line-row.selected {
+    background: #e8f4fd;
+  }
+
+  .collection-summary {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+  }
+
+  .collection-summary h5 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .collection-summary .total {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #0066cc;
+  }
+
+  /* Bank account autocomplete dropdown */
+  .bank-ac-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.10);
+    max-height: 240px;
+    overflow-y: auto;
+    display: none;
+    font-size: 0.875rem;
+  }
+
+  .bank-ac-item {
+    padding: 7px 14px;
+    cursor: pointer;
+    color: #1a2a2a;
+  }
+
+  .bank-ac-item:hover,
+  .bank-ac-item--active {
+    background: #e6f3f5;
+    color: #1a6473;
+    font-weight: 500;
+  }
+
+  .bank-account-wrapper {
+    position: relative;
+  }
+
+  /* Dynamic deduction rows */
+  .deduction-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 32px;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    align-items: center;
+  }
+
+  .btn-add-row {
+    background: #e6f3f5;
+    border: 1px dashed #1a6473;
+    color: #1a6473;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-add-row:hover {
+    background: #d1e7ea;
+  }
+
+  .btn-remove-row {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid #dc3545;
+    background: white;
+    color: #dc3545;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-remove-row:hover {
+    background: #dc3545;
+    color: white;
+  }
+
+  .deductions-card {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .deductions-card h6 {
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="thc-page">
-    <div class="thc-page-header">
-        <h4>Record Collection</h4>
-        <a href="{{ url_for('collections.home') }}" class="thc-btn thc-btn-secondary">Back</a>
+
+  <div class="row mb-3">
+    <div class="col">
+      <h4>Record Collection</h4>
+      <hr>
+    </div>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endwith %}
+
+  <!-- Form -->
+  <form method="POST" id="collectionForm">
+
+    <!-- Collection Details -->
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <label class="form-label">Collection Date <span class="text-danger">*</span></label>
+        <input type="date" name="collection_date" id="collection_date" class="form-control" value="{{ today }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Reference Number</label>
+        <input type="text" name="reference" class="form-control upper-case" placeholder="Check no., OR no., etc.">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Bank / Account</label>
+        <div class="bank-account-wrapper">
+          <input type="text" name="bank_account" id="bank-account-input" class="form-control upper-case" placeholder="e.g. BDO Savings - 1234" autocomplete="off">
+          <div id="bank-dropdown" class="bank-ac-dropdown"></div>
+        </div>
+      </div>
     </div>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <!-- Deductions Section -->
+    <div class="deductions-card">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6>Deductions</h6>
+        <button type="button" class="btn-add-row" onclick="addDeductionRow()">+ Add deduction</button>
+      </div>
+      <small class="text-muted d-block mb-3">Bank charges, fees, etc.</small>
+
+      <div id="deductions-container">
+        <!-- Deduction rows will be added here -->
+      </div>
+    </div>
+
+    <!-- APE Batch (optional) -->
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label class="form-label">APE Batch <span class="text-muted fw-normal">(optional)</span></label>
+        <div class="ac-wrap">
+          <input type="text" id="ape-batch-display" class="form-control" placeholder="Link to an APE Batch..."
+                 value="{% for b in ape_batches %}{% if b.id == selected_ape_batch_id %}{{ b.company.company_name }} — {{ b.batch_date }}{% endif %}{% endfor %}"
+                 autocomplete="off">
+          <input type="hidden" id="ape_batch_id" name="ape_batch_id" value="{{ selected_ape_batch_id or '' }}">
+          <div id="ape-batch-dropdown" class="ac-dropdown"></div>
+        </div>
+        <small class="text-muted">Selecting a batch filters outstanding lines to that batch's transactions.</small>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Notes</label>
+        <input type="text" name="notes" class="form-control" placeholder="Optional remarks">
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mb-3">
+      <div class="col d-flex gap-2">
+        <button type="submit" class="btn btn-primary" id="saveButton" disabled>Save Collection</button>
+        <a href="{{ url_for('collections.home') }}" class="btn btn-secondary btn-sm">Cancel</a>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Outstanding Lines -->
+    <div class="row mb-3">
+      <div class="col">
+        <h5>Select Lines to Collect</h5>
+        <p class="text-muted">Check the outstanding receivables to include in this collection. Collections are always in cash.</p>
+      </div>
+    </div>
+
+    <!-- Collection Summary -->
+    <div class="collection-summary">
+      <div class="row">
+        <div class="col-md-4">
+          <h5>Collection Summary</h5>
+          <p class="mb-0"><span id="selected_count">0</span> line(s) selected</p>
+        </div>
+        <div class="col-md-5">
+          <div style="font-size: 0.9rem;">
+            <div class="d-flex justify-content-between mb-1">
+              <span>Total Cash Collected:</span>
+              <span style="font-weight: 600;">₱<span id="total_amount">0.00</span></span>
             </div>
+            <div class="d-flex justify-content-between mb-1">
+              <span>Less: Deductions:</span>
+              <span style="font-weight: 600; color: #dc3545;">₱<span id="deductions_display">0.00</span></span>
+            </div>
+            <div class="d-flex justify-content-between pt-2" style="border-top: 2px solid #0066cc;">
+              <span style="font-weight: 700;">Net Amount:</span>
+              <span class="total" style="font-size: 1.3rem;">₱<span id="net_amount">0.00</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 text-end">
+          <a href="{{ url_for('collections.home') }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-arrow-left"></i> Back to Home
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Outstanding Lines Table -->
+    <div id="lines-container">
+      {% if outstanding_rows %}
+      <table class="table table-sm table-hover mb-0">
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="check_all" class="line-checkbox" title="Select all"> All</th>
+            <th>Date</th>
+            <th>OR #</th>
+            <th>Patient</th>
+            <th class="text-end">Amount</th>
+            <th class="text-end">Collected</th>
+            <th class="text-end">Outstanding</th>
+            <th class="text-end" style="min-width:110px">Apply</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for row in outstanding_rows %}
+        {% set tt = row.tt %}
+        {% set collected = tt.amount - row.outstanding %}
+        <tr class="line-row">
+          <td><input type="checkbox" class="line-checkbox line-check" name="line_id" value="{{ tt.id }}" onchange="syncAmount(this)"></td>
+          <td class="text-nowrap">{{ tt.transaction.record_date or '—' }}</td>
+          <td class="font-monospace small">{{ tt.transaction.record_number or '—' }}</td>
+          <td>{{ tt.transaction.customer.customer_name if tt.transaction.customer else '—' }}</td>
+          <td class="text-end font-monospace">{{ '{:,.2f}'.format(tt.amount) }}</td>
+          <td class="text-end font-monospace">{{ '{:,.2f}'.format(collected) }}</td>
+          <td class="text-end font-monospace fw-semibold">{{ '{:,.2f}'.format(row.outstanding) }}</td>
+          <td class="text-end">
+            <input type="number" class="form-control form-control-sm text-end amount-input line-amount"
+                   name="line_amount" value="{{ row.outstanding }}" step="0.01" min="0.01"
+                   disabled data-max="{{ row.outstanding }}">
+          </td>
+        </tr>
         {% endfor %}
-    {% endwith %}
+        </tbody>
+      </table>
+      {% else %}
+        <p class="text-muted text-center py-3" id="lines-placeholder">
+          Select an APE Batch above to load outstanding lines, or outstanding cash receivables will show here.
+        </p>
+      {% endif %}
+    </div>
 
-    <form method="post" action="{{ url_for('collections.new_collection') }}">
-        <div class="thc-card mb-3">
-            <h6 class="fw-semibold mb-3">Collection Details</h6>
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Collection Date</label>
-                    <input type="date" class="form-control" name="collection_date" value="{{ today }}" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Tender / Payer</label>
-                    <div class="ac-wrap">
-                        <input type="text" id="tender-display" class="form-control" placeholder="Search tender..."
-                               value="{{ tenders|selectattr('id','equalto',selected_tender_id)|map(attribute='tender_name')|first if selected_tender_id else '' }}"
-                               autocomplete="off">
-                        <input type="hidden" id="tender_id" name="tender_id"
-                               value="{{ selected_tender_id or '' }}" required>
-                        <div id="tender-dropdown" class="ac-dropdown"></div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Bank Account</label>
-                    <div class="ac-wrap">
-                        <input type="text" id="bank-display" class="form-control" placeholder="Search bank account..."
-                               autocomplete="off">
-                        <input type="hidden" id="bank_account_id" name="bank_account_id" value="">
-                        <div id="bank-dropdown" class="ac-dropdown"></div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Reference No.</label>
-                    <input type="text" class="form-control" name="reference" placeholder="Check no., OR no., etc.">
-                </div>
-
-                {# APE Batch link (optional) #}
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">APE Batch <span class="text-muted fw-normal">(optional)</span></label>
-                    <div class="ac-wrap">
-                        <input type="text" id="ape-batch-display" class="form-control" placeholder="Link to an APE Batch..."
-                               value="{% for b in ape_batches %}{% if b.id == selected_ape_batch_id %}{{ b.company.company_name }} — {{ b.batch_date }}{% endif %}{% endfor %}"
-                               autocomplete="off">
-                        <input type="hidden" id="ape_batch_id" name="ape_batch_id" value="{{ selected_ape_batch_id or '' }}">
-                        <div id="ape-batch-dropdown" class="ac-dropdown"></div>
-                    </div>
-                    <div class="form-text">Selecting a batch filters outstanding lines to that batch's transactions.</div>
-                </div>
-
-                <div class="col-12">
-                    <label class="form-label fw-semibold">Notes</label>
-                    <input type="text" class="form-control" name="notes" placeholder="Optional remarks">
-                </div>
-            </div>
-        </div>
-
-        <div class="thc-card mb-3">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="fw-semibold mb-0">Outstanding Lines</h6>
-                <span class="text-muted small">Select lines covered by this collection</span>
-            </div>
-
-            <div id="lines-container">
-                {% if outstanding_rows %}
-                <table class="table table-sm mb-0">
-                    <thead><tr>
-                        <th><input type="checkbox" id="check_all" title="Select all"> All</th>
-                        <th>Date</th><th>OR #</th><th>Patient</th>
-                        <th class="text-end">Amount</th>
-                        <th class="text-end">Collected</th>
-                        <th class="text-end">Outstanding</th>
-                        <th class="text-end" style="min-width:110px">Apply</th>
-                    </tr></thead>
-                    <tbody>
-                    {% for row in outstanding_rows %}
-                    {% set tt = row.tt %}
-                    {% set collected = tt.amount - row.outstanding %}
-                    <tr>
-                        <td><input type="checkbox" class="line-check" name="line_id" value="{{ tt.id }}" onchange="syncAmount(this)"></td>
-                        <td class="text-nowrap">{{ tt.transaction.record_date or '—' }}</td>
-                        <td class="font-monospace small">{{ tt.transaction.record_number or '—' }}</td>
-                        <td>{{ tt.transaction.customer.customer_name if tt.transaction.customer else '—' }}</td>
-                        <td class="text-end font-monospace">{{ '{:,.2f}'.format(tt.amount) }}</td>
-                        <td class="text-end font-monospace">{{ '{:,.2f}'.format(collected) }}</td>
-                        <td class="text-end font-monospace fw-semibold">{{ '{:,.2f}'.format(row.outstanding) }}</td>
-                        <td class="text-end">
-                            <input type="number" class="form-control form-control-sm text-end line-amount"
-                                   name="line_amount" value="{{ row.outstanding }}" step="0.01" min="0.01"
-                                   style="width:100px;display:inline-block" disabled data-max="{{ row.outstanding }}">
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                    <p class="text-muted text-center py-3" id="lines-placeholder">
-                        Select a tender or APE Batch above to load outstanding lines.
-                    </p>
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="d-flex gap-2">
-            <button type="submit" class="thc-btn thc-btn-primary">Save Collection</button>
-            <a href="{{ url_for('collections.home') }}" class="thc-btn thc-btn-secondary">Cancel</a>
-        </div>
-    </form>
+  </form>
 </div>
 
+<style>
+  .ac-wrap { position: relative; }
+  .ac-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.10);
+    max-height: 220px;
+    overflow-y: auto;
+    display: none;
+    font-size: 0.875rem;
+  }
+  .ac-item { padding: 7px 14px; cursor: pointer; color: #1a2a2a; }
+  .ac-item:hover, .ac-item--active { background: #e6f3f5; color: #1a6473; font-weight: 500; }
+  .ac-empty { padding: 7px 14px; color: #6c757d; font-style: italic; }
+</style>
+
 <script>
-const TENDER_OPTIONS = [
-  {% for t in tenders %}
-  { id: {{ t.id }}, name: {{ t.tender_name | tojson }} }{% if not loop.last %},{% endif %}
-  {% endfor %}
-];
+// ── Bank Account Autocomplete ──
+const BANK_ACCOUNTS = {{ bank_accounts | tojson }};
 
-const BANK_OPTIONS = [
-  {% for b in bank_accounts %}
-  { id: {{ b.id }}, name: {{ (b.bank_name + (' (' + b.account_number + ')' if b.account_number else '')) | tojson }} }{% if not loop.last %},{% endif %}
-  {% endfor %}
-];
+const bankInput = document.getElementById('bank-account-input');
+const bankDropdown = document.getElementById('bank-dropdown');
 
+bankInput.addEventListener('input', function() {
+  const query = this.value.toLowerCase();
+  if (!query) {
+    bankDropdown.style.display = 'none';
+    return;
+  }
+
+  const matches = BANK_ACCOUNTS.filter(b => {
+    const name = `${b.bank_name} ${b.account_number || ''}`.toLowerCase();
+    return name.includes(query);
+  });
+
+  if (matches.length === 0) {
+    bankDropdown.innerHTML = '<div class="bank-ac-item" style="color:#6c757d;">No matches</div>';
+  } else {
+    bankDropdown.innerHTML = matches.map(b =>
+      `<div class="bank-ac-item" data-value="${b.bank_name}${b.account_number ? ' - ' + b.account_number : ''}">${b.bank_name}${b.account_number ? ' (' + b.account_number + ')' : ''}</div>`
+    ).join('');
+
+    bankDropdown.querySelectorAll('.bank-ac-item').forEach(item => {
+      item.addEventListener('click', function() {
+        bankInput.value = this.dataset.value;
+        bankDropdown.style.display = 'none';
+      });
+    });
+  }
+
+  bankDropdown.style.display = 'block';
+});
+
+bankInput.addEventListener('blur', () => setTimeout(() => bankDropdown.style.display = 'none', 200));
+
+// ── APE Batch Autocomplete ──
 const APE_BATCH_OPTIONS = [
   {% for b in ape_batches %}
   { id: {{ b.id }}, name: {{ (b.company.company_name ~ ' — ' ~ b.batch_date) | tojson }} }{% if not loop.last %},{% endif %}
@@ -167,7 +377,7 @@ function makeAutocomplete(opts) {
   function hl(text, q) {
     if (!q) return text;
     const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-    return text.replace(re, '<strong style="font-weight:700;color:var(--thc-primary)">$1</strong>');
+    return text.replace(re, '<strong style="font-weight:700;color:#1a6473">$1</strong>');
   }
 
   function render(q) {
@@ -219,54 +429,68 @@ function makeAutocomplete(opts) {
 }
 
 makeAutocomplete({
-  displayId: 'tender-display', hiddenId: 'tender_id', dropdownId: 'tender-dropdown',
-  options: TENDER_OPTIONS,
+  displayId: 'ape-batch-display',
+  hiddenId: 'ape_batch_id',
+  dropdownId: 'ape-batch-dropdown',
+  options: APE_BATCH_OPTIONS,
   onChange: loadLines
 });
 
-makeAutocomplete({
-  displayId: 'bank-display', hiddenId: 'bank_account_id', dropdownId: 'bank-dropdown',
-  options: BANK_OPTIONS
-});
+// ── Dynamic Deductions ──
+function addDeductionRow(description = '', amount = '0.00') {
+  const container = document.getElementById('deductions-container');
+  const div = document.createElement('div');
+  div.className = 'deduction-row';
+  div.innerHTML = `
+    <input type="text" name="deduction_description[]" class="form-control" placeholder="e.g., Bank transfer fee, Check clearing fee" value="${description}">
+    <input type="number" name="deduction_amount[]" class="form-control text-end" placeholder="0.00" value="${amount}" step="0.01" min="0" onchange="updateSummary()">
+    <button type="button" class="btn-remove-row" onclick="removeDeductionRow(this)" title="Remove">✕</button>
+  `;
+  container.appendChild(div);
+  updateSummary();
+}
 
-makeAutocomplete({
-  displayId: 'ape-batch-display', hiddenId: 'ape_batch_id', dropdownId: 'ape-batch-dropdown',
-  options: APE_BATCH_OPTIONS,
-  onChange: (batchId) => loadLines(document.getElementById('tender_id').value, batchId)
-});
+function removeDeductionRow(btn) {
+  btn.closest('.deduction-row').remove();
+  updateSummary();
+}
 
-// ── Outstanding lines loader ──
-function loadLines(tenderId, batchId) {
-  tenderId = tenderId || document.getElementById('tender_id').value;
-  batchId  = batchId  || document.getElementById('ape_batch_id').value;
+// Initialize with one deduction row
+addDeductionRow();
+
+// ── Outstanding Lines Loader ──
+function loadLines(batchId) {
+  batchId = batchId || document.getElementById('ape_batch_id').value;
   const container = document.getElementById('lines-container');
-  if (!tenderId && !batchId) {
-    container.innerHTML = '<p class="text-muted text-center py-3">Select a tender or APE Batch above to load outstanding lines.</p>';
+
+  if (!batchId) {
+    // Show default view without batch filter
     return;
   }
+
   container.innerHTML = '<p class="text-muted text-center py-3">Loading…</p>';
-  let url = `{{ url_for('collections.get_lines') }}?`;
-  if (tenderId) url += `tender_id=${tenderId}&`;
-  if (batchId)  url += `ape_batch_id=${batchId}`;
-  fetch(url)
+
+  fetch(`{{ url_for('collections.get_lines') }}?ape_batch_id=${batchId}`)
     .then(r => r.json())
     .then(lines => {
       if (!lines.length) {
         container.innerHTML = '<p class="text-muted text-center py-3">No outstanding lines found.</p>';
         return;
       }
-      let html = `<table class="table table-sm mb-0">
+
+      let html = `<table class="table table-sm table-hover mb-0">
         <thead><tr>
-          <th><input type="checkbox" id="check_all" title="Select all"> All</th>
+          <th><input type="checkbox" id="check_all" class="line-checkbox" title="Select all"> All</th>
           <th>Date</th><th>OR #</th><th>Patient</th>
           <th class="text-end">Amount</th>
           <th class="text-end">Collected</th>
           <th class="text-end">Outstanding</th>
           <th class="text-end" style="min-width:110px">Apply</th>
         </tr></thead><tbody>`;
+
       lines.forEach(l => {
-        html += `<tr>
-          <td><input type="checkbox" class="line-check" name="line_id" value="${l.id}" onchange="syncAmount(this)"></td>
+        html += `<tr class="line-row">
+          <td><input type="checkbox" class="line-checkbox line-check" name="line_id" value="${l.id}" onchange="syncAmount(this)"></td>
           <td class="text-nowrap">${l.record_date}</td>
           <td class="font-monospace small">${l.record_number}</td>
           <td>${l.customer}</td>
@@ -274,41 +498,91 @@ function loadLines(tenderId, batchId) {
           <td class="text-end font-monospace">${fmt(l.collected)}</td>
           <td class="text-end font-monospace fw-semibold">${fmt(l.outstanding)}</td>
           <td class="text-end">
-            <input type="number" class="form-control form-control-sm text-end line-amount"
+            <input type="number" class="form-control form-control-sm text-end amount-input line-amount"
                    name="line_amount" value="${l.outstanding}" step="0.01" min="0.01"
-                   style="width:100px;display:inline-block" disabled data-max="${l.outstanding}">
+                   disabled data-max="${l.outstanding}">
           </td>
         </tr>`;
       });
+
       html += '</tbody></table>';
       container.innerHTML = html;
+
       document.getElementById('check_all').addEventListener('change', function () {
-        document.querySelectorAll('.line-check').forEach(cb => { cb.checked = this.checked; syncAmount(cb); });
+        document.querySelectorAll('.line-check').forEach(cb => {
+          cb.checked = this.checked;
+          syncAmount(cb);
+        });
       });
     });
 }
 
-// Wire check_all for server-rendered table (present on page load)
+// Wire check_all for server-rendered table
 function wireCheckAll() {
   const ca = document.getElementById('check_all');
   if (ca) ca.addEventListener('change', function () {
-    document.querySelectorAll('.line-check').forEach(cb => { cb.checked = this.checked; syncAmount(cb); });
+    document.querySelectorAll('.line-check').forEach(cb => {
+      cb.checked = this.checked;
+      syncAmount(cb);
+    });
   });
 }
 wireCheckAll();
 
-// load via AJAX only if table not already server-rendered
-const preTender = document.getElementById('tender_id').value;
-const preBatch  = document.getElementById('ape_batch_id').value;
+// Load lines if APE batch is pre-selected
+const preBatch = document.getElementById('ape_batch_id').value;
 const alreadyLoaded = document.querySelector('#lines-container table');
-if ((preTender || preBatch) && !alreadyLoaded) loadLines(preTender, preBatch);
+if (preBatch && !alreadyLoaded) loadLines(preBatch);
 
+// ── Line Selection Logic ──
 function syncAmount(cb) {
   const row = cb.closest('tr');
   const input = row.querySelector('.line-amount');
   input.disabled = !cb.checked;
-  if (cb.checked) input.focus();
+  if (cb.checked) {
+    row.classList.add('selected');
+    input.focus();
+  } else {
+    row.classList.remove('selected');
+  }
+  updateSummary();
 }
+
+// ── Update Summary ──
+function updateSummary() {
+  let count = 0;
+  let total = 0;
+
+  document.querySelectorAll('.line-check:checked').forEach(cb => {
+    count++;
+    const row = cb.closest('tr');
+    const amt = parseFloat(row.querySelector('.line-amount').value) || 0;
+    total += amt;
+  });
+
+  // Calculate total deductions
+  let totalDeductions = 0;
+  document.querySelectorAll('input[name="deduction_amount[]"]').forEach(input => {
+    totalDeductions += parseFloat(input.value) || 0;
+  });
+
+  const netAmount = total - totalDeductions;
+
+  document.getElementById('selected_count').textContent = count;
+  document.getElementById('total_amount').textContent = fmt(total);
+  document.getElementById('deductions_display').textContent = fmt(totalDeductions);
+  document.getElementById('net_amount').textContent = fmt(netAmount);
+
+  // Enable/disable save button
+  document.getElementById('saveButton').disabled = count === 0;
+}
+
+// Add event listeners to line amounts
+document.addEventListener('input', function(e) {
+  if (e.target.classList.contains('line-amount')) {
+    updateSummary();
+  }
+});
 
 function fmt(n) {
   return Number(n).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
