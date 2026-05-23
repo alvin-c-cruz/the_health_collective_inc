@@ -172,6 +172,12 @@ class Deposit(db.Model):
     cancelled_at = db.Column(db.DateTime, nullable=True)
     cancellation_reason = db.Column(db.String(), nullable=True)  # Why was this deposit cancelled
 
+    # Cancellation request fields (for approval workflow)
+    cancellation_requested_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    cancellation_requested_by_user = db.relationship('User', foreign_keys=[cancellation_requested_by_id], backref='deposit_cancellation_requests_made')
+    cancellation_requested_at = db.Column(db.DateTime, nullable=True)
+    cancellation_request_reason = db.Column(db.String(), nullable=True)
+
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     @property
