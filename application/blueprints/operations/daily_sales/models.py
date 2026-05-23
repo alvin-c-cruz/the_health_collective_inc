@@ -188,6 +188,15 @@ class Deposit(db.Model):
         return '{:,.2f}'.format(self.total_amount)
 
     @property
+    def net_bank_credit(self):
+        """Net amount credited to bank (total - deductions)"""
+        return self.total_amount - float(self.deductions or 0)
+
+    @property
+    def formatted_net_bank_credit(self):
+        return '{:,.2f}'.format(self.net_bank_credit)
+
+    @property
     def is_draft(self):
         return self.status == 'draft'
 
