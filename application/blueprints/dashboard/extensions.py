@@ -3,7 +3,7 @@ from sqlalchemy import func, select as sa_select
 
 from application.extensions import db
 from ..operations.daily_sales.models import (Transaction, TransactionDetail, TransactionTender, TransactionType,
-                                              FundReceived, FundDisbursed)
+                                              FundReceived, FundDisbursed, Deposit)
 from ..operations.daily_sales.admin_models import AdminTransaction
 from ..register.product.models import Product
 from ..register.tender.models import Tender
@@ -71,7 +71,7 @@ def get_dashboard_stats(today: date) -> dict:
 
     # Pending approval: submitted but no AdminTransaction record
     approved_ids_select = sa_select(AdminTransaction.transaction_id)
-    pending_approval_count = (
+    pending_transactions_count = (
         db.session.query(func.count(Transaction.id))
         .filter(
             Transaction.submitted != None,
@@ -81,6 +81,16 @@ def get_dashboard_stats(today: date) -> dict:
         )
         .scalar() or 0
     )
+
+    # Pending deposit approvals: deposits with status = 'submitted'
+    pending_deposits_count = (
+        db.session.query(func.count(Deposit.id))
+        .filter(Deposit.status == 'submitted')
+        .scalar() or 0
+    )
+
+    # Total pending approvals (transactions + deposits)
+    pending_approval_count = pending_transactions_count + pending_deposits_count
 
     # Sales Summary by Service Type and Transaction Type (Month-to-Date)
     dialysis_product = Product.query.filter(
