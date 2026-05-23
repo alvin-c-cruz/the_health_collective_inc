@@ -44,11 +44,11 @@
                 </div>
                 <div>
                     <div style="font-size:12px; color:#666; margin-bottom:4px;">Created By</div>
-                    <div style="font-size:16px; font-weight:600;">{{ deposit.created_by.first_name if deposit.created_by else 'N/A' }}</div>
+                    <div style="font-size:16px; font-weight:600;">{{ deposit.created_by_user.first_name if deposit.created_by_user else 'N/A' }}</div>
                 </div>
                 <div>
                     <div style="font-size:12px; color:#666; margin-bottom:4px;">Approved By</div>
-                    <div style="font-size:16px; font-weight:600;">{{ deposit.approved_by.first_name if deposit.approved_by else 'N/A' }}</div>
+                    <div style="font-size:16px; font-weight:600;">{{ deposit.approved_by_user.first_name if deposit.approved_by_user else 'N/A' }}</div>
                 </div>
             </div>
         </div>
