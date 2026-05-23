@@ -113,7 +113,7 @@
                 {% endif %}
               </td>
               <td class="text-end fw-bold" style="color: #0066cc;">
-                ₱{{ "{:,.2f}".format((deposit.total_amount or 0) - (deposit.deductions or 0)) }}
+                ₱{{ "{:,.2f}".format((deposit.total_amount or 0) - float(deposit.deductions or 0)) }}
               </td>
               <td>
                 {% if deposit.status == 'draft' %}
