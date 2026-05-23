@@ -1130,6 +1130,35 @@ def approve_deposit(deposit_id):
     return redirect(url_for(f'{app_name}.deposit_report'))
 
 
+@bp.route('/deposit/disapprove/<int:deposit_id>', methods=['POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def disapprove_deposit(deposit_id):
+    """Disapprove submitted deposit - send back to draft (from pending approval)"""
+    from flask import abort
+
+    if not (current_user.admin or current_user.superuser):
+        abort(403)
+
+    deposit = Deposit.query.get_or_404(deposit_id)
+
+    # Only submitted deposits can be disapproved
+    if deposit.status != 'submitted':
+        flash('Only submitted deposits can be disapproved.', 'danger')
+        return redirect(url_for(f'{app_name}.pending_approval'))
+
+    # Send back to draft
+    deposit.status = 'draft'
+    deposit.submitted_by_id = None
+    deposit.submitted_at = None
+    deposit.updated_at = datetime.now()
+
+    db.session.commit()
+
+    flash(f'Deposit disapproved and returned to draft.', 'warning')
+    return redirect(url_for(f'{app_name}.pending_approval'))
+
+
 @bp.route('/deposit/reject/<int:deposit_id>', methods=['POST'])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
