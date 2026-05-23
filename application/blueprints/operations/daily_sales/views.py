@@ -898,10 +898,10 @@ def get_undeposited_cash_transactions():
         if cash_amount <= 0:
             continue
 
-        # Check if already deposited (only count posted deposits)
+        # Check if already deposited (count all non-cancelled deposits: draft, submitted, and posted)
         deposited_amount = sum(
             item.amount for item in transaction.deposit_items
-            if item.deposit.status == 'posted'  # Only count posted deposits
+            if item.deposit.status != 'cancelled'  # Exclude only cancelled deposits
         )
 
         remaining_cash = cash_amount - deposited_amount
