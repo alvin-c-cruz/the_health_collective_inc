@@ -12,7 +12,7 @@ from .models import (Transaction, TransactionDetail, TransactionTender, Transact
                      FundCategory, FundReceived, FundDisbursed, PettyCashVoucher, Payee,
                      ReimbursementReport, ReimbursementReceived)
 from .forms import Form
-from .audit_logger import log_status_change
+from .audit_logger import log_status_change, get_audit_history
 from ...register.product_type import ProductType
 from ...register.tender import Tender
 from ...register.sex.models import Sex
@@ -1049,9 +1049,13 @@ def view_deposit(deposit_id):
     """View deposit details"""
     deposit = Deposit.query.get_or_404(deposit_id)
 
+    # Get audit history for this deposit
+    audit_history = get_audit_history('deposit', deposit_id)
+
     context = {
         'app_label': app_label,
         'deposit': deposit,
+        'audit_history': audit_history,
     }
 
     return render_template(f'{app_name}/view_deposit.html', **context)
@@ -1085,6 +1089,10 @@ def submit_deposit(deposit_id):
 
         db.session.commit()
 
+        # Log audit trail for both submit and approve
+        log_status_change('deposit', deposit, 'submitted', user=current_user)
+        log_status_change('deposit', deposit, 'approved', user=current_user)
+
         flash(f'Deposit auto-approved and posted! Total amount: ₱{deposit.formatted_total_amount}', 'success')
     else:
         # Regular user: submit for approval
@@ -1094,6 +1102,9 @@ def submit_deposit(deposit_id):
         deposit.updated_at = datetime.now()
 
         db.session.commit()
+
+        # Log audit trail
+        log_status_change('deposit', deposit, 'submitted', user=current_user)
 
         flash(f'Deposit submitted successfully! Waiting for admin approval. Total amount: ₱{deposit.formatted_total_amount}', 'success')
 
@@ -1141,6 +1152,9 @@ def approve_deposit(deposit_id):
 
     db.session.commit()
 
+    # Log audit trail
+    log_status_change('deposit', deposit, 'approved', user=current_user)
+
     flash(f'Deposit approved successfully! Total amount: ₱{deposit.formatted_total_amount}', 'success')
     return redirect(url_for(f'{app_name}.deposit_report'))
 
@@ -1169,6 +1183,10 @@ def disapprove_deposit(deposit_id):
     deposit.updated_at = datetime.now()
 
     db.session.commit()
+
+    # Log audit trail
+    log_status_change('deposit', deposit, 'disapproved', user=current_user,
+                     notes='Deposit returned to draft status')
 
     flash(f'Deposit disapproved and returned to draft.', 'warning')
     return redirect(url_for(f'{app_name}.pending_approval'))
@@ -1228,6 +1246,10 @@ def cancel_deposit(deposit_id):
     deposit.updated_at = datetime.now()
 
     db.session.commit()
+
+    # Log audit trail
+    log_status_change('deposit', deposit, 'cancelled', user=current_user,
+                     reason=cancellation_reason)
 
     flash('Deposit cancelled successfully.', 'info')
     return redirect(url_for(f'{app_name}.deposit_report'))

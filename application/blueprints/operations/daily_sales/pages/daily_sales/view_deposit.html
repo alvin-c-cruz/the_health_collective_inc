@@ -200,6 +200,63 @@
     </div>
   </div>
 
+  <!-- Audit History Section -->
+  {% if audit_history %}
+  <div class="row mt-4">
+    <div class="col">
+      <h5>Audit Trail</h5>
+      <div class="card">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Date/Time</th>
+                  <th>Action</th>
+                  <th>User</th>
+                  <th>Reason/Notes</th>
+                  <th>IP Address</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for log in audit_history %}
+                <tr>
+                  <td class="text-nowrap">{{ log.formatted_timestamp }}</td>
+                  <td>
+                    <span class="badge
+                      {% if log.action == 'submitted' %}bg-primary
+                      {% elif log.action == 'approved' %}bg-success
+                      {% elif log.action == 'disapproved' %}bg-warning
+                      {% elif log.action == 'cancelled' %}bg-danger
+                      {% else %}bg-secondary
+                      {% endif %}">
+                      {{ log.action | replace('_', ' ') | title }}
+                    </span>
+                  </td>
+                  <td>{{ log.user.first_name if log.user else 'System' }}</td>
+                  <td>
+                    {% if log.reason %}
+                      <small><strong>Reason:</strong> {{ log.reason }}</small><br>
+                    {% endif %}
+                    {% if log.notes %}
+                      <small><strong>Notes:</strong> {{ log.notes }}</small>
+                    {% endif %}
+                    {% if not log.reason and not log.notes %}
+                      <small class="text-muted">—</small>
+                    {% endif %}
+                  </td>
+                  <td><small class="font-monospace">{{ log.ip_address or '—' }}</small></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
 </div>
 
 <style>
