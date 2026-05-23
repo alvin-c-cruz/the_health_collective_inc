@@ -77,6 +77,19 @@ def home():
     draft_ids = {t.id for t in draft_transactions}
     all_transactions = transactions + [t for t in draft_transactions if t.id not in {tx.id for tx in transactions}]
 
+    # Get deposits for the selected date
+    deposits = Deposit.query.filter(
+        Deposit.record_date == str(selected_date)
+    ).order_by(Deposit.id.desc()).all()
+
+    # Get all draft deposits (regardless of date) that are not cancelled
+    draft_deposits = Deposit.query.filter(
+        Deposit.status == 'draft'
+    ).order_by(Deposit.record_date.desc(), Deposit.id.desc()).all()
+
+    # Combine: date-specific deposits + all drafts (avoiding duplicates)
+    all_deposits = deposits + [d for d in draft_deposits if d.id not in {dep.id for dep in deposits}]
+
     total_sales = sum(
         sum(d.amount - d.discount for d in t.transaction_details) - (t.discount or 0)
         for t in transactions
@@ -125,6 +138,7 @@ def home():
         "next_date": selected_date + timedelta(days=1),
         "summary": summary,
         "transactions": all_transactions,  # Include both date-specific and all drafts
+        "deposits": all_deposits,  # Include both date-specific and all draft deposits
         "txn_type_tenders": txn_type_tenders,
         "transaction_types": transaction_types,
         "type_lookup": type_lookup,
