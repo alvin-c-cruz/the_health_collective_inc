@@ -10,7 +10,6 @@ class Collection(db.Model):
     tender          = db.relationship("Tender", lazy=True)
     bank_account_id = db.Column(db.Integer, db.ForeignKey("bank_account.id"), nullable=True)
     bank_account    = db.relationship("BankAccount", lazy=True)
-    bank_account_name = db.Column(db.String())  # Store bank account as text (not FK)
     reference       = db.Column(db.String())
     notes           = db.Column(db.String())
 

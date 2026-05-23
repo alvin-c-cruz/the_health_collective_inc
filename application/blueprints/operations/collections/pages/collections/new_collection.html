@@ -41,40 +41,6 @@
     color: #0066cc;
   }
 
-  /* Bank account autocomplete dropdown */
-  .bank-ac-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    z-index: 9999;
-    background: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    box-shadow: 0 4px 12px rgba(0,0,0,.10);
-    max-height: 240px;
-    overflow-y: auto;
-    display: none;
-    font-size: 0.875rem;
-  }
-
-  .bank-ac-item {
-    padding: 7px 14px;
-    cursor: pointer;
-    color: #1a2a2a;
-  }
-
-  .bank-ac-item:hover,
-  .bank-ac-item--active {
-    background: #e6f3f5;
-    color: #1a6473;
-    font-weight: 500;
-  }
-
-  .bank-account-wrapper {
-    position: relative;
-  }
-
   /* Dynamic deduction rows */
   .deduction-row {
     display: grid;
@@ -176,9 +142,10 @@
       </div>
       <div class="col-md-3">
         <label class="form-label">Bank / Account</label>
-        <div class="bank-account-wrapper">
-          <input type="text" name="bank_account" id="bank-account-input" class="form-control upper-case" placeholder="e.g. BDO Savings - 1234" autocomplete="off">
-          <div id="bank-dropdown" class="bank-ac-dropdown"></div>
+        <div class="ac-wrap">
+          <input type="text" id="bank-display" class="form-control" placeholder="Search bank account..." autocomplete="off">
+          <input type="hidden" id="bank_account_id" name="bank_account_id" value="">
+          <div id="bank-dropdown" class="ac-dropdown"></div>
         </div>
       </div>
     </div>
@@ -335,42 +302,11 @@
 
 <script>
 // ── Bank Account Autocomplete ──
-const BANK_ACCOUNTS = {{ bank_accounts | tojson }};
-
-const bankInput = document.getElementById('bank-account-input');
-const bankDropdown = document.getElementById('bank-dropdown');
-
-bankInput.addEventListener('input', function() {
-  const query = this.value.toLowerCase();
-  if (!query) {
-    bankDropdown.style.display = 'none';
-    return;
-  }
-
-  const matches = BANK_ACCOUNTS.filter(b => {
-    const name = `${b.bank_name} ${b.account_number || ''}`.toLowerCase();
-    return name.includes(query);
-  });
-
-  if (matches.length === 0) {
-    bankDropdown.innerHTML = '<div class="bank-ac-item" style="color:#6c757d;">No matches</div>';
-  } else {
-    bankDropdown.innerHTML = matches.map(b =>
-      `<div class="bank-ac-item" data-value="${b.bank_name}${b.account_number ? ' - ' + b.account_number : ''}">${b.bank_name}${b.account_number ? ' (' + b.account_number + ')' : ''}</div>`
-    ).join('');
-
-    bankDropdown.querySelectorAll('.bank-ac-item').forEach(item => {
-      item.addEventListener('click', function() {
-        bankInput.value = this.dataset.value;
-        bankDropdown.style.display = 'none';
-      });
-    });
-  }
-
-  bankDropdown.style.display = 'block';
-});
-
-bankInput.addEventListener('blur', () => setTimeout(() => bankDropdown.style.display = 'none', 200));
+const BANK_OPTIONS = [
+  {% for b in bank_accounts %}
+  { id: {{ b.id }}, name: {{ (b.bank_name + (' (' + b.account_number + ')' if b.account_number else '')) | tojson }} }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
 
 // ── Tender Autocomplete ──
 const TENDER_OPTIONS = [
@@ -445,6 +381,13 @@ function makeAutocomplete(opts) {
     if (pre) display.value = pre.name;
   }
 }
+
+makeAutocomplete({
+  displayId: 'bank-display',
+  hiddenId: 'bank_account_id',
+  dropdownId: 'bank-dropdown',
+  options: BANK_OPTIONS
+});
 
 makeAutocomplete({
   displayId: 'tender-display',

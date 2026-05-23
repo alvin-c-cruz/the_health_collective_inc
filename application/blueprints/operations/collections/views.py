@@ -113,7 +113,7 @@ def new_collection():
 
         collection_date = f.get("collection_date", str(ph_today()))
         tender_id       = f.get("tender_id", type=int)
-        bank_account_name = (f.get("bank_account") or "").strip()  # Store as text, not FK
+        bank_account_id = f.get("bank_account_id", type=int) or None
         ape_batch_id    = f.get("ape_batch_id", type=int) or None
         reference       = (f.get("reference") or "").strip()
         notes           = (f.get("notes") or "").strip()
@@ -148,7 +148,7 @@ def new_collection():
             col = Collection(
                 collection_date=collection_date,
                 tender_id=tender_id,
-                bank_account_name=bank_account_name,
+                bank_account_id=bank_account_id,
                 ape_batch_id=ape_batch_id,
                 reference=reference,
                 notes=notes,
