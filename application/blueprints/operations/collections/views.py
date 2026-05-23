@@ -112,6 +112,7 @@ def new_collection():
         f = request.form
 
         collection_date = f.get("collection_date", str(ph_today()))
+        tender_id       = f.get("tender_id", type=int)
         bank_account_name = (f.get("bank_account") or "").strip()  # Store as text, not FK
         ape_batch_id    = f.get("ape_batch_id", type=int) or None
         reference       = (f.get("reference") or "").strip()
@@ -139,17 +140,14 @@ def new_collection():
         line_ids     = f.getlist("line_id")
         line_amounts = f.getlist("line_amount")
 
-        if not line_ids:
+        if not tender_id:
+            flash("Please select a tender.", "danger")
+        elif not line_ids:
             flash("Please select at least one transaction line.", "danger")
         else:
-            # Collections are always CASH (tender_id = 1, assuming Cash is ID 1)
-            # We can hardcode or query for cash tender
-            cash_tender = Tender.query.filter(Tender.tender_name.ilike('%cash%')).first()
-            tender_id = cash_tender.id if cash_tender else 1  # Fallback to ID 1
-
             col = Collection(
                 collection_date=collection_date,
-                tender_id=tender_id,  # Always cash
+                tender_id=tender_id,
                 bank_account_name=bank_account_name,
                 ape_batch_id=ape_batch_id,
                 reference=reference,

@@ -155,15 +155,26 @@
 
     <!-- Collection Details -->
     <div class="row mb-3">
-      <div class="col-md-4">
+      <div class="col-md-3">
         <label class="form-label">Collection Date <span class="text-danger">*</span></label>
         <input type="date" name="collection_date" id="collection_date" class="form-control" value="{{ today }}" required>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
+        <label class="form-label">Tender / Payer <span class="text-danger">*</span></label>
+        <div class="ac-wrap">
+          <input type="text" id="tender-display" class="form-control" placeholder="Search tender..."
+                 value="{{ tenders|selectattr('id','equalto',selected_tender_id)|map(attribute='tender_name')|first if selected_tender_id else '' }}"
+                 autocomplete="off">
+          <input type="hidden" id="tender_id" name="tender_id"
+                 value="{{ selected_tender_id or '' }}" required>
+          <div id="tender-dropdown" class="ac-dropdown"></div>
+        </div>
+      </div>
+      <div class="col-md-3">
         <label class="form-label">Reference Number</label>
         <input type="text" name="reference" class="form-control upper-case" placeholder="Check no., OR no., etc.">
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
         <label class="form-label">Bank / Account</label>
         <div class="bank-account-wrapper">
           <input type="text" name="bank_account" id="bank-account-input" class="form-control upper-case" placeholder="e.g. BDO Savings - 1234" autocomplete="off">
@@ -218,7 +229,7 @@
     <div class="row mb-3">
       <div class="col">
         <h5>Select Lines to Collect</h5>
-        <p class="text-muted">Check the outstanding receivables to include in this collection. Collections are always in cash.</p>
+        <p class="text-muted">Check the outstanding receivables to include in this collection.</p>
       </div>
     </div>
 
@@ -361,6 +372,13 @@ bankInput.addEventListener('input', function() {
 
 bankInput.addEventListener('blur', () => setTimeout(() => bankDropdown.style.display = 'none', 200));
 
+// ── Tender Autocomplete ──
+const TENDER_OPTIONS = [
+  {% for t in tenders %}
+  { id: {{ t.id }}, name: {{ t.tender_name | tojson }} }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+
 // ── APE Batch Autocomplete ──
 const APE_BATCH_OPTIONS = [
   {% for b in ape_batches %}
@@ -429,11 +447,19 @@ function makeAutocomplete(opts) {
 }
 
 makeAutocomplete({
+  displayId: 'tender-display',
+  hiddenId: 'tender_id',
+  dropdownId: 'tender-dropdown',
+  options: TENDER_OPTIONS,
+  onChange: loadLines
+});
+
+makeAutocomplete({
   displayId: 'ape-batch-display',
   hiddenId: 'ape_batch_id',
   dropdownId: 'ape-batch-dropdown',
   options: APE_BATCH_OPTIONS,
-  onChange: loadLines
+  onChange: (batchId) => loadLines(document.getElementById('tender_id').value, batchId)
 });
 
 // ── Dynamic Deductions ──
@@ -459,18 +485,23 @@ function removeDeductionRow(btn) {
 addDeductionRow();
 
 // ── Outstanding Lines Loader ──
-function loadLines(batchId) {
+function loadLines(tenderId, batchId) {
+  tenderId = tenderId || document.getElementById('tender_id').value;
   batchId = batchId || document.getElementById('ape_batch_id').value;
   const container = document.getElementById('lines-container');
 
-  if (!batchId) {
-    // Show default view without batch filter
+  if (!tenderId && !batchId) {
+    container.innerHTML = '<p class="text-muted text-center py-3">Select a tender or APE Batch above to load outstanding lines.</p>';
     return;
   }
 
   container.innerHTML = '<p class="text-muted text-center py-3">Loading…</p>';
 
-  fetch(`{{ url_for('collections.get_lines') }}?ape_batch_id=${batchId}`)
+  let url = `{{ url_for('collections.get_lines') }}?`;
+  if (tenderId) url += `tender_id=${tenderId}&`;
+  if (batchId) url += `ape_batch_id=${batchId}`;
+
+  fetch(url)
     .then(r => r.json())
     .then(lines => {
       if (!lines.length) {
@@ -529,10 +560,11 @@ function wireCheckAll() {
 }
 wireCheckAll();
 
-// Load lines if APE batch is pre-selected
+// Load lines if tender or APE batch is pre-selected
+const preTender = document.getElementById('tender_id').value;
 const preBatch = document.getElementById('ape_batch_id').value;
 const alreadyLoaded = document.querySelector('#lines-container table');
-if (preBatch && !alreadyLoaded) loadLines(preBatch);
+if ((preTender || preBatch) && !alreadyLoaded) loadLines(preTender, preBatch);
 
 // ── Line Selection Logic ──
 function syncAmount(cb) {
