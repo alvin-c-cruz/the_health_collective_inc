@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width:1200px; margin:0 auto; padding:20px;">
+
+    <!-- Header -->
+    <div style="margin-bottom:30px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h1 style="margin:0; font-size:28px; font-weight:600;">Audit History</h1>
+            <a href="{{ url_for('daily_sales.view_deposit', deposit_id=deposit.id) }}"
+               class="btn-secondary" style="text-decoration:none;">
+                &larr; Back to Deposit
+            </a>
+        </div>
+
+        <!-- Deposit Info -->
+        <div style="background:#f8f9fa; padding:15px; border-radius:8px; border-left:4px solid #007bff;">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
+                <div>
+                    <div style="font-size:12px; color:#666; margin-bottom:4px;">Deposit ID</div>
+                    <div style="font-size:16px; font-weight:600;">#{{ deposit.id }}</div>
+                </div>
+                <div>
+                    <div style="font-size:12px; color:#666; margin-bottom:4px;">Bank Account</div>
+                    <div style="font-size:16px; font-weight:600;">{{ deposit.bank_account or 'N/A' }}</div>
+                </div>
+                <div>
+                    <div style="font-size:12px; color:#666; margin-bottom:4px;">Date</div>
+                    <div style="font-size:16px; font-weight:600;">{{ deposit.formatted_record_date or 'N/A' }}</div>
+                </div>
+                <div>
+                    <div style="font-size:12px; color:#666; margin-bottom:4px;">Current Status</div>
+                    <div>
+                        {% if deposit.status == 'cancelled' %}
+                            <span class="thc-rec-badge badge-cancelled">Cancelled</span>
+                        {% elif deposit.status == 'posted' %}
+                            <span class="thc-rec-badge badge-submitted" style="background:#d4edda;color:#155724;">Posted</span>
+                        {% elif deposit.status == 'submitted' %}
+                            <span class="thc-rec-badge badge-submitted">Submitted</span>
+                        {% else %}
+                            <span class="thc-rec-badge badge-draft">Draft</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audit Timeline -->
+    <div style="background:white; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+        <div style="background:#f8f9fa; padding:15px; border-bottom:1px solid #e5e7eb;">
+            <h2 style="margin:0; font-size:18px; font-weight:600;">Change History Timeline</h2>
+            <p style="margin:5px 0 0 0; font-size:14px; color:#666;">Complete audit trail of all changes to this deposit</p>
+        </div>
+
+        {% if audit_logs %}
+        <div style="padding:0;">
+            <!-- Timeline -->
+            <div style="position:relative;">
+                {% for log in audit_logs %}
+                <div style="position:relative; padding:20px 20px 20px 60px; border-bottom:1px solid #e5e7eb;">
+                    <!-- Timeline dot -->
+                    <div style="position:absolute; left:20px; top:25px; width:20px; height:20px; border-radius:50%;
+                                {% if log.action == 'created' %}background:#10b981; border:3px solid #d1fae5;
+                                {% elif log.action == 'updated' %}background:#3b82f6; border:3px solid #dbeafe;
+                                {% elif log.action == 'submitted' %}background:#8b5cf6; border:3px solid #ede9fe;
+                                {% elif log.action == 'approved' %}background:#059669; border:3px solid #d1fae5;
+                                {% elif log.action == 'disapproved' %}background:#f59e0b; border:3px solid #fef3c7;
+                                {% elif log.action == 'cancelled' %}background:#ef4444; border:3px solid #fee2e2;
+                                {% else %}background:#6b7280; border:3px solid #e5e7eb;
+                                {% endif %}"></div>
+
+                    <!-- Timeline line (except for last item) -->
+                    {% if not loop.last %}
+                    <div style="position:absolute; left:29px; top:45px; bottom:-20px; width:2px; background:#e5e7eb;"></div>
+                    {% endif %}
+
+                    <!-- Log content -->
+                    <div>
+                        <!-- Header -->
+                        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
+                            <div>
+                                <div style="font-size:16px; font-weight:600; margin-bottom:4px;">
+                                    {{ log.summary }}
+                                </div>
+                                <div style="font-size:13px; color:#666;">
+                                    {{ log.formatted_timestamp }}
+                                    {% if log.ip_address %}
+                                    <span style="margin-left:10px;">IP: {{ log.ip_address }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <span class="thc-rec-badge" style="
+                                {% if log.action == 'created' %}background:#d1fae5; color:#065f46;
+                                {% elif log.action == 'updated' %}background:#dbeafe; color:#1e40af;
+                                {% elif log.action == 'submitted' %}background:#ede9fe; color:#5b21b6;
+                                {% elif log.action == 'approved' %}background:#d1fae5; color:#065f46;
+                                {% elif log.action == 'disapproved' %}background:#fef3c7; color:#92400e;
+                                {% elif log.action == 'cancelled' %}background:#fee2e2; color:#991b1b;
+                                {% else %}background:#e5e7eb; color:#374151;
+                                {% endif %}">
+                                {{ log.action | replace('_', ' ') | title }}
+                            </span>
+                        </div>
+
+                        <!-- Reason (if present) -->
+                        {% if log.reason %}
+                        <div style="background:#fef3c7; border-left:3px solid #f59e0b; padding:10px; margin-top:10px; border-radius:4px;">
+                            <div style="font-size:12px; color:#92400e; font-weight:600; margin-bottom:4px;">REASON:</div>
+                            <div style="font-size:14px; color:#78350f;">{{ log.reason }}</div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Notes (if present) -->
+                        {% if log.notes %}
+                        <div style="background:#f1f5f9; border-left:3px solid #64748b; padding:10px; margin-top:10px; border-radius:4px;">
+                            <div style="font-size:12px; color:#475569; font-weight:600; margin-bottom:4px;">NOTES:</div>
+                            <div style="font-size:14px; color:#334155;">{{ log.notes }}</div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Changed fields (for updates) -->
+                        {% if log.action == 'updated' and log.changed_fields %}
+                        <div style="margin-top:12px;">
+                            <div style="font-size:12px; color:#666; margin-bottom:8px; font-weight:600;">
+                                FIELDS CHANGED: {{ log.changed_fields | length }}
+                            </div>
+                            <div style="display:grid; gap:8px;">
+                                {% for field in log.changed_fields %}
+                                <div style="background:#f8f9fa; padding:8px 12px; border-radius:4px; display:grid; grid-template-columns:150px 1fr 1fr; gap:10px; font-size:13px;">
+                                    <div style="font-weight:600; color:#374151;">{{ field | replace('_', ' ') | title }}:</div>
+                                    <div style="color:#dc2626;">
+                                        <span style="font-size:11px; color:#666;">Old:</span>
+                                        {{ log.old_values.get(field, 'N/A') }}
+                                    </div>
+                                    <div style="color:#059669;">
+                                        <span style="font-size:11px; color:#666;">New:</span>
+                                        {{ log.new_values.get(field, 'N/A') }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div style="padding:40px; text-align:center; color:#666;">
+            <p style="font-size:16px; margin:0;">No audit history available for this deposit.</p>
+            <p style="font-size:14px; margin:10px 0 0 0;">Changes will be tracked starting from the next update.</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

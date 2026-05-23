@@ -1061,6 +1061,23 @@ def view_deposit(deposit_id):
     return render_template(f'{app_name}/view_deposit.html', **context)
 
 
+@bp.route('/deposit/<int:deposit_id>/audit_history', methods=['GET'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def deposit_audit_history(deposit_id):
+    """View complete audit history for a specific deposit"""
+    deposit = Deposit.query.get_or_404(deposit_id)
+    audit_logs = get_audit_history('deposit', deposit_id)
+
+    context = {
+        "app_label": app_label,
+        "deposit": deposit,
+        "audit_logs": audit_logs,
+        "page_title": f"Audit History - Deposit #{deposit.id}",
+    }
+    return render_template("daily_sales/deposit_audit_history.html", **context)
+
+
 @bp.route('/deposit/submit/<int:deposit_id>', methods=['POST'])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
