@@ -18,20 +18,23 @@
         {% endfor %}
     {% endwith %}
 
-    <div class="thc-card">
+    <!-- Transactions Section -->
+    {% if transactions or deposits %}
+    <div class="thc-card mb-4">
+        <h5 class="mb-3">Transactions</h5>
         <table class="table table-sm table-hover mb-0">
             <thead>
                 <tr>
                     <th>Date</th>
                     <th>Record #</th>
-                    <th>Customer</th>
+                    <th>Patient</th>
                     <th>Type</th>
                     <th class="text-end">Amount</th>
                     <th></th>
                 </tr>
             </thead>
             <tbody>
-                {% for record in records %}
+                {% for record in transactions %}
                 {% set gross = namespace(val=0) %}
                 {% set disc  = namespace(val=0) %}
                 {% for d in record.transaction_details %}
@@ -52,15 +55,74 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" class="text-center text-muted py-4">All caught up — no transactions pending approval.</td>
+                    <td colspan="6" class="text-center text-muted py-4">No transactions pending approval.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+        {% if transactions %}
+        <div class="text-muted small mt-2">{{ transactions | length }} transaction{{ 's' if transactions | length != 1 }} pending approval</div>
+        {% endif %}
     </div>
 
-    {% if records %}
-    <div class="text-muted small mt-2">{{ records | length }} transaction{{ 's' if records | length != 1 }} pending approval</div>
+    <!-- Deposits Section -->
+    <div class="thc-card">
+        <h5 class="mb-3">Deposits</h5>
+        <table class="table table-sm table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Bank / Account</th>
+                    <th>Reference #</th>
+                    <th class="text-end">Cash Deposited</th>
+                    <th class="text-end">Deductions</th>
+                    <th class="text-end">Net Bank Credit</th>
+                    <th>Transactions</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for deposit in deposits %}
+                <tr>
+                    <td class="text-nowrap">{{ deposit.formatted_record_date }}</td>
+                    <td>{{ deposit.bank_account or '—' }}</td>
+                    <td class="font-monospace small">{{ deposit.reference_number or '—' }}</td>
+                    <td class="text-end font-monospace">{{ deposit.formatted_total_amount }}</td>
+                    <td class="text-end font-monospace" style="color: #dc3545;">
+                        {% if deposit.deductions and deposit.deductions > 0 %}
+                            {{ "{:,.2f}".format(deposit.deductions) }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td class="text-end font-monospace fw-bold" style="color: #0066cc;">{{ deposit.formatted_net_bank_credit }}</td>
+                    <td>
+                        <small>
+                            {% for item in deposit.deposit_items %}
+                                #{{ item.transaction.record_number }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </small>
+                    </td>
+                    <td class="text-end" style="white-space:nowrap;">
+                        <a href="{{ url_for('daily_sales.view_deposit', deposit_id=deposit.id) }}"
+                           class="thc-btn thc-btn-sm thc-btn-secondary">View</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">No deposits pending approval.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if deposits %}
+        <div class="text-muted small mt-2">{{ deposits | length }} deposit{{ 's' if deposits | length != 1 }} pending approval</div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="thc-card">
+        <div class="text-center text-muted py-4">All caught up — no transactions or deposits pending approval.</div>
+    </div>
     {% endif %}
 
 </div>

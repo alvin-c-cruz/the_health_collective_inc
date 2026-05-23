@@ -627,8 +627,9 @@ def pending_approval():
     if not (current_user.admin or current_user.superuser):
         abort(403)
 
+    # Get pending transactions
     approved_ids = sa_select(AdminTransaction.transaction_id)
-    records = (
+    transactions = (
         Transaction.query
         .filter(
             Transaction.submitted.isnot(None),
@@ -639,9 +640,21 @@ def pending_approval():
         .order_by(Transaction.record_date.asc(), Transaction.id.asc())
         .all()
     )
+
+    # Get pending deposits (submitted but not yet posted or cancelled)
+    deposits = (
+        Deposit.query
+        .filter(
+            Deposit.status == 'submitted'
+        )
+        .order_by(Deposit.record_date.asc(), Deposit.id.asc())
+        .all()
+    )
+
     return render_template(
         "daily_sales/pending_approval.html",
-        records=records,
+        transactions=transactions,
+        deposits=deposits,
         app_label=app_label,
     )
 
