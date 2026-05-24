@@ -47,7 +47,7 @@
                                         {{ approve_button(url_for('product_type.approve', record_id=row.id)) }}
                                     {% endif %}
                                 {% else %}
-                                    <span style="font-size:0.8rem;color:var(--thc-text-muted);">Approved — editing locked.</span>
+                                    <span style="font-size:var(--thc-text-sm);color:var(--thc-text-secondary);">Approved — editing locked.</span>
                                     {% if current_user.admin %}
                                         {{ unlock_button(url_for('product_type.unlock', record_id=row.id)) }}
                                     {% endif %}
@@ -56,8 +56,8 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="2" class="text-center text-muted py-4">
-                                No records found. 
+                            <td colspan="2" class="text-center py-4" style="color:var(--thc-text-secondary);">
+                                No records found.
                             </td>
                         </tr>
                         {% endfor %}

@@ -49,7 +49,7 @@
                                         {{ approve_button(url_for('product.approve', record_id=row.id)) }}
                                     {% endif %}
                                 {% else %}
-                                    <span style="font-size:0.8rem;color:var(--thc-text-muted);">Approved — editing locked.</span>
+                                    <span style="font-size:var(--thc-text-sm);color:var(--thc-text-secondary);">Approved — editing locked.</span>
                                     {% if current_user.admin %}
                                         {{ unlock_button(url_for('product.unlock', record_id=row.id)) }}
                                     {% endif %}

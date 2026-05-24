@@ -42,11 +42,11 @@
                         {% for row in rows %}
                         <tr>
                             <td aria-label="Tender Name">{{ row.tender_name }}</td>
-                            <td style="font-size:.8rem;color:var(--thc-text-muted);">{{ (row.transaction_types or '—').replace(',', ', ') }}</td>
-                            <td class="text-center" style="font-size:.85rem;">{{ row.sort_order or 0 }}</td>
+                            <td style="font-size:var(--thc-text-sm);color:var(--thc-text-secondary);">{{ (row.transaction_types or '—').replace(',', ', ') }}</td>
+                            <td class="text-center" style="font-size:var(--thc-text-sm);">{{ row.sort_order or 0 }}</td>
                             <td class="text-center">
                                 {% if row.report_static %}
-                                <i class="bi bi-pin-fill" style="color:var(--thc-primary);" title="Always shown in report"></i>
+                                <i class="bi bi-pin-fill" style="color:var(--thc-primary-600);" title="Always shown in report"></i>
                                 {% endif %}
                             </td>
                             <td>
@@ -57,7 +57,7 @@
                                         {{ approve_button(url_for('tender.approve', record_id=row.id)) }}
                                     {% endif %}
                                 {% else %}
-                                    <span style="font-size:0.8rem;color:var(--thc-text-muted);">Approved — editing locked.</span>
+                                    <span style="font-size:var(--thc-text-sm);color:var(--thc-text-secondary);">Approved — editing locked.</span>
                                     {% if current_user.admin %}
                                         {{ unlock_button(url_for('tender.unlock', record_id=row.id)) }}
                                     {% endif %}
@@ -66,8 +66,8 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-4">
-                                No records found. 
+                            <td colspan="5" class="text-center py-4" style="color:var(--thc-text-secondary);">
+                                No records found.
                             </td>
                         </tr>
                         {% endfor %}

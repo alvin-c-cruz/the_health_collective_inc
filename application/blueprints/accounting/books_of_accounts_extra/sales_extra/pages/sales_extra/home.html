@@ -3,12 +3,12 @@
 
 {% block styles %}
     <style>
-        table {font-size: 11px;}
-    </style>
-    <style>
+        table {
+            font-size: var(--thc-text-xs);
+        }
         .small-button {
-            font-size: 11px;
-            padding: 2px 6px; /* Optional: Adjusts button size to match smaller font */
+            font-size: var(--thc-text-xs);
+            padding: var(--thc-space-0-5) var(--thc-space-1-5);
         }
     </style>
 {% endblock %}
@@ -52,7 +52,7 @@
                     <th>Date</th>
                     <th>Sales Extra No.</th>
                     <th>DR No.</th>
-                    <th>Customer</th>
+                    <th>Patient</th>
                     <th>Particulars</th>
                     {% for title in account_titles %}
                     <th>{{ title.upper() }}</th>
@@ -103,7 +103,7 @@
                         {% set matched = row.sales_extra_details | selectattr("account.account_title", "equalto", title) | list %}
                         {% if matched %}
                             {% set amount = matched[0].debit - matched[0].credit %}
-                            <td style="text-align: right;">
+                            <td class="text-end">
                                 {{ "{:,.2f}".format(amount | float if amount else "") }}
                                 {% set _ = totals.update({title: totals[title] + amount}) %}
                             </td>
@@ -118,7 +118,7 @@
                 <tr class="bg-light font-weight-bold text-right">
                     <td colspan="7">TOTAL</td>
                     {% for title in account_titles %}
-                    <td style="text-align: right;">
+                    <td class="text-end">
                         {{ "{:,.2f}".format(totals[title] | float) }}
                     </td>
                     {% endfor %}

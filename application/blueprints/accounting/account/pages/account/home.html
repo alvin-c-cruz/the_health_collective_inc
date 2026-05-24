@@ -11,15 +11,15 @@
 
     <div class="thc-card">
         <!-- Primary Actions Row -->
-        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap" style="gap:1rem;">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap" style="gap:var(--thc-space-4);">
             <div class="d-flex gap-2 align-items-center flex-wrap">
                 <a href="{{ url_for('account.add') }}" class="btn btn-primary btn-sm">
                     <i class="bi bi-plus-circle"></i> Add Account
                 </a>
 
                 <!-- Date Filter -->
-                <div class="d-flex gap-2 align-items-center" style="border-left:1px solid var(--thc-border);padding-left:1rem;">
-                    <label for="as_of_date" style="font-size:0.875rem;font-weight:600;color:var(--thc-text-muted);white-space:nowrap;">
+                <div class="d-flex gap-2 align-items-center" style="border-left:1px solid var(--thc-border);padding-left:var(--thc-space-4);">
+                    <label for="as_of_date" style="font-size:var(--thc-text-sm);font-weight:var(--thc-font-semibold);color:var(--thc-text-secondary);white-space:nowrap;">
                         As of:
                     </label>
                     <input type="date"
@@ -28,9 +28,9 @@
                            value="{{ as_of_date.isoformat() }}"
                            max="{{ today.isoformat() }}"
                            onchange="window.location.href='{{ url_for('account.home') }}?as_of_date=' + this.value"
-                           style="width:145px;">
+                           style="width:var(--thc-space-36);">
                     {% if as_of_date != today %}
-                    <a href="{{ url_for('account.home') }}" class="btn btn-outline-secondary btn-sm" style="font-size:0.75rem;">
+                    <a href="{{ url_for('account.home') }}" class="btn btn-outline-secondary btn-sm" style="font-size:var(--thc-text-xs);">
                         <i class="bi bi-calendar-check"></i> Today
                     </a>
                     {% endif %}
@@ -78,42 +78,42 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 0.5rem;
+            gap: var(--thc-space-2);
         }
         .filterable-header .header-text {
-            font-weight: 600;
+            font-weight: var(--thc-font-semibold);
         }
         .filterable-header .filter-dropdown {
-            font-size: 0.75rem;
-            padding: 0.2rem 1.8rem 0.2rem 0.5rem;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            background: #f8f9fa;
+            font-size: var(--thc-text-xs);
+            padding: var(--thc-space-1) var(--thc-space-7) var(--thc-space-1) var(--thc-space-2);
+            border: 1px solid var(--thc-border);
+            border-radius: var(--thc-radius-md);
+            background: var(--thc-gray-50);
             cursor: pointer;
             appearance: none;
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
             background-repeat: no-repeat;
-            background-position: right 0.4rem center;
+            background-position: right var(--thc-space-2) center;
             background-size: 12px 12px;
-            min-width: 120px;
+            min-width: var(--thc-space-30);
         }
         .filterable-header .filter-dropdown:hover {
-            border-color: var(--thc-primary);
-            background: white;
+            border-color: var(--thc-primary-600);
+            background: var(--thc-white);
         }
         .filterable-header .filter-dropdown:focus {
-            border-color: var(--thc-primary);
+            border-color: var(--thc-primary-600);
             outline: none;
-            box-shadow: 0 0 0 0.15rem rgba(24,95,165,0.1);
-            background: white;
+            box-shadow: 0 0 0 var(--thc-space-1) var(--thc-primary-100);
+            background: var(--thc-white);
         }
         .filterable-header .filter-dropdown option {
-            padding: 0.5rem;
+            padding: var(--thc-space-2);
         }
         /* Show filter icon when active */
         .filterable-header.filtered .header-text::before {
             content: '🔍 ';
-            font-size: 0.7rem;
+            font-size: var(--thc-text-xs);
         }
         </style>
 
@@ -179,7 +179,7 @@
                                     {{ approve_button(url_for('account.approve', record_id=row.id)) }}
                                 {% endif %}
                             {% else %}
-                                <span style="font-size:0.8rem;color:var(--thc-text-muted);">Approved — editing locked.</span>
+                                <span style="font-size:var(--thc-text-sm);color:var(--thc-text-secondary);">Approved — editing locked.</span>
                                 {% if current_user.admin %}
                                     {{ unlock_button(url_for('account.unlock', record_id=row.id)) }}
                                 {% endif %}
@@ -188,7 +188,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" class="text-center py-4" style="color:var(--thc-text-muted);">
+                        <td colspan="6" class="text-center py-4" style="color:var(--thc-text-secondary);">
                             No accounts found. Click "Add Account" to create one.
                         </td>
                     </tr>

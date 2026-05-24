@@ -1,3 +1,64 @@
+{% if popup %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Add Product</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/jquery-ui.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}">
+    <script src="{{ url_for('static', filename='vendor/js/jquery.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/js/jquery-ui.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/js/bootstrap.bundle.min.js') }}"></script>
+    <style>
+        body {
+            padding: var(--thc-space-5);
+            background: var(--thc-bg-page);
+        }
+        .popup-header {
+            margin-bottom: var(--thc-space-5);
+        }
+        .popup-header h4 {
+            margin: 0;
+            font-size: var(--thc-text-xl);
+            font-weight: var(--thc-font-semibold);
+        }
+        .form-buttons {
+            margin-top: var(--thc-space-5);
+            display: flex;
+            gap: var(--thc-space-3);
+        }
+        .btn-cancel {
+            background: var(--thc-gray-600);
+            color: var(--thc-white);
+            border: none;
+            padding: var(--thc-space-2) var(--thc-space-5);
+            border-radius: var(--thc-radius-md);
+            cursor: pointer;
+        }
+        .btn-cancel:hover {
+            background: var(--thc-gray-700);
+        }
+    </style>
+</head>
+<body>
+    <div class="popup-header">
+        <h4>Add Product</h4>
+    </div>
+    <form action="{{ url_for('product.add', popup=1) }}" method="post">
+        {% from "macros_simple_form.html" import text_box, search_box %}
+        {{ text_box(form, "Product Name", "product_name", form.product_name, autofocus=True) }}
+        {{ search_box(form, "Product Type", "product_type_name", form.product_type_name, url_for('product_type._autocomplete')) }}
+
+        <div class="form-buttons">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn-cancel" onclick="window.close()">Cancel</button>
+        </div>
+    </form>
+</body>
+</html>
+{% else %}
 {% extends "base.html" %}
 {% from "macros_simple_form.html" import text_box, text_area, search_box, save_button %}
 
@@ -15,9 +76,9 @@
         <div class="thc-page-header">
         <h4>Add Product</h4>
     </div>
-    <form action="{{ url_for('product.add', popup=1) if popup else url_for('product.add') }}" method="post">
+    <form action="{{ url_for('product.add') }}" method="post">
         {% endif %}
-    
+
         {{ text_box(form, "Product Name", "product_name", form.product_name, autofocus=True) }}
         {{ search_box(form, "Product Type", "product_type_name", form.product_type_name, url_for('product_type._autocomplete')) }}
 
@@ -26,3 +87,4 @@
     </form>
 </div>
 {% endblock %}
+{% endif %}

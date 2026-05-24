@@ -49,7 +49,7 @@
                                         {{ approve_button(url_for('account_class.approve', record_id=row.id)) }}
                                     {% endif %}
                                 {% else %}
-                                    <span style="font-size:0.8rem;color:var(--thc-text-muted);">Approved — editing locked.</span>
+                                    <span style="font-size:var(--thc-text-sm);color:var(--thc-text-secondary);">Approved — editing locked.</span>
                                     {% if current_user.admin %}
                                         {{ unlock_button(url_for('account_class.unlock', record_id=row.id)) }}
                                     {% endif %}
@@ -58,7 +58,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="3" class="text-center text-muted py-4">
+                            <td colspan="3" class="text-center py-4" style="color:var(--thc-text-secondary);">
                                 No records found. Click "Add" to create one.
                             </td>
                         </tr>
