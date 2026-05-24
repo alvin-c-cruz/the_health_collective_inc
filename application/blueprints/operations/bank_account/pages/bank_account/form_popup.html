@@ -219,7 +219,6 @@
                         id="bank_name"
                         name="bank_name"
                         value="{{ form.bank_name or '' }}"
-                        placeholder="e.g., BDO, BPI, Metrobank"
                         autofocus
                         required>
                     {% if form.errors.get('bank_name') %}
@@ -234,8 +233,7 @@
                         class="form-control {{ 'is-invalid' if form.errors.get('account_name') }}"
                         id="account_name"
                         name="account_name"
-                        value="{{ form.account_name or '' }}"
-                        placeholder="e.g., Savings, Current">
+                        value="{{ form.account_name or '' }}">
                     {% if form.errors.get('account_name') %}
                         <div class="invalid-feedback">{{ form.errors.account_name }}</div>
                     {% endif %}
@@ -251,7 +249,6 @@
                         id="account_number"
                         name="account_number"
                         value="{{ form.account_number or '' }}"
-                        placeholder="e.g., 1234567890"
                         required>
                     {% if form.errors.get('account_number') %}
                         <div class="invalid-feedback">{{ form.errors.account_number }}</div>
@@ -264,7 +261,6 @@
                         class="form-control {{ 'is-invalid' if form.errors.get('notes') }}"
                         id="notes"
                         name="notes"
-                        placeholder="Optional notes..."
                     >{{ form.notes or '' }}</textarea>
                     {% if form.errors.get('notes') %}
                         <div class="invalid-feedback">{{ form.errors.notes }}</div>

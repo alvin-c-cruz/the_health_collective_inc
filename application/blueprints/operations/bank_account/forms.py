@@ -60,3 +60,4 @@ class Form:
             obj.notes          = self.notes
             obj.active         = self.active
         db.session.commit()
+        return obj

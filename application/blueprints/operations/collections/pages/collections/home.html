@@ -1,6 +1,11 @@
 {% extends "base.html" %}
+{% from "components/collections_components.html" import toggle_group, pill_toggle %}
 
 {% block title %}Receivables{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/collections-components.css') }}">
+{% endblock %}
 
 {% block content %}
 <div class="thc-page">
@@ -8,8 +13,6 @@
         <h4>Receivables</h4>
         <div class="d-flex gap-2">
             <a href="{{ url_for('collections.history') }}" class="thc-btn thc-btn-secondary">Collection History</a>
-            <a href="{{ url_for('collections.new_collection') }}{% if selected_tender_id %}?tender_id={{ selected_tender_id }}{% endif %}"
-               class="thc-btn thc-btn-primary">Record Collection</a>
         </div>
     </div>
 
@@ -23,31 +26,24 @@
     {% endwith %}
 
     {# Tender filter tabs #}
-    <div class="thc-toggle-group mb-3">
-        <a href="{{ url_for('collections.home') }}{% if show_settled %}?show_settled=1{% endif %}"
-           class="thc-toggle {{ 'thc-toggle--on' if not selected_tender_id else 'thc-toggle--off' }}">
-            All
-        </a>
+    <div class="mb-3">
+        {% set toggle_items = [{'label': 'All', 'url': url_for('collections.home') ~ ('?show_settled=1' if show_settled else ''), 'active': not selected_tender_id}] %}
         {% for t in tenders %}
-        <a href="{{ url_for('collections.home', tender_id=t.id) }}{% if show_settled %}&show_settled=1{% endif %}"
-           class="thc-toggle {{ 'thc-toggle--on' if selected_tender_id == t.id else 'thc-toggle--off' }}">
-            {{ t.tender_name }}
-        </a>
+            {% set _ = toggle_items.append({'label': t.tender_name, 'url': url_for('collections.home', tender_id=t.id) ~ ('&show_settled=1' if show_settled else ''), 'active': selected_tender_id == t.id}) %}
         {% endfor %}
+        {{ toggle_group(toggle_items) }}
     </div>
 
     {# Toggle settled #}
     <div class="mb-3">
         {% if show_settled %}
-            <a href="{{ request.path }}{% if selected_tender_id %}?tender_id={{ selected_tender_id }}{% endif %}"
-               class="thc-pill-toggle thc-pill-toggle--on">
-                Hide settled
-            </a>
+            {{ pill_toggle('Hide settled',
+               request.path ~ ('?tender_id=' ~ selected_tender_id if selected_tender_id else ''),
+               is_on=true) }}
         {% else %}
-            <a href="{{ request.path }}?{% if selected_tender_id %}tender_id={{ selected_tender_id }}&{% endif %}show_settled=1"
-               class="thc-pill-toggle thc-pill-toggle--off">
-                Show settled
-            </a>
+            {{ pill_toggle('Show settled',
+               request.path ~ '?' ~ ('tender_id=' ~ selected_tender_id ~ '&' if selected_tender_id else '') ~ 'show_settled=1',
+               is_on=false) }}
         {% endif %}
     </div>
 
@@ -109,67 +105,4 @@
         </table>
     </div>
 </div>
-{% endblock %}
-
-{% block styles %}
-<style>
-    .thc-toggle-group {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0;
-        border: 1px solid #c6dde1;
-        border-radius: 7px;
-        overflow: hidden;
-        width: fit-content;
-        max-width: 100%;
-    }
-    .thc-toggle {
-        padding: 0.28rem 0.75rem;
-        font-size: 0.78rem;
-        font-weight: 600;
-        text-decoration: none;
-        border-right: 1px solid #c6dde1;
-        transition: background 0.1s, color 0.1s;
-        white-space: nowrap;
-    }
-    .thc-toggle:last-child { border-right: none; }
-    .thc-toggle--on  { background: var(--thc-primary); color: #fff; }
-    .thc-toggle--off { background: #fff; color: var(--thc-text-muted); }
-    .thc-toggle--off:hover { background: var(--thc-primary-light); color: var(--thc-primary); }
-
-    .thc-group-header td {
-        background: var(--thc-primary-light);
-        color: var(--thc-primary);
-        font-size: 0.7rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        padding: 0.35rem 0.5rem;
-    }
-
-    .thc-pill-toggle {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.3rem;
-        padding: 0.22rem 0.7rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-        border-radius: 20px;
-        border: 1.5px solid;
-        text-decoration: none;
-        transition: background 0.1s, color 0.1s;
-    }
-    .thc-pill-toggle--off {
-        background: #fff;
-        color: #94a3b8;
-        border-color: #cbd5e1;
-    }
-    .thc-pill-toggle--off:hover { background: #f1f5f9; color: #64748b; border-color: #94a3b8; }
-    .thc-pill-toggle--on {
-        background: #dcfce7;
-        color: #166534;
-        border-color: #86efac;
-    }
-    .thc-pill-toggle--on:hover { background: #bbf7d0; color: #166534; }
-</style>
 {% endblock %}

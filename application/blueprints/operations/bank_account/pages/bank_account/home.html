@@ -19,7 +19,7 @@
     {% endwith %}
 
     <div class="thc-card">
-        <table class="table table-sm table-hover mb-0">
+        <table class="thc-table">
             <thead>
                 <tr>
                     <th>Bank</th>
@@ -36,7 +36,7 @@
                     <td class="fw-semibold">{{ row.bank_name }}</td>
                     <td>{{ row.account_name or '—' }}</td>
                     <td class="font-monospace">{{ row.account_number or '—' }}</td>
-                    <td class="text-muted small">{{ row.notes or '' }}</td>
+                    <td style="font-size:var(--thc-text-sm);color:var(--thc-text-secondary);">{{ row.notes or '' }}</td>
                     <td>
                         {% if row.active %}
                             <span class="badge bg-success">Active</span>
@@ -54,7 +54,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" class="text-center text-muted py-4">No bank accounts yet.</td>
+                    <td colspan="6" class="text-center py-4" style="color:var(--thc-text-secondary);">No bank accounts yet.</td>
                 </tr>
                 {% endfor %}
             </tbody>

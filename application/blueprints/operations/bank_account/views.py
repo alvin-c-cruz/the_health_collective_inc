@@ -80,19 +80,20 @@ def add_popup():
         form = Form()
         form._post(request.form)
         if form._validate_on_submit():
-            form._save()
+            obj = form._save()
             # Send postMessage to parent window with bank account details
             bank_account_display = f"{form.bank_name} — {form.account_number}"
             return render_template_string(
                 '<!doctype html><html><head><meta charset="utf-8"></head><body>'
                 '<script>'
                 'if(window.opener){'
-                'window.opener.postMessage({type:"bank_account_added",bank_account_name:{{ name | tojson }}},"*");'
+                'window.opener.postMessage({type:"bank_account_added",bank_account_id:{{ id | tojson }},bank_account_name:{{ name | tojson }}},"*");'
                 '}'
                 'window.close();'
                 '</script>'
                 '<p style="font-family:sans-serif;padding:2rem;">Bank account saved. This window will close automatically.</p>'
                 '</body></html>',
+                id=obj.id,
                 name=bank_account_display
             )
     else:
