@@ -24,7 +24,7 @@ with app.app_context():
             user_id INTEGER NOT NULL,
             created_at DATETIME NOT NULL,
             ip_address VARCHAR(45),
-            extra_metadata TEXT,
+            metadata TEXT,
             FOREIGN KEY(user_id) REFERENCES user (id)
         )
     """))
