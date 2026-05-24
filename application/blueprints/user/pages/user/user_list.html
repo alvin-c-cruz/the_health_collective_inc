@@ -26,9 +26,9 @@
                         <td>{{ row.first_name }} {{ row.last_name }}</td>
                         <td>
                             {% if row.active %}
-                            <span style="color:#166534;font-size:0.8rem;font-weight:600;">Active</span>
+                            <span class="thc-text-sm fw-semibold text-success">Active</span>
                             {% else %}
-                            <span style="color:#c0392b;font-size:0.8rem;">Inactive</span>
+                            <span class="thc-text-sm text-danger">Inactive</span>
                             {% endif %}
                         </td>
                         <td>
@@ -37,7 +37,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="4" class="text-center py-4" style="color:var(--thc-text-muted);">No users found.</td>
+                        <td colspan="4" class="text-center py-4 text-muted">No users found.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

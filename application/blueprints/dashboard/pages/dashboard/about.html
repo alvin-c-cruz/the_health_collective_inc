@@ -2,23 +2,23 @@
 {% block title %}About — THCI{% endblock %}
 
 {% block content %}
-<div class="thc-page" style="max-width:860px;">
+<div class="thc-page" style="max-width:var(--thc-space-215);">
 
     <div class="thc-page-header">
         <h4>About This Application</h4>
     </div>
 
     {# ── Version banner ── #}
-    <div class="thc-card" style="background:var(--thc-primary);color:#fff;padding:2rem 2rem 1.75rem;">
-        <div style="display:flex;align-items:flex-end;gap:1rem;flex-wrap:wrap;">
+    <div class="thc-card" style="background:var(--thc-primary-600);color:var(--thc-white);padding:var(--thc-space-8) var(--thc-space-8) var(--thc-space-7);">
+        <div class="d-flex align-items-end flex-wrap" style="gap:var(--thc-space-4);">
             <div>
-                <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;opacity:0.7;margin-bottom:0.3rem;">
+                <div class="thc-text-xs fw-bold text-uppercase" style="letter-spacing:0.14em;opacity:0.7;margin-bottom:var(--thc-space-1);">
                     The Health Collective Inc.
                 </div>
-                <div style="font-size:2.4rem;font-weight:800;letter-spacing:-0.03em;line-height:1;">
+                <div class="fw-bold lh-1" style="font-size:var(--thc-text-4xl);letter-spacing:-0.03em;">
                     THCI <span style="opacity:0.55;">1.0</span>
                 </div>
-                <div style="font-size:0.78rem;opacity:0.65;margin-top:0.4rem;">
+                <div class="thc-text-sm" style="opacity:0.65;margin-top:var(--thc-space-2);">
                     Internal operations &amp; accounting platform
                 </div>
             </div>
@@ -61,18 +61,18 @@
     ] %}
 
     {% for group_name, icon, features in groups %}
-    <div class="thc-card" style="margin-bottom:1rem;">
-        <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem;padding-bottom:0.6rem;border-bottom:1px solid var(--thc-border);">
-            <i class="bi {{ icon }}" style="font-size:1rem;color:var(--thc-primary);"></i>
-            <span style="font-size:0.7rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--thc-text);">{{ group_name }}</span>
+    <div class="thc-card mb-4">
+        <div class="d-flex align-items-center pb-3 mb-4 border-bottom" style="gap:var(--thc-space-2);">
+            <i class="bi {{ icon }} thc-text-base text-primary"></i>
+            <span class="thc-text-xs fw-bold text-uppercase" style="letter-spacing:0.1em;">{{ group_name }}</span>
         </div>
-        <div style="display:flex;flex-direction:column;gap:0.55rem;">
+        <div class="d-flex flex-column" style="gap:var(--thc-space-2);">
             {% for feature_name, feature_desc in features %}
-            <div style="display:flex;gap:0.75rem;align-items:flex-start;">
-                <span style="flex-shrink:0;width:160px;font-size:0.8rem;font-weight:600;color:var(--thc-primary);padding-top:0.05rem;">
+            <div class="d-flex align-items-start" style="gap:var(--thc-space-3);">
+                <span class="flex-shrink-0 thc-text-sm fw-semibold text-primary" style="width:var(--thc-space-40);padding-top:var(--thc-space-0-25);">
                     {{ feature_name }}
                 </span>
-                <span style="font-size:0.8rem;color:var(--thc-text-muted);line-height:1.5;">
+                <span class="thc-text-sm text-muted lh-base">
                     {{ feature_desc }}
                 </span>
             </div>
@@ -81,7 +81,7 @@
     </div>
     {% endfor %}
 
-    <div style="font-size:0.72rem;color:var(--thc-text-muted);text-align:center;padding:1rem 0 2rem;">
+    <div class="thc-text-xs text-muted text-center py-4">
         The Health Collective Inc. &nbsp;&middot;&nbsp; Internal use only
     </div>
 

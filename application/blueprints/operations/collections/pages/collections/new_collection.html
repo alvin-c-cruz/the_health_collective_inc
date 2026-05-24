@@ -5,94 +5,94 @@
 {% block styles %}
 <style>
   .line-checkbox {
-    width: 20px;
-    height: 20px;
+    width: var(--thc-space-5);
+    height: var(--thc-space-5);
     cursor: pointer;
   }
 
   .amount-input {
-    width: 150px;
+    width: var(--thc-space-38);
     text-align: right;
   }
 
   .line-row {
-    background: white;
+    background: var(--thc-white);
   }
 
   .line-row.selected {
-    background: #e8f4fd;
+    background: var(--thc-primary-50);
   }
 
   .collection-summary {
-    background: #f8f9fa;
-    padding: 1rem;
-    border-radius: 4px;
-    margin-bottom: 1rem;
+    background: var(--thc-gray-50);
+    padding: var(--thc-space-4);
+    border-radius: var(--thc-radius-md);
+    margin-bottom: var(--thc-space-4);
   }
 
   .collection-summary h5 {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: var(--thc-text-lg);
   }
 
   .collection-summary .total {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #0066cc;
+    font-size: var(--thc-text-2xl);
+    font-weight: var(--thc-font-semibold);
+    color: var(--thc-primary-600);
   }
 
   /* Dynamic deduction rows */
   .deduction-row {
     display: grid;
     grid-template-columns: 2fr 1fr 32px;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
+    gap: var(--thc-space-2);
+    margin-bottom: var(--thc-space-2);
     align-items: center;
   }
 
   .btn-add-row {
-    background: #e6f3f5;
-    border: 1px dashed #1a6473;
-    color: #1a6473;
-    padding: 4px 12px;
-    font-size: 0.8rem;
-    border-radius: 4px;
+    background: var(--thc-primary-50);
+    border: 1px dashed var(--thc-primary-600);
+    color: var(--thc-primary-600);
+    padding: var(--thc-space-1) var(--thc-space-3);
+    font-size: var(--thc-text-sm);
+    border-radius: var(--thc-radius-md);
     cursor: pointer;
     transition: all 0.2s;
   }
 
   .btn-add-row:hover {
-    background: #d1e7ea;
+    background: var(--thc-primary-100);
   }
 
   .btn-remove-row {
-    width: 32px;
-    height: 32px;
+    width: var(--thc-space-8);
+    height: var(--thc-space-8);
     padding: 0;
-    border: 1px solid #dc3545;
-    background: white;
-    color: #dc3545;
-    border-radius: 4px;
+    border: 1px solid var(--thc-danger-600);
+    background: var(--thc-white);
+    color: var(--thc-danger-600);
+    border-radius: var(--thc-radius-md);
     cursor: pointer;
     transition: all 0.2s;
   }
 
   .btn-remove-row:hover {
-    background: #dc3545;
-    color: white;
+    background: var(--thc-danger-600);
+    color: var(--thc-white);
   }
 
   .deductions-card {
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    padding: 1rem;
-    margin-bottom: 1rem;
+    border: 1px solid var(--thc-border);
+    border-radius: var(--thc-radius-md);
+    padding: var(--thc-space-4);
+    margin-bottom: var(--thc-space-4);
   }
 
   .deductions-card h6 {
-    margin-bottom: 0.75rem;
-    font-size: 0.95rem;
-    font-weight: 600;
+    margin-bottom: var(--thc-space-3);
+    font-size: var(--thc-text-base);
+    font-weight: var(--thc-font-semibold);
   }
 </style>
 {% endblock %}
@@ -126,7 +126,7 @@
         <input type="date" name="collection_date" id="collection_date" class="form-control" value="{{ today }}" required>
       </div>
       <div class="col-md-3">
-        <label class="form-label">Tender / Payer <span class="text-danger">*</span></label>
+        <label class="form-label">Receivable from <span class="text-danger">*</span></label>
         <div class="ac-wrap">
           <input type="text" id="tender-display" class="form-control" placeholder="Search tender..."
                  value="{{ tenders|selectattr('id','equalto',selected_tender_id)|map(attribute='tender_name')|first if selected_tender_id else '' }}"
@@ -142,10 +142,9 @@
       </div>
       <div class="col-md-3">
         <label class="form-label">Bank / Account</label>
-        <div class="ac-wrap">
-          <input type="text" id="bank-display" class="form-control" placeholder="Search bank account..." autocomplete="off">
+        <div class="bank-account-wrapper">
+          <input type="text" id="bank-account-input" class="form-control upper-case" placeholder="e.g. BDO Savings - 1234" autocomplete="off">
           <input type="hidden" id="bank_account_id" name="bank_account_id" value="">
-          <div id="bank-dropdown" class="ac-dropdown"></div>
         </div>
       </div>
     </div>
@@ -186,7 +185,7 @@
     <div class="row mb-3">
       <div class="col d-flex gap-2">
         <button type="submit" class="btn btn-primary" id="saveButton" disabled>Save Collection</button>
-        <a href="{{ url_for('collections.home') }}" class="btn btn-secondary btn-sm">Cancel</a>
+        <a href="{{ url_for('daily_sales.home') }}" class="btn btn-secondary btn-sm">Cancel</a>
       </div>
     </div>
 
@@ -207,26 +206,21 @@
           <h5>Collection Summary</h5>
           <p class="mb-0"><span id="selected_count">0</span> line(s) selected</p>
         </div>
-        <div class="col-md-5">
-          <div style="font-size: 0.9rem;">
+        <div class="col-md-8">
+          <div style="font-size: var(--thc-text-base);">
             <div class="d-flex justify-content-between mb-1">
               <span>Total Cash Collected:</span>
-              <span style="font-weight: 600;">₱<span id="total_amount">0.00</span></span>
+              <span style="font-weight: var(--thc-font-semibold);">₱<span id="total_amount">0.00</span></span>
             </div>
             <div class="d-flex justify-content-between mb-1">
               <span>Less: Deductions:</span>
-              <span style="font-weight: 600; color: #dc3545;">₱<span id="deductions_display">0.00</span></span>
+              <span style="font-weight: var(--thc-font-semibold); color: var(--thc-danger-600);">₱<span id="deductions_display">0.00</span></span>
             </div>
-            <div class="d-flex justify-content-between pt-2" style="border-top: 2px solid #0066cc;">
-              <span style="font-weight: 700;">Net Amount:</span>
-              <span class="total" style="font-size: 1.3rem;">₱<span id="net_amount">0.00</span></span>
+            <div class="d-flex justify-content-between pt-2" style="border-top: 2px solid var(--thc-primary-600);">
+              <span style="font-weight: var(--thc-font-bold);">Net Amount:</span>
+              <span class="total" style="font-size: var(--thc-text-xl);">₱<span id="net_amount">0.00</span></span>
             </div>
           </div>
-        </div>
-        <div class="col-md-3 text-end">
-          <a href="{{ url_for('collections.home') }}" class="btn btn-outline-primary btn-sm">
-            <i class="bi bi-arrow-left"></i> Back to Home
-          </a>
         </div>
       </div>
     </div>
@@ -244,7 +238,7 @@
             <th class="text-end">Amount</th>
             <th class="text-end">Collected</th>
             <th class="text-end">Outstanding</th>
-            <th class="text-end" style="min-width:110px">Apply</th>
+            <th class="text-end" style="min-width:var(--thc-space-28)">Apply</th>
           </tr>
         </thead>
         <tbody>
@@ -279,6 +273,7 @@
 </div>
 
 <style>
+  /* Autocomplete styles */
   .ac-wrap { position: relative; }
   .ac-dropdown {
     position: absolute;
@@ -286,18 +281,59 @@
     left: 0;
     right: 0;
     z-index: 9999;
-    background: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    box-shadow: 0 4px 12px rgba(0,0,0,.10);
-    max-height: 220px;
+    background: var(--thc-white);
+    border: 1px solid var(--thc-border);
+    border-radius: var(--thc-radius-md);
+    box-shadow: var(--thc-shadow-md);
+    max-height: var(--thc-space-55);
     overflow-y: auto;
     display: none;
-    font-size: 0.875rem;
+    font-size: var(--thc-text-sm);
   }
-  .ac-item { padding: 7px 14px; cursor: pointer; color: #1a2a2a; }
-  .ac-item:hover, .ac-item--active { background: #e6f3f5; color: #1a6473; font-weight: 500; }
-  .ac-empty { padding: 7px 14px; color: #6c757d; font-style: italic; }
+  .ac-item { padding: var(--thc-space-2) var(--thc-space-4); cursor: pointer; color: var(--thc-text); }
+  .ac-item:hover, .ac-item--active { background: var(--thc-primary-50); color: var(--thc-primary-600); font-weight: 500; }
+  .ac-empty { padding: var(--thc-space-2) var(--thc-space-4); color: var(--thc-text-secondary); font-style: italic; }
+
+  /* Bank account autocomplete */
+  .bank-account-wrapper { position: relative; }
+  .bank-ac-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: var(--thc-white);
+    border: 1px solid var(--thc-border);
+    border-radius: var(--thc-radius-md);
+    box-shadow: var(--thc-shadow-md);
+    max-height: var(--thc-space-60);
+    overflow-y: auto;
+    display: none;
+    font-size: var(--thc-text-sm);
+  }
+  .bank-ac-item {
+    padding: var(--thc-space-2) var(--thc-space-4);
+    cursor: pointer;
+    color: var(--thc-text);
+  }
+  .bank-ac-item:hover,
+  .bank-ac-item--active {
+    background: var(--thc-primary-50);
+    color: var(--thc-primary-600);
+    font-weight: 500;
+  }
+  .bank-ac-add {
+    color: var(--thc-primary-600) !important;
+    font-weight: var(--thc-font-semibold) !important;
+    border-bottom: 1px solid var(--thc-border);
+  }
+
+  /* Numeric input fields */
+  .num-input {
+    text-align: right;
+    font-family: 'DM Mono', monospace !important;
+    font-size: var(--thc-text-sm) !important;
+  }
 </style>
 
 <script>
@@ -331,7 +367,7 @@ function makeAutocomplete(opts) {
   function hl(text, q) {
     if (!q) return text;
     const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-    return text.replace(re, '<strong style="font-weight:700;color:#1a6473">$1</strong>');
+    return text.replace(re, '<strong style="font-weight:700;color:var(--thc-primary-600)">$1</strong>');
   }
 
   function render(q) {
@@ -360,7 +396,7 @@ function makeAutocomplete(opts) {
     display.value = name;
     dropdown.style.display = 'none';
     active = -1;
-    if (opts.onChange) opts.onChange(id);
+    if (opts.onChange) opts.onChange(id, name);
   }
 
   function hide() { dropdown.style.display = 'none'; active = -1; }
@@ -382,11 +418,100 @@ function makeAutocomplete(opts) {
   }
 }
 
-makeAutocomplete({
-  displayId: 'bank-display',
-  hiddenId: 'bank_account_id',
-  dropdownId: 'bank-dropdown',
-  options: BANK_OPTIONS
+// Bank account autocomplete with "+ Add Bank Account" button
+function initBankAccountAutocomplete() {
+  const input = document.getElementById('bank-account-input');
+  const hiddenInput = document.getElementById('bank_account_id');
+  if (!input) return;
+
+  const wrap = input.parentNode;
+  const dd = document.createElement('div');
+  dd.className = 'bank-ac-dropdown';
+  wrap.appendChild(dd);
+
+  let active = -1;
+
+  function getMatches(q) {
+    if (!q) return BANK_OPTIONS.slice(0, 100);
+    const lq = q.toLowerCase();
+    return BANK_OPTIONS.filter(ba => ba.name.toLowerCase().includes(lq));
+  }
+
+  function hl(text, q) {
+    if (!q) return text;
+    const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    return text.replace(re, '<strong style="font-weight:700;color:var(--thc-primary-600)">$1</strong>');
+  }
+
+  function render(q) {
+    const matches = getMatches(q);
+    dd.innerHTML = '';
+    active = -1;
+
+    // Add "Add Bank Account" button at the top
+    const addEl = document.createElement('div');
+    addEl.className = 'bank-ac-item bank-ac-add';
+    addEl.textContent = '+ Add Bank Account';
+    addEl.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      window.open('{{ url_for("bank_account.add_popup") }}', 'add_bank_account', 'width=650,height=580,resizable=no,scrollbars=no');
+      hide();
+    });
+    dd.appendChild(addEl);
+
+    matches.forEach(ba => {
+      const item = document.createElement('div');
+      item.className = 'bank-ac-item';
+      item.innerHTML = hl(ba.name, q);
+      item.dataset.id = ba.id;
+      item.dataset.name = ba.name;
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        input.value = ba.name;
+        hiddenInput.value = ba.id;
+        hide();
+      });
+      dd.appendChild(item);
+    });
+
+    dd.style.display = 'block';
+  }
+
+  function hide() { dd.style.display = 'none'; active = -1; }
+
+  function setActive(i) {
+    const items = dd.querySelectorAll('.bank-ac-item');
+    items.forEach((el, idx) => el.classList.toggle('bank-ac-item--active', idx === i));
+    active = i;
+  }
+
+  input.addEventListener('input', () => render(input.value.trim()));
+  input.addEventListener('focus', () => render(input.value.trim()));
+  input.addEventListener('blur', () => setTimeout(hide, 150));
+  input.addEventListener('keydown', e => {
+    if (dd.style.display === 'none') return;
+    const items = dd.querySelectorAll('.bank-ac-item');
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(active + 1, items.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(active - 1, 0)); }
+    else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (active >= 0 && items[active]) items[active].dispatchEvent(new MouseEvent('mousedown'));
+    } else if (e.key === 'Escape') { hide(); }
+  });
+}
+initBankAccountAutocomplete();
+
+// Listen for postMessage from popup window
+window.addEventListener('message', e => {
+  if (e.data && e.data.type === 'bank_account_added') {
+    const bankAccountId = e.data.bank_account_id;
+    const bankAccountName = e.data.bank_account_name;
+    BANK_OPTIONS.push({ id: bankAccountId, name: bankAccountName });
+    const input = document.getElementById('bank-account-input');
+    const hiddenInput = document.getElementById('bank_account_id');
+    if (input) input.value = bankAccountName;
+    if (hiddenInput) hiddenInput.value = bankAccountId;
+  }
 });
 
 makeAutocomplete({
@@ -394,7 +519,10 @@ makeAutocomplete({
   hiddenId: 'tender_id',
   dropdownId: 'tender-dropdown',
   options: TENDER_OPTIONS,
-  onChange: loadLines
+  onChange: (tenderId, tenderName) => {
+    loadLines(tenderId);
+    adjustDeductionRows(tenderName);
+  }
 });
 
 makeAutocomplete({
@@ -405,6 +533,43 @@ makeAutocomplete({
   onChange: (batchId) => loadLines(document.getElementById('tender_id').value, batchId)
 });
 
+// ── Number formatting helpers ──
+const fmt = v => parseFloat(v || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtRaw = v => parseFloat(v || 0).toFixed(2);
+const parseNum = v => parseFloat((v || '0').replace(/,/g, '')) || 0;
+
+function formatInput(el) {
+  const val = parseNum(el.value);
+  el.value = fmt(val);
+}
+
+function unformatInput(el) {
+  const val = parseNum(el.value);
+  el.value = fmtRaw(val);
+  el.select();
+}
+
+// ── Adjust Deduction Rows Based on Tender ──
+function adjustDeductionRows(tenderName) {
+  const container = document.getElementById('deductions-container');
+
+  // Clear all existing deduction rows
+  container.innerHTML = '';
+
+  // Check if tender is Credit Card (case-insensitive)
+  const isCreditCard = tenderName && tenderName.toLowerCase().includes('credit card');
+
+  // Add appropriate number of rows
+  if (isCreditCard) {
+    // Credit Card: add 2 deduction rows
+    addDeductionRow('', '0.00');
+    addDeductionRow('', '0.00');
+  } else {
+    // Other tenders: add 1 deduction row
+    addDeductionRow('', '0.00');
+  }
+}
+
 // ── Dynamic Deductions ──
 function addDeductionRow(description = '', amount = '0.00') {
   const container = document.getElementById('deductions-container');
@@ -412,7 +577,7 @@ function addDeductionRow(description = '', amount = '0.00') {
   div.className = 'deduction-row';
   div.innerHTML = `
     <input type="text" name="deduction_description[]" class="form-control" placeholder="e.g., Bank transfer fee, Check clearing fee" value="${description}">
-    <input type="number" name="deduction_amount[]" class="form-control text-end" placeholder="0.00" value="${amount}" step="0.01" min="0" onchange="updateSummary()">
+    <input type="text" name="deduction_amount[]" class="form-control num-input" placeholder="0.00" value="${fmt(parseFloat(amount))}" onchange="updateSummary()">
     <button type="button" class="btn-remove-row" onclick="removeDeductionRow(this)" title="Remove">✕</button>
   `;
   container.appendChild(div);
@@ -426,6 +591,20 @@ function removeDeductionRow(btn) {
 
 // Initialize with one deduction row
 addDeductionRow();
+
+// ── Number input focus/blur events ──
+document.addEventListener('focus', function (e) {
+  if (e.target.matches('.num-input') && !e.target.readOnly) {
+    unformatInput(e.target);
+  }
+}, true);
+
+document.addEventListener('blur', function (e) {
+  if (e.target.matches('.num-input') && !e.target.readOnly) {
+    formatInput(e.target);
+    updateSummary();
+  }
+}, true);
 
 // ── Outstanding Lines Loader ──
 function loadLines(tenderId, batchId) {
@@ -538,7 +717,7 @@ function updateSummary() {
   // Calculate total deductions
   let totalDeductions = 0;
   document.querySelectorAll('input[name="deduction_amount[]"]').forEach(input => {
-    totalDeductions += parseFloat(input.value) || 0;
+    totalDeductions += parseNum(input.value);
   });
 
   const netAmount = total - totalDeductions;
@@ -559,8 +738,11 @@ document.addEventListener('input', function(e) {
   }
 });
 
-function fmt(n) {
-  return Number(n).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-}
+// Strip commas from num-inputs before form submission
+document.getElementById('collectionForm').addEventListener('submit', function(e) {
+  document.querySelectorAll('.num-input').forEach(el => {
+    if (!el.readOnly) el.value = fmtRaw(parseNum(el.value));
+  });
+});
 </script>
 {% endblock %}

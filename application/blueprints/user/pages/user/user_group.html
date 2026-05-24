@@ -3,7 +3,7 @@
 {% block title %}User Delegations{% endblock %}
 
 {% block content %}
-<div class="thc-page" style="max-width: 900px;">
+<div class="thc-page" style="max-width: var(--thc-space-225);">
 
     <div class="thc-page-header">
         <h4>User Delegations</h4>
@@ -14,51 +14,41 @@
     {# ── User identity card ── #}
     <div class="thc-card">
         <div class="d-flex align-items-center gap-3 flex-wrap">
-            <div style="width:48px;height:48px;border-radius:50%;background:var(--thc-primary-light);
-                        display:flex;align-items:center;justify-content:center;
-                        font-size:1.2rem;font-weight:700;color:var(--thc-primary);flex-shrink:0;">
+            <div class="d-flex align-items-center justify-content-center flex-shrink-0 rounded-circle fw-bold thc-text-lg text-primary" style="width:var(--thc-space-12);height:var(--thc-space-12);background:var(--thc-primary-50);">
                 {{ user.first_name[0] | upper }}{{ user.last_name[0] | upper if user.last_name else '' }}
             </div>
-            <div style="flex:1;min-width:0;">
-                <div style="font-size:1rem;font-weight:600;color:var(--thc-text);">
+            <div class="flex-fill" style="min-width:0;">
+                <div class="thc-text-base fw-semibold">
                     {{ user.first_name }} {{ user.last_name }}
                 </div>
-                <div style="font-size:0.78rem;color:var(--thc-text-muted);letter-spacing:0.04em;">
+                <div class="thc-text-sm text-muted" style="letter-spacing:0.04em;">
                     {{ user.user_name | upper }}
                 </div>
             </div>
             <div class="d-flex gap-2 align-items-center flex-wrap">
                 {# Role count badge #}
-                <span style="font-size:0.78rem;color:var(--thc-text-muted);padding:0.25rem 0.6rem;
-                             background:#f0f8fa;border:1px solid #e2e8f0;border-radius:20px;">
+                <span class="thc-text-sm text-muted rounded-pill" style="padding:var(--thc-space-1) var(--thc-space-2);background:var(--thc-gray-50);border:1px solid var(--thc-border);">
                     {{ assigned_count }} / {{ total_count }} roles
                 </span>
                 {# Status badge #}
-                <span style="font-size:0.78rem;font-weight:600;padding:0.25rem 0.6rem;border-radius:20px;
-                             {% if user.active %}background:#dcfce7;color:#166534;{% else %}background:#fee2e2;color:#c0392b;{% endif %}">
+                <span class="thc-text-sm fw-semibold rounded-pill" style="padding:var(--thc-space-1) var(--thc-space-2);{% if user.active %}background:var(--thc-success-100);color:var(--thc-success-700);{% else %}background:var(--thc-danger-100);color:var(--thc-danger-700);{% endif %}">
                     {% if user.active %}Active{% else %}Inactive{% endif %}
                 </span>
                 {% if user.superuser %}
-                <span style="font-size:0.78rem;font-weight:600;padding:0.25rem 0.6rem;border-radius:20px;
-                             background:#1a6473;color:#fff;">SuperAdmin</span>
+                <span class="thc-text-sm fw-semibold text-white rounded-pill" style="padding:var(--thc-space-1) var(--thc-space-2);background:var(--thc-primary-600);">SuperAdmin</span>
                 {% elif user.admin %}
-                <span style="font-size:0.78rem;font-weight:600;padding:0.25rem 0.6rem;border-radius:20px;
-                             background:#e0f2fe;color:#0369a1;">Admin</span>
+                <span class="thc-text-sm fw-semibold rounded-pill" style="padding:var(--thc-space-1) var(--thc-space-2);background:var(--thc-blue-100);color:var(--thc-blue-700);">Admin</span>
                 {% elif user.staff %}
-                <span style="font-size:0.78rem;font-weight:600;padding:0.25rem 0.6rem;border-radius:20px;
-                             background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;">Staff</span>
+                <span class="thc-text-sm fw-semibold rounded-pill" style="padding:var(--thc-space-1) var(--thc-space-2);background:var(--thc-success-50);color:var(--thc-success-700);border:1px solid var(--thc-success-200);">Staff</span>
                 {% endif %}
                 {% if user.is_superuser %}
-                <span style="font-size:0.78rem;font-weight:600;padding:0.25rem 0.6rem;border-radius:20px;
-                             background:#fef3c7;color:#92400e;">SuperUser</span>
+                <span class="thc-text-sm fw-semibold rounded-pill" style="padding:var(--thc-space-1) var(--thc-space-2);background:var(--thc-yellow-100);color:var(--thc-yellow-800);">SuperUser</span>
                 {% endif %}
                 {% if user.is_staff %}
-                <span style="font-size:0.78rem;font-weight:600;padding:0.25rem 0.6rem;border-radius:20px;
-                             background:#ddd6fe;color:#5b21b6;">Staff</span>
+                <span class="thc-text-sm fw-semibold rounded-pill" style="padding:var(--thc-space-1) var(--thc-space-2);background:var(--thc-purple-100);color:var(--thc-purple-700);">Staff</span>
                 {% endif %}
                 {% if user.is_view %}
-                <span style="font-size:0.78rem;font-weight:600;padding:0.25rem 0.6rem;border-radius:20px;
-                             background:#e5e7eb;color:#374151;">Viewer</span>
+                <span class="thc-text-sm fw-semibold rounded-pill" style="padding:var(--thc-space-1) var(--thc-space-2);background:var(--thc-gray-200);color:var(--thc-gray-700);">Viewer</span>
                 {% endif %}
             </div>
         </div>
@@ -71,9 +61,8 @@
 
             {# SuperAdmin toggle — only current superusers may change this #}
             {% if current_user.superuser %}
-            <div style="display:flex;flex-direction:column;gap:0.35rem;align-items:flex-start;">
-                <span style="font-size:0.7rem;font-weight:600;letter-spacing:0.06em;
-                             text-transform:uppercase;color:var(--thc-text-muted);">SuperAdmin</span>
+            <div class="d-flex flex-column align-items-start" style="gap:var(--thc-space-1);">
+                <span class="thc-text-xs fw-semibold text-uppercase text-muted" style="letter-spacing:0.06em;">SuperAdmin</span>
                 <a href="{{ url_for('user.user_superuser', user_id=user.id, value=0 if user.superuser else 1) }}"
                    {% if is_super %}onclick="return false;" style="pointer-events:none;opacity:0.5;"{% endif %}
                    class="btn btn-sm {% if user.superuser %}btn-dark{% else %}btn-secondary{% endif %}">
@@ -83,9 +72,8 @@
             {% endif %}
 
             {# Admin toggle #}
-            <div style="display:flex;flex-direction:column;gap:0.35rem;align-items:flex-start;">
-                <span style="font-size:0.7rem;font-weight:600;letter-spacing:0.06em;
-                             text-transform:uppercase;color:var(--thc-text-muted);">Admin</span>
+            <div class="d-flex flex-column align-items-start" style="gap:var(--thc-space-1);">
+                <span class="thc-text-xs fw-semibold text-uppercase text-muted" style="letter-spacing:0.06em;">Admin</span>
                 <a href="{{ url_for('user.user_admin', user_id=user.id, value=0 if user.admin else 1) }}"
                    {% if is_super %}onclick="return false;" style="pointer-events:none;opacity:0.5;"{% endif %}
                    class="btn btn-sm {% if user.admin %}btn-primary{% else %}btn-secondary{% endif %}">
@@ -94,9 +82,8 @@
             </div>
 
             {# Staff toggle #}
-            <div style="display:flex;flex-direction:column;gap:0.35rem;align-items:flex-start;">
-                <span style="font-size:0.7rem;font-weight:600;letter-spacing:0.06em;
-                             text-transform:uppercase;color:var(--thc-text-muted);">Staff</span>
+            <div class="d-flex flex-column align-items-start" style="gap:var(--thc-space-1);">
+                <span class="thc-text-xs fw-semibold text-uppercase text-muted" style="letter-spacing:0.06em;">Staff</span>
                 <a href="{{ url_for('user.user_staff', user_id=user.id, value=0 if user.staff else 1) }}"
                    {% if is_super %}onclick="return false;" style="pointer-events:none;opacity:0.5;"{% endif %}
                    class="btn btn-sm {% if user.staff %}btn-success{% else %}btn-secondary{% endif %}">
@@ -105,9 +92,8 @@
             </div>
 
             {# Active toggle #}
-            <div style="display:flex;flex-direction:column;gap:0.35rem;align-items:flex-start;">
-                <span style="font-size:0.7rem;font-weight:600;letter-spacing:0.06em;
-                             text-transform:uppercase;color:var(--thc-text-muted);">Account Status</span>
+            <div class="d-flex flex-column align-items-start" style="gap:var(--thc-space-1);">
+                <span class="thc-text-xs fw-semibold text-uppercase text-muted" style="letter-spacing:0.06em;">Account Status</span>
                 <a href="{{ url_for('user.user_active', user_id=user.id, value=0 if user.active else 1) }}"
                    {% if is_super %}onclick="return false;" style="pointer-events:none;opacity:0.5;"{% endif %}
                    class="btn btn-sm {% if user.active %}btn-success{% else %}btn-secondary{% endif %}">
@@ -117,20 +103,20 @@
 
         </div>
         {% if is_super %}
-        <div style="font-size:0.75rem;color:var(--thc-text-muted);margin-top:0.75rem;">
+        <div class="thc-text-sm text-muted mt-3">
             <i class="bi bi-lock me-1"></i>Master admin account flags cannot be changed.
         </div>
         {% endif %}
-        <div style="font-size:0.72rem;color:var(--thc-text-muted);margin-top:0.6rem;line-height:1.6;">
-            <strong style="color:var(--thc-text);">SuperAdmin</strong> — approve &amp; unlock transactions &nbsp;·&nbsp;
-            <strong style="color:var(--thc-text);">Admin</strong> — approve transactions &nbsp;·&nbsp;
-            <strong style="color:var(--thc-text);">Staff</strong> — add &amp; edit transactions &nbsp;·&nbsp;
+        <div class="thc-text-xs text-muted lh-base" style="margin-top:var(--thc-space-2);">
+            <strong>SuperAdmin</strong> — approve &amp; unlock transactions &nbsp;·&nbsp;
+            <strong>Admin</strong> — approve transactions &nbsp;·&nbsp;
+            <strong>Staff</strong> — add &amp; edit transactions &nbsp;·&nbsp;
             <em>No flag</em> — view reports only
         </div>
     </div>
 
     {# ── Roles by group ── #}
-    <div class="thc-card-title" style="margin-bottom:0.5rem;">Roles</div>
+    <div class="thc-card-title mb-2">Roles</div>
 
     {% for parent_name, sub_groups in role_groups %}
     <div class="role-parent-card">
@@ -172,23 +158,23 @@
 <style>
     /* Parent group card */
     .role-parent-card {
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
+        border: 1px solid var(--thc-border);
+        border-radius: var(--thc-radius-lg);
         overflow: hidden;
-        margin-bottom: 1rem;
+        margin-bottom: var(--thc-space-4);
     }
     .role-parent-header {
-        background: var(--thc-primary);
-        color: #fff;
-        font-size: 0.72rem;
-        font-weight: 800;
+        background: var(--thc-primary-600);
+        color: var(--thc-white);
+        font-size: var(--thc-text-xs);
+        font-weight: var(--thc-font-bold);
         letter-spacing: 0.12em;
         text-transform: uppercase;
-        padding: 0.45rem 1rem;
+        padding: var(--thc-space-2) var(--thc-space-4);
     }
     .role-parent-body {
-        background: #e4eff0;
-        padding: 0.75rem 1rem;
+        background: var(--thc-primary-25);
+        padding: var(--thc-space-3) var(--thc-space-4);
         display: flex;
         flex-direction: column;
         gap: 0;
@@ -196,29 +182,29 @@
 
     /* Sub-group inside a parent */
     .role-sub-group {
-        padding: 0.6rem 0;
-        border-bottom: 1px solid #c8dada;
+        padding: var(--thc-space-2) 0;
+        border-bottom: 1px solid var(--thc-primary-100);
     }
     .role-sub-group:last-child { border-bottom: none; padding-bottom: 0; }
     .role-sub-group:first-child { padding-top: 0; }
 
     .role-sub-label {
-        font-size: 0.65rem;
-        font-weight: 700;
+        font-size: var(--thc-text-xs);
+        font-weight: var(--thc-font-bold);
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: var(--thc-text-muted);
-        margin-bottom: 0.45rem;
+        color: var(--thc-text-secondary);
+        margin-bottom: var(--thc-space-2);
     }
 
     /* Role buttons */
     .role-btn {
         display: inline-flex;
         align-items: center;
-        gap: 0.3rem;
-        padding: 0.3rem 0.75rem;
-        border-radius: 6px;
-        font-size: 0.8rem;
+        gap: var(--thc-space-1);
+        padding: var(--thc-space-1) var(--thc-space-3);
+        border-radius: var(--thc-radius-md);
+        font-size: var(--thc-text-sm);
         font-weight: 500;
         font-family: var(--thc-font-body);
         text-decoration: none;
@@ -229,23 +215,23 @@
     }
     .role-btn:hover { transform: translateY(-1px); text-decoration: none; }
     .role-btn--on {
-        background: #fff;
-        border-color: var(--thc-primary);
-        color: var(--thc-primary);
+        background: var(--thc-white);
+        border-color: var(--thc-primary-600);
+        color: var(--thc-primary-600);
     }
     .role-btn--on:hover {
-        background: var(--thc-primary);
-        border-color: var(--thc-primary);
-        color: #fff;
+        background: var(--thc-primary-600);
+        border-color: var(--thc-primary-600);
+        color: var(--thc-white);
     }
     .role-btn--off {
         background: transparent;
-        border-color: #9ab8b8;
-        color: #7a9e9e;
+        border-color: var(--thc-gray-400);
+        color: var(--thc-gray-600);
     }
     .role-btn--off:hover {
-        border-color: var(--thc-primary);
-        color: var(--thc-primary);
+        border-color: var(--thc-primary-600);
+        color: var(--thc-primary-600);
         background: rgba(255,255,255,0.5);
     }
 </style>

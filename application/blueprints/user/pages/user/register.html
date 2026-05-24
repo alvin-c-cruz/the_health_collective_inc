@@ -3,10 +3,10 @@
 {% block title %}Register — The Health Collective{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 480px; padding: 2rem 1rem;">
+<div class="container" style="max-width: var(--thc-space-120); padding: var(--thc-space-8) var(--thc-space-4);">
     <div class="thc-login-card">
         <div class="thc-login-brand">The Health Collective</div>
-        <h4 class="mb-4 text-center" style="font-size:1.1rem;">Create an account</h4>
+        <h4 class="mb-4 text-center thc-text-lg">Create an account</h4>
         <form action="{{ url_for('user.register') }}" method="post">
             {% for field_id, field_label, field_type in [
                 ('user_name', 'Username', 'text'),
@@ -31,7 +31,7 @@
             {% endfor %}
             <button type="submit" class="btn btn-primary w-100 mt-2">Register</button>
         </form>
-        <p class="text-center mt-3" style="font-size:0.85rem;color:var(--thc-text-muted);">
+        <p class="text-center mt-3 thc-text-sm text-muted">
             Already have an account? <a href="{{ url_for('user.login') }}">Sign in</a>
         </p>
     </div>

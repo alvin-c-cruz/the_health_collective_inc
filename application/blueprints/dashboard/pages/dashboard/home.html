@@ -1,325 +1,126 @@
 {% extends "base.html" %}
+{% from "components/dashboard_components.html" import section_header, summary_metric, sales_table_card, sales_table_row, action_card, quick_action_button %}
 
 {% block title %}Dashboard{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard-components.css') }}">
+{% endblock %}
 
 {% block content %}
 <div class="thc-page">
 
     <div class="thc-page-header">
         <h4>Dashboard</h4>
-        <span style="font-size:0.82rem;color:var(--thc-text-muted);">
+        <span class="thc-text-sm text-secondary">
             {{ today.strftime("%B %d, %Y") }}
         </span>
-        <div style="margin-left:auto;display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <div class="ms-auto d-flex" style="gap: var(--thc-gap-sm); flex-wrap: wrap;">
             {% if "Daily Sales" in current_user.user_roles %}
-            <a href="{{ url_for('daily_sales.home') }}" class="dash-ql-btn">
-                <i class="bi bi-journal-text"></i> Daily Sales
-            </a>
-            <a href="#" class="dash-ql-btn"
-               onclick="window.open('{{ url_for('daily_sales.daily_report') }}','_blank','width=1200,height=700,scrollbars=yes,resizable=yes');return false;">
-                <i class="bi bi-file-earmark-bar-graph"></i> Today's Report
-            </a>
-            {% endif %}
-            {% if "Collections" in current_user.user_roles %}
-            <a href="{{ url_for('collections.home') }}" class="dash-ql-btn">
-                <i class="bi bi-cash-coin"></i> Collections
-            </a>
+            {{ quick_action_button('Daily Sales', url_for('daily_sales.home'), icon='bi-journal-text') }}
+            {{ quick_action_button("Today's Report", url_for('daily_sales.daily_report'),
+                                   icon='bi-file-earmark-bar-graph', open_popup=true) }}
             {% endif %}
         </div>
     </div>
 
     {# ── Sales Summary (Month to Date) ── #}
-    <div style="margin-bottom:1.5rem;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
-            <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--thc-text-muted);">
-                Sales Summary &mdash; {{ month_start.strftime("%B %d") }} to {{ today.strftime("%B %d, %Y") }}
-            </div>
-            <a href="{{ url_for('daily_sales.sales_summary_report') }}" target="_blank"
-               style="font-size:0.72rem;color:var(--thc-primary);text-decoration:none;font-weight:600;">
-                <i class="bi bi-bar-chart-line"></i> Full Report &rarr;
-            </a>
-        </div>
+    <div class="mb-6">
+        {{ section_header(
+            'Sales Summary — ' ~ month_start.strftime("%B %d") ~ ' to ' ~ today.strftime("%B %d, %Y"),
+            link_url=url_for('daily_sales.sales_summary_report'),
+            link_text='Full Report',
+            link_icon='bi-bar-chart-line'
+        ) }}
 
         {# Summary Cards #}
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;margin-bottom:1rem;">
-            <div class="summary-metric">
-                <div class="summary-metric__label">Diagnostics</div>
-                <div class="summary-metric__value">₱{{ "{:,.2f}".format(diagnostics_total) }}</div>
-            </div>
-            <div class="summary-metric">
-                <div class="summary-metric__label">Dialysis</div>
-                <div class="summary-metric__value">₱{{ "{:,.2f}".format(dialysis_total) }}</div>
-            </div>
-            <div class="summary-metric summary-metric--total">
-                <div class="summary-metric__label">Total Sales</div>
-                <div class="summary-metric__value">₱{{ "{:,.2f}".format(mtd_net_sales) }}</div>
-            </div>
+        <div class="thc-summary-grid mb-4" style="grid-template-columns: repeat({{ product_types|length + 1 }}, 1fr);">
+            {% for pt in product_types %}
+            {{ summary_metric(pt.product_type_name, '₱' ~ "{:,.2f}".format(product_type_totals.get(pt.product_type_name, 0))) }}
+            {% endfor %}
+            {{ summary_metric('Total Sales', '₱' ~ "{:,.2f}".format(mtd_net_sales), is_total=true) }}
         </div>
 
-        {# Sales Tables #}
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.5rem;">
-            {# Diagnostics Table #}
-            <div class="sales-table-card">
-                <div class="sales-table-header" style="background:#e3f2fd;color:#1565c0;">
-                    <i class="bi bi-clipboard2-pulse"></i> Diagnostics
-                </div>
-                <table class="sales-table">
-                    <tbody>
-                        {% for tt in transaction_types %}
-                        {% if sales_summary['Diagnostics'][tt.type_code]['total'] > 0 %}
-                        <tr>
-                            <td class="sales-table__label">{{ tt.type_name }}</td>
-                            <td class="sales-table__value">₱{{ "{:,.2f}".format(sales_summary['Diagnostics'][tt.type_code]['total']) }}</td>
-                        </tr>
-                        {% endif %}
-                        {% endfor %}
-                        <tr class="sales-table__total">
-                            <td>Total</td>
-                            <td>₱{{ "{:,.2f}".format(diagnostics_total) }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        {# Sales Tables - Dynamic based on Product Types #}
+        {% set color_variants = ['info', 'success', 'warning', 'purple', 'green'] %}
+        {% set icons = ['bi-clipboard2-pulse', 'bi-heart-pulse', 'bi-capsule', 'bi-bandaid', 'bi-hospital'] %}
 
-            {# Dialysis Table #}
-            <div class="sales-table-card">
-                <div class="sales-table-header" style="background:#e8f5e9;color:#2e7d32;">
-                    <i class="bi bi-heart-pulse"></i> Dialysis
-                </div>
-                <table class="sales-table">
-                    <tbody>
-                        {% for tt in transaction_types %}
-                        {% if sales_summary['Dialysis'][tt.type_code]['total'] > 0 %}
-                        <tr>
-                            <td class="sales-table__label">{{ tt.type_name }}</td>
-                            <td class="sales-table__value">₱{{ "{:,.2f}".format(sales_summary['Dialysis'][tt.type_code]['total']) }}</td>
-                        </tr>
-                        {% endif %}
-                        {% endfor %}
-                        <tr class="sales-table__total">
-                            <td>Total</td>
-                            <td>₱{{ "{:,.2f}".format(dialysis_total) }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        <div class="thc-product-grid mb-2" style="grid-template-columns: repeat({{ [product_types|length, 2]|min }}, 1fr);">
+            {% for pt in product_types %}
+            {# Only show product type table if there are sales #}
+            {% if product_type_totals.get(pt.product_type_name, 0) > 0 %}
+            {% call sales_table_card(
+                pt.product_type_name,
+                icons[loop.index0 % icons|length],
+                color_variants[loop.index0 % color_variants|length]
+            ) %}
+                {% for tt in transaction_types %}
+                {% if pt.product_type_name in sales_summary and tt.type_code in sales_summary[pt.product_type_name] and sales_summary[pt.product_type_name][tt.type_code]['total'] > 0 %}
+                {{ sales_table_row(tt.type_name, '₱' ~ "{:,.2f}".format(sales_summary[pt.product_type_name][tt.type_code]['total'])) }}
+                {% endif %}
+                {% endfor %}
+                {{ sales_table_row('Total', '₱' ~ "{:,.2f}".format(product_type_totals.get(pt.product_type_name, 0)), is_total=true) }}
+            {% endcall %}
+            {% endif %}
+            {% endfor %}
         </div>
     </div>
 
     {# ── Action Items ── #}
     <div>
-        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
-                    color:var(--thc-text-muted);margin-bottom:0.6rem;">Action Items</div>
-        <div class="dash-grid">
+        {{ section_header('Action Items') }}
+        <div class="thc-action-grid">
 
-            <div class="dash-card {% if drafts_count > 0 %}dash-card--warn{% endif %}">
-                <div class="dash-card__icon"
-                     style="background:#fef9c3;color:#854d0e;">
-                    <i class="bi bi-pencil-square"></i>
-                </div>
-                <div class="dash-card__body">
-                    <div class="dash-card__label">Drafts</div>
-                    <div class="dash-card__value">{{ drafts_count }}</div>
-                    <a href="{{ url_for('daily_sales.home') }}"
-                       class="dash-card__link">View &rarr;</a>
-                </div>
-            </div>
+            {{ action_card(
+                label='Drafts',
+                value=drafts_count,
+                link_url=url_for('daily_sales.drafts'),
+                icon='bi-pencil-square',
+                link_text='View',
+                icon_color='warning',
+                has_warning=(drafts_count > 0)
+            ) }}
 
             {% if current_user.admin or current_user.superuser %}
-            <div class="dash-card {% if pending_approval_count > 0 %}dash-card--warn{% endif %}">
-                <div class="dash-card__icon"
-                     style="background:#fee2e2;color:#c0392b;">
-                    <i class="bi bi-hourglass-split"></i>
-                </div>
-                <div class="dash-card__body">
-                    <div class="dash-card__label">Pending Approval</div>
-                    <div class="dash-card__value">{{ pending_approval_count }}</div>
-                    <a href="{{ url_for('daily_sales.pending_approval') }}"
-                       class="dash-card__link">View &rarr;</a>
-                </div>
-            </div>
+            {{ action_card(
+                label='Pending Approval',
+                value=pending_approval_count,
+                link_url=url_for('daily_sales.pending_approval'),
+                icon='bi-hourglass-split',
+                link_text='View',
+                icon_color='danger',
+                has_warning=(pending_approval_count > 0)
+            ) }}
 
-            <div class="dash-card {% if pending_fund_cancellations > 0 %}dash-card--warn{% endif %}">
-                <div class="dash-card__icon"
-                     style="background:#fef3c7;color:#f59e0b;">
-                    <i class="bi bi-exclamation-triangle"></i>
-                </div>
-                <div class="dash-card__body">
-                    <div class="dash-card__label">Pending Cancellations</div>
-                    <div class="dash-card__value">{{ pending_fund_cancellations }}</div>
-                    <a href="{{ url_for('daily_sales.pending_fund_cancellations') }}"
-                       class="dash-card__link">View &rarr;</a>
-                </div>
-            </div>
+            {{ action_card(
+                label='Pending Cancellations',
+                value=pending_fund_cancellations,
+                link_url=url_for('daily_sales.pending_fund_cancellations'),
+                icon='bi-exclamation-triangle',
+                link_text='View',
+                icon_color='warning',
+                has_warning=(pending_fund_cancellations > 0)
+            ) }}
             {% endif %}
 
         </div>
     </div>
 
+    {# ── Uncollected Receivables by Tender ── #}
+    {% if "Collections" in current_user.user_roles and uncollected_by_tender %}
+    <div class="mt-6">
+        {{ section_header('Uncollected Receivables') }}
+
+        {% call sales_table_card('Receivables by Tender', 'bi-cash-coin', 'success') %}
+            {% for tender_name, amount in uncollected_by_tender.items() %}
+            {% if amount > 0 %}
+            {{ sales_table_row(tender_name, '₱' ~ "{:,.2f}".format(amount)) }}
+            {% endif %}
+            {% endfor %}
+            {{ sales_table_row('Total', '₱' ~ "{:,.2f}".format(total_uncollected_receivables), is_total=true) }}
+        {% endcall %}
+    </div>
+    {% endif %}
+
 </div>
-{% endblock %}
-
-{% block styles %}
-<style>
-    .dash-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 0.75rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .dash-card {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        padding: 1rem 1.1rem;
-        display: flex;
-        align-items: flex-start;
-        gap: 0.85rem;
-        transition: box-shadow 0.15s;
-    }
-    .dash-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
-    .dash-card--warn { border-color: #fbbf24; }
-
-    .dash-ql-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-        padding: 0.3rem 0.75rem;
-        font-size: 0.82rem;
-        font-weight: 600;
-        color: var(--thc-primary);
-        background: #fff;
-        border: 1px solid var(--thc-primary);
-        border-radius: 6px;
-        text-decoration: none;
-        transition: background 0.12s, color 0.12s;
-    }
-    .dash-ql-btn:hover { background: var(--thc-primary); color: #fff; }
-
-    .dash-card__icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.15rem;
-        flex-shrink: 0;
-    }
-
-    .dash-card__body { flex: 1; min-width: 0; }
-
-    .dash-card__label {
-        font-size: 0.72rem;
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: var(--thc-text-muted);
-        margin-bottom: 0.2rem;
-    }
-
-    .dash-card__value {
-        font-size: 1.45rem;
-        font-weight: 700;
-        color: var(--thc-text);
-        line-height: 1.2;
-    }
-
-    .dash-card__link {
-        display: inline-block;
-        font-size: 0.72rem;
-        color: var(--thc-primary);
-        text-decoration: none;
-        margin-top: 0.25rem;
-    }
-    .dash-card__link:hover { text-decoration: underline; }
-
-    @media (max-width: 576px) {
-        .dash-grid { grid-template-columns: 1fr 1fr; }
-    }
-
-    /* Sales Summary Styles */
-    .summary-metric {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 0.85rem 1rem;
-        text-align: center;
-    }
-    .summary-metric--total {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-color: #667eea;
-    }
-    .summary-metric__label {
-        font-size: 0.68rem;
-        font-weight: 600;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        color: var(--thc-text-muted);
-        margin-bottom: 0.3rem;
-    }
-    .summary-metric--total .summary-metric__label {
-        color: rgba(255,255,255,0.9);
-    }
-    .summary-metric__value {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: var(--thc-text);
-        font-family: monospace;
-    }
-    .summary-metric--total .summary-metric__value {
-        color: #fff;
-    }
-
-    .sales-table-card {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-    .sales-table-header {
-        padding: 0.6rem 0.85rem;
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 0.03em;
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
-    }
-    .sales-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    .sales-table td {
-        padding: 0.5rem 0.85rem;
-        font-size: 0.8rem;
-        border-bottom: 1px solid #f1f5f9;
-    }
-    .sales-table__label {
-        color: var(--thc-text);
-    }
-    .sales-table__value {
-        text-align: right;
-        font-family: monospace;
-        font-weight: 600;
-        color: var(--thc-text);
-    }
-    .sales-table__total td {
-        background: #f8fafc;
-        font-weight: 700;
-        border-bottom: none;
-        padding-top: 0.6rem;
-        padding-bottom: 0.6rem;
-    }
-    .sales-table tr:last-child:not(.sales-table__total) td {
-        border-bottom: 1px solid #e2e8f0;
-    }
-
-    @media (max-width: 768px) {
-        .summary-metric__value {
-            font-size: 1.1rem;
-        }
-    }
-</style>
 {% endblock %}
