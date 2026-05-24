@@ -9,13 +9,14 @@ from . import app_name
 def get_attributes(object):
     attributes = [x for x in dir(object) if (not x.startswith("_"))]
     exceptions = (
-        "user_prepare_id", 
-        "user_prepare", 
-        "errors", 
-        "active", 
+        "user_prepare_id",
+        "user_prepare",
+        "errors",
+        "active",
         "details",
-        "locked", 
+        "locked",
         app_name,
+        "get_formatted_name",
         )
     for i in exceptions:
         try:
@@ -35,7 +36,10 @@ def get_attributes_as_dict(object):
 @dataclass
 class Form:
     id: int = None
-    customer_name: str = ""
+    customer_name: str = ""  # Legacy field for backwards compatibility
+    last_name: str = ""
+    first_name: str = ""
+    middle_name: str = ""
     birthday: str = ""
     sex_id: int = None
     sex_name: str = ""
@@ -43,12 +47,28 @@ class Form:
     address: str = ""
     business_style: str = ""
     salesman: str = ""
-    
+
     user_prepare_id: int = None
     user_prepare: str = ""
 
     errors = {}
-       
+
+    def get_formatted_name(self):
+        """Returns formatted name: Last Name, First Name Middle Name"""
+        if self.last_name or self.first_name:
+            parts = []
+            if self.last_name:
+                parts.append(self.last_name)
+            name_parts = []
+            if self.first_name:
+                name_parts.append(self.first_name)
+            if self.middle_name:
+                name_parts.append(self.middle_name)
+            if name_parts:
+                parts.append(' '.join(name_parts))
+            return ', '.join(parts) if len(parts) > 1 else parts[0] if parts else ''
+        return self.customer_name or ''
+
     def _populate(self, row):
         for attribute in get_attributes(self):
             if attribute in ["errors", "sex_name"]:
@@ -137,17 +157,20 @@ class Form:
     def _validate_on_submit(self):
         self.errors = {}
 
-        if not self.customer_name:
-            self.errors["customer_name"] = "Please type customer name."
+        # Require at least last name or first name
+        if not self.last_name and not self.first_name:
+            self.errors["last_name"] = "Please enter at least Last Name or First Name."
+            self.errors["first_name"] = "Please enter at least Last Name or First Name."
         else:
+            # Check for duplicate based on full name combination
             duplicate = Obj.query.filter(
-                func.lower(
-                    Obj.customer_name
-                    ) == func.lower(self.customer_name), 
-                    Obj.id != self.id
-                    ).first()
+                func.lower(Obj.last_name) == func.lower(self.last_name),
+                func.lower(Obj.first_name) == func.lower(self.first_name),
+                func.lower(Obj.middle_name) == func.lower(self.middle_name),
+                Obj.id != self.id
+            ).first()
             if duplicate:
-                self.errors["customer_name"] = "Customer name is already used."               
+                self.errors["last_name"] = "A patient with this name already exists."
 
         if not self.sex_name:
             self.errors["sex_name"] = "Please type sex."
@@ -158,7 +181,7 @@ class Form:
 
 
         if not self.errors:
-            return True     
+            return True
         else:
             return False   
     

@@ -1,24 +1,122 @@
+{% if popup %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Add Patient</title>
+
+    <!-- Bootstrap CSS (local) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/bootstrap.min.css') }}">
+    <!-- Bootstrap Icons (local) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/bootstrap-icons.min.css') }}">
+    <!-- THC Fonts (local) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/fonts.css') }}">
+    <!-- jQuery UI CSS (local) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/jquery-ui.min.css') }}">
+    <!-- jQuery (local) -->
+    <script src="{{ url_for('static', filename='vendor/js/jquery.min.js') }}"></script>
+    <!-- jQuery UI (local) -->
+    <script src="{{ url_for('static', filename='vendor/js/jquery-ui.min.js') }}"></script>
+
+    <!-- THC Design System -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}">
+
+    <style>
+        body {
+            background-color: var(--thc-bg-page);
+            font-family: var(--thc-font-body);
+            padding: var(--thc-space-6);
+        }
+        .btn {
+            font-family: var(--thc-font-body) !important;
+            font-size: var(--thc-text-sm) !important;
+            font-weight: var(--thc-font-semibold) !important;
+            border-radius: var(--thc-radius-md) !important;
+            padding: var(--thc-space-2) var(--thc-space-5) !important;
+        }
+        .btn-primary {
+            background: var(--thc-primary-600) !important;
+            border-color: var(--thc-primary-600) !important;
+            color: var(--thc-white) !important;
+        }
+        .btn-primary:hover {
+            background: var(--thc-primary-700) !important;
+            border-color: var(--thc-primary-700) !important;
+        }
+        .btn-secondary {
+            background: var(--thc-gray-500) !important;
+            border-color: var(--thc-gray-500) !important;
+            color: var(--thc-white) !important;
+        }
+        .btn-secondary:hover {
+            background: var(--thc-gray-600) !important;
+            border-color: var(--thc-gray-600) !important;
+        }
+    </style>
+</head>
+<body>
+    <h4 style="margin-bottom: var(--thc-space-6); font-weight: var(--thc-font-semibold);">Add Patient</h4>
+
+    <form action="{{ url_for('customer.add', popup=1) }}" method="post">
+        {% from "macros_simple_form.html" import text_box, date_box, search_box %}
+
+        {{ text_box(form, "Last Name *", "last_name", form.last_name, autofocus=True) }}
+        {{ text_box(form, "First Name *", "first_name", form.first_name) }}
+        {{ text_box(form, "Middle Name", "middle_name", form.middle_name) }}
+        {{ date_box(form, "Birthday", "birthday", form.birthday) }}
+        {{ search_box(form, "Sex", "sex_name", form.sex_name, url_for('sex._autocomplete')) }}
+        {{ text_box(form, "TIN", "tin", form.tin) }}
+        {{ text_box(form, "Address", "address", form.address) }}
+        {{ text_box(form, "Business Style", "business_style", form.business_style) }}
+        {{ text_box(form, "Salesman", "salesman", form.salesman) }}
+
+        <div style="display: flex; gap: var(--thc-gap-md); margin-top: var(--thc-space-6);">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-secondary" onclick="window.close()">Cancel</button>
+        </div>
+    </form>
+
+    <!-- Bootstrap Bundle with Popper (local) -->
+    <script src="{{ url_for('static', filename='vendor/js/bootstrap.bundle.min.js') }}"></script>
+
+    <script>
+        // Convert input to uppercase on blur
+        document.addEventListener('DOMContentLoaded', function() {
+            var elements = document.querySelectorAll(".upper-case");
+            elements.forEach(function(element) {
+                element.addEventListener("blur", function(event) {
+                    event.target.value = event.target.value.toUpperCase();
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+{% else %}
 {% extends "base.html" %}
 {% from "macros_simple_form.html" import text_box, date_box ,text_area, search_box, save_button %}
 
-{% block title %}Customer{% endblock %}
+{% block title %}Patient{% endblock %}
 
 {% block content %}
 <div class="thc-page">
     {% if form.id %}
         <div class="thc-page-header">
-        <h4>Edit Customer</h4>
+        <h4>Edit Patient</h4>
     </div>
     <form action="{{ url_for('customer.edit', record_id=form.id) }}" method="post">
         <input type="number" name="record_id" value="{{ form.id }}" hidden>
         {% else %}
         <div class="thc-page-header">
-        <h4>Add Customer</h4>
+        <h4>Add Patient</h4>
     </div>
-    <form action="{{ url_for('customer.add', popup=1) if popup else url_for('customer.add') }}" method="post">
+    <form action="{{ url_for('customer.add') }}" method="post">
         {% endif %}
-    
-        {{ text_box(form, "Customer Name", "customer_name", form.customer_name, autofocus=True) }}
+
+        {{ text_box(form, "Last Name *", "last_name", form.last_name, autofocus=True) }}
+        {{ text_box(form, "First Name *", "first_name", form.first_name) }}
+        {{ text_box(form, "Middle Name", "middle_name", form.middle_name) }}
         {{ date_box(form, "Birthday", "birthday", form.birthday) }}
         {{ search_box(form, "Sex", "sex_name", form.sex_name, url_for('sex._autocomplete')) }}
         {{ text_box(form, "TIN", "tin", form.tin) }}
@@ -30,3 +128,4 @@
     </form>
 </div>
 {% endblock %}
+{% endif %}

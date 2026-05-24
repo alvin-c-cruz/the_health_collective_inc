@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 {% from "macros_button.html" import edit_button, delete_button, approve_button, unlock_button %}
 
-{% block title %}Customer{% endblock %}
+{% block title %}Patient{% endblock %}
 
 {% block content %}
 <div class="thc-page">
         <div class="thc-page-header">
-        <h4>Customer</h4>
+        <h4>Patient</h4>
     </div>
 
     <div class="mb-3 d-flex justify-content-between align-items-center">
-        <a href="{{ url_for('customer.add') }}" class="btn btn-primary btn-sm">Add Customer</a>
+        <a href="{{ url_for('customer.add') }}" class="btn btn-primary btn-sm">Add Patient</a>
 
         <div class="d-flex gap-2">
     <form method="POST" action="{{ url_for('customer.upload') }}" enctype="multipart/form-data">
@@ -51,7 +51,7 @@
                                         {{ approve_button(url_for('customer.approve', record_id=row.id)) }}
                                     {% endif %}
                                 {% else %}
-                                    <span style="font-size:0.8rem;color:var(--thc-text-muted);">Approved — editing locked.</span>
+                                    <span style="font-size:var(--thc-text-sm);color:var(--thc-text-secondary);">Approved — editing locked.</span>
                                     {% if current_user.admin %}
                                         {{ unlock_button(url_for('customer.unlock', record_id=row.id)) }}
                                     {% endif %}
@@ -61,7 +61,7 @@
                         {% else %}
                         <tr>
                             <td colspan="4" class="text-center text-muted py-4">
-                                No accounts found. Click "Add Customer" to create one.
+                                No accounts found. Click "Add Patient" to create one.
                             </td>
                         </tr>
                         {% endfor %}

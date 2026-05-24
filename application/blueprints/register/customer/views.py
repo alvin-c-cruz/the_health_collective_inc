@@ -53,9 +53,9 @@ def add():
                     '}'
                     'window.close();'
                     '</script>'
-                    '<p style="font-family:sans-serif;padding:2rem;">Customer saved. This window will close automatically.</p>'
+                    '<p style="font-family:sans-serif;padding:2rem;">Patient saved. This window will close automatically.</p>'
                     '</body></html>',
-                    name=form.customer_name
+                    name=form.get_formatted_name()
                 )
             return redirect(url_for(f'{app_name}.home'))
     else:
@@ -77,7 +77,7 @@ def quick_add():
     form._post(request.form, current_user.id)
     if form._validate_on_submit():
         form._save()
-        return jsonify({"success": True, "customer_name": form.customer_name})
+        return jsonify({"success": True, "customer_name": form.get_formatted_name()})
     return jsonify({"success": False, "errors": form.errors}), 400
 
 
@@ -173,7 +173,8 @@ def unlock(record_id):
 @bp.route("/autocomplete", methods=['GET'])
 @login_required
 def _autocomplete():
-    options = [getattr(i,f"{app_name}_name") for i in Obj.query.order_by(getattr(Obj,f"{app_name}_name")).all()]
+    # Return patient names in format: Last Name, First Name Middle Name
+    options = [str(i) for i in Obj.query.order_by(Obj.last_name, Obj.first_name, Obj.middle_name).all()]
     return Response(json.dumps(options), mimetype='application/json')
 
 
