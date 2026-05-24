@@ -7,6 +7,7 @@ from datetime import timedelta
 from . extensions import db, bcrypt, mail, migrate, login_manager
 from . blueprints.user import User
 from . import blueprints
+from . utils.version import get_version
 
 
 def create_app(test=False):
@@ -64,5 +65,12 @@ def create_app(test=False):
     with app.app_context():
         from .blueprints.user.views import check_roles
         check_roles()
+
+    # Make version available to all templates
+    @app.context_processor
+    def inject_version():
+        return {
+            'app_version': get_version()
+        }
 
     return app
