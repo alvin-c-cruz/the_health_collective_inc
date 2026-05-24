@@ -91,7 +91,19 @@ def home():
         class_name = account_class.account_class_name.upper()
         type_name = account.account_type.account_type_name.upper()
 
-        if 'REVENUE' in class_name or 'INCOME' in class_name or 'SALES' in type_name:
+        # Income Statement should only include temporary accounts (Revenue, COGS, Expenses)
+        # Exclude balance sheet accounts even if their type name contains keywords
+        is_balance_sheet_account = (
+            'ASSET' in class_name or
+            'LIABILIT' in class_name or
+            'EQUITY' in class_name or
+            'CAPITAL' in class_name
+        )
+
+        if is_balance_sheet_account:
+            # Skip balance sheet accounts (e.g., PREPAID EXPENSES, DEFERRED TAX ASSETS)
+            continue
+        elif 'REVENUE' in class_name or 'INCOME' in class_name or 'SALES' in type_name:
             revenue_accounts.append(account_data)
             total_revenue += account_data['credit'] - account_data['debit']
         elif 'COST OF SALES' in type_name or 'COST OF GOODS' in type_name:
