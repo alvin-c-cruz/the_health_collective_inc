@@ -36,4 +36,5 @@ from .operations import transaction_type
 from .operations import bank_account
 from .operations import collections
 from .operations import ape_batch
+from .operations import payee
 

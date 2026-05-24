@@ -51,9 +51,29 @@ class User(db.Model):
         if 'user_id' in session: return True
         
     @property
+    def is_superuser(self):
+        """Check if user has superuser role"""
+        return self.superuser if self.superuser is not None else False
+
+    @property
+    def is_admin(self):
+        """Check if user has admin role"""
+        return self.admin if self.admin is not None else False
+
+    @property
+    def is_staff(self):
+        """Check if user has staff role"""
+        return self.staff if self.staff is not None else False
+
+    @property
+    def is_view(self):
+        """Check if user has view role (currently mapped to active status)"""
+        return self.active if self.active is not None else False
+
+    @property
     def user_roles(self):
         return [user_role.role.role_name for user_role in self.roles]
-    
+
     @property
     def menus(self):
         return current_app.config['MENUS']

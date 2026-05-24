@@ -89,7 +89,12 @@
     <script>
     $(function() {
         $.ajax({ url: '{{ autosearch }}' }).done(function(data) {
-            $('#{{ field_name }}').autocomplete({ source: data, minLength: 2 });
+            $('#{{ field_name }}').autocomplete({
+                source: data,
+                minLength: 0
+            }).focus(function() {
+                $(this).autocomplete("search", "");
+            });
         });
     });
     </script>

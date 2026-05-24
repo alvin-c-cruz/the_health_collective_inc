@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/bootstrap-icons.min.css') }}">
     <!-- THC Fonts: Playfair Display + Inter (local, latin subset) -->
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/fonts.css') }}">
+    <!-- THC Design System v2.0 - All design tokens -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}">
     <!-- jQuery UI CSS (local) -->
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/jquery-ui.min.css') }}">
     <!-- jQuery (local) -->
@@ -20,17 +22,20 @@
 
     <style>
       /* ── THC Global Design System ── */
+      /* Design tokens are now loaded from design-system.css */
+      /* Legacy inline variables kept for backward compatibility during migration */
       :root {
-        --thc-primary:       #1a6473;
-        --thc-primary-dark:  #135260;
-        --thc-primary-light: #e6f3f5;
-        --thc-bg:            #f8f9fa;
-        --thc-surface:       #ffffff;
-        --thc-border:        #e2e8f0;
-        --thc-text:          #1a2a2a;
-        --thc-text-muted:    #6b7280;
-        --thc-font-heading:  'Playfair Display', Georgia, serif;
-        --thc-font-body:     'Inter', 'DM Sans', sans-serif;
+        /* These are aliases to new design system tokens - will be removed in Phase 4 */
+        --thc-primary:       var(--thc-primary-600);      /* DEPRECATED: Use --thc-primary-600 */
+        --thc-primary-dark:  var(--thc-primary-700);      /* DEPRECATED: Use --thc-primary-700 */
+        --thc-primary-light: var(--thc-primary-100);      /* DEPRECATED: Use --thc-primary-100 */
+        --thc-bg:            var(--thc-bg-page);          /* DEPRECATED: Use --thc-bg-page */
+        --thc-surface:       var(--thc-bg-surface);       /* DEPRECATED: Use --thc-bg-surface */
+        --thc-border:        var(--thc-border-default);   /* DEPRECATED: Use --thc-border-default */
+        --thc-text:          var(--thc-text-primary);     /* DEPRECATED: Use --thc-text-primary */
+        --thc-text-muted:    var(--thc-text-secondary);   /* DEPRECATED: Use --thc-text-secondary */
+        --thc-font-heading:  var(--thc-font-heading);     /* OK - same name in new system */
+        --thc-font-body:     var(--thc-font-body);        /* OK - same name in new system */
       }
 
       body {
