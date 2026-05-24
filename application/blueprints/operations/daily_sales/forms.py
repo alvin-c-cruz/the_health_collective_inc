@@ -7,6 +7,7 @@ from .models import TransactionTender as ObjTender
 from .admin_models import UserTransaction as Preparer
 from datetime import datetime
 from . import app_name
+from .audit_logger import log_create, log_update, log_status_change, get_model_snapshot
 
 from ...register.customer import Customer
 from ...register.product import Product
@@ -123,6 +124,7 @@ class Form:
     approved_by: str = ""
     description: str = ""
     discount: float = 0.0
+    discount_description: str = ""
 
     submitted: str = ""
     cancelled: str = ""
@@ -158,11 +160,12 @@ class Form:
         self.approved_by = obj.approved_by or ""
         self.description = obj.description or ""
         self.discount = float(obj.discount or 0)
+        self.discount_description = obj.discount_description or ""
         self.submitted = obj.submitted or ""
         self.cancelled = obj.cancelled or ""
 
         if obj.customer:
-            self.customer_name = obj.customer.customer_name
+            self.customer_name = str(obj.customer)  # Use formatted name: Last Name, First Name Middle Name
 
         self.details = [(i, DetailSubForm()) for i in range(DETAIL_ROWS)]
         for i, row in enumerate(obj.transaction_details):
@@ -201,11 +204,20 @@ class Form:
         self.approved_by = request_form.get("approved_by", "")
         self.description = request_form.get("description", "")
         self.discount = _safe_float(request_form.get("discount"))
+        self.discount_description = request_form.get("discount_description", "").strip()
 
-        # Customer
+        # Customer - find by formatted name or legacy customer_name
         customer_name = request_form.get("customer_name", "")
         self.customer_name = customer_name
-        customer = Customer.query.filter_by(customer_name=customer_name).first()
+        # First try to find by formatted name (all customers)
+        customer = None
+        for c in Customer.query.all():
+            if str(c) == customer_name:
+                customer = c
+                break
+        # Fallback to legacy customer_name field
+        if not customer:
+            customer = Customer.query.filter_by(customer_name=customer_name).first()
         self.customer_id = customer.id if customer else 0
 
         # Detail rows – HTML sends arrays: product_id[], amount[], etc.
@@ -249,9 +261,16 @@ class Form:
             self.errors["record_date"] = "Please enter a date."
 
         if not self.customer_name:
-            self.errors["customer_name"] = "Please enter a customer."
+            self.errors["customer_name"] = "Please enter a patient."
         else:
-            customer = Customer.query.filter_by(customer_name=self.customer_name).first()
+            # Find by formatted name or legacy customer_name
+            customer = None
+            for c in Customer.query.all():
+                if str(c) == self.customer_name:
+                    customer = c
+                    break
+            if not customer:
+                customer = Customer.query.filter_by(customer_name=self.customer_name).first()
             if not customer:
                 self.errors["customer_name"] = f'"{self.customer_name}" not found.'
 
@@ -292,6 +311,9 @@ class Form:
     # ------------------------------------------------------------------ #
 
     def _save(self):
+        is_new = self.id is None
+        old_snapshot = None
+
         if self.id is None:
             record = Obj(
                 record_date=self.record_date,
@@ -306,12 +328,16 @@ class Form:
                 approved_by=self.approved_by,
                 description=self.description,
                 discount=self.discount,
+                discount_description=self.discount_description,
             )
             db.session.add(record)
             db.session.flush()  # get record.id before committing
             self.id = record.id
         else:
             record = Obj.query.get(self.id)
+            # Capture old state before updating
+            old_snapshot = get_model_snapshot(record)
+
             record.record_date = self.record_date
             record.record_number = self.record_number
             record.dashlabs_number = self.dashlabs_number
@@ -324,6 +350,7 @@ class Form:
             record.approved_by = self.approved_by
             record.description = self.description
             record.discount = self.discount
+            record.discount_description = self.discount_description
 
             # Delete existing details & tenders, then re-insert
             ObjDetail.query.filter_by(transaction_id=self.id).delete()
@@ -363,6 +390,18 @@ class Form:
 
         db.session.commit()
 
+        # Audit logging
+        try:
+            from flask_login import current_user
+            if is_new:
+                log_create('transaction', record, notes='Transaction created')
+            elif old_snapshot:
+                log_update('transaction', record, old_snapshot, notes='Transaction updated')
+            db.session.commit()
+        except Exception as e:
+            # Don't fail the transaction save if audit logging fails
+            print(f"Audit logging failed: {e}")
+
     # ------------------------------------------------------------------ #
     # Submit / Cancel                                                      #
     # ------------------------------------------------------------------ #
@@ -372,6 +411,13 @@ class Form:
         record.submitted = str(ph_today())
         self.submitted = record.submitted
         db.session.commit()
+
+        # Audit logging
+        try:
+            log_status_change('transaction', record, 'submitted', notes='Transaction submitted for approval')
+            db.session.commit()
+        except Exception as e:
+            print(f"Audit logging failed: {e}")
 
     def _cancel(self):
         record = Obj.query.get(self.id)

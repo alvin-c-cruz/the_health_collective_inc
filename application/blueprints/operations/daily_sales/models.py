@@ -33,6 +33,7 @@ class Transaction(db.Model):
     cancelled = db.Column(db.String())
 
     discount = db.Column(db.Float, default=0)
+    discount_description = db.Column(db.String(), nullable=True)
 
     # New workflow fields
     status = db.Column(db.String(20), default='draft')  # draft | submitted | posted
@@ -148,7 +149,8 @@ class Deposit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     record_date = db.Column(db.String())  # Deposit date
     reference_number = db.Column(db.String())  # Bank slip / ref no.
-    bank_account = db.Column(db.String())  # Bank / Account name
+    bank_account_id = db.Column(db.Integer, db.ForeignKey("bank_account.id"), nullable=True)
+    bank_account = db.relationship("BankAccount", lazy=True)
     notes = db.Column(db.String())  # Optional notes
     deductions = db.Column(db.Numeric(12, 2), default=0.00)  # Bank charges, fees, etc.
     deduction_details = db.Column(db.String())  # Description of what the deduction is for
@@ -183,6 +185,15 @@ class Deposit(db.Model):
     @property
     def formatted_record_date(self):
         return short_date(self.record_date) if self.record_date else None
+
+    @property
+    def bank_account_display(self):
+        """Format bank account for display"""
+        if self.bank_account:
+            if self.bank_account.account_number:
+                return f"{self.bank_account.bank_name} ({self.bank_account.account_number})"
+            return self.bank_account.bank_name
+        return '-'
 
     @property
     def total_amount(self):
@@ -561,9 +572,20 @@ class ReimbursementReceived(db.Model):
     reimbursement_report_id = db.Column(db.Integer, db.ForeignKey('reimbursement_report.id'))
     reimbursement_report = db.relationship('ReimbursementReport', backref='reimbursements_received')
 
+    # Approval workflow
+    status = db.Column(db.String(50), default='draft')  # draft, submitted, posted, cancelled
+
     created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     created_by = db.relationship('User', foreign_keys=[created_by_id], backref='reimbursements_created')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    submitted_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    submitted_by = db.relationship('User', foreign_keys=[submitted_by_id], backref='reimbursements_submitted')
+    submitted_at = db.Column(db.DateTime)
+
+    approved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    approved_by = db.relationship('User', foreign_keys=[approved_by_id], backref='reimbursements_approved')
+    approved_at = db.Column(db.DateTime)
 
     def __str__(self):
         return f"{self.reference_number} - ₱{self.formatted_amount}"

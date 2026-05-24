@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, jsonify
 from datetime import date, datetime
 from sqlalchemy import func
 
@@ -90,18 +90,137 @@ def home():
     # Combine: date-specific deposits + all drafts (avoiding duplicates)
     all_deposits = deposits + [d for d in draft_deposits if d.id not in {dep.id for dep in deposits}]
 
+    # Get collections for the selected date
+    from application.blueprints.operations.collections.models import Collection
+    collections = Collection.query.filter(
+        Collection.collection_date == str(selected_date)
+    ).order_by(Collection.id.desc()).all()
+
+    # Get all draft collections (regardless of date)
+    draft_collections = Collection.query.filter(
+        Collection.status == 'draft'
+    ).order_by(Collection.collection_date.desc(), Collection.id.desc()).all()
+
+    # Combine: date-specific collections + all drafts (avoiding duplicates)
+    all_collections = collections + [c for c in draft_collections if c.id not in {col.id for col in collections}]
+
+    # Get funds received for the selected date
+    funds_received = FundReceived.query.filter(
+        FundReceived.record_date == str(selected_date)
+    ).order_by(FundReceived.id.desc()).all()
+
+    # Get all draft funds received (regardless of date)
+    draft_funds_received = FundReceived.query.filter(
+        FundReceived.status == 'draft'
+    ).order_by(FundReceived.record_date.desc(), FundReceived.id.desc()).all()
+
+    # Combine: date-specific + all drafts (avoiding duplicates)
+    all_funds_received = funds_received + [f for f in draft_funds_received if f.id not in {fr.id for fr in funds_received}]
+
+    # Get funds disbursed for the selected date
+    funds_disbursed = FundDisbursed.query.filter(
+        FundDisbursed.record_date == str(selected_date)
+    ).order_by(FundDisbursed.id.desc()).all()
+
+    # Get all draft funds disbursed (regardless of date)
+    draft_funds_disbursed = FundDisbursed.query.filter(
+        FundDisbursed.status == 'draft'
+    ).order_by(FundDisbursed.record_date.desc(), FundDisbursed.id.desc()).all()
+
+    # Combine: date-specific + all drafts (avoiding duplicates)
+    all_funds_disbursed = funds_disbursed + [f for f in draft_funds_disbursed if f.id not in {fd.id for fd in funds_disbursed}]
+
+    # Get petty cash vouchers for the selected date
+    petty_cash_vouchers = PettyCashVoucher.query.filter(
+        PettyCashVoucher.record_date == str(selected_date)
+    ).order_by(PettyCashVoucher.id.desc()).all()
+
+    # Get all draft petty cash vouchers (regardless of date)
+    draft_petty_cash_vouchers = PettyCashVoucher.query.filter(
+        PettyCashVoucher.status == 'draft'
+    ).order_by(PettyCashVoucher.record_date.desc(), PettyCashVoucher.id.desc()).all()
+
+    # Combine: date-specific + all drafts (avoiding duplicates)
+    all_petty_cash_vouchers = petty_cash_vouchers + [pcv for pcv in draft_petty_cash_vouchers if pcv.id not in {v.id for v in petty_cash_vouchers}]
+
+    # Get reimbursements received for the selected date
+    reimbursements_received = ReimbursementReceived.query.filter(
+        ReimbursementReceived.record_date == str(selected_date)
+    ).order_by(ReimbursementReceived.id.desc()).all()
+
     total_sales = sum(
         sum(d.amount - d.discount for d in t.transaction_details) - (t.discount or 0)
         for t in transactions
         if t.submitted and not t.cancelled
     )
 
-    cash_on_hand = sum(
+    # Calculate cash on hand: cash sales + funds received - funds disbursed - unreimbursed expenses (cumulative up to selected date)
+
+    # 1. Cash from transactions (cumulative up to selected date)
+    cash_from_sales = sum(
         sum(td.amount for td in t.transaction_tenders
             if td.tender and 'cash' in td.tender.tender_name.lower())
-        for t in transactions
-        if t.submitted and not t.cancelled
+        for t in Transaction.query.filter(
+            Transaction.record_date <= str(selected_date),
+            Transaction.submitted.isnot(None),
+            Transaction.cancelled.is_(None)
+        ).all()
     )
+
+    # 2. Funds received (cumulative up to selected date, posted and submitted only)
+    total_funds_received = sum(
+        f.amount for f in FundReceived.query.filter(
+            FundReceived.record_date <= str(selected_date),
+            FundReceived.status.in_(['posted', 'submitted'])
+        ).all()
+    )
+
+    # 3. Funds disbursed (cumulative up to selected date, posted and submitted only)
+    total_funds_disbursed = sum(
+        f.amount for f in FundDisbursed.query.filter(
+            FundDisbursed.record_date <= str(selected_date),
+            FundDisbursed.status.in_(['posted', 'submitted'])
+        ).all()
+    )
+
+    # 4. Unreimbursed petty cash expenses (cumulative up to selected date, posted and submitted only, not yet reimbursed)
+    # Get all petty cash vouchers
+    all_petty_cash = PettyCashVoucher.query.filter(
+        PettyCashVoucher.record_date <= str(selected_date),
+        PettyCashVoucher.status.in_(['posted', 'submitted'])
+    ).all()
+
+    # Get all reimbursements received (posted and submitted only)
+    all_reimbursements = ReimbursementReceived.query.filter(
+        ReimbursementReceived.record_date <= str(selected_date),
+        ReimbursementReceived.status.in_(['posted', 'submitted'])
+    ).all()
+
+    # Calculate unreimbursed amount
+    total_petty_cash_expenses = sum(pcv.amount for pcv in all_petty_cash)
+    total_reimbursements = sum(r.amount for r in all_reimbursements)
+    unreimbursed_expenses = total_petty_cash_expenses - total_reimbursements
+
+    # 5. Deposits (cumulative up to selected date, posted and submitted only) - cash going OUT to bank
+    total_deposits = sum(
+        d.total_amount for d in Deposit.query.filter(
+            Deposit.record_date <= str(selected_date),
+            Deposit.status.in_(['posted', 'submitted'])
+        ).all()
+    )
+
+    # 6. Collections (cumulative up to selected date, posted and submitted only) - cash coming IN from bank
+    from application.blueprints.operations.collections.models import Collection
+    total_collections = sum(
+        c.amount for c in Collection.query.filter(
+            Collection.collection_date <= str(selected_date),
+            Collection.status.in_(['posted', 'submitted'])
+        ).all()
+    )
+
+    # Final cash on hand calculation
+    # Cash sales + Funds received - Funds disbursed - Unreimbursed expenses - Deposits + Collections
+    cash_on_hand = cash_from_sales + total_funds_received - total_funds_disbursed - unreimbursed_expenses - total_deposits + total_collections
 
     class Summary:
         pass
@@ -139,6 +258,11 @@ def home():
         "summary": summary,
         "transactions": all_transactions,  # Include both date-specific and all drafts
         "deposits": all_deposits,  # Include both date-specific and all draft deposits
+        "collections": all_collections,  # Include both date-specific and all draft collections
+        "funds_received": all_funds_received,  # Include both date-specific and all drafts
+        "funds_disbursed": all_funds_disbursed,  # Include both date-specific and all drafts
+        "petty_cash_vouchers": all_petty_cash_vouchers,  # Include both date-specific and all drafts
+        "reimbursements_received": reimbursements_received,  # Only date-specific
         "txn_type_tenders": txn_type_tenders,
         "transaction_types": transaction_types,
         "type_lookup": type_lookup,
@@ -280,6 +404,10 @@ def edit_transaction(transaction_id):
 
     # Get return URL from query parameter or referer
     return_url = request.args.get('return_url') or request.referrer or url_for('daily_sales.home')
+
+    # If return_url points to drafts page, new transaction page, or edit page, redirect to daily sales home instead
+    if 'drafts' in return_url.lower() or '/transaction/new' in return_url.lower() or '/edit' in return_url.lower():
+        return_url = url_for('daily_sales.home')
 
     if record.submitted or record.cancelled:
         flash('This transaction is locked and cannot be edited.', 'warning')
@@ -665,10 +793,43 @@ def pending_approval():
         .all()
     )
 
+    # Get pending funds received
+    funds_received = (
+        FundReceived.query
+        .filter(
+            FundReceived.status == 'submitted'
+        )
+        .order_by(FundReceived.record_date.asc(), FundReceived.id.asc())
+        .all()
+    )
+
+    # Get pending funds disbursed
+    funds_disbursed = (
+        FundDisbursed.query
+        .filter(
+            FundDisbursed.status == 'submitted'
+        )
+        .order_by(FundDisbursed.record_date.asc(), FundDisbursed.id.asc())
+        .all()
+    )
+
+    # Get pending petty cash vouchers
+    petty_cash_vouchers = (
+        PettyCashVoucher.query
+        .filter(
+            PettyCashVoucher.status == 'submitted'
+        )
+        .order_by(PettyCashVoucher.record_date.asc(), PettyCashVoucher.id.asc())
+        .all()
+    )
+
     return render_template(
         "daily_sales/pending_approval.html",
         transactions=transactions,
         deposits=deposits,
+        funds_received=funds_received,
+        funds_disbursed=funds_disbursed,
+        petty_cash_vouchers=petty_cash_vouchers,
         app_label=app_label,
     )
 
@@ -884,6 +1045,62 @@ def customer_search():
     return jsonify([str(c) for c in results])
 
 
+@bp.route('/tender/notes', methods=['GET'])
+@login_required
+def get_tender_notes():
+    """Get unique notes for a specific tender type"""
+    from flask import jsonify
+    tender_id = request.args.get('tender_id', type=int)
+
+    if not tender_id:
+        return jsonify({'notes': []})
+
+    # Get distinct non-null side_notes for this tender, ordered by most recent
+    notes = db.session.query(TransactionTender.side_note)\
+        .filter(
+            TransactionTender.tender_id == tender_id,
+            TransactionTender.side_note != None,
+            TransactionTender.side_note != ''
+        )\
+        .distinct()\
+        .order_by(TransactionTender.side_note)\
+        .limit(50)\
+        .all()
+
+    # Extract the note strings from the query result
+    note_list = [note[0] for note in notes if note[0]]
+
+    return jsonify({'notes': note_list})
+
+
+@bp.route('/get-discount-descriptions')
+@login_required
+def get_discount_descriptions():
+    """Get unique discount descriptions from past transactions"""
+    from flask import jsonify
+
+    # Get distinct non-null discount_description values, ordered alphabetically
+    # Note: This will work once we add the discount_description column to the Transaction model
+    try:
+        descriptions = db.session.query(Transaction.discount_description)\
+            .filter(
+                Transaction.discount_description != None,
+                Transaction.discount_description != ''
+            )\
+            .distinct()\
+            .order_by(Transaction.discount_description)\
+            .limit(50)\
+            .all()
+
+        # Extract the description strings from the query result
+        desc_list = [desc[0] for desc in descriptions if desc[0]]
+    except:
+        # If column doesn't exist yet, return empty list
+        desc_list = []
+
+    return jsonify({'descriptions': desc_list})
+
+
 # ---------------------------------------------------------------------------
 # Record deposit
 # ---------------------------------------------------------------------------
@@ -950,7 +1167,7 @@ def record_deposit():
             deposit = Deposit()
             deposit.record_date = request.form.get('record_date')
             deposit.reference_number = request.form.get('reference_number', '')
-            deposit.bank_account = request.form.get('bank_account', '')
+            deposit.bank_account_id = request.form.get('bank_account_id', type=int) or None
             deposit.notes = request.form.get('notes', '')
             deposit.deductions = float(request.form.get('deductions', 0))
             deposit.deduction_details = request.form.get('deduction_details', '')
@@ -1576,12 +1793,12 @@ def daily_report():
         """Calculate fund received and disbursed for a specific date only"""
         funds_received = FundReceived.query.filter(
             FundReceived.record_date == str(target_date),
-            FundReceived.status == 'posted'
+            FundReceived.status.in_(['submitted', 'posted'])
         ).all()
 
         funds_disbursed = FundDisbursed.query.filter(
             FundDisbursed.record_date == str(target_date),
-            FundDisbursed.status == 'posted'
+            FundDisbursed.status.in_(['submitted', 'posted'])
         ).all()
 
         total_received = sum(f.amount for f in funds_received)
@@ -1598,12 +1815,12 @@ def daily_report():
         # Get all fund transactions up to and including target_date
         funds_received = FundReceived.query.filter(
             FundReceived.record_date <= str(target_date),
-            FundReceived.status == 'posted'
+            FundReceived.status.in_(['submitted', 'posted'])
         ).all()
 
         funds_disbursed = FundDisbursed.query.filter(
             FundDisbursed.record_date <= str(target_date),
-            FundDisbursed.status == 'posted'
+            FundDisbursed.status.in_(['submitted', 'posted'])
         ).all()
 
         # Calculate running balance by category
@@ -1636,10 +1853,10 @@ def daily_report():
                     if txn.transaction_type and txn.transaction_type.type_code != 'dialysis':
                         total_cash += tender.amount
 
-        # Subtract all posted deposits up to and including target_date
+        # Subtract all submitted/posted deposits up to and including target_date
         deposits = Deposit.query.filter(
             Deposit.record_date <= str(target_date),
-            Deposit.status == 'posted'
+            Deposit.status.in_(['submitted', 'posted'])
         ).all()
 
         total_deposited = sum(d.total_amount for d in deposits)
@@ -1651,7 +1868,7 @@ def daily_report():
         """Calculate total cash deposited on a specific date"""
         deposits = Deposit.query.filter(
             Deposit.record_date == str(target_date),
-            Deposit.status == 'posted'
+            Deposit.status.in_(['submitted', 'posted'])
         ).all()
         return sum(d.total_amount for d in deposits)
 
@@ -2045,8 +2262,8 @@ def accountabilities():
     end_date_str = request.args.get('end_date')
     category_id = request.args.get('category_id')
 
-    # Default to current month if no dates provided
-    today = date.today()
+    # Default to current month if no dates provided (use Philippine timezone)
+    today = ph_today()
     if not start_date_str:
         start_date = date(today.year, today.month, 1)
     else:
@@ -2119,18 +2336,14 @@ def new_fund_received():
                 record_date=record_date,
                 reference_number=reference_number,
                 description=description,
-                status='posted',  # Auto-post for simplicity
+                status='draft',  # Start as draft, requires approval
                 created_by_id=current_user.id,
-                submitted_by_id=current_user.id,
-                submitted_at=datetime.utcnow(),
-                approved_by_id=current_user.id,
-                approved_at=datetime.utcnow(),
             )
 
             db.session.add(fund_received)
             db.session.commit()
 
-            flash("Fund received record created successfully", "success")
+            flash("Fund received record created as draft", "success")
             return redirect(url_for('daily_sales.accountabilities'))
 
         except Exception as e:
@@ -2165,18 +2378,14 @@ def new_fund_disbursed():
                 record_date=record_date,
                 reference_number=reference_number,
                 description=description,
-                status='posted',  # Auto-post for simplicity
+                status='draft',  # Start as draft, requires approval
                 created_by_id=current_user.id,
-                submitted_by_id=current_user.id,
-                submitted_at=datetime.utcnow(),
-                approved_by_id=current_user.id,
-                approved_at=datetime.utcnow(),
             )
 
             db.session.add(fund_disbursed)
             db.session.commit()
 
-            flash("Fund disbursed record created successfully", "success")
+            flash("Fund disbursed record created as draft", "success")
             return redirect(url_for('daily_sales.accountabilities'))
 
         except Exception as e:
@@ -2186,6 +2395,46 @@ def new_fund_disbursed():
 
     # GET request - redirect to main page
     return redirect(url_for('daily_sales.accountabilities'))
+
+
+@bp.route("/fund_received/<int:id>/submit", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def submit_fund_received(id):
+    """Submit fund received record for approval"""
+    fund = FundReceived.query.get_or_404(id)
+
+    if fund.status != 'draft':
+        flash("Only draft records can be submitted", "warning")
+        return redirect(url_for('daily_sales.accountabilities'))
+
+    fund.status = 'submitted'
+    fund.submitted_by_id = current_user.id
+    fund.submitted_at = datetime.utcnow()
+
+    db.session.commit()
+    flash("Fund received submitted for approval", "success")
+    return redirect(url_for('daily_sales.accountabilities'))
+
+
+@bp.route("/fund_received/<int:id>/approve", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def approve_fund_received(id):
+    """Approve fund received record"""
+    fund = FundReceived.query.get_or_404(id)
+
+    if fund.status != 'submitted':
+        flash("Only submitted records can be approved", "warning")
+        return redirect(url_for('daily_sales.pending_approval'))
+
+    fund.status = 'posted'
+    fund.approved_by_id = current_user.id
+    fund.approved_at = datetime.utcnow()
+
+    db.session.commit()
+    flash("Fund received approved successfully", "success")
+    return redirect(url_for('daily_sales.pending_approval'))
 
 
 @bp.route("/fund_received/<int:id>/cancel", methods=["POST"])
@@ -2226,6 +2475,46 @@ def cancel_fund_received(id):
         db.session.rollback()
         flash(f"Error submitting cancellation request: {str(e)}", "danger")
     return redirect(url_for('daily_sales.accountabilities'))
+
+
+@bp.route("/fund_disbursed/<int:id>/submit", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def submit_fund_disbursed(id):
+    """Submit fund disbursed record for approval"""
+    fund = FundDisbursed.query.get_or_404(id)
+
+    if fund.status != 'draft':
+        flash("Only draft records can be submitted", "warning")
+        return redirect(url_for('daily_sales.accountabilities'))
+
+    fund.status = 'submitted'
+    fund.submitted_by_id = current_user.id
+    fund.submitted_at = datetime.utcnow()
+
+    db.session.commit()
+    flash("Fund disbursed submitted for approval", "success")
+    return redirect(url_for('daily_sales.accountabilities'))
+
+
+@bp.route("/fund_disbursed/<int:id>/approve", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def approve_fund_disbursed(id):
+    """Approve fund disbursed record"""
+    fund = FundDisbursed.query.get_or_404(id)
+
+    if fund.status != 'submitted':
+        flash("Only submitted records can be approved", "warning")
+        return redirect(url_for('daily_sales.pending_approval'))
+
+    fund.status = 'posted'
+    fund.approved_by_id = current_user.id
+    fund.approved_at = datetime.utcnow()
+
+    db.session.commit()
+    flash("Fund disbursed approved successfully", "success")
+    return redirect(url_for('daily_sales.pending_approval'))
 
 
 @bp.route("/fund_disbursed/<int:id>/cancel", methods=["POST"])
@@ -2455,6 +2744,12 @@ def petty_cash_management():
     # Get pending reports (for reimbursement linking)
     pending_reports = ReimbursementReport.query.filter_by(status='pending').all()
 
+    # Get reimbursement received records within date range
+    reimbursements_received = ReimbursementReceived.query.filter(
+        ReimbursementReceived.record_date >= str(start_date),
+        ReimbursementReceived.record_date <= str(end_date)
+    ).order_by(ReimbursementReceived.record_date.desc(), ReimbursementReceived.id.desc()).all()
+
     # Generate next numbers
     next_pcv = next_control_number(PettyCashVoucher, 'pcv_number') if PettyCashVoucher.query.count() > 0 else "PCV-0001"
     next_ref = next_control_number(ReimbursementReceived, 'reference_number') if ReimbursementReceived.query.count() > 0 else "REF-0001"
@@ -2465,11 +2760,50 @@ def petty_cash_management():
     # Get all bank accounts for autocomplete
     bank_accounts = BankAccount.query.filter_by(active=True).order_by(BankAccount.account_name).all()
 
+    # Calculate Petty Cash Balance
+    # Formula: (Funds Received - Funds Disbursed) for Petty Cash only - Submitted PCV (not yet reimbursed)
+
+    # Get Petty Cash category only (exclude Change Fund)
+    petty_cash_category = FundCategory.query.filter(
+        FundCategory.category_name == 'Petty Cash'
+    ).first()
+    category_id = petty_cash_category.id if petty_cash_category else None
+
+    # 1. Get all Funds Received (posted/submitted) for Petty Cash only up to today
+    total_funds_received = sum(
+        f.amount for f in FundReceived.query.filter(
+            FundReceived.record_date <= str(today),
+            FundReceived.status.in_(['posted', 'submitted']),
+            FundReceived.fund_category_id == category_id
+        ).all()
+    ) if category_id else 0
+
+    # 2. Get all Funds Disbursed (posted/submitted) for Petty Cash only up to today
+    total_funds_disbursed = sum(
+        f.amount for f in FundDisbursed.query.filter(
+            FundDisbursed.record_date <= str(today),
+            FundDisbursed.status.in_(['posted', 'submitted']),
+            FundDisbursed.fund_category_id == category_id
+        ).all()
+    ) if category_id else 0
+
+    # 3. Get submitted/posted PCV that have not been reimbursed
+    # (PCVs that are submitted or posted but not yet in a reimbursement report)
+    unreimbursed_pcv = sum(
+        pcv.amount for pcv in PettyCashVoucher.query.filter(
+            PettyCashVoucher.status.in_(['submitted', 'posted']),
+            PettyCashVoucher.record_date <= str(today)
+        ).all()
+    )
+
+    petty_cash_balance = total_funds_received - total_funds_disbursed - unreimbursed_pcv
+
     context = {
         'app_label': app_label,
         'vouchers': vouchers,
         'reports': reports,
         'pending_reports': pending_reports,
+        'reimbursements_received': reimbursements_received,
         'next_pcv': next_pcv,
         'next_ref': next_ref,
         'payees': payees,
@@ -2477,6 +2811,10 @@ def petty_cash_management():
         'start_date': str(start_date),
         'end_date': str(end_date),
         'today': str(today),
+        'petty_cash_balance': petty_cash_balance,
+        'total_funds_received': total_funds_received,
+        'total_funds_disbursed': total_funds_disbursed,
+        'unreimbursed_pcv': unreimbursed_pcv,
     }
     return render_template("daily_sales/petty_cash_management.html", **context)
 
@@ -2486,27 +2824,28 @@ def petty_cash_management():
 @roles_accepted([ROLES_ACCEPTED])
 def new_petty_cash_voucher():
     """Create new petty cash voucher"""
-    from application.extensions import next_control_number
-
     try:
         record_date = request.form.get('date')
-        payee_name = request.form.get('payee', '').strip()
+        pcv_number = request.form.get('pcv_number', '').strip()
+        payee_id = request.form.get('payee_id', '').strip()
         amount = float(request.form.get('amount', 0))
         description = request.form.get('description', '').strip()
 
-        if not record_date or not payee_name or amount <= 0:
-            flash("Please provide date, payee, and valid amount", "danger")
+        if not record_date or not pcv_number or not payee_id or amount <= 0:
+            flash("Please provide date, PCV number, payee, and valid amount", "danger")
             return redirect(url_for('daily_sales.petty_cash_management'))
 
-        # Get or create payee
-        payee = Payee.query.filter_by(name=payee_name).first()
-        if not payee:
-            payee = Payee(name=payee_name, active=True)
-            db.session.add(payee)
-            db.session.flush()
+        # Check if PCV number already exists
+        existing_pcv = PettyCashVoucher.query.filter_by(pcv_number=pcv_number).first()
+        if existing_pcv:
+            flash(f"PCV number {pcv_number} already exists. Please use a different number.", "danger")
+            return redirect(url_for('daily_sales.petty_cash_management'))
 
-        # Generate PCV number
-        pcv_number = next_control_number(PettyCashVoucher, 'pcv_number') if PettyCashVoucher.query.count() > 0 else "PCV-0001"
+        # Verify payee exists
+        payee = Payee.query.get(int(payee_id))
+        if not payee:
+            flash("Invalid payee selected", "danger")
+            return redirect(url_for('daily_sales.petty_cash_management'))
 
         # Create voucher
         voucher = PettyCashVoucher(
@@ -2520,6 +2859,17 @@ def new_petty_cash_voucher():
         )
 
         db.session.add(voucher)
+        db.session.flush()  # Ensure ID is assigned
+
+        # Log creation with audit trail
+        from .audit_logger import log_create
+        log_create(
+            record_type='petty_cash_voucher',
+            instance=voucher,
+            user=current_user,
+            notes='New petty cash voucher created'
+        )
+
         db.session.commit()
 
         flash(f'Petty Cash Voucher {pcv_number} created successfully!', 'success')
@@ -2528,6 +2878,95 @@ def new_petty_cash_voucher():
     except Exception as e:
         db.session.rollback()
         flash(f'Error creating voucher: {str(e)}', 'danger')
+        return redirect(url_for('daily_sales.petty_cash_management'))
+
+
+@bp.route("/petty_cash/voucher/<int:voucher_id>/data", methods=["GET"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def get_voucher_data(voucher_id):
+    """Get voucher data as JSON for editing"""
+    voucher = PettyCashVoucher.query.get_or_404(voucher_id)
+
+    return jsonify({
+        'id': voucher.id,
+        'record_date': voucher.record_date,
+        'pcv_number': voucher.pcv_number,
+        'payee_id': voucher.payee_id,
+        'payee_name': voucher.payee.name if voucher.payee else '',
+        'amount': float(voucher.amount),
+        'description': voucher.description or '',
+        'created_by_name': str(voucher.created_by) if voucher.created_by else 'N/A',
+        'status': voucher.status
+    })
+
+
+@bp.route("/petty_cash/voucher/<int:voucher_id>/edit", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def edit_petty_cash_voucher(voucher_id):
+    """Edit draft petty cash voucher with audit trail"""
+    voucher = PettyCashVoucher.query.get_or_404(voucher_id)
+
+    if voucher.status != 'draft':
+        flash('Only draft vouchers can be edited', 'danger')
+        return redirect(url_for('daily_sales.petty_cash_management'))
+
+    try:
+        # Import audit logger
+        from .audit_logger import get_model_snapshot, log_update
+
+        # Capture old snapshot before making changes
+        old_snapshot = get_model_snapshot(voucher)
+
+        record_date = request.form.get('date')
+        pcv_number = request.form.get('pcv_number', '').strip()
+        payee_id = request.form.get('payee_id', '').strip()
+        amount = float(request.form.get('amount', 0))
+        description = request.form.get('description', '').strip()
+
+        if not record_date or not pcv_number or not payee_id or amount <= 0:
+            flash("Please provide date, PCV number, payee, and valid amount", "danger")
+            return redirect(url_for('daily_sales.petty_cash_management'))
+
+        # Check if PCV number already exists (excluding current voucher)
+        existing_pcv = PettyCashVoucher.query.filter(
+            PettyCashVoucher.pcv_number == pcv_number,
+            PettyCashVoucher.id != voucher_id
+        ).first()
+        if existing_pcv:
+            flash(f"PCV number {pcv_number} already exists. Please use a different number.", "danger")
+            return redirect(url_for('daily_sales.petty_cash_management'))
+
+        # Verify payee exists
+        payee = Payee.query.get(int(payee_id))
+        if not payee:
+            flash("Invalid payee selected", "danger")
+            return redirect(url_for('daily_sales.petty_cash_management'))
+
+        # Update voucher
+        voucher.record_date = record_date
+        voucher.pcv_number = pcv_number
+        voucher.payee_id = payee.id
+        voucher.amount = amount
+        voucher.description = description
+
+        # Log the update with audit trail
+        log_update(
+            record_type='petty_cash_voucher',
+            instance=voucher,
+            old_snapshot=old_snapshot,
+            user=current_user,
+            notes='Voucher edited while in draft status'
+        )
+
+        db.session.commit()
+        flash(f'Petty Cash Voucher {pcv_number} updated successfully!', 'success')
+        return redirect(url_for('daily_sales.petty_cash_management'))
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating voucher: {str(e)}', 'danger')
         return redirect(url_for('daily_sales.petty_cash_management'))
 
 
@@ -2546,6 +2985,16 @@ def submit_petty_cash_voucher(voucher_id):
     voucher.submitted_by_id = current_user.id
     voucher.submitted_at = datetime.now()
 
+    # Log submission with audit trail
+    from .audit_logger import log_status_change
+    log_status_change(
+        record_type='petty_cash_voucher',
+        instance=voucher,
+        action='submitted',
+        user=current_user,
+        notes='Voucher submitted for approval'
+    )
+
     db.session.commit()
     flash(f'Voucher {voucher.pcv_number} submitted successfully!', 'success')
     return redirect(url_for('daily_sales.petty_cash_management'))
@@ -2556,23 +3005,36 @@ def submit_petty_cash_voucher(voucher_id):
 @roles_accepted([ROLES_ACCEPTED])
 def post_petty_cash_voucher(voucher_id):
     """Post submitted voucher (admin only)"""
+    # Check where to redirect after approval
+    next_page = request.form.get('next') or request.args.get('next') or 'petty_cash_management'
+
     if not current_user.admin and not current_user.superuser:
         flash('Only admins can post vouchers', 'danger')
-        return redirect(url_for('daily_sales.petty_cash_management'))
+        return redirect(url_for(f'daily_sales.{next_page}'))
 
     voucher = PettyCashVoucher.query.get_or_404(voucher_id)
 
     if not voucher.can_post:
         flash('Only submitted vouchers can be posted', 'warning')
-        return redirect(url_for('daily_sales.petty_cash_management'))
+        return redirect(url_for(f'daily_sales.{next_page}'))
 
     voucher.status = 'posted'
     voucher.posted_by_id = current_user.id
     voucher.posted_at = datetime.now()
 
+    # Log approval with audit trail
+    from .audit_logger import log_status_change
+    log_status_change(
+        record_type='petty_cash_voucher',
+        instance=voucher,
+        action='approved',
+        user=current_user,
+        notes='Voucher posted/approved by admin'
+    )
+
     db.session.commit()
     flash(f'Voucher {voucher.pcv_number} posted successfully!', 'success')
-    return redirect(url_for('daily_sales.petty_cash_management'))
+    return redirect(url_for(f'daily_sales.{next_page}'))
 
 
 @bp.route("/petty_cash/voucher/<int:voucher_id>/cancel", methods=["POST"])
@@ -2593,9 +3055,89 @@ def cancel_petty_cash_voucher(voucher_id):
     voucher.cancelled_at = datetime.now()
     voucher.cancelled_reason = reason
 
+    # Log cancellation with audit trail
+    from .audit_logger import log_status_change
+    log_status_change(
+        record_type='petty_cash_voucher',
+        instance=voucher,
+        action='cancelled',
+        user=current_user,
+        reason=reason,
+        notes='Voucher cancelled by user'
+    )
+
     db.session.commit()
     flash(f'Voucher {voucher.pcv_number} cancelled', 'info')
     return redirect(url_for('daily_sales.petty_cash_management'))
+
+
+@bp.route("/petty_cash/voucher/<int:voucher_id>/delete", methods=["POST", "GET"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def petty_cash_voucher_delete(voucher_id):
+    """Delete draft petty cash voucher"""
+    voucher = PettyCashVoucher.query.get_or_404(voucher_id)
+
+    # Only allow deleting draft vouchers
+    if voucher.status != 'draft':
+        flash('Only draft vouchers can be deleted', 'danger')
+        return redirect(url_for('daily_sales.petty_cash_management'))
+
+    try:
+        pcv_number = voucher.pcv_number
+
+        # Log deletion with audit trail before deleting
+        from .audit_logger import log_delete
+        log_delete(
+            record_type='petty_cash_voucher',
+            instance=voucher,
+            user=current_user,
+            reason='User deleted draft voucher',
+            notes=f'Voucher {pcv_number} deleted by user'
+        )
+
+        db.session.delete(voucher)
+        db.session.commit()
+        flash(f'Voucher {pcv_number} deleted successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting voucher: {str(e)}', 'danger')
+
+    return redirect(url_for('daily_sales.petty_cash_management'))
+
+
+@bp.route("/petty_cash/voucher/<int:voucher_id>/history", methods=["GET"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def get_voucher_history(voucher_id):
+    """Get audit history for a voucher"""
+    from .audit_logger import get_audit_history
+
+    voucher = PettyCashVoucher.query.get_or_404(voucher_id)
+
+    # Get audit history
+    audit_logs = get_audit_history('petty_cash_voucher', voucher_id)
+
+    # Format audit logs for JSON response
+    history = []
+    for log in audit_logs:
+        history.append({
+            'action': log.action,
+            'user': log.user.user_name if log.user else 'System',
+            'user_full_name': str(log.user) if log.user else 'System',
+            'timestamp': log.formatted_timestamp if hasattr(log, 'formatted_timestamp') else str(log.created_at),
+            'summary': log.summary if hasattr(log, 'summary') else f"{log.action} by {log.user.user_name if log.user else 'System'}",
+            'old_values': log.old_values,
+            'new_values': log.new_values,
+            'changed_fields': log.changed_fields,
+            'reason': log.reason,
+            'notes': log.notes
+        })
+
+    return jsonify({
+        'voucher_number': voucher.pcv_number,
+        'history': history
+    })
 
 
 @bp.route("/petty_cash/reimbursement_report/create", methods=["POST"])
@@ -2667,35 +3209,38 @@ def create_reimbursement_report():
 @roles_accepted([ROLES_ACCEPTED])
 def new_reimbursement_received():
     """Record reimbursement received"""
-    from application.extensions import next_control_number
-
     try:
         record_date = request.form.get('date')
-        bank_account_name = request.form.get('bank_account', '').strip()
+        reference_number = request.form.get('reference_number', '').strip()
+        bank_account_id = request.form.get('bank_account_id', '').strip()
         amount = float(request.form.get('amount', 0))
         notes = request.form.get('notes', '').strip()
         report_ids = request.form.getlist('report_ids[]')
 
-        if not record_date or not bank_account_name or amount <= 0:
-            flash("Please provide date, bank account, and valid amount", "danger")
+        if not record_date or not reference_number or not bank_account_id or amount <= 0:
+            flash("Please provide date, reference number, bank account, and valid amount", "danger")
             return redirect(url_for('daily_sales.petty_cash_management'))
 
-        # Get bank account
-        bank_account = BankAccount.query.filter_by(account_name=bank_account_name).first()
+        # Check if reference number already exists
+        existing_ref = ReimbursementReceived.query.filter_by(reference_number=reference_number).first()
+        if existing_ref:
+            flash(f"Reference number {reference_number} already exists. Please use a different number.", "danger")
+            return redirect(url_for('daily_sales.petty_cash_management'))
+
+        # Verify bank account exists
+        bank_account = BankAccount.query.get(int(bank_account_id))
         if not bank_account:
-            flash("Bank account not found", "danger")
+            flash("Invalid bank account selected", "danger")
             return redirect(url_for('daily_sales.petty_cash_management'))
-
-        # Generate reference number
-        ref_number = next_control_number(ReimbursementReceived, 'reference_number') if ReimbursementReceived.query.count() > 0 else "REF-0001"
 
         # Create reimbursement received record
         reimbursement = ReimbursementReceived(
-            reference_number=ref_number,
+            reference_number=reference_number,
             record_date=record_date,
             bank_account_id=bank_account.id,
             amount=amount,
             notes=notes,
+            status='draft',
             created_by_id=current_user.id
         )
 
@@ -2712,13 +3257,72 @@ def new_reimbursement_received():
                     voucher.status = 'reimbursed'
 
         db.session.commit()
-        flash(f'Reimbursement {ref_number} recorded successfully!', 'success')
+        flash(f'Reimbursement {reference_number} recorded successfully!', 'success')
         return redirect(url_for('daily_sales.petty_cash_management'))
 
     except Exception as e:
         db.session.rollback()
         flash(f'Error recording reimbursement: {str(e)}', 'danger')
         return redirect(url_for('daily_sales.petty_cash_management'))
+
+
+@bp.route("/reimbursement_received/<int:id>/submit", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def submit_reimbursement_received(id):
+    """Submit reimbursement received for approval"""
+    reimbursement = ReimbursementReceived.query.get_or_404(id)
+
+    if reimbursement.status != 'draft':
+        flash("Only draft reimbursements can be submitted", "warning")
+        return redirect(url_for('daily_sales.petty_cash_management'))
+
+    reimbursement.status = 'submitted'
+    reimbursement.submitted_by_id = current_user.id
+    reimbursement.submitted_at = datetime.utcnow()
+    db.session.commit()
+
+    flash(f"Reimbursement {reimbursement.reference_number} submitted for approval", "success")
+    return redirect(url_for('daily_sales.petty_cash_management'))
+
+
+@bp.route("/reimbursement_received/<int:id>/approve", methods=["POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def approve_reimbursement_received(id):
+    """Approve reimbursement received"""
+    reimbursement = ReimbursementReceived.query.get_or_404(id)
+
+    if reimbursement.status != 'submitted':
+        flash("Only submitted reimbursements can be approved", "warning")
+        return redirect(url_for('daily_sales.petty_cash_management'))
+
+    reimbursement.status = 'posted'
+    reimbursement.approved_by_id = current_user.id
+    reimbursement.approved_at = datetime.utcnow()
+    db.session.commit()
+
+    flash(f"Reimbursement {reimbursement.reference_number} approved successfully", "success")
+    return redirect(url_for('daily_sales.petty_cash_management'))
+
+
+@bp.route("/reimbursement_received/<int:id>/delete", methods=["GET"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def delete_reimbursement_received(id):
+    """Delete reimbursement received"""
+    reimbursement = ReimbursementReceived.query.get_or_404(id)
+
+    try:
+        ref_number = reimbursement.reference_number
+        db.session.delete(reimbursement)
+        db.session.commit()
+        flash(f"Reimbursement {ref_number} deleted successfully", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting reimbursement: {str(e)}", "danger")
+
+    return redirect(url_for('daily_sales.petty_cash_management'))
 
 
 @bp.route("/petty_cash/payees", methods=["GET"])

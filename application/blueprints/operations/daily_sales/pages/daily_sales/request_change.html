@@ -1,10 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Request Transaction Change{% endblock %}
+{% block title %}Request Modification - Transaction #{{ transaction.record_number or transaction.id }}{% endblock %}
 
 {% block content %}
-<div class="thc-page">
-    <div class="thc-page-header">
-        <h4><i class="bi bi-pencil-square"></i> Request Change to Transaction #{{ transaction.id }}</h4>
+<div style="max-width:1000px; margin:0 auto; padding:20px;">
+
+    <!-- Header -->
+    <div style="margin-bottom:30px;">
+        <h1 style="margin:0 0 10px 0; font-size:24px; font-weight:600;">Request Modification</h1>
+        <p style="margin:0; color:#666; font-size:14px;">
+            Propose changes to Transaction #{{ transaction.record_number or transaction.id }}.
+            An admin will review and approve/disapprove your proposed changes.
+        </p>
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -18,74 +24,319 @@
     {% endif %}
     {% endwith %}
 
-    <div class="thc-card">
-        <h6 class="mb-3">Current Transaction Details</h6>
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label text-muted" style="font-size:0.75rem;">Date</label>
-                <div><strong>{{ transaction.record_date }}</strong></div>
+    <!-- Current Transaction State -->
+    <div style="background:#f8f9fa; padding:20px; border-radius:8px; margin-bottom:30px; border-left:4px solid #0066cc;">
+        <h3 style="margin:0 0 15px 0; font-size:14px; font-weight:600; color:#666; text-transform:uppercase; letter-spacing:0.5px;">Current Transaction (Approved)</h3>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:20px;">
+            <div>
+                <div style="font-size:11px; color:#666; margin-bottom:3px;">Date</div>
+                <div style="font-size:14px; font-weight:600;">{{ transaction.formatted_record_date or 'N/A' }}</div>
             </div>
-            <div class="col-md-6">
-                <label class="form-label text-muted" style="font-size:0.75rem;">Customer</label>
-                <div><strong>{{ transaction.customer.customer_name if transaction.customer else 'N/A' }}</strong></div>
+            <div>
+                <div style="font-size:11px; color:#666; margin-bottom:3px;">Customer</div>
+                <div style="font-size:14px; font-weight:600;">{{ transaction.customer.customer_name if transaction.customer else 'N/A' }}</div>
             </div>
-            <div class="col-md-6">
-                <label class="form-label text-muted" style="font-size:0.75rem;">DashLabs#</label>
-                <div><strong>{{ transaction.dashlabs_number or 'N/A' }}</strong></div>
+            <div>
+                <div style="font-size:11px; color:#666; margin-bottom:3px;">DashLabs #</div>
+                <div style="font-size:14px; font-weight:600;">{{ transaction.dashlabs_number or 'N/A' }}</div>
             </div>
-            <div class="col-md-6">
-                <label class="form-label text-muted" style="font-size:0.75rem;">POS#</label>
-                <div><strong>{{ transaction.pos_number or 'N/A' }}</strong></div>
+            <div>
+                <div style="font-size:11px; color:#666; margin-bottom:3px;">POS #</div>
+                <div style="font-size:14px; font-weight:600;">{{ transaction.pos_number or 'N/A' }}</div>
             </div>
+        </div>
+
+        <!-- Current Line Items -->
+        <div style="margin-top:20px;">
+            <div style="font-size:12px; font-weight:600; margin-bottom:10px; color:#666;">Items:</div>
+            <table style="width:100%; font-size:13px; border-collapse:collapse;">
+                <thead style="background:#e2e8f0;">
+                    <tr>
+                        <th style="text-align:left; padding:8px; font-weight:600;">Product</th>
+                        <th style="text-align:right; padding:8px; font-weight:600;">Amount</th>
+                        <th style="text-align:right; padding:8px; font-weight:600;">Discount</th>
+                        <th style="text-align:right; padding:8px; font-weight:600;">Net</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detail in transaction.transaction_details %}
+                    <tr style="border-bottom:1px solid #e5e7eb;">
+                        <td style="padding:8px;">{{ detail.product.product_name if detail.product else 'N/A' }}</td>
+                        <td style="padding:8px; text-align:right; font-family:monospace;">₱{{ '{:,.2f}'.format(detail.amount or 0) }}</td>
+                        <td style="padding:8px; text-align:right; font-family:monospace;">₱{{ '{:,.2f}'.format(detail.discount or 0) }}</td>
+                        <td style="padding:8px; text-align:right; font-family:monospace;">₱{{ '{:,.2f}'.format((detail.amount or 0) - (detail.discount or 0)) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Current Payment -->
+        <div style="margin-top:20px;">
+            <div style="font-size:12px; font-weight:600; margin-bottom:10px; color:#666;">Payment:</div>
+            <table style="width:100%; font-size:13px; border-collapse:collapse;">
+                <thead style="background:#e2e8f0;">
+                    <tr>
+                        <th style="text-align:left; padding:8px; font-weight:600;">Tender Type</th>
+                        <th style="text-align:right; padding:8px; font-weight:600;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tender in transaction.transaction_tenders %}
+                    <tr style="border-bottom:1px solid #e5e7eb;">
+                        <td style="padding:8px;">{{ tender.tender.tender_name if tender.tender else 'N/A' }}</td>
+                        <td style="padding:8px; text-align:right; font-family:monospace;">₱{{ '{:,.2f}'.format(tender.amount or 0) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <form method="POST">
-        <div class="thc-card">
-            <h6 class="mb-3">Requested Changes</h6>
+    <!-- Modification Request Form -->
+    <form method="POST" id="change-request-form">
 
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">Date</label>
+        <!-- Proposed Header Changes -->
+        <div style="background:white; padding:25px; border-radius:8px; border:1px solid #e5e7eb; margin-bottom:20px;">
+            <h3 style="margin:0 0 20px 0; font-size:14px; font-weight:600; color:#666; text-transform:uppercase; letter-spacing:0.5px;">Proposed Header Changes</h3>
+
+            <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:15px;">
+                <div>
+                    <label style="display:block; font-size:12px; font-weight:500; margin-bottom:5px; color:#374151;">Date</label>
                     <input type="date" name="record_date" class="form-control" value="{{ transaction.record_date }}">
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">Customer ID</label>
+                <div>
+                    <label style="display:block; font-size:12px; font-weight:500; margin-bottom:5px; color:#374151;">Customer ID</label>
                     <input type="number" name="customer_id" class="form-control" value="{{ transaction.customer_id }}">
                     <input type="hidden" name="customer_name" value="{{ transaction.customer.customer_name if transaction.customer else '' }}">
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">DashLabs Number</label>
+                <div>
+                    <label style="display:block; font-size:12px; font-weight:500; margin-bottom:5px; color:#374151;">DashLabs Number</label>
                     <input type="text" name="dashlabs_number" class="form-control" value="{{ transaction.dashlabs_number or '' }}">
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">POS Number</label>
+                <div>
+                    <label style="display:block; font-size:12px; font-weight:500; margin-bottom:5px; color:#374151;">POS Number</label>
                     <input type="text" name="pos_number" class="form-control" value="{{ transaction.pos_number or '' }}">
                 </div>
-                <div class="col-12">
-                    <label class="form-label">Description</label>
+                <div style="grid-column:1/-1;">
+                    <label style="display:block; font-size:12px; font-weight:500; margin-bottom:5px; color:#374151;">Description</label>
                     <textarea name="description" class="form-control" rows="2">{{ transaction.description or '' }}</textarea>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">Discount</label>
+                <div>
+                    <label style="display:block; font-size:12px; font-weight:500; margin-bottom:5px; color:#374151;">Header Discount</label>
                     <input type="number" name="discount" step="0.01" class="form-control" value="{{ transaction.discount or 0 }}">
                 </div>
             </div>
         </div>
 
-        <div class="thc-card">
-            <h6 class="mb-3">Reason for Change <span class="text-danger">*</span></h6>
-            <textarea name="reason" class="form-control" rows="4" required placeholder="Please explain why this change is necessary..."></textarea>
+        <!-- Proposed Line Items (Products) -->
+        <div style="background:white; padding:25px; border-radius:8px; border:1px solid #e5e7eb; margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="margin:0; font-size:14px; font-weight:600; color:#666; text-transform:uppercase; letter-spacing:0.5px;">Proposed Items</h3>
+                <button type="button" onclick="addProductRow()" class="btn btn-sm btn-secondary">+ Add Item</button>
+            </div>
+
+            <div id="products-container">
+                {% for detail in transaction.transaction_details %}
+                <div class="product-row" style="display:grid; grid-template-columns:3fr 1.5fr 1.5fr 40px; gap:10px; margin-bottom:10px; align-items:end;">
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:500; margin-bottom:3px; color:#6b7280;">Product</label>
+                        <select name="product_id[]" class="form-select form-select-sm" required>
+                            <option value="">-- Select Product --</option>
+                            {% for product in products %}
+                            <option value="{{ product.id }}" {% if detail.product_id == product.id %}selected{% endif %}>{{ product.product_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:500; margin-bottom:3px; color:#6b7280;">Amount</label>
+                        <input type="number" name="amount[]" step="0.01" class="form-control form-control-sm" value="{{ detail.amount or 0 }}" required>
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:500; margin-bottom:3px; color:#6b7280;">Discount</label>
+                        <input type="number" name="detail_discount[]" step="0.01" class="form-control form-control-sm" value="{{ detail.discount or 0 }}">
+                    </div>
+                    <div>
+                        <button type="button" onclick="removeRow(this)" class="btn btn-sm btn-danger" title="Remove">×</button>
+                    </div>
+                    <input type="hidden" name="side_note[]" value="{{ detail.side_note or '' }}">
+                </div>
+                {% endfor %}
+
+                {% if not transaction.transaction_details %}
+                <div class="product-row" style="display:grid; grid-template-columns:3fr 1.5fr 1.5fr 40px; gap:10px; margin-bottom:10px; align-items:end;">
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:500; margin-bottom:3px; color:#6b7280;">Product</label>
+                        <select name="product_id[]" class="form-select form-select-sm" required>
+                            <option value="">-- Select Product --</option>
+                            {% for product in products %}
+                            <option value="{{ product.id }}">{{ product.product_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:500; margin-bottom:3px; color:#6b7280;">Amount</label>
+                        <input type="number" name="amount[]" step="0.01" class="form-control form-control-sm" value="0.00" required>
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:500; margin-bottom:3px; color:#6b7280;">Discount</label>
+                        <input type="number" name="detail_discount[]" step="0.01" class="form-control form-control-sm" value="0.00">
+                    </div>
+                    <div>
+                        <button type="button" onclick="removeRow(this)" class="btn btn-sm btn-danger" title="Remove">×</button>
+                    </div>
+                    <input type="hidden" name="side_note[]" value="">
+                </div>
+                {% endif %}
+            </div>
         </div>
 
-        <div class="d-flex gap-2">
+        <!-- Proposed Payment (Tenders) -->
+        <div style="background:white; padding:25px; border-radius:8px; border:1px solid #e5e7eb; margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="margin:0; font-size:14px; font-weight:600; color:#666; text-transform:uppercase; letter-spacing:0.5px;">Proposed Payment</h3>
+                <button type="button" onclick="addTenderRow()" class="btn btn-sm btn-secondary">+ Add Tender</button>
+            </div>
+
+            <div id="tenders-container">
+                {% for tender in transaction.transaction_tenders %}
+                <div class="tender-row" style="display:grid; grid-template-columns:2fr 1.5fr 40px; gap:10px; margin-bottom:10px; align-items:end;">
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:500; margin-bottom:3px; color:#6b7280;">Tender Type</label>
+                        <select name="tender_id[]" class="form-select form-select-sm" required>
+                            <option value="">-- Select Tender --</option>
+                            {% for t in tenders %}
+                            <option value="{{ t.id }}" {% if tender.tender_id == t.id %}selected{% endif %}>{{ t.tender_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:500; margin-bottom:3px; color:#6b7280;">Amount</label>
+                        <input type="number" name="tender_amount[]" step="0.01" class="form-control form-control-sm" value="{{ tender.amount or 0 }}" required>
+                    </div>
+                    <div>
+                        <button type="button" onclick="removeRow(this)" class="btn btn-sm btn-danger" title="Remove">×</button>
+                    </div>
+                    <input type="hidden" name="tender_note[]" value="{{ tender.side_note or '' }}">
+                </div>
+                {% endfor %}
+
+                {% if not transaction.transaction_tenders %}
+                <div class="tender-row" style="display:grid; grid-template-columns:2fr 1.5fr 40px; gap:10px; margin-bottom:10px; align-items:end;">
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:500; margin-bottom:3px; color:#6b7280;">Tender Type</label>
+                        <select name="tender_id[]" class="form-select form-select-sm" required>
+                            <option value="">-- Select Tender --</option>
+                            {% for t in tenders %}
+                            <option value="{{ t.id }}">{{ t.tender_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:500; margin-bottom:3px; color:#6b7280;">Amount</label>
+                        <input type="number" name="tender_amount[]" step="0.01" class="form-control form-control-sm" value="0.00" required>
+                    </div>
+                    <div>
+                        <button type="button" onclick="removeRow(this)" class="btn btn-sm btn-danger" title="Remove">×</button>
+                    </div>
+                    <input type="hidden" name="tender_note[]" value="">
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Reason for Modification -->
+        <div style="background:white; padding:25px; border-radius:8px; border:1px solid #e5e7eb; margin-bottom:20px;">
+            <h3 style="margin:0 0 15px 0; font-size:14px; font-weight:600; color:#666; text-transform:uppercase; letter-spacing:0.5px;">
+                Reason for Modification <span style="color:#dc2626;">*</span>
+            </h3>
+            <textarea name="reason" class="form-control" rows="4" required placeholder="Explain why this modification is necessary (required for admin review)..."></textarea>
+            <div style="margin-top:10px; padding:12px; background:#fef3c7; border-left:3px solid #f59e0b; border-radius:4px; font-size:13px; color:#78350f;">
+                <strong>Note:</strong> Your proposed changes will be reviewed by an admin. If approved, changes will be applied immediately. If disapproved, the transaction will remain unchanged.
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display:flex; gap:10px;">
             <button type="submit" class="btn btn-primary">
-                <i class="bi bi-send"></i> Submit Change Request
+                <i class="bi bi-send"></i> Submit Modification Request
             </button>
             <a href="{{ url_for('daily_sales.view_transaction', transaction_id=transaction.id) }}" class="btn btn-secondary">
                 <i class="bi bi-x-lg"></i> Cancel
             </a>
         </div>
     </form>
+
 </div>
+
+<script>
+// Add product row dynamically
+function addProductRow() {
+    const container = document.getElementById('products-container');
+    const row = document.createElement('div');
+    row.className = 'product-row';
+    row.style.cssText = 'display:grid; grid-template-columns:3fr 1.5fr 1.5fr 40px; gap:10px; margin-bottom:10px; align-items:end;';
+    row.innerHTML = `
+        <div>
+            <label style="display:block; font-size:11px; font-weight:500; margin-bottom:3px; color:#6b7280;">Product</label>
+            <select name="product_id[]" class="form-select form-select-sm" required>
+                <option value="">-- Select Product --</option>
+                {% for product in products %}
+                <option value="{{ product.id }}">{{ product.product_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label style="display:block; font-size:11px; font-weight:500; margin-bottom:3px; color:#6b7280;">Amount</label>
+            <input type="number" name="amount[]" step="0.01" class="form-control form-control-sm" value="0.00" required>
+        </div>
+        <div>
+            <label style="display:block; font-size:11px; font-weight:500; margin-bottom:3px; color:#6b7280;">Discount</label>
+            <input type="number" name="detail_discount[]" step="0.01" class="form-control form-control-sm" value="0.00">
+        </div>
+        <div>
+            <button type="button" onclick="removeRow(this)" class="btn btn-sm btn-danger" title="Remove">×</button>
+        </div>
+        <input type="hidden" name="side_note[]" value="">
+    `;
+    container.appendChild(row);
+}
+
+// Add tender row dynamically
+function addTenderRow() {
+    const container = document.getElementById('tenders-container');
+    const row = document.createElement('div');
+    row.className = 'tender-row';
+    row.style.cssText = 'display:grid; grid-template-columns:2fr 1.5fr 40px; gap:10px; margin-bottom:10px; align-items:end;';
+    row.innerHTML = `
+        <div>
+            <label style="display:block; font-size:11px; font-weight:500; margin-bottom:3px; color:#6b7280;">Tender Type</label>
+            <select name="tender_id[]" class="form-select form-select-sm" required>
+                <option value="">-- Select Tender --</option>
+                {% for t in tenders %}
+                <option value="{{ t.id }}">{{ t.tender_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label style="display:block; font-size:11px; font-weight:500; margin-bottom:3px; color:#6b7280;">Amount</label>
+            <input type="number" name="tender_amount[]" step="0.01" class="form-control form-control-sm" value="0.00" required>
+        </div>
+        <div>
+            <button type="button" onclick="removeRow(this)" class="btn btn-sm btn-danger" title="Remove">×</button>
+        </div>
+        <input type="hidden" name="tender_note[]" value="">
+    `;
+    container.appendChild(row);
+}
+
+// Remove row
+function removeRow(button) {
+    const row = button.closest('.product-row, .tender-row');
+    if (row) {
+        row.remove();
+    }
+}
+</script>
 {% endblock %}

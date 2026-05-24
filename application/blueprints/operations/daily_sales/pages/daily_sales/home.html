@@ -1,110 +1,12 @@
 {% extends "base.html" %}
+{% from "components/daily_sales_components.html" import metric_card, transaction_card, cash_card, transaction_row, date_navigation, help_button, user_footer %}
+{% from "components/dashboard_components.html" import quick_action_button %}
+
 {% block title %}Daily Sales — The Health Collective Inc.{% endblock %}
 
 {% block styles %}
-<style>
-  .thc-wrap { max-width: 960px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
-
-  /* ── top bar ── */
-  .thc-topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: .75rem; }
-  .thc-brand-name { font-family: var(--thc-font-heading); font-size: 1.05rem; font-weight: 600; color: var(--thc-text); margin: 0; }
-  .thc-brand-sub { font-size: .75rem; color: var(--thc-text-muted); margin: 2px 0 0; }
-
-  /* ── date navigation ── */
-  .thc-date-nav { display: flex; align-items: center; gap: 6px; }
-  .thc-date-nav-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--thc-border); background: #fff; color: var(--thc-text-muted); text-decoration: none; font-size: .85rem; transition: border-color .15s, background .15s; }
-  .thc-date-nav-btn:hover { border-color: var(--thc-primary); color: var(--thc-primary); background: var(--thc-primary-light); text-decoration: none; }
-  .thc-date-nav-btn.disabled { pointer-events: none; opacity: .35; }
-  .thc-date-input-wrap { position: relative; }
-  .thc-date-display { display: flex; align-items: center; gap: 8px; font-size: .82rem; font-weight: 600; color: var(--thc-text); background: #fff; border: 1px solid var(--thc-border); border-radius: 6px; padding: 5px 12px; cursor: pointer; white-space: nowrap; user-select: none; min-width: 170px; justify-content: center; }
-  .thc-date-display i { color: var(--thc-primary); }
-  .thc-date-display.is-today { background: var(--thc-primary-light); border-color: var(--thc-primary); color: var(--thc-primary); }
-  .thc-date-hidden { position: absolute; opacity: 0; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer; }
-  .thc-today-btn { font-size: .72rem; font-weight: 600; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--thc-primary); color: var(--thc-primary); background: #fff; text-decoration: none; white-space: nowrap; }
-  .thc-today-btn:hover { background: var(--thc-primary-light); text-decoration: none; }
-  .guide-help-btn { display:inline-flex; align-items:center; gap:0.35rem; color:var(--thc-text-muted); font-size:.82rem; font-weight:500; background:none; border:none; padding:0.4rem 0.2rem; cursor:pointer; white-space:nowrap; transition:color .12s; }
-  .guide-help-btn:hover { color:var(--thc-primary); }
-  .guide-help-icon { width:1.15rem; height:1.15rem; border-radius:50%; border:1.5px solid currentColor; display:inline-flex; align-items:center; justify-content:center; font-size:.68rem; font-weight:700; flex-shrink:0; }
-
-  /* ── summary metrics ── */
-  .thc-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.75rem; }
-  .thc-metric { background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; padding: 14px 16px; }
-  .thc-metric-lbl { font-size: .7rem; color: var(--thc-text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .05em; }
-  .thc-metric-val { font-size: 1.35rem; font-weight: 600; color: var(--thc-text); font-family: monospace; }
-  .thc-metric-val.accent { color: var(--thc-primary); }
-
-  /* ── section label ── */
-  .thc-sec-lbl { font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--thc-text-muted); margin-bottom: .6rem; }
-
-  /* ── transaction type cards ── */
-  .thc-txn-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1.5rem; }
-  .thc-txn-card { background: #fff; border: 1px solid var(--thc-border); border-radius: 10px; padding: 16px; cursor: pointer; transition: border-color .15s, background .15s; display: flex; align-items: center; gap: 14px; color: inherit; }
-  .thc-txn-card:hover { border-color: #a0b4b8; background: var(--thc-primary-light); color: inherit; }
-  .thc-txn-card.featured { border: 1.5px solid var(--thc-primary); }
-  .thc-txn-card.featured:hover { background: var(--thc-primary-light); }
-
-  .thc-txn-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
-  .ic-blue   { background: var(--thc-primary-light); color: var(--thc-primary); }
-  .ic-green  { background: #e6f3f0; color: #0f6e56; }
-  .ic-purple { background: #eeedfe; color: #3c3489; }
-  .ic-coral  { background: #faece7; color: #993c1d; }
-  .ic-amber  { background: #faeeda; color: #854f0b; }
-  .ic-rose   { background: #fce7f3; color: #9d174d; }
-  .ic-slate  { background: #f1f5f9; color: #475569; }
-
-  .thc-txn-info { flex: 1; min-width: 0; }
-  .thc-txn-title { font-family: var(--thc-font-heading); font-size: .9rem; font-weight: 600; color: var(--thc-text); margin: 0 0 2px; }
-  .thc-txn-desc  { font-size: .75rem; color: var(--thc-text-muted); margin: 0 0 8px; line-height: 1.45; }
-
-  .thc-badges { display: flex; flex-wrap: wrap; gap: 5px; }
-  .thc-badge { font-size: .65rem; padding: 2px 9px; border-radius: 4px; font-weight: 600; text-decoration: none; display: inline-block; letter-spacing: .03em; }
-  .thc-badge:hover { opacity: .8; text-decoration: none; }
-  .thc-badge-blue   { background: var(--thc-primary); color: #fff; }
-  .thc-badge-green  { background: #1a7a60; color: #fff; }
-  .thc-badge-purple { background: #3c3489; color: #fff; }
-  .thc-badge-coral  { background: #993c1d; color: #fff; }
-  .thc-badge-amber  { background: #854f0b; color: #fff; }
-  .thc-badge-rose   { background: #9d174d; color: #fff; }
-  .thc-badge-slate  { background: #475569; color: #fff; }
-
-  /* ── cash management ── */
-  .thc-cash-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1.5rem; }
-  .thc-cash-card { background: #fff; border: 1px solid var(--thc-border); border-radius: 10px; padding: 14px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; transition: border-color .15s, background .15s; }
-  .thc-cash-card:hover { border-color: #a0b4b8; background: var(--thc-primary-light); text-decoration: none; color: inherit; }
-  .thc-cash-icon { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: .9rem; flex-shrink: 0; }
-  .thc-cash-info { flex: 1; }
-  .thc-cash-title { font-size: .8rem; font-weight: 600; color: var(--thc-text); margin: 0; }
-  .thc-cash-desc  { font-size: .7rem; color: var(--thc-text-muted); margin: 2px 0 0; }
-  .thc-cash-chev  { color: var(--thc-text-muted); font-size: .85rem; }
-
-  /* ── footer ── */
-  .thc-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 1px solid var(--thc-border); flex-wrap: wrap; gap: .75rem; }
-  .thc-cashier { display: flex; align-items: center; gap: 10px; }
-  .thc-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--thc-primary); display: flex; align-items: center; justify-content: center; font-size: .7rem; font-weight: 600; color: #fff; flex-shrink: 0; }
-  .thc-cashier-name { font-size: .8rem; font-weight: 600; color: var(--thc-text); margin: 0; }
-  .thc-cashier-role { font-size: .7rem; color: var(--thc-text-muted); margin: 1px 0 0; }
-
-  /* ── transaction list ── */
-  .thc-txn-list { margin-bottom: 1.5rem; }
-  .thc-rec-row { background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; padding: 11px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 6px; text-decoration: none; color: inherit; transition: border-color .15s, background .15s; }
-  .thc-rec-row:hover { border-color: #a0b4b8; background: var(--thc-primary-light); text-decoration: none; color: inherit; }
-  .thc-rec-icon { width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: .85rem; flex-shrink: 0; }
-  .thc-rec-info { flex: 1; min-width: 0; }
-  .thc-rec-num { font-size: .68rem; color: var(--thc-text-muted); font-family: monospace; }
-  .thc-rec-customer { font-size: .85rem; font-weight: 600; color: var(--thc-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .thc-rec-type { font-size: .7rem; color: var(--thc-text-muted); margin-top: 1px; }
-  .thc-rec-amount { font-family: monospace; font-size: .88rem; font-weight: 600; color: var(--thc-text); text-align: right; flex-shrink: 0; }
-  .thc-rec-badge { flex-shrink: 0; font-size: .62rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: .04em; }
-  .badge-draft     { background: #f0f0f0; color: var(--thc-text-muted); }
-  .badge-submitted { background: #d4edda; color: #155724; }
-  .badge-cancelled { background: #faece7; color: #993c1d; }
-  .thc-empty { text-align: center; padding: 1.25rem; color: var(--thc-text-muted); font-size: .8rem; background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; }
-
-  @media (max-width: 600px) {
-    .thc-txn-grid, .thc-cash-grid, .thc-metrics { grid-template-columns: 1fr; }
-    .thc-date-display { min-width: 140px; }
-  }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard-components.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/daily-sales-components.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -117,73 +19,40 @@
       <p class="thc-brand-sub">Daily Sales &amp; Petty Cash</p>
     </div>
 
-    <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:var(--thc-gap-md);flex-wrap:wrap;">
+      {# Date navigation component #}
+      {{ date_navigation(
+        prev_url=url_for('daily_sales.home', date=prev_date.isoformat()),
+        next_url=url_for('daily_sales.home', date=next_date.isoformat()) if next_date <= today else '#',
+        selected_date=selected_date,
+        is_today=is_today,
+        max_date=today,
+        today_url=url_for('daily_sales.home'),
+        on_change_js="window.location.href='" ~ url_for('daily_sales.home') ~ "?date=' + this.value"
+      ) }}
 
-      {# Date navigation #}
-      <div class="thc-date-nav">
-        <a href="{{ url_for('daily_sales.home', date=prev_date.isoformat()) }}"
-           class="thc-date-nav-btn" title="Previous day">
-          <i class="bi bi-chevron-left"></i>
-        </a>
+      {{ help_button('How to Record', url_for('daily_sales.guide')) }}
 
-        <div class="thc-date-input-wrap">
-          <div class="thc-date-display {{ 'is-today' if is_today }}" title="Click to pick a date">
-            <i class="bi bi-calendar3"></i>
-            {% if is_today %}Today — {% endif %}{{ selected_date.strftime("%b %d, %Y") }}
-            <i class="bi bi-pencil-fill" style="font-size:.6rem;opacity:.5;margin-left:4px;"></i>
-          </div>
-          <input type="date" class="thc-date-hidden"
-                 value="{{ selected_date.isoformat() }}"
-                 max="{{ today.isoformat() }}"
-                 onchange="window.location.href='{{ url_for('daily_sales.home') }}?date=' + this.value">
-        </div>
+      {{ quick_action_button('Daily Report',
+         url_for('daily_sales.daily_report', date=selected_date.isoformat()),
+         icon='bi-file-earmark-text', open_popup=true) }}
 
-        <a href="{{ url_for('daily_sales.home', date=next_date.isoformat()) }}"
-           class="thc-date-nav-btn {{ 'disabled' if next_date > today }}" title="Next day">
-          <i class="bi bi-chevron-right"></i>
-        </a>
-      </div>
-
-      {% if not is_today %}
-      <a href="{{ url_for('daily_sales.home') }}" class="thc-today-btn">Go to Today</a>
-      {% endif %}
-
-      <button type="button" class="guide-help-btn"
-        onclick="window.open('{{ url_for('daily_sales.guide') }}','_blank','width=820,height=700,scrollbars=yes,resizable=yes')">
-        <span class="guide-help-icon">?</span> How to Record
-      </button>
-
-      <button class="btn btn-sm" style="background:var(--thc-primary);color:#fff;font-weight:600;border:none;" type="button"
-        onclick="window.open('{{ url_for('daily_sales.daily_report', date=selected_date.isoformat()) }}','_blank','width=1200,height=700,scrollbars=yes,resizable=yes')">
-        <i class="bi bi-file-earmark-text me-1"></i> Daily Report
-      </button>
-
-      <button class="btn btn-sm" style="background:#217346;color:#fff;font-weight:600;border:none;" type="button"
-        onclick="window.open('{{ url_for('daily_sales.sales_summary_report') }}','_blank','width=1400,height=800,scrollbars=yes,resizable=yes')">
-        <i class="bi bi-bar-chart-line me-1"></i> Sales Summary
-      </button>
-
+      {{ quick_action_button('Sales Summary',
+         url_for('daily_sales.sales_summary_report'),
+         icon='bi-bar-chart-line', open_popup=true,
+         popup_specs='width=1400,height=800,scrollbars=yes,resizable=yes') }}
     </div>
   </div>
 
   {# ── Summary metrics ── #}
   <div class="thc-metrics">
-    <div class="thc-metric">
-      <div class="thc-metric-lbl">
-        Total sales — {{ selected_date.strftime("%b %d, %Y") }}
-      </div>
-      <div class="thc-metric-val accent">
-        ₱{{ "{:,.2f}".format(summary.total_sales) }}
-      </div>
-    </div>
-    <div class="thc-metric">
-      <div class="thc-metric-lbl">Transactions</div>
-      <div class="thc-metric-val">{{ summary.transaction_count }}</div>
-    </div>
-    <div class="thc-metric">
-      <div class="thc-metric-lbl">Cash on hand</div>
-      <div class="thc-metric-val">₱{{ "{:,.2f}".format(summary.cash_on_hand) }}</div>
-    </div>
+    {{ metric_card(
+      'Total sales — ' ~ selected_date.strftime("%b %d, %Y"),
+      '₱' ~ "{:,.2f}".format(summary.total_sales),
+      accent=true
+    ) }}
+    {{ metric_card('Transactions', summary.transaction_count) }}
+    {{ metric_card('Cash on hand', '₱' ~ "{:,.2f}".format(summary.cash_on_hand)) }}
   </div>
 
   {# ── New transaction — only shown for today, and only for staff/admin/superuser ── #}
@@ -192,26 +61,26 @@
   <div class="thc-sec-lbl">New transaction</div>
   <div class="thc-txn-grid">
     {% for txn_type in transaction_types %}
-    <div class="thc-txn-card {{ 'featured' if loop.first }}"
+    <div class="thc-txn-card{% if loop.first %} thc-txn-card--featured{% endif %}"
          onclick="window.location.href='{{ url_for('daily_sales.new_transaction', type_id=txn_type.id) }}'">
-      <div class="thc-txn-icon {{ txn_type.icon_color }}">
+      <div class="thc-txn-card__icon thc-txn-card__icon--{{ txn_type.icon_color.replace('ic-', '') }}">
         <i class="bi {{ txn_type.icon }}"></i>
       </div>
-      <div class="thc-txn-info">
-        <p class="thc-txn-title">{{ txn_type.type_name }}</p>
-        <p class="thc-txn-desc">{{ txn_type.description }}</p>
+      <div class="thc-txn-card__info">
+        <p class="thc-txn-card__title">{{ txn_type.type_name }}</p>
+        <p class="thc-txn-card__desc">{{ txn_type.description }}</p>
         <div class="thc-badges">
           {% for t in txn_type_tenders.get(txn_type.type_code, []) %}
           {% if t.symbol or t.tender_name %}
           <a href="{{ url_for('daily_sales.new_transaction', type_id=txn_type.id, prefill_tender_id=t.id) }}"
-             class="thc-badge {{ txn_type.badge_color }}"
+             class="thc-badge thc-badge--{{ txn_type.badge_color.replace('thc-badge-', '') }}"
              onclick="event.stopPropagation()">{{ t.symbol or t.tender_name }}</a>
           {% endif %}
           {% endfor %}
           {# Add APE Batch link for APE transaction type #}
           {% if txn_type.type_code == 'APE' %}
           <a href="{{ url_for('ape_batch.home') }}"
-             class="thc-badge thc-badge-coral"
+             class="thc-badge thc-badge--coral"
              onclick="event.stopPropagation()">
             <i class="bi bi-collection"></i> APE Batch
           </a>
@@ -225,49 +94,23 @@
   {# ── Cash management ── #}
   <div class="thc-sec-lbl">Cash management</div>
   <div class="thc-cash-grid">
-    <a href="{{ url_for('daily_sales.record_deposit') }}" class="thc-cash-card">
-      <div class="thc-cash-icon ic-blue"><i class="bi bi-bank2"></i></div>
-      <div class="thc-cash-info">
-        <p class="thc-cash-title">Deposits</p>
-        <p class="thc-cash-desc">Log cash deposited to bank</p>
-      </div>
-      <i class="bi bi-chevron-right thc-cash-chev"></i>
-    </a>
-    <a href="{{ url_for('daily_sales.accountabilities') }}" class="thc-cash-card">
-      <div class="thc-cash-icon ic-amber"><i class="bi bi-wallet2"></i></div>
-      <div class="thc-cash-info">
-        <p class="thc-cash-title">Accountabilities</p>
-        <p class="thc-cash-desc">Funds received and going out</p>
-      </div>
-      <i class="bi bi-chevron-right thc-cash-chev"></i>
-    </a>
+    {{ cash_card('Deposits', 'Log cash deposited to bank', 'bi-bank2', 'blue',
+                 url_for('daily_sales.record_deposit')) }}
+
+    {{ cash_card('Accountabilities', 'Funds received and going out', 'bi-wallet2', 'amber',
+                 url_for('daily_sales.accountabilities')) }}
+
     {% if "Collections" in current_user.user_roles %}
-    <a href="{{ url_for('collections.home') }}" class="thc-cash-card">
-      <div class="thc-cash-icon ic-green"><i class="bi bi-cash-coin"></i></div>
-      <div class="thc-cash-info">
-        <p class="thc-cash-title">Collections</p>
-        <p class="thc-cash-desc">Receivables and collections</p>
-      </div>
-      <i class="bi bi-chevron-right thc-cash-chev"></i>
-    </a>
+    {{ cash_card('Collections', 'Receivables and collections', 'bi-cash-coin', 'green',
+                 url_for('collections.new_collection')) }}
     {% endif %}
-    <a href="{{ url_for('daily_sales.petty_cash_management') }}" class="thc-cash-card">
-      <div class="thc-cash-icon ic-purple"><i class="bi bi-wallet"></i></div>
-      <div class="thc-cash-info">
-        <p class="thc-cash-title">Petty Cash Management</p>
-        <p class="thc-cash-desc">Manage petty cash expenses</p>
-      </div>
-      <i class="bi bi-chevron-right thc-cash-chev"></i>
-    </a>
+
+    {{ cash_card('Petty Cash Management', 'Manage petty cash expenses', 'bi-wallet', 'purple',
+                 url_for('daily_sales.petty_cash_management')) }}
+
     {% if "APE Batch" in current_user.user_roles %}
-    <a href="{{ url_for('ape_batch.home') }}" class="thc-cash-card">
-      <div class="thc-cash-icon ic-orange"><i class="bi bi-building"></i></div>
-      <div class="thc-cash-info">
-        <p class="thc-cash-title">APE Batches</p>
-        <p class="thc-cash-desc">Annual physical exam batches</p>
-      </div>
-      <i class="bi bi-chevron-right thc-cash-chev"></i>
-    </a>
+    {{ cash_card('APE Batches', 'Annual physical exam batches', 'bi-building', 'orange',
+                 url_for('ape_batch.home')) }}
     {% endif %}
   </div>
   {% endif %}
@@ -284,27 +127,27 @@
         {% set net.val = net.val - (t.discount or 0) %}
         {% set tt = t.transaction_type %}
         <a href="{{ url_for('daily_sales.edit_transaction', transaction_id=t.id, return_url=request.url) if (not t.submitted and not t.cancelled and can_transact) else url_for('daily_sales.view_transaction', transaction_id=t.id) }}"
-           class="thc-rec-row">
-          <div class="thc-rec-icon {{ tt.icon_color if tt else 'ic-slate' }}">
+           class="thc-record-row">
+          <div class="thc-record-row__icon thc-record-row__icon--{{ (tt.icon_color if tt else 'ic-slate').replace('ic-', '') }}">
             <i class="bi {{ tt.icon if tt else 'bi-tag' }}"></i>
           </div>
-          <div class="thc-rec-info">
-            <div class="thc-rec-num"># {{ t.record_number }}</div>
-            <div class="thc-rec-customer">{{ t.customer.customer_name if t.customer else '—' }}</div>
-            <div class="thc-rec-type">{{ tt.type_name if tt else '—' }}</div>
+          <div class="thc-record-row__info">
+            <div class="thc-record-row__number"># {{ t.record_number }}</div>
+            <div class="thc-record-row__customer">{{ t.customer.customer_name if t.customer else '—' }}</div>
+            <div class="thc-record-row__type">{{ tt.type_name if tt else '—' }}</div>
           </div>
-          <div class="thc-rec-amount">₱{{ "{:,.2f}".format(net.val) }}</div>
-          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          <div class="thc-record-row__amount">₱{{ "{:,.2f}".format(net.val) }}</div>
+          <div class="thc-record-row__badges">
             {% if t.cancelled %}
-              <span class="thc-rec-badge badge-cancelled">Cancelled</span>
+              <span class="thc-record-badge thc-record-badge--cancelled">Cancelled</span>
             {% elif t.submitted %}
               {% if t.user_approved %}
-                <span class="thc-rec-badge badge-submitted" style="background:#d4edda;color:#155724;">Approved</span>
+                <span class="thc-record-badge thc-record-badge--approved">Approved</span>
               {% else %}
-                <span class="thc-rec-badge badge-submitted">Submitted</span>
+                <span class="thc-record-badge thc-record-badge--submitted">Submitted</span>
               {% endif %}
             {% else %}
-              <span class="thc-rec-badge badge-draft">Draft</span>
+              <span class="thc-record-badge thc-record-badge--draft">Draft</span>
             {% endif %}
           </div>
         </a>
@@ -318,19 +161,19 @@
 
   {# ── Deposit list ── #}
   {% if deposits %}
-  <div class="thc-sec-lbl" style="margin-top: 1.5rem;">
+  <div class="thc-sec-lbl" style="margin-top:var(--thc-space-6);">
     {% if is_today %}Today's deposits{% else %}Deposits — {{ selected_date.strftime("%B %d, %Y") }}{% endif %}
   </div>
   <div class="thc-txn-list">
     {% for deposit in deposits %}
-      <a href="{{ url_for('daily_sales.view_deposit', deposit_id=deposit.id) }}" class="thc-rec-row">
-        <div class="thc-rec-icon ic-blue">
+      <a href="{{ url_for('daily_sales.view_deposit', deposit_id=deposit.id) }}" class="thc-record-row">
+        <div class="thc-record-row__icon thc-record-row__icon--blue">
           <i class="bi bi-bank"></i>
         </div>
-        <div class="thc-rec-info">
-          <div class="thc-rec-num">Deposit #{{ deposit.id }}</div>
-          <div class="thc-rec-customer">{{ deposit.bank_account or 'Bank deposit' }}</div>
-          <div class="thc-rec-type">
+        <div class="thc-record-row__info">
+          <div class="thc-record-row__number">Deposit #{{ deposit.id }}</div>
+          <div class="thc-record-row__customer">{{ deposit.bank_account or 'Bank deposit' }}</div>
+          <div class="thc-record-row__type">
             {% if deposit.deductions and deposit.deductions > 0 %}
               ₱{{ "{:,.2f}".format(deposit.total_amount) }} - ₱{{ "{:,.2f}".format(deposit.deductions) }} = ₱{{ deposit.formatted_net_bank_credit }}
             {% else %}
@@ -338,16 +181,16 @@
             {% endif %}
           </div>
         </div>
-        <div class="thc-rec-amount">₱{{ deposit.formatted_net_bank_credit }}</div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+        <div class="thc-record-row__amount">₱{{ deposit.formatted_net_bank_credit }}</div>
+        <div class="thc-record-row__badges">
           {% if deposit.status == 'cancelled' %}
-            <span class="thc-rec-badge badge-cancelled">Cancelled</span>
+            <span class="thc-record-badge thc-record-badge--cancelled">Cancelled</span>
           {% elif deposit.status == 'posted' %}
-            <span class="thc-rec-badge badge-submitted" style="background:#d4edda;color:#155724;">Posted</span>
+            <span class="thc-record-badge thc-record-badge--posted">Posted</span>
           {% elif deposit.status == 'submitted' %}
-            <span class="thc-rec-badge badge-submitted">Submitted</span>
+            <span class="thc-record-badge thc-record-badge--submitted">Submitted</span>
           {% else %}
-            <span class="thc-rec-badge badge-draft">Draft</span>
+            <span class="thc-record-badge thc-record-badge--draft">Draft</span>
           {% endif %}
         </div>
       </a>
@@ -355,18 +198,182 @@
   </div>
   {% endif %}
 
-  {# ── Footer ── #}
-  <div class="thc-footer">
-    <div class="thc-cashier">
-      <div class="thc-avatar">
-        {{ current_user.first_name[0] }}{{ current_user.last_name[0] if current_user.last_name else '' }}
-      </div>
-      <div>
-        <p class="thc-cashier-name">{{ current_user.first_name }} {{ current_user.last_name }}</p>
-        <p class="thc-cashier-role">Cashier on duty</p>
-      </div>
-    </div>
+  {# ── Collection list ── #}
+  {% if collections %}
+  <div class="thc-sec-lbl" style="margin-top:var(--thc-space-6);">
+    {% if is_today %}Today's collections{% else %}Collections — {{ selected_date.strftime("%B %d, %Y") }}{% endif %}
   </div>
+  <div class="thc-txn-list">
+    {% for collection in collections %}
+      <a href="{{ url_for('collections.view_collection', collection_id=collection.id) }}" class="thc-record-row">
+        <div class="thc-record-row__icon thc-record-row__icon--green">
+          <i class="bi bi-cash-coin"></i>
+        </div>
+        <div class="thc-record-row__info">
+          <div class="thc-record-row__number">Collection #{{ collection.id }}</div>
+          <div class="thc-record-row__customer">{{ collection.tender.tender_name if collection.tender else 'Collection' }}</div>
+          <div class="thc-record-row__type">
+            {% if collection.total_deductions > 0 %}
+              ₱{{ collection.formatted_total_amount }} - ₱{{ collection.formatted_total_deductions }} = ₱{{ collection.formatted_net_amount }}
+            {% else %}
+              {{ collection.details|length }} line(s)
+            {% endif %}
+          </div>
+        </div>
+        <div class="thc-record-row__amount">₱{{ collection.formatted_net_amount }}</div>
+        <div class="thc-record-row__badges">
+          {% if collection.status == 'cancelled' %}
+            <span class="thc-record-badge thc-record-badge--cancelled">Cancelled</span>
+          {% elif collection.status == 'posted' %}
+            <span class="thc-record-badge thc-record-badge--posted">Posted</span>
+          {% elif collection.status == 'submitted' %}
+            <span class="thc-record-badge thc-record-badge--submitted">Submitted</span>
+          {% else %}
+            <span class="thc-record-badge thc-record-badge--draft">Draft</span>
+          {% endif %}
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ── Funds Received list ── #}
+  {% if funds_received %}
+  <div class="thc-sec-lbl" style="margin-top:var(--thc-space-6);">
+    {% if is_today %}Today's funds received{% else %}Funds Received — {{ selected_date.strftime("%B %d, %Y") }}{% endif %}
+  </div>
+  <div class="thc-txn-list">
+    {% for fund in funds_received %}
+      <a href="{{ url_for('daily_sales.home') }}" class="thc-record-row">
+        <div class="thc-record-row__icon thc-record-row__icon--green">
+          <i class="bi bi-arrow-down-circle"></i>
+        </div>
+        <div class="thc-record-row__info">
+          <div class="thc-record-row__number">Fund Received #{{ fund.id }}</div>
+          <div class="thc-record-row__customer">{{ fund.fund_category.category_name if fund.fund_category else 'Fund Received' }}</div>
+          <div class="thc-record-row__type">
+            {% if fund.description %}{{ fund.description }}{% endif %}
+            {% if fund.reference_number %}<span style="color:var(--thc-text-secondary);"> • Ref: {{ fund.reference_number }}</span>{% endif %}
+          </div>
+        </div>
+        <div class="thc-record-row__amount">₱{{ fund.formatted_amount }}</div>
+        <div class="thc-record-row__badges">
+          {% if fund.status == 'cancelled' %}
+            <span class="thc-record-badge thc-record-badge--cancelled">Cancelled</span>
+          {% elif fund.status == 'posted' %}
+            <span class="thc-record-badge thc-record-badge--posted">Posted</span>
+          {% elif fund.status == 'submitted' %}
+            <span class="thc-record-badge thc-record-badge--submitted">Submitted</span>
+          {% else %}
+            <span class="thc-record-badge thc-record-badge--draft">Draft</span>
+          {% endif %}
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ── Funds Disbursed list ── #}
+  {% if funds_disbursed %}
+  <div class="thc-sec-lbl" style="margin-top:var(--thc-space-6);">
+    {% if is_today %}Today's funds disbursed{% else %}Funds Disbursed — {{ selected_date.strftime("%B %d, %Y") }}{% endif %}
+  </div>
+  <div class="thc-txn-list">
+    {% for fund in funds_disbursed %}
+      <a href="{{ url_for('daily_sales.home') }}" class="thc-record-row">
+        <div class="thc-record-row__icon thc-record-row__icon--red">
+          <i class="bi bi-arrow-up-circle"></i>
+        </div>
+        <div class="thc-record-row__info">
+          <div class="thc-record-row__number">Fund Disbursed #{{ fund.id }}</div>
+          <div class="thc-record-row__customer">{{ fund.fund_category.category_name if fund.fund_category else 'Fund Disbursed' }}</div>
+          <div class="thc-record-row__type">
+            {% if fund.description %}{{ fund.description }}{% endif %}
+            {% if fund.reference_number %}<span style="color:var(--thc-text-secondary);"> • Ref: {{ fund.reference_number }}</span>{% endif %}
+          </div>
+        </div>
+        <div class="thc-record-row__amount">₱{{ fund.formatted_amount }}</div>
+        <div class="thc-record-row__badges">
+          {% if fund.status == 'cancelled' %}
+            <span class="thc-record-badge thc-record-badge--cancelled">Cancelled</span>
+          {% elif fund.status == 'posted' %}
+            <span class="thc-record-badge thc-record-badge--posted">Posted</span>
+          {% elif fund.status == 'submitted' %}
+            <span class="thc-record-badge thc-record-badge--submitted">Submitted</span>
+          {% else %}
+            <span class="thc-record-badge thc-record-badge--draft">Draft</span>
+          {% endif %}
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ── Petty Cash Vouchers list ── #}
+  {% if petty_cash_vouchers %}
+  <div class="thc-sec-lbl" style="margin-top:var(--thc-space-6);">
+    {% if is_today %}Today's petty cash vouchers{% else %}Petty Cash Vouchers — {{ selected_date.strftime("%B %d, %Y") }}{% endif %}
+  </div>
+  <div class="thc-txn-list">
+    {% for voucher in petty_cash_vouchers %}
+      <a href="{{ url_for('daily_sales.petty_cash_management') }}" class="thc-record-row">
+        <div class="thc-record-row__icon thc-record-row__icon--amber">
+          <i class="bi bi-receipt"></i>
+        </div>
+        <div class="thc-record-row__info">
+          <div class="thc-record-row__number">{{ voucher.pcv_number }}</div>
+          <div class="thc-record-row__customer">{{ voucher.payee.name if voucher.payee else 'Petty Cash Voucher' }}</div>
+          <div class="thc-record-row__type">
+            {% if voucher.description %}{{ voucher.description }}{% endif %}
+          </div>
+        </div>
+        <div class="thc-record-row__amount">₱{{ voucher.formatted_amount }}</div>
+        <div class="thc-record-row__badges">
+          {% if voucher.status == 'cancelled' %}
+            <span class="thc-record-badge thc-record-badge--cancelled">Cancelled</span>
+          {% elif voucher.status == 'reimbursed' %}
+            <span class="thc-record-badge thc-record-badge--reimbursed">Reimbursed</span>
+          {% elif voucher.status == 'for_reimbursement' %}
+            <span class="thc-record-badge thc-record-badge--for_reimbursement">For Reimbursement</span>
+          {% elif voucher.status == 'posted' %}
+            <span class="thc-record-badge thc-record-badge--posted">Posted</span>
+          {% elif voucher.status == 'submitted' %}
+            <span class="thc-record-badge thc-record-badge--submitted">Submitted</span>
+          {% else %}
+            <span class="thc-record-badge thc-record-badge--draft">Draft</span>
+          {% endif %}
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ── Reimbursements Received list ── #}
+  {% if reimbursements_received %}
+  <div class="thc-sec-lbl" style="margin-top:var(--thc-space-6);">
+    {% if is_today %}Today's reimbursements received{% else %}Reimbursements Received — {{ selected_date.strftime("%B %d, %Y") }}{% endif %}
+  </div>
+  <div class="thc-txn-list">
+    {% for reimbursement in reimbursements_received %}
+      <a href="{{ url_for('daily_sales.petty_cash_management') }}" class="thc-record-row">
+        <div class="thc-record-row__icon thc-record-row__icon--blue">
+          <i class="bi bi-cash-stack"></i>
+        </div>
+        <div class="thc-record-row__info">
+          <div class="thc-record-row__number">{{ reimbursement.reference_number }}</div>
+          <div class="thc-record-row__customer">{{ reimbursement.bank_account.account_name if reimbursement.bank_account else 'Reimbursement' }}</div>
+          <div class="thc-record-row__type">
+            {% if reimbursement.notes %}{{ reimbursement.notes }}{% endif %}
+          </div>
+        </div>
+        <div class="thc-record-row__amount">₱{{ reimbursement.formatted_amount }}</div>
+      </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ── Footer ── #}
+  {{ user_footer(current_user.first_name, current_user.last_name, 'Cashier on duty') }}
 
 </div>
 {% endblock %}

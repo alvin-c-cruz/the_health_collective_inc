@@ -6,7 +6,7 @@
 
     <div class="thc-page-header">
         <h4>Pending Approval</h4>
-        <a href="{{ url_for('daily_sales.home') }}" class="thc-btn thc-btn-secondary">← Daily Sales</a>
+        <a href="{{ url_for('dashboard.home') }}" class="thc-btn thc-btn-secondary">← Back to Dashboard</a>
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -19,7 +19,7 @@
     {% endwith %}
 
     <!-- Transactions Section -->
-    {% if transactions or deposits %}
+    {% if transactions or deposits or funds_received or funds_disbursed or petty_cash_vouchers %}
     <div class="thc-card mb-4">
         <h5 class="mb-3">Transactions</h5>
         <table class="table table-sm table-hover mb-0">
@@ -119,9 +119,116 @@
         <div class="text-muted small mt-2">{{ deposits | length }} deposit{{ 's' if deposits | length != 1 }} pending approval</div>
         {% endif %}
     </div>
+
+    <!-- Funds Received Section -->
+    <div class="thc-card mb-4">
+        <h5 class="mb-3">Funds Received</h5>
+        <table class="table table-sm table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Reference #</th>
+                    <th>Description</th>
+                    <th class="text-end">Amount</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fund in funds_received %}
+                <tr>
+                    <td class="text-nowrap">{{ fund.record_date }}</td>
+                    <td>{{ fund.fund_category.category_name if fund.fund_category else '—' }}</td>
+                    <td class="font-monospace small">{{ fund.reference_number or '—' }}</td>
+                    <td>{{ fund.description or '—' }}</td>
+                    <td class="text-end font-monospace">{{ fund.formatted_amount }}</td>
+                    <td class="text-end" style="white-space:nowrap;">
+                        <form method="POST" action="{{ url_for('daily_sales.approve_fund_received', id=fund.id) }}" style="display: inline;">
+                            <button type="submit" class="thc-btn thc-btn-sm thc-btn-primary">Approve</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">No funds received pending approval.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if funds_received %}
+        <div class="text-muted small mt-2">{{ funds_received | length }} fund{{ 's' if funds_received | length != 1 }} received pending approval</div>
+        {% endif %}
+    </div>
+
+    <!-- Funds Disbursed Section -->
+    <div class="thc-card">
+        <h5 class="mb-3">Funds Disbursed</h5>
+        <table class="table table-sm table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Reference #</th>
+                    <th>Description</th>
+                    <th class="text-end">Amount</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fund in funds_disbursed %}
+                <tr>
+                    <td class="text-nowrap">{{ fund.record_date }}</td>
+                    <td>{{ fund.fund_category.category_name if fund.fund_category else '—' }}</td>
+                    <td class="font-monospace small">{{ fund.reference_number or '—' }}</td>
+                    <td>{{ fund.description or '—' }}</td>
+                    <td class="text-end font-monospace">{{ fund.formatted_amount }}</td>
+                    <td class="text-end" style="white-space:nowrap;">
+                        <form method="POST" action="{{ url_for('daily_sales.approve_fund_disbursed', id=fund.id) }}" style="display: inline;">
+                            <button type="submit" class="thc-btn thc-btn-sm thc-btn-primary">Approve</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">No funds disbursed pending approval.</td>
+                </tr>
+                {% endfor %}
+
+                <!-- Petty Cash Vouchers Section -->
+                <tr class="table-section-header">
+                    <td colspan="6"><strong>Petty Cash Vouchers</strong></td>
+                </tr>
+                {% for voucher in petty_cash_vouchers %}
+                <tr>
+                    <td class="text-nowrap">{{ voucher.record_date }}</td>
+                    <td class="font-monospace small">{{ voucher.pcv_number or '—' }}</td>
+                    <td>{{ voucher.payee.name if voucher.payee else '—' }}</td>
+                    <td>{{ voucher.description or '—' }}</td>
+                    <td class="text-end font-monospace">{{ voucher.formatted_amount }}</td>
+                    <td class="text-end" style="white-space:nowrap;">
+                        <form method="POST" action="{{ url_for('daily_sales.post_petty_cash_voucher', voucher_id=voucher.id) }}" style="display: inline;">
+                            <input type="hidden" name="next" value="pending_approval">
+                            <button type="submit" class="thc-btn thc-btn-sm thc-btn-primary">Approve</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">No petty cash vouchers pending approval.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if funds_disbursed %}
+        <div class="text-muted small mt-2">{{ funds_disbursed | length }} fund{{ 's' if funds_disbursed | length != 1 }} disbursed pending approval</div>
+        {% endif %}
+        {% if petty_cash_vouchers %}
+        <div class="text-muted small mt-2">{{ petty_cash_vouchers | length }} petty cash voucher{{ 's' if petty_cash_vouchers | length != 1 }} pending approval</div>
+        {% endif %}
+    </div>
     {% else %}
     <div class="thc-card">
-        <div class="text-center text-muted py-4">All caught up — no transactions or deposits pending approval.</div>
+        <div class="text-center text-muted py-4">All caught up — no transactions, deposits, funds, or petty cash vouchers pending approval.</div>
     </div>
     {% endif %}
 

@@ -120,3 +120,41 @@ class ChangeRequest(db.Model):
         elif self.record_type == 'collection':
             return self.collection
         return None
+
+    def get_changed_fields(self):
+        """
+        Compare old and new values to identify which fields changed.
+        Returns a list of field names that have different values.
+        """
+        changed = []
+        old = self.old_values or {}
+        new = self.new_values or {}
+
+        # Compare basic fields
+        for key in set(old.keys()) | set(new.keys()):
+            if key not in ['details', 'tenders']:  # Handle line items separately
+                if old.get(key) != new.get(key):
+                    changed.append(key)
+
+        # Check if details changed
+        if old.get('details') != new.get('details'):
+            changed.append('items')
+
+        # Check if tenders changed
+        if old.get('tenders') != new.get('tenders'):
+            changed.append('payment')
+
+        return changed
+
+    def get_field_comparison(self, field_name):
+        """
+        Get old and new values for a specific field.
+        Returns tuple: (old_value, new_value, has_changed)
+        """
+        old = self.old_values or {}
+        new = self.new_values or {}
+
+        old_val = old.get(field_name)
+        new_val = new.get(field_name)
+
+        return (old_val, new_val, old_val != new_val)

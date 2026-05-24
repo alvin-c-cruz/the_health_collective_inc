@@ -164,7 +164,7 @@
           </div>
           <div class="form-group">
             <label class="form-label required">Date</label>
-            <input type="date" name="record_date" class="form-control" value="{{ start_date }}" required>
+            <input type="date" name="record_date" class="form-control" value="{{ end_date }}" required>
           </div>
           <div class="form-group">
             <label class="form-label">Reference Number</label>
@@ -202,7 +202,7 @@
           </div>
           <div class="form-group">
             <label class="form-label required">Date</label>
-            <input type="date" name="record_date" class="form-control" value="{{ start_date }}" required>
+            <input type="date" name="record_date" class="form-control" value="{{ end_date }}" required>
           </div>
           <div class="form-group">
             <label class="form-label">Reference Number</label>
@@ -279,8 +279,21 @@
                   <span class="status-badge {{ fund.status }}">{{ fund.status }}</span>
                 </td>
                 <td class="actions-col">
+                  {% if fund.status == 'draft' %}
+                  <form method="POST" action="{{ url_for('daily_sales.submit_fund_received', id=fund.id) }}" style="display: inline;">
+                    <button type="submit" class="btn-submit" title="Submit for Approval">
+                      <i class="bi bi-check-circle"></i>
+                    </button>
+                  </form>
+                  {% elif fund.status == 'submitted' and (current_user.admin or current_user.superuser) %}
+                  <form method="POST" action="{{ url_for('daily_sales.approve_fund_received', id=fund.id) }}" style="display: inline;">
+                    <button type="submit" class="btn-approve" title="Approve">
+                      <i class="bi bi-check-circle-fill"></i>
+                    </button>
+                  </form>
+                  {% endif %}
                   {% if fund.status != 'cancelled' %}
-                  <form method="POST" action="{{ url_for('daily_sales.cancel_fund_received', id=fund.id) }}" style="display: inline;" onsubmit="return confirm('Cancel this record? This action cannot be undone.')">
+                  <form method="POST" action="{{ url_for('daily_sales.cancel_fund_received', id=fund.id) }}" style="display: inline; margin-left: 0.25rem;" onsubmit="return confirm('Cancel this record? This action cannot be undone.')">
                     <input type="hidden" name="reason" value="Cancelled by {{ current_user.user_name }}">
                     <button type="submit" class="btn-delete" title="Cancel">
                       <i class="bi bi-x-circle"></i>
@@ -333,8 +346,21 @@
                   <span class="status-badge {{ fund.status }}">{{ fund.status }}</span>
                 </td>
                 <td class="actions-col">
+                  {% if fund.status == 'draft' %}
+                  <form method="POST" action="{{ url_for('daily_sales.submit_fund_disbursed', id=fund.id) }}" style="display: inline;">
+                    <button type="submit" class="btn-submit" title="Submit for Approval">
+                      <i class="bi bi-check-circle"></i>
+                    </button>
+                  </form>
+                  {% elif fund.status == 'submitted' and (current_user.admin or current_user.superuser) %}
+                  <form method="POST" action="{{ url_for('daily_sales.approve_fund_disbursed', id=fund.id) }}" style="display: inline;">
+                    <button type="submit" class="btn-approve" title="Approve">
+                      <i class="bi bi-check-circle-fill"></i>
+                    </button>
+                  </form>
+                  {% endif %}
                   {% if fund.status != 'cancelled' %}
-                  <form method="POST" action="{{ url_for('daily_sales.cancel_fund_disbursed', id=fund.id) }}" style="display: inline;" onsubmit="return confirm('Cancel this record? This action cannot be undone.')">
+                  <form method="POST" action="{{ url_for('daily_sales.cancel_fund_disbursed', id=fund.id) }}" style="display: inline; margin-left: 0.25rem;" onsubmit="return confirm('Cancel this record? This action cannot be undone.')">
                     <input type="hidden" name="reason" value="Cancelled by {{ current_user.user_name }}">
                     <button type="submit" class="btn-delete" title="Cancel">
                       <i class="bi bi-x-circle"></i>

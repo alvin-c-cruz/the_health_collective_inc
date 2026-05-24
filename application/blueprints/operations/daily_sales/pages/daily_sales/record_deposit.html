@@ -109,7 +109,8 @@
       <div class="col-md-4">
         <label class="form-label">Bank / Account</label>
         <div class="bank-account-wrapper">
-          <input type="text" name="bank_account" id="bank-account-input" class="form-control upper-case" placeholder="e.g. BDO Savings - 1234" autocomplete="off">
+          <input type="text" id="bank-account-input" class="form-control upper-case" placeholder="e.g. BDO Savings - 1234" autocomplete="off">
+          <input type="hidden" id="bank_account_id" name="bank_account_id" value="">
         </div>
       </div>
     </div>
@@ -251,7 +252,7 @@
   // Bank account options from server
   const BANK_ACCOUNT_OPTIONS = [
     {% for ba in bank_accounts %}
-    '{{ ba.bank_name }} — {{ ba.account_number }}',
+    { id: {{ ba.id }}, name: '{{ ba.bank_name }} — {{ ba.account_number }}' }{% if not loop.last %},{% endif %}
     {% endfor %}
   ];
 
@@ -361,7 +362,7 @@
     function getMatches(q) {
       if (!q) return BANK_ACCOUNT_OPTIONS.slice(0, 100);
       const lq = q.toLowerCase();
-      return BANK_ACCOUNT_OPTIONS.filter(function(n) { return n.toLowerCase().includes(lq); });
+      return BANK_ACCOUNT_OPTIONS.filter(function(ba) { return ba.name.toLowerCase().includes(lq); });
     }
 
     function hl(text, q) {
@@ -386,13 +387,16 @@
       });
       dd.appendChild(addEl);
 
-      matches.forEach(function(name) {
+      matches.forEach(function(ba) {
         const item = document.createElement('div');
         item.className = 'bank-ac-item';
-        item.innerHTML = hl(name, q);
+        item.innerHTML = hl(ba.name, q);
+        item.dataset.id = ba.id;
+        item.dataset.name = ba.name;
         item.addEventListener('mousedown', function(e) {
           e.preventDefault();
-          input.value = name;
+          input.value = ba.name;
+          document.getElementById('bank_account_id').value = ba.id;
           hide();
         });
         dd.appendChild(item);
@@ -429,12 +433,15 @@
   // Listen for postMessage from popup window
   window.addEventListener('message', function(e) {
     if (e.data && e.data.type === 'bank_account_added') {
+      const bankAccountId = e.data.bank_account_id;
       const bankAccountName = e.data.bank_account_name;
       // Add to options array
-      BANK_ACCOUNT_OPTIONS.push(bankAccountName);
+      BANK_ACCOUNT_OPTIONS.push({ id: bankAccountId, name: bankAccountName });
       // Set as selected value
       const input = document.getElementById('bank-account-input');
+      const hiddenInput = document.getElementById('bank_account_id');
       if (input) input.value = bankAccountName;
+      if (hiddenInput) hiddenInput.value = bankAccountId;
     }
   });
 

@@ -152,7 +152,7 @@
 
   .line-header { display: grid; gap: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--thc-border); margin-bottom: 0.5rem; }
 
-  .line-header.detail-grid { grid-template-columns: 4fr 1.5fr 1.5fr 1.5fr 32px; }
+  .line-header.detail-grid { grid-template-columns: 4fr 1.5fr 1.5fr 32px; }
 
   .line-header.tender-grid { grid-template-columns: 4fr 1.5fr 32px; }
 
@@ -162,9 +162,9 @@
 
   .detail-row, .tender-row { display: grid; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center; }
 
-  .detail-row { grid-template-columns: 4fr 1.5fr 1.5fr 1.5fr 32px; }
+  .detail-row { grid-template-columns: 4fr 1.5fr 1.5fr 32px; }
 
-  .tender-row { grid-template-columns: 4fr 1.5fr 32px; }
+  .tender-row { grid-template-columns: 3fr 2fr 1.5fr 32px; }
 
 
 
@@ -785,13 +785,13 @@
 
         <div class="col-12">
 
-          <label class="form-label">Customer *</label>
+          <label class="form-label">Patient *</label>
 
           <div style="position:relative;">
           <input type="text" name="customer_name" id="customer-name-input"
             class="form-control {{ 'is-invalid' if form.errors.get('customer_name') }}"
             value="{{ form.customer_name }}"
-            placeholder="Search customer…"
+            placeholder="Search patient…"
             autocomplete="off"
             {{ 'readonly' if form._locked_ }}>
           </div>
@@ -855,8 +855,6 @@
 
         <span style="text-align:right">Amount</span>
 
-        <span style="text-align:right">Discount</span>
-
         <span style="text-align:right">Net</span>
 
         <span></span>
@@ -884,9 +882,7 @@
 
             value="{{ '{:,.2f}'.format(detail.amount) if detail.amount else '0.00' }}" {{ 'readonly' if form._locked_ }}>
 
-          <input type="text" name="detail_discount[]" class="form-control num-input" placeholder="0.00"
-
-            value="{{ '{:,.2f}'.format(detail.discount) if detail.discount else '0.00' }}" {{ 'readonly' if form._locked_ }}>
+          <input type="hidden" name="detail_discount[]" value="{{ '{:,.2f}'.format(detail.discount) if detail.discount else '0.00' }}">
 
           <input type="hidden" name="side_note[]" value="{{ detail.side_note }}">
 
@@ -937,7 +933,15 @@
         </div>
 
         {% if not form._locked_ %}
-
+        <div class="items-summary-row" id="discount-description-row" style="background:#fff;padding:0.55rem 0.85rem;display:none;">
+          <div style="position:relative;width:100%;">
+            <input type="text" name="discount_description" id="discount-description" class="form-control"
+              placeholder="Discount reason/description..."
+              style="width:100%;font-size:0.8rem;padding:0.35rem 0.5rem;border:1px solid var(--thc-border);border-radius:4px;"
+              value="{{ form.discount_description or '' }}" autocomplete="off">
+            <div id="discount-desc-dropdown" class="customer-ac-dropdown"></div>
+          </div>
+        </div>
         {% endif %}
 
         <div class="items-summary-row is-total-row">
@@ -985,6 +989,8 @@
 
         <span>Tender Type</span>
 
+        <span>Note / Reference</span>
+
         <span style="text-align:right">Amount</span>
 
         <span></span>
@@ -1008,7 +1014,7 @@
             <input type="hidden" name="tender_id[]" value="{{ tender.tender_id or '' }}">
           </div>
 
-          <input type="hidden" name="tender_note[]" value="{{ tender.side_note }}">
+          <input type="text" name="tender_note[]" class="form-control tender-note-input{{ ' input-readonly' if form._locked_ }}" autocomplete="off" value="{{ tender.side_note or '' }}" {{ 'readonly' if form._locked_ }}>
 
           <input type="text" name="tender_amount[]" class="form-control num-input" placeholder="0.00"
 
@@ -1086,7 +1092,7 @@
 
       </button>
 
-      <a href="{{ url_for('daily_sales.home') }}" class="btn-back">Cancel</a>
+      <a href="{{ return_url if return_url else url_for('daily_sales.home') }}" class="btn-back">Back</a>
 
     </div>
 
@@ -1136,11 +1142,11 @@
   <div class="modal-dialog">
     <div class="modal-content" style="font-family:'DM Sans',sans-serif;">
       <div class="modal-header" style="border-bottom:1px solid var(--thc-border);">
-        <h5 class="modal-title" style="font-size:0.95rem;font-weight:600;">New Customer</h5>
+        <h5 class="modal-title" style="font-size:0.95rem;font-weight:600;">New Patient</h5>
       </div>
       <div class="modal-body">
         <div class="mb-3">
-          <label class="form-label" style="font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--thc-text-muted);">Customer Name *</label>
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--thc-text-muted);">Patient Name *</label>
           <input type="text" id="nc-name" class="form-control" placeholder="Full name" autocomplete="off">
           <div class="invalid-feedback" id="nc-name-err"></div>
         </div>
@@ -1167,7 +1173,7 @@
       <div class="modal-footer" style="border-top:1px solid var(--thc-border);">
         <button type="button" class="btn btn-secondary btn-sm" id="nc-cancel-btn">Cancel</button>
         <button type="button" class="btn btn-sm" id="nc-save-btn"
-          style="background:var(--thc-accent);color:#fff;font-weight:600;">Save Customer</button>
+          style="background:var(--thc-accent);color:#fff;font-weight:600;">Save Patient</button>
       </div>
     </div>
   </div>
@@ -1211,7 +1217,7 @@
 
   const CUSTOMER_OPTIONS = [
     {% for c in customers %}
-    '{{ c.customer_name | e }}',
+    {{ c | string | tojson }},
     {% endfor %}
   ];
 
@@ -1391,6 +1397,109 @@
 
 
 
+  // ── Tender Note Autocomplete ───────────────────────────────────────────
+
+  function initTenderNoteAutocomplete(input, tenderIdInput) {
+    if (!input || input.readOnly) return;
+
+    const wrap = input.parentNode;
+    const dd = document.createElement('div');
+    dd.className = 'customer-ac-dropdown';
+    wrap.style.position = 'relative';
+    wrap.appendChild(dd);
+
+    let active = -1;
+    let noteOptions = [];
+
+    function hl(text, q) {
+      if (!q) return text;
+      const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return text.replace(re, '<strong style="font-weight:700;color:#1a6473">$1</strong>');
+    }
+
+    function getMatches(q) {
+      if (!q) return noteOptions.slice(0, 50);
+      const lq = q.toLowerCase();
+      return noteOptions.filter(note => note.toLowerCase().includes(lq));
+    }
+
+    function loadNotesForTender() {
+      const tenderId = tenderIdInput.value;
+      if (!tenderId) {
+        noteOptions = [];
+        return;
+      }
+
+      // Fetch notes from server for this tender
+      fetch(`{{ url_for('daily_sales.get_tender_notes') }}?tender_id=${tenderId}`)
+        .then(r => r.json())
+        .then(data => {
+          noteOptions = data.notes || [];
+        })
+        .catch(() => {
+          noteOptions = [];
+        });
+    }
+
+    function render(q) {
+      const matches = getMatches(q);
+      dd.innerHTML = '';
+      active = -1;
+
+      if (!matches.length) {
+        dd.style.display = 'none';
+        return;
+      }
+
+      matches.forEach(note => {
+        const item = document.createElement('div');
+        item.className = 'customer-ac-item';
+        item.innerHTML = hl(note, q);
+        item.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          input.value = note;
+          hide();
+        });
+        dd.appendChild(item);
+      });
+
+      dd.style.display = 'block';
+    }
+
+    function hide() { dd.style.display = 'none'; active = -1; }
+
+    function setActive(i) {
+      const items = dd.querySelectorAll('.customer-ac-item');
+      items.forEach((el, idx) => el.classList.toggle('customer-ac-item--active', idx === i));
+      active = i;
+    }
+
+    input.addEventListener('input', () => render(input.value.trim()));
+    input.addEventListener('focus', () => {
+      loadNotesForTender();
+      render(input.value.trim());
+    });
+    input.addEventListener('blur', () => setTimeout(hide, 150));
+    input.addEventListener('keydown', e => {
+      if (dd.style.display === 'none') return;
+      const items = dd.querySelectorAll('.customer-ac-item');
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(active + 1, items.length - 1)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(active - 1, 0)); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (active >= 0 && items[active]) items[active].dispatchEvent(new MouseEvent('mousedown'));
+      } else if (e.key === 'Escape') { hide(); }
+    });
+
+    // Reload notes when tender changes
+    tenderIdInput.addEventListener('change', () => {
+      input.value = '';
+      loadNotesForTender();
+    });
+  }
+
+
+
   // ── Number formatting helpers ──────────────────────────────────────────
 
   const fmt     = v => parseFloat(v || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1439,7 +1548,7 @@
         <input type="hidden" name="product_id[]" value="${productId}">
       </div>
       <input type="text" name="amount[]" class="form-control num-input" placeholder="0.00" value="${fmt(amount)}">
-      <input type="text" name="detail_discount[]" class="form-control num-input" placeholder="0.00" value="${fmt(discount)}">
+      <input type="hidden" name="detail_discount[]" value="${fmt(discount)}">
       <input type="hidden" name="side_note[]" value="${note}">
       <input type="text" class="form-control num-input line-net" readonly value="0.00">
       <button type="button" class="btn-remove-row" onclick="removeRow(this, 'transaction-details', 'detail-row')" title="Remove">✕</button>
@@ -1468,7 +1577,7 @@
         <input type="text" class="form-control tender-ac-display" placeholder="— Select tender —" autocomplete="off" value="${tenderLabel}">
         <input type="hidden" name="tender_id[]" value="${tenderId}">
       </div>
-      <input type="hidden" name="tender_note[]" value="${note}">
+      <input type="text" name="tender_note[]" class="form-control tender-note-input" autocomplete="off" value="${note || ''}">
       <input type="text" name="tender_amount[]" class="form-control num-input" placeholder="0.00" value="${fmt(amount)}">
       <button type="button" class="btn-remove-row" onclick="removeRow(this, 'transaction-tenders', 'tender-row')" title="Remove">✕</button>
     `;
@@ -1476,6 +1585,7 @@
     container.appendChild(div);
 
     initTenderAutocomplete(div.querySelector('.tender-ac-display'));
+    initTenderNoteAutocomplete(div.querySelector('.tender-note-input'), div.querySelector('input[name="tender_id[]"]'));
 
   }
 
@@ -1525,6 +1635,27 @@
 
       if (lineNet) lineNet.value = fmt(net);
 
+      // Validation: Warn if discount exceeds amount
+      const discountInput = row.querySelector('input[name="detail_discount[]"]');
+      if (discountInput && disc > amt) {
+        discountInput.style.borderColor = '#dc2626';
+        discountInput.style.backgroundColor = '#fef2f2';
+        discountInput.title = 'Warning: Discount exceeds amount!';
+      } else if (discountInput) {
+        discountInput.style.borderColor = '';
+        discountInput.style.backgroundColor = '';
+        discountInput.title = '';
+      }
+
+      // Validation: Warn if net is negative
+      if (lineNet && net < 0) {
+        lineNet.style.color = '#dc2626';
+        lineNet.style.fontWeight = '600';
+      } else if (lineNet) {
+        lineNet.style.color = '';
+        lineNet.style.fontWeight = '';
+      }
+
     });
 
 
@@ -1534,6 +1665,27 @@
     document.getElementById('gross-total').textContent = fmt(gross);
 
     document.getElementById('net-total').textContent   = fmt(netDue);
+
+    // Show/hide discount description row based on whether there's a discount
+    const discountDescRow = document.getElementById('discount-description-row');
+    if (discountDescRow) {
+      discountDescRow.style.display = headerDiscount > 0 ? '' : 'none';
+    }
+
+    // Validation: Show warning if NET DUE is negative
+    let warningBanner = document.getElementById('negative-net-warning');
+    if (netDue < 0) {
+      if (!warningBanner) {
+        warningBanner = document.createElement('div');
+        warningBanner.id = 'negative-net-warning';
+        warningBanner.style.cssText = 'background:#fef2f2;border:1px solid #dc2626;border-radius:6px;padding:12px;margin-bottom:20px;color:#991b1b;font-size:0.875rem;font-weight:500;';
+        warningBanner.innerHTML = '⚠️ Warning: NET DUE is negative! Please check your amounts and discounts.';
+        const firstCard = document.querySelector('.txn-card');
+        if (firstCard) firstCard.parentNode.insertBefore(warningBanner, firstCard);
+      }
+    } else {
+      if (warningBanner) warningBanner.remove();
+    }
 
 
 
@@ -1676,7 +1828,7 @@
 
       const addEl = document.createElement('div');
       addEl.className = 'customer-ac-item customer-ac-add';
-      addEl.textContent = '+ Add Customer';
+      addEl.textContent = '+ Add Patient';
       addEl.addEventListener('mousedown', function(e) {
         e.preventDefault();
         window.open('{{ url_for("customer.add", popup=1) }}', 'add_customer', 'width=640,height=700,resizable=yes,scrollbars=yes');
@@ -1819,9 +1971,19 @@
     document.querySelectorAll('.service-ac-display').forEach(initServiceAutocomplete);
     document.querySelectorAll('.tender-ac-display').forEach(initTenderAutocomplete);
 
+    // Init tender note autocompletes on Jinja-rendered rows
+    document.querySelectorAll('.tender-row').forEach(row => {
+      const noteInput = row.querySelector('.tender-note-input');
+      const tenderIdInput = row.querySelector('input[name="tender_id[]"]');
+      if (noteInput && tenderIdInput) {
+        initTenderNoteAutocomplete(noteInput, tenderIdInput);
+      }
+    });
+
     // Init customer autocomplete
     {% if not form._locked_ %}
     initCustomerAutocomplete();
+    initDiscountDescriptionAutocomplete();
     {% endif %}
 
     // Format all existing num-inputs on page load
@@ -2028,6 +2190,94 @@
     var ge = document.getElementById('nc-general-err'); if (ge) ge.style.display = 'none';
     if (prefillName) { var nf = document.getElementById('nc-name'); if (nf) nf.value = prefillName; }
     _ncModal.show();
+  }
+
+  // ── Discount Description Autocomplete ──────────────────────────────────
+  function initDiscountDescriptionAutocomplete() {
+    var input = document.getElementById('discount-description');
+    if (!input || input.readOnly) return;
+
+    var dd = document.getElementById('discount-desc-dropdown');
+    if (!dd) return;
+
+    var active = -1;
+    var descriptions = [];
+
+    function hl(text, q) {
+      if (!q) return text;
+      var re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return text.replace(re, '<strong style="font-weight:700;color:var(--thc-accent)">$1</strong>');
+    }
+
+    function loadDescriptions() {
+      fetch("{{ url_for('daily_sales.get_discount_descriptions') }}")
+        .then(r => r.json())
+        .then(data => {
+          descriptions = data.descriptions || [];
+        })
+        .catch(() => {
+          descriptions = [];
+        });
+    }
+
+    function getMatches(q) {
+      if (!q) return descriptions.slice(0, 50);
+      var lq = q.toLowerCase();
+      return descriptions.filter(desc => desc.toLowerCase().includes(lq));
+    }
+
+    function render(q) {
+      var matches = getMatches(q);
+      dd.innerHTML = '';
+      active = -1;
+
+      if (!matches.length) {
+        dd.style.display = 'none';
+        return;
+      }
+
+      matches.forEach(desc => {
+        var item = document.createElement('div');
+        item.className = 'customer-ac-item';
+        item.innerHTML = hl(desc, q);
+        item.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          input.value = desc;
+          hide();
+        });
+        dd.appendChild(item);
+      });
+
+      dd.style.display = 'block';
+    }
+
+    function hide() { dd.style.display = 'none'; active = -1; }
+
+    function setActive(i) {
+      var items = dd.querySelectorAll('.customer-ac-item');
+      items.forEach((el, idx) => el.classList.toggle('customer-ac-item--active', idx === i));
+      active = i;
+    }
+
+    input.addEventListener('input', () => render(input.value.trim()));
+    input.addEventListener('focus', () => {
+      loadDescriptions();
+      render(input.value.trim());
+    });
+    input.addEventListener('blur', () => setTimeout(hide, 150));
+    input.addEventListener('keydown', e => {
+      if (dd.style.display === 'none') return;
+      var items = dd.querySelectorAll('.customer-ac-item');
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(active + 1, items.length - 1)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(active - 1, 0)); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (active >= 0 && items[active]) items[active].dispatchEvent(new MouseEvent('mousedown'));
+      } else if (e.key === 'Escape') { hide(); }
+    });
+
+    // Load initial descriptions
+    loadDescriptions();
   }
 </script>
 

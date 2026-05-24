@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Draft Transactions — The Health Collective Inc.{% endblock %}
+
+{% block styles %}
+<style>
+  .thc-wrap { max-width: 960px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
+  /* ── top bar ── */
+  .thc-topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: .75rem; }
+  .thc-brand-name { font-family: var(--thc-font-heading); font-size: 1.05rem; font-weight: 600; color: var(--thc-text); margin: 0; }
+  .thc-brand-sub { font-size: .75rem; color: var(--thc-text-muted); margin: 2px 0 0; }
+
+  /* ── section label ── */
+  .thc-sec-lbl { font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--thc-text-muted); margin-bottom: .6rem; }
+
+  /* ── transaction list ── */
+  .thc-txn-list { margin-bottom: 1.5rem; }
+  .thc-rec-row { background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; padding: 11px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 6px; text-decoration: none; color: inherit; transition: border-color .15s, background .15s; }
+  .thc-rec-row:hover { border-color: #a0b4b8; background: var(--thc-primary-light); text-decoration: none; color: inherit; }
+  .thc-rec-icon { width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: .85rem; flex-shrink: 0; }
+  .thc-rec-info { flex: 1; min-width: 0; }
+  .thc-rec-num { font-size: .68rem; color: var(--thc-text-muted); font-family: monospace; }
+  .thc-rec-customer { font-size: .85rem; font-weight: 600; color: var(--thc-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .thc-rec-type { font-size: .7rem; color: var(--thc-text-muted); margin-top: 1px; }
+  .thc-rec-date { font-size: .7rem; color: var(--thc-text-muted); margin-top: 1px; }
+  .thc-rec-amount { font-family: monospace; font-size: .88rem; font-weight: 600; color: var(--thc-text); text-align: right; flex-shrink: 0; }
+  .thc-rec-badge { flex-shrink: 0; font-size: .62rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: .04em; }
+  .badge-draft     { background: #f0f0f0; color: var(--thc-text-muted); }
+  .thc-empty { text-align: center; padding: 1.25rem; color: var(--thc-text-muted); font-size: .8rem; background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; }
+
+  .ic-blue   { background: var(--thc-primary-light); color: var(--thc-primary); }
+  .ic-green  { background: #e6f3f0; color: #0f6e56; }
+  .ic-purple { background: #eeedfe; color: #3c3489; }
+  .ic-coral  { background: #faece7; color: #993c1d; }
+  .ic-amber  { background: #faeeda; color: #854f0b; }
+  .ic-rose   { background: #fce7f3; color: #9d174d; }
+  .ic-slate  { background: #f1f5f9; color: #475569; }
+
+  /* ── back button ── */
+  .back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; font-weight: 600; color: var(--thc-primary); text-decoration: none; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--thc-border); background: #fff; transition: all .15s; }
+  .back-btn:hover { background: var(--thc-primary-light); border-color: var(--thc-primary); text-decoration: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="thc-wrap">
+
+  {# ── Top bar ── #}
+  <div class="thc-topbar">
+    <div>
+      <p class="thc-brand-name">The Health Collective Inc.</p>
+      <p class="thc-brand-sub">Draft Transactions</p>
+    </div>
+    <a href="{{ url_for('dashboard.home') }}" class="back-btn">
+      <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+
+  {# ── Transaction list ── #}
+  <div class="thc-sec-lbl">
+    All Draft Transactions ({{ transactions|length }})
+  </div>
+  <div class="thc-txn-list">
+    {% if transactions %}
+      {% for t in transactions %}
+        {% set net = namespace(val=0) %}
+        {% for d in t.transaction_details %}{% set net.val = net.val + d.amount - d.discount %}{% endfor %}
+        {% set net.val = net.val - (t.discount or 0) %}
+        {% set tt = t.transaction_type %}
+        <a href="{{ url_for('daily_sales.edit_transaction', transaction_id=t.id, return_url=request.url) }}"
+           class="thc-rec-row">
+          <div class="thc-rec-icon {{ tt.icon_color if tt else 'ic-slate' }}">
+            <i class="bi {{ tt.icon if tt else 'bi-tag' }}"></i>
+          </div>
+          <div class="thc-rec-info">
+            <div class="thc-rec-num"># {{ t.record_number }}</div>
+            <div class="thc-rec-customer">{{ t.customer.customer_name if t.customer else '—' }}</div>
+            <div class="thc-rec-type">{{ tt.type_name if tt else '—' }}</div>
+            <div class="thc-rec-date">{{ t.record_date }}</div>
+          </div>
+          <div class="thc-rec-amount">₱{{ "{:,.2f}".format(net.val) }}</div>
+          <div>
+            <span class="thc-rec-badge badge-draft">Draft</span>
+          </div>
+        </a>
+      {% endfor %}
+    {% else %}
+      <div class="thc-empty">
+        No draft transactions found.
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

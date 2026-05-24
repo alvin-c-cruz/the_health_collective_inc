@@ -90,15 +90,20 @@
     <span style="font-size:0.75rem;color:var(--thc-text-muted);">{{ record.formatted_record_date or record.record_date }}</span>
     <span style="font-size:0.75rem;color:var(--thc-text-muted);">&middot; {{ record.record_number or '—' }}</span>
     <span style="margin-left:auto;display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;">
-      {% if record.submitted %}
+      {% if record.cancelled %}
+        <span class="badge-cancelled">Cancelled {{ record.formatted_cancelled }}</span>
+      {% elif record.cancellation_requested_at %}
+        <span class="badge-pending" style="background:#fef3c7;color:#92400e;">⚠ Cancellation Requested</span>
+      {% elif record.submitted %}
         <span class="badge-submitted">Submitted {{ record.formatted_submitted }}</span>
+        {% if record.submitted_by_user %}
+          <span class="badge-submitted" style="background:#e3f2fd;color:#1565c0;">📝 Prepared by {{ record.submitted_by_user.user_name }}</span>
+        {% endif %}
         {% if record.user_approved %}
           <span class="badge-approved">&#10003; Approved by {{ record.user_approved[0].user.user_name }}</span>
         {% else %}
           <span class="badge-pending">Pending Approval</span>
         {% endif %}
-      {% elif record.cancelled %}
-        <span class="badge-cancelled">Cancelled {{ record.formatted_cancelled }}</span>
       {% else %}
         <span class="badge-draft">Draft</span>
       {% endif %}
@@ -110,7 +115,7 @@
     <div class="txn-card-title">Transaction Info</div>
     <div class="row g-3">
       <div class="col-md-4">
-        <div class="vt-label">Customer</div>
+        <div class="vt-label">Patient</div>
         <div class="vt-value">{{ record.customer.customer_name if record.customer else '—' }}</div>
       </div>
       <div class="col-md-4">
@@ -226,6 +231,8 @@
   <div class="txn-actions">
     <a href="{{ url_for('daily_sales.home') }}" class="btn-back">← Back to Daily Sales</a>
 
+    <a href="{{ url_for('daily_sales.transaction_audit_history', transaction_id=record.id) }}" class="btn-back">📋 View History</a>
+
     {% if not record.submitted and not record.cancelled and (current_user.superuser or current_user.admin or current_user.staff) %}
     <a href="{{ url_for('daily_sales.edit_transaction', transaction_id=record.id) }}" class="btn-edit">✏ Edit</a>
 
@@ -236,8 +243,13 @@
     {% endif %}
 
     {% if record.submitted and not record.cancelled and record.user_approved and current_user.superuser %}
+    <form method="POST" action="{{ url_for('daily_sales.unapprove_transaction', transaction_id=record.id) }}"
+      style="margin-left:auto;" onsubmit="return confirm('Remove approval from this transaction? (Testing only)')">
+      <button type="submit" class="btn-danger-outline" style="background:#fef3c7;color:#92400e;border-color:#f59e0b;">🔄 Unapprove (Test)</button>
+    </form>
+
     <form method="POST" action="{{ url_for('daily_sales.unlock_transaction', transaction_id=record.id) }}"
-      style="margin-left:auto;" onsubmit="return confirm('Unlock this approved transaction and return it to Pending Approval?')">
+      onsubmit="return confirm('Unlock this approved transaction and return it to Pending Approval?')">
       <button type="submit" class="btn-danger-outline">&#128275; Unlock</button>
     </form>
     {% endif %}
@@ -251,9 +263,70 @@
 
     <button type="button" class="btn-danger-outline" onclick="showReturnToDraftModal()">↩ Return to Draft</button>
     {% endif %}
+
+    {# Request Modification button - TEMPORARILY DISABLED due to permission issue #}
+    {# {% if record.submitted and not record.cancelled and current_user.staff and not (current_user.admin or current_user.superuser) %}
+    <a href="{{ url_for('daily_sales.request_transaction_change', transaction_id=record.id) }}" class="btn-back" style="background:#e6f3f5;color:#1a6473;border-color:#1a6473;">📝 Request Modification</a>
+    {% endif %} #}
+
+    {# Request Cancellation button for staff on submitted transactions #}
+    {% if record.submitted and not record.cancelled and not record.cancellation_requested_at and not (current_user.admin or current_user.superuser) %}
+    <button type="button" class="btn-danger-outline" onclick="showRequestCancellationModal()" style="margin-left:auto;">✗ Request Cancellation</button>
+    {% endif %}
+
+    {# Approve/Reject Cancellation buttons for admins when cancellation is requested #}
+    {% if record.cancellation_requested_at and not record.cancelled and (current_user.admin or current_user.superuser) %}
+    <form method="POST" action="{{ url_for('daily_sales.approve_cancellation', transaction_id=record.id) }}"
+      style="margin-left:auto;" onsubmit="return confirm('Approve cancellation and cancel this transaction?')">
+      <button type="submit" class="btn-danger">✓ Approve Cancellation</button>
+    </form>
+
+    <form method="POST" action="{{ url_for('daily_sales.reject_cancellation', transaction_id=record.id) }}"
+      onsubmit="return confirm('Reject cancellation request?')">
+      <button type="submit" class="btn-danger-outline">✗ Reject Cancellation</button>
+    </form>
+    {% endif %}
   </div>
 
 </div>
+
+{# Modal for Request Cancellation - requires reason #}
+{% if record.submitted and not record.cancelled and not record.cancellation_requested_at and not (current_user.admin or current_user.superuser) %}
+<div id="requestCancellationModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:white; border-radius:var(--thc-radius); padding:2rem; max-width:500px; width:90%; box-shadow:0 4px 20px rgba(0,0,0,0.15);">
+    <h5 style="margin:0 0 1rem; font-size:1.1rem; font-weight:600;">Request Transaction Cancellation</h5>
+    <p style="color:var(--thc-text-muted); font-size:0.875rem; margin-bottom:1.5rem;">
+      Please provide a reason for requesting cancellation. An admin will review and approve/reject your request.
+    </p>
+    <form method="POST" action="{{ url_for('daily_sales.request_cancellation', transaction_id=record.id) }}" id="requestCancellationForm">
+      <div style="margin-bottom:1.5rem;">
+        <label for="cancelReason" style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.5rem;">Reason <span style="color:var(--thc-danger);">*</span></label>
+        <textarea
+          id="cancelReason"
+          name="reason"
+          required
+          rows="4"
+          style="width:100%; padding:0.75rem; border:1px solid var(--thc-border); border-radius:6px; font-size:0.875rem; font-family:inherit; resize:vertical;"
+          placeholder="Enter reason for cancellation request..."></textarea>
+      </div>
+      <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+        <button type="button" onclick="hideRequestCancellationModal()" class="btn-back">Cancel</button>
+        <button type="submit" class="btn-danger">Submit Request</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function showRequestCancellationModal() {
+  document.getElementById('requestCancellationModal').style.display = 'flex';
+}
+function hideRequestCancellationModal() {
+  document.getElementById('requestCancellationModal').style.display = 'none';
+  document.getElementById('cancelReason').value = '';
+}
+</script>
+{% endif %}
 
 {# Modal for Return to Draft - requires reason #}
 {% if record.submitted and not record.cancelled and not record.user_approved and (current_user.admin or current_user.superuser) %}

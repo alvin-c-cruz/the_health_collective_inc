@@ -99,7 +99,7 @@
             {% for deposit in deposits %}
             <tr>
               <td>{{ deposit.formatted_record_date }}</td>
-              <td>{{ deposit.bank_account or '-' }}</td>
+              <td>{{ deposit.bank_account_display }}</td>
               <td>{{ deposit.reference_number or '-' }}</td>
               <td class="text-end fw-bold">₱{{ deposit.formatted_total_amount }}</td>
               <td class="text-end" style="color: #dc3545;">

@@ -14,12 +14,13 @@
 
   /* ── forms section ── */
   .forms-section { margin-bottom: 2rem; }
-  .forms-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-  .form-card { background: #fff; border: 1px solid var(--thc-border); border-radius: 10px; padding: 20px; }
-  .form-card-title { font-size: .95rem; font-weight: 600; color: var(--thc-text); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-  .form-card-title i { font-size: 1.1rem; }
-  .form-card.expenses .form-card-title { color: #0f6e56; }
-  .form-card.reimbursement .form-card-title { color: #993c1d; }
+
+  /* ── action buttons ── */
+  .btn-new-voucher, .btn-new-reimbursement { padding: 12px 24px; border: none; border-radius: 8px; font-size: .9rem; font-weight: 600; cursor: pointer; transition: all .2s; display: inline-flex; align-items: center; gap: 8px; }
+  .btn-new-voucher { background: #0f6e56; color: #fff; }
+  .btn-new-voucher:hover { background: #0d5c49; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(15, 110, 86, 0.3); }
+  .btn-new-reimbursement { background: #993c1d; color: #fff; }
+  .btn-new-reimbursement:hover { background: #7a2f16; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(153, 60, 29, 0.3); }
 
   /* ── form elements ── */
   .form-group { margin-bottom: 14px; }
@@ -37,12 +38,13 @@
   .btn-submit.reimbursement { background: #993c1d; color: #fff; }
   .btn-submit.reimbursement:hover { background: #7a2f16; }
 
-  /* ── filters ── */
-  .filters-bar { background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; padding: 14px 16px; margin-bottom: 1rem; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+  /* ── filters and balance row ── */
+  .filters-balance-row { display: flex; gap: 16px; align-items: stretch; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .filters-bar { background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; padding: 14px 16px; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; flex: 1; min-width: 400px; }
   .filter-group { flex: 1; min-width: 150px; }
   .filter-label { display: block; font-size: .75rem; font-weight: 600; color: var(--thc-text-muted); margin-bottom: 4px; }
   .filter-input { width: 100%; padding: 7px 10px; border: 1px solid var(--thc-border); border-radius: 6px; font-size: .82rem; }
-  .filter-btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: .82rem; font-weight: 600; background: var(--thc-primary); color: #fff; cursor: pointer; }
+  .filter-btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: .82rem; font-weight: 600; background: var(--thc-primary); color: #fff; cursor: pointer; white-space: nowrap; }
   .filter-btn:hover { background: #1d5c6a; }
   .filter-btn-clear { padding: 8px 16px; border: 1px solid var(--thc-border); border-radius: 6px; font-size: .82rem; font-weight: 600; background: #fff; color: var(--thc-text-muted); cursor: pointer; }
   .filter-btn-clear:hover { border-color: var(--thc-primary); color: var(--thc-primary); }
@@ -119,6 +121,9 @@
   .btn-print { padding: 4px 10px; border: 1px solid #1a6473; border-radius: 4px; background: #fff; color: #1a6473; font-size: .75rem; font-weight: 600; cursor: pointer; transition: all .15s; margin-right: 4px; }
   .btn-print:hover { background: #1a6473; color: #fff; }
 
+  .btn-approve { padding: 6px 14px; border: none; border-radius: 4px; background: #28a745; color: #fff; font-size: .8rem; font-weight: 600; cursor: pointer; transition: all .15s; }
+  .btn-approve:hover { background: #218838; }
+
   .empty-state { text-align: center; padding: 3rem 1rem; color: var(--thc-text-muted); font-size: .9rem; }
   .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: .3; }
 
@@ -162,10 +167,311 @@
     border-bottom: 1px solid var(--thc-border);
   }
 
+  /* ── balance summary ── */
+  .balance-summary {
+    background: linear-gradient(135deg, #1a6473 0%, #135260 100%);
+    border-radius: 10px;
+    padding: 16px 24px;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(26, 100, 115, 0.2);
+    min-width: 280px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .balance-summary-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+    opacity: 0.9;
+  }
+  .balance-amount {
+    font-size: 1.75rem;
+    font-weight: 700;
+    font-family: monospace;
+  }
+  .balance-breakdown {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  .balance-item {
+    text-align: center;
+  }
+  .balance-item-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.8;
+    margin-bottom: 4px;
+  }
+  .balance-item-value {
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: monospace;
+  }
+
   @media (max-width: 768px) {
     .forms-grid { grid-template-columns: 1fr; }
-    .filters-bar { flex-direction: column; align-items: stretch; }
+    .filters-balance-row { flex-direction: column; }
+    .filters-bar { flex-direction: column; align-items: stretch; min-width: 100%; }
     .filter-group { width: 100%; }
+    .balance-summary { min-width: 100%; }
+  }
+
+  /* Print Styles - Only show the voucher content when printing */
+  @media print {
+    /* Set page margins - allow user to choose orientation */
+    @page {
+      margin: 0.4in 0.5in;
+    }
+
+    /* Hide everything except the print modal */
+    body > *:not(#printPCVModal) {
+      display: none !important;
+    }
+
+    /* Hide other modals */
+    .modal:not(#printPCVModal) {
+      display: none !important;
+    }
+
+    /* Hide modal header and footer */
+    #printPCVModal .modal-header,
+    #printPCVModal .modal-footer {
+      display: none !important;
+    }
+
+    /* Remove modal styling */
+    #printPCVModal {
+      position: static !important;
+      display: block !important;
+      padding: 0 !important;
+    }
+
+    #printPCVModal .modal-dialog {
+      max-width: 100% !important;
+      margin: 0 !important;
+      width: 100% !important;
+    }
+
+    #printPCVModal .modal-content {
+      border: none !important;
+      box-shadow: none !important;
+      background: white !important;
+    }
+
+    #printPCVModal .modal-body {
+      padding: 0 !important;
+    }
+
+    /* Hide backdrop */
+    .modal-backdrop {
+      display: none !important;
+    }
+
+    body {
+      background: white !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    /* EXTREMELY compact spacing - No transforms for Edge compatibility */
+    #pcvPrintContent {
+      font-size: 10px !important;
+      line-height: 1.2 !important;
+      max-width: 100% !important;
+    }
+
+    #pcvPrintContent * {
+      margin: 0 !important;
+      padding: 0 !important;
+      box-sizing: border-box !important;
+    }
+
+    /* Header - Very compact */
+    #pcvPrintContent > div:nth-child(1) {
+      margin-bottom: 6px !important;
+      padding-bottom: 4px !important;
+      border-bottom: 1px solid #000 !important;
+    }
+
+    #pcvPrintContent > div:nth-child(1) h5 {
+      font-size: 13px !important;
+      font-weight: 700 !important;
+      margin-bottom: 1px !important;
+    }
+
+    #pcvPrintContent > div:nth-child(1) p {
+      font-size: 10px !important;
+    }
+
+    /* Details grid - Compact */
+    #pcvPrintContent > div:nth-child(2) {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 8px !important;
+      margin-bottom: 8px !important;
+    }
+
+    #pcvPrintContent table {
+      width: 100% !important;
+      font-size: 10px !important;
+      border-spacing: 0 !important;
+    }
+
+    #pcvPrintContent td {
+      padding: 1px 0 !important;
+      vertical-align: top !important;
+    }
+
+    #pcvPrintContent td:first-child {
+      width: 75px !important;
+      padding-right: 4px !important;
+    }
+
+    /* Description - Very compact */
+    #pcvPrintContent > div:nth-child(3) {
+      margin-bottom: 8px !important;
+    }
+
+    #pcvPrintContent > div:nth-child(3) > p:first-child {
+      font-size: 10px !important;
+      font-weight: 600 !important;
+      margin-bottom: 2px !important;
+    }
+
+    #pcvPrintContent > div:nth-child(3) > p:last-child {
+      padding: 4px !important;
+      background: #f8f9fa !important;
+      border-radius: 3px !important;
+      font-size: 9px !important;
+      min-height: 35px !important;
+      max-height: 35px !important;
+      overflow: hidden !important;
+    }
+
+    /* Amount in words - Compact */
+    #pcvPrintContent > div:nth-child(4) {
+      margin-bottom: 10px !important;
+      padding: 4px 6px !important;
+      border: 1px solid #dee2e6 !important;
+      border-radius: 3px !important;
+    }
+
+    #pcvPrintContent > div:nth-child(4) > p:first-child {
+      font-size: 9px !important;
+      font-weight: 600 !important;
+      margin-bottom: 1px !important;
+    }
+
+    #pcvPrintContent > div:nth-child(4) > p:last-child {
+      font-size: 10px !important;
+      font-style: italic !important;
+    }
+
+    /* Signatures - Very compact */
+    #pcvPrintContent > div:nth-child(5) {
+      margin-top: 12px !important;
+      display: grid !important;
+      grid-template-columns: 1fr 1fr 1fr !important;
+      gap: 12px !important;
+    }
+
+    #pcvPrintContent > div:nth-child(5) > div > p:first-child {
+      font-size: 9px !important;
+      font-weight: 600 !important;
+      margin-bottom: 18px !important;
+    }
+
+    #pcvPrintContent > div:nth-child(5) > div > div {
+      border-top: 1px solid #000 !important;
+      padding-top: 2px !important;
+      text-align: center !important;
+    }
+
+    #pcvPrintContent > div:nth-child(5) > div > div > p:first-child {
+      font-size: 10px !important;
+      font-weight: 600 !important;
+      margin-bottom: 0 !important;
+    }
+
+    #pcvPrintContent > div:nth-child(5) > div > div > p:last-child {
+      font-size: 8px !important;
+      color: #6c757d !important;
+      margin-top: 0 !important;
+    }
+
+    /* Print styles for Reimbursement Report */
+    body > *:not(#printReimbursementModal) {
+      display: none !important;
+    }
+
+    .modal:not(#printReimbursementModal) {
+      display: none !important;
+    }
+
+    #printReimbursementModal .modal-header,
+    #printReimbursementModal .modal-footer {
+      display: none !important;
+    }
+
+    #printReimbursementModal {
+      position: static !important;
+      display: block !important;
+      padding: 0 !important;
+    }
+
+    #printReimbursementModal .modal-dialog {
+      max-width: 100% !important;
+      margin: 0 !important;
+      width: 100% !important;
+    }
+
+    #printReimbursementModal .modal-content {
+      border: none !important;
+      box-shadow: none !important;
+      background: white !important;
+    }
+
+    #printReimbursementModal .modal-body {
+      padding: 0 !important;
+    }
+
+    #reimbursementPrintContent {
+      font-size: 10px !important;
+      line-height: 1.3 !important;
+      max-width: 100% !important;
+    }
+
+    #reimbursementPrintContent h5 {
+      font-size: 14px !important;
+    }
+
+    #reimbursementPrintContent p {
+      font-size: 10px !important;
+    }
+
+    #reimbursementPrintContent table {
+      page-break-inside: auto !important;
+    }
+
+    #reimbursementPrintContent tr {
+      page-break-inside: avoid !important;
+      page-break-after: auto !important;
+    }
+
+    #reimbursementPrintContent thead {
+      display: table-header-group !important;
+    }
+
+    #reimbursementPrintContent tfoot {
+      display: table-footer-group !important;
+    }
   }
 </style>
 {% endblock %}
@@ -195,114 +501,41 @@
     {% endif %}
   {% endwith %}
 
-  <!-- Filters at Top -->
-  <div class="filters-bar">
-    <div class="filter-group">
-      <label class="filter-label">Start Date</label>
-      <input type="date" id="filter_start_date" class="filter-input" value="2026-05-01">
+  <!-- Filters and Balance Row -->
+  <div class="filters-balance-row">
+    <!-- Filters -->
+    <div class="filters-bar">
+      <form method="GET" action="{{ url_for('daily_sales.petty_cash_management') }}" style="display: contents;">
+        <div class="filter-group">
+          <label class="filter-label">Start Date</label>
+          <input type="date" id="filter_start_date" name="start_date" class="filter-input" value="{{ start_date }}">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">End Date</label>
+          <input type="date" id="filter_end_date" name="end_date" class="filter-input" value="{{ end_date }}">
+        </div>
+        <button type="submit" class="filter-btn">
+          <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+      </form>
     </div>
-    <div class="filter-group">
-      <label class="filter-label">End Date</label>
-      <input type="date" id="filter_end_date" class="filter-input" value="2026-05-21">
+
+    <!-- Petty Cash Balance Summary -->
+    <div class="balance-summary">
+      <div class="balance-summary-title">Petty Cash Balance</div>
+      <div class="balance-amount">₱{{ "{:,.2f}".format(petty_cash_balance) }}</div>
     </div>
-    <button class="filter-btn" onclick="alert('Filter functionality will be implemented')">
-      <i class="bi bi-funnel"></i> Filter
-    </button>
-    <button class="filter-btn-clear" onclick="alert('Clear functionality will be implemented')">Clear</button>
   </div>
 
-  <!-- Forms Section -->
+  <!-- Action Buttons Section -->
   <div class="forms-section">
-    <div class="forms-grid">
-      <!-- Petty Cash Voucher Form -->
-      <div class="form-card expenses">
-        <div class="form-card-title">
-          <i class="bi bi-arrow-up-circle"></i>
-          Petty Cash Voucher
-        </div>
-        <form method="POST" action="{{ url_for('daily_sales.new_petty_cash_voucher') }}">
-          <div class="form-group">
-            <label class="form-label required">Date</label>
-            <input type="date" name="date" class="form-control" value="{{ today }}" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">PCV No.</label>
-            <input type="text" name="pcv_number" class="form-control input-readonly" value="{{ next_pcv }}" readonly>
-          </div>
-          <div class="form-group">
-            <label class="form-label required">Payee</label>
-            <div class="payee-wrapper">
-              <input type="text" name="payee" id="payee-input" class="form-control" placeholder="Search payee..." autocomplete="off" required>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label required">Amount</label>
-            <input type="number" name="amount" class="form-control" step="0.01" min="0.01" placeholder="0.00" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Description</label>
-            <textarea name="description" class="form-control" placeholder="Optional notes"></textarea>
-          </div>
-          <button type="submit" class="btn-submit expenses">
-            <i class="bi bi-check-circle"></i> Record Voucher
-          </button>
-        </form>
-      </div>
-
-      <!-- Reimbursements Received Form -->
-      <div class="form-card reimbursement">
-        <div class="form-card-title">
-          <i class="bi bi-arrow-down-circle"></i>
-          Reimbursements Received
-        </div>
-
-        <form method="POST" action="{{ url_for('daily_sales.new_reimbursement_received') }}">
-          <div class="form-group">
-            <label class="form-label required">Date</label>
-            <input type="date" name="date" class="form-control" value="{{ today }}" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Reference No.</label>
-            <input type="text" name="reference" class="form-control input-readonly" value="{{ next_ref }}" readonly>
-          </div>
-          <div class="form-group">
-            <label class="form-label required">Bank / Account</label>
-            <div class="bank-account-wrapper">
-              <input type="text" name="bank_account" id="bank-account-input" class="form-control" placeholder="e.g. BDO Savings - 1234" autocomplete="off" required>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label required">Amount</label>
-            <input type="number" name="amount" id="reimbursement-amount" class="form-control input-readonly" step="0.01" min="0.01" placeholder="0.00" value="0.00" readonly required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Notes</label>
-            <textarea name="notes" class="form-control" placeholder="Optional notes"></textarea>
-          </div>
-          <button type="submit" class="btn-submit reimbursement">
-            <i class="bi bi-check-circle"></i> Record Reimbursement
-          </button>
-        </form>
-
-        <!-- Pending Reimbursement Reports -->
-        {% if pending_reports %}
-        <div style="margin-top: 1rem; padding: 10px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px;">
-          <div style="font-size: 0.8rem; font-weight: 600; margin-bottom: 8px;">Pending Reimbursement Reports:</div>
-          <div style="max-height: 150px; overflow-y: auto;">
-            {% for report in pending_reports %}
-            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; margin-bottom: 6px; cursor: pointer;">
-              <input type="checkbox" class="pcv-checkbox reimbursement-report-check"
-                     name="report_ids[]"
-                     data-amount="{{ report.total_amount }}"
-                     value="{{ report.id }}"
-                     onchange="updateReimbursementAmount()">
-              <span>{{ report.report_number }} ({{ report.formatted_period }}) - ₱{{ report.formatted_total_amount }}</span>
-            </label>
-            {% endfor %}
-          </div>
-        </div>
-        {% endif %}
-      </div>
+    <div style="display: flex; gap: 12px; justify-content: center;">
+      <button type="button" class="btn-new-voucher" onclick="openNewVoucherModal()">
+        <i class="bi bi-arrow-up-circle"></i> New Petty Cash Voucher
+      </button>
+      <button type="button" class="btn-new-reimbursement" onclick="openNewReimbursementModal()">
+        <i class="bi bi-arrow-down-circle"></i> New Reimbursement Received
+      </button>
     </div>
   </div>
 
@@ -310,7 +543,7 @@
   <div class="transactions-section">
     <div class="section-title">
       <i class="bi bi-arrow-up-circle" style="color: #0f6e56;"></i>
-      Petty Cash Vouchers (4)
+      Petty Cash Vouchers ({{ vouchers|length }})
     </div>
 
     <!-- Reimbursement Actions -->
@@ -337,86 +570,67 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td class="checkbox-col">
-              <input type="checkbox" class="pcv-checkbox pcv-select" data-pcv-id="1" onclick="updateReimbursementBtn()">
+          {% if vouchers %}
+            {% for voucher in vouchers %}
+          <tr style="cursor: pointer;" onclick="viewVoucherDetails({{ voucher.id }}, event)">
+            <td class="checkbox-col" onclick="event.stopPropagation()">
+              {% if voucher.status == 'posted' %}
+              <input type="checkbox" class="pcv-checkbox pcv-select" data-pcv-id="{{ voucher.id }}" onclick="updateReimbursementBtn()">
+              {% else %}
+              —
+              {% endif %}
             </td>
-            <td class="date-col">19-May-2026</td>
-            <td class="pcv-col">PCV-0001</td>
-            <td class="category-col">Juan Dela Cruz</td>
-            <td class="amount-col expenses">₱1,000.00</td>
-            <td class="desc-col">Office supplies</td>
+            <td class="date-col">{{ voucher.formatted_record_date }}</td>
+            <td class="pcv-col">{{ voucher.pcv_number }}</td>
+            <td class="category-col">{{ voucher.payee.name if voucher.payee else 'N/A' }}</td>
+            <td class="amount-col expenses">₱{{ voucher.formatted_amount }}</td>
+            <td class="desc-col">{{ voucher.description or '—' }}</td>
             <td class="status-col">
-              <span class="status-badge posted">posted</span>
+              <span class="status-badge {{ voucher.status }}">{{ voucher.status }}</span>
             </td>
-            <td class="actions-col">
-              <button type="button" class="btn-print" onclick="printPCV('PCV-0001')">
-                <i class="bi bi-printer"></i>
+            <td class="actions-col" onclick="event.stopPropagation()">
+              {% if voucher.status == 'draft' %}
+              <button type="button" class="btn btn-sm btn-outline-primary" onclick="openEditVoucherModal({{ voucher.id }})" title="Edit">
+                <i class="bi bi-pencil"></i>
               </button>
-              <button type="button" class="btn-delete" onclick="alert('Delete functionality will be implemented')">
+              <form method="POST" action="{{ url_for('daily_sales.submit_petty_cash_voucher', voucher_id=voucher.id) }}" style="display: inline;">
+                <button type="submit" class="btn btn-sm btn-outline-success" title="Submit for Approval">
+                  <i class="bi bi-check-circle"></i>
+                </button>
+              </form>
+              <button type="button" class="btn btn-sm btn-outline-danger" onclick="if(confirm('Delete this voucher?')) location.href='{{ url_for('daily_sales.petty_cash_voucher_delete', voucher_id=voucher.id) }}'" title="Delete">
                 <i class="bi bi-trash"></i>
               </button>
-            </td>
-          </tr>
-          <tr>
-            <td class="checkbox-col">
-              <input type="checkbox" class="pcv-checkbox pcv-select" data-pcv-id="2" onclick="updateReimbursementBtn()">
-            </td>
-            <td class="date-col">19-May-2026</td>
-            <td class="pcv-col">PCV-0002</td>
-            <td class="category-col">Maria Santos</td>
-            <td class="amount-col expenses">₱5,000.00</td>
-            <td class="desc-col">Transportation</td>
-            <td class="status-col">
-              <span class="status-badge posted">posted</span>
-            </td>
-            <td class="actions-col">
-              <button type="button" class="btn-print" onclick="printPCV('PCV-0002')">
+              {% elif voucher.status == 'submitted' and (current_user.admin or current_user.superuser) %}
+              <form method="POST" action="{{ url_for('daily_sales.post_petty_cash_voucher', voucher_id=voucher.id) }}" style="display: inline;">
+                <button type="submit" class="btn btn-sm btn-success" title="Approve">
+                  <i class="bi bi-check-circle-fill"></i>
+                </button>
+              </form>
+              {% endif %}
+              {% if voucher.can_cancel %}
+              <form method="POST" action="{{ url_for('daily_sales.cancel_petty_cash_voucher', voucher_id=voucher.id) }}" style="display: inline;">
+                <button type="submit" class="btn btn-sm btn-outline-warning" onclick="return confirm('Cancel this voucher?')" title="Cancel">
+                  <i class="bi bi-x-circle"></i>
+                </button>
+              </form>
+              {% endif %}
+              {% if voucher.status != 'draft' %}
+              <button type="button" class="btn btn-sm btn-outline-primary" onclick="printPCV({{ voucher.id }})" title="Print">
                 <i class="bi bi-printer"></i>
               </button>
-              <button type="button" class="btn-delete" onclick="alert('Delete functionality will be implemented')">
-                <i class="bi bi-trash"></i>
-              </button>
+              {% endif %}
             </td>
           </tr>
+            {% endfor %}
+          {% else %}
           <tr>
-            <td class="checkbox-col">—</td>
-            <td class="date-col">20-May-2026</td>
-            <td class="pcv-col">PCV-0003</td>
-            <td class="category-col">Pedro Reyes</td>
-            <td class="amount-col expenses">₱2,500.00</td>
-            <td class="desc-col">Utilities payment</td>
-            <td class="status-col">
-              <span class="status-badge for_reimbursement">for reimbursement</span>
-            </td>
-            <td class="actions-col">
-              <button type="button" class="btn-print" onclick="printPCV('PCV-0003')">
-                <i class="bi bi-printer"></i>
-              </button>
-              <button type="button" class="btn-delete" onclick="alert('Delete functionality will be implemented')">
-                <i class="bi bi-trash"></i>
-              </button>
+            <td colspan="8" class="empty-state">
+              <i class="bi bi-inbox"></i>
+              <div>No vouchers found for the selected period</div>
             </td>
           </tr>
-          <tr>
-            <td class="checkbox-col">—</td>
-            <td class="date-col">18-May-2026</td>
-            <td class="pcv-col">PCV-0004</td>
-            <td class="category-col">Anna Garcia</td>
-            <td class="amount-col expenses">₱3,200.00</td>
-            <td class="desc-col">Medical supplies</td>
-            <td class="status-col">
-              <span class="status-badge reimbursed">reimbursed</span>
-            </td>
-            <td class="actions-col">
-              <button type="button" class="btn-print" onclick="printPCV('PCV-0004')">
-                <i class="bi bi-printer"></i>
-              </button>
-              <button type="button" class="btn-delete" onclick="alert('Delete functionality will be implemented')">
-                <i class="bi bi-trash"></i>
-              </button>
-            </td>
-          </tr>
+          {% endif %}
         </tbody>
       </table>
     </div>
@@ -426,37 +640,56 @@
   <div class="transactions-section">
     <div class="section-title">
       <i class="bi bi-arrow-down-circle" style="color: #993c1d;"></i>
-      Reimbursements Received (1)
+      Reimbursements Received ({{ reimbursements_received|length }})
     </div>
     <div class="transactions-table">
       <table>
         <thead>
           <tr>
             <th class="date-col">Date</th>
-            <th class="pcv-col">PCV No.</th>
+            <th class="pcv-col">Reference No.</th>
             <th class="category-col">Bank / Account</th>
             <th class="amount-col">Amount</th>
-            <th class="desc-col">Description</th>
+            <th class="desc-col">Notes</th>
             <th class="status-col">Status</th>
             <th class="actions-col">Actions</th>
           </tr>
         </thead>
         <tbody>
+          {% for reimbursement in reimbursements_received %}
           <tr>
-            <td class="date-col">20-May-2026</td>
-            <td class="pcv-col">REF-001</td>
-            <td class="category-col">BDO Savings Account</td>
-            <td class="amount-col reimbursement">₱3,000.00</td>
-            <td class="desc-col">Petty cash replenishment</td>
+            <td class="date-col">{{ reimbursement.formatted_date }}</td>
+            <td class="pcv-col">{{ reimbursement.reference_number }}</td>
+            <td class="category-col">{{ reimbursement.bank_account.account_name if reimbursement.bank_account else '—' }}</td>
+            <td class="amount-col reimbursement">₱{{ reimbursement.formatted_amount }}</td>
+            <td class="desc-col">{{ reimbursement.notes or '—' }}</td>
             <td class="status-col">
-              <span class="status-badge posted">posted</span>
+              <span class="status-badge {{ reimbursement.status }}">{{ reimbursement.status }}</span>
             </td>
             <td class="actions-col">
-              <button type="button" class="btn-delete" onclick="alert('Delete functionality will be implemented')">
+              {% if reimbursement.status == 'draft' %}
+              <form method="POST" action="{{ url_for('daily_sales.submit_reimbursement_received', id=reimbursement.id) }}" style="display: inline;">
+                <button type="submit" class="btn btn-sm btn-outline-success" title="Submit for Approval">
+                  <i class="bi bi-check-circle"></i>
+                </button>
+              </form>
+              <button type="button" class="btn btn-sm btn-outline-danger" onclick="if(confirm('Delete this reimbursement?')) { window.location.href='{{ url_for('daily_sales.delete_reimbursement_received', id=reimbursement.id) }}' }" title="Delete">
                 <i class="bi bi-trash"></i>
               </button>
+              {% elif reimbursement.status == 'submitted' and (current_user.admin or current_user.superuser) %}
+              <form method="POST" action="{{ url_for('daily_sales.approve_reimbursement_received', id=reimbursement.id) }}" style="display: inline;">
+                <button type="submit" class="btn btn-sm btn-success" title="Approve">
+                  <i class="bi bi-check-circle-fill"></i>
+                </button>
+              </form>
+              {% endif %}
             </td>
           </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">No reimbursements found for the selected period</td>
+          </tr>
+          {% endfor %}
         </tbody>
       </table>
     </div>
@@ -466,7 +699,7 @@
   <div class="transactions-section">
     <div class="section-title">
       <i class="bi bi-file-earmark-text" style="color: #1a6473;"></i>
-      Reimbursement Reports (3)
+      Reimbursement Reports ({{ reports|length }})
     </div>
     <div class="transactions-table">
       <table>
@@ -482,53 +715,183 @@
           </tr>
         </thead>
         <tbody>
+          {% for report in reports %}
           <tr>
-            <td>RPT-001</td>
-            <td class="date-col">21-May-2026</td>
-            <td>May 19-21, 2026</td>
-            <td class="amount-col" style="color: #856404;">₱6,000.00</td>
+            <td>{{ report.report_number }}</td>
+            <td class="date-col">{{ report.formatted_created_date }}</td>
+            <td>{{ report.period_start_formatted }} - {{ report.period_end_formatted }}</td>
+            <td class="amount-col" style="color: {% if report.status == 'reimbursed' %}#0a3622{% else %}#856404{% endif %};">₱{{ report.formatted_total_amount }}</td>
             <td class="status-col">
-              <span class="status-badge for_reimbursement">pending</span>
+              <span class="status-badge {{ report.status }}">{{ report.status }}</span>
             </td>
-            <td>Juan Admin</td>
+            <td>{{ report.created_by.user_name if report.created_by else 'N/A' }}</td>
             <td class="actions-col">
-              <button type="button" class="btn-print" onclick="viewReportDetails('RPT-001')">
+              <button type="button" class="btn-print" onclick="viewReportDetails('{{ report.report_number }}')" title="View Report">
                 <i class="bi bi-eye"></i>
               </button>
             </td>
           </tr>
+          {% else %}
           <tr>
-            <td>RPT-002</td>
-            <td class="date-col">20-May-2026</td>
-            <td>May 15-18, 2026</td>
-            <td class="amount-col" style="color: #856404;">₱2,500.00</td>
-            <td class="status-col">
-              <span class="status-badge for_reimbursement">pending</span>
-            </td>
-            <td>Juan Admin</td>
-            <td class="actions-col">
-              <button type="button" class="btn-print" onclick="viewReportDetails('RPT-002')">
-                <i class="bi bi-eye"></i>
-              </button>
-            </td>
+            <td colspan="7" class="text-center text-muted py-4">No reimbursement reports found</td>
           </tr>
-          <tr>
-            <td>RPT-003</td>
-            <td class="date-col">18-May-2026</td>
-            <td>May 12-15, 2026</td>
-            <td class="amount-col" style="color: #0a3622;">₱3,200.00</td>
-            <td class="status-col">
-              <span class="status-badge reimbursed">reimbursed</span>
-            </td>
-            <td>Juan Admin</td>
-            <td class="actions-col">
-              <button type="button" class="btn-print" onclick="viewReportDetails('RPT-003')">
-                <i class="bi bi-eye"></i>
-              </button>
-            </td>
-          </tr>
+          {% endfor %}
         </tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- New Petty Cash Voucher Modal -->
+<div class="modal fade" id="newVoucherModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header" style="background: #0f6e56; color: #fff;">
+        <h5 class="modal-title"><i class="bi bi-arrow-up-circle"></i> New Petty Cash Voucher</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="{{ url_for('daily_sales.new_petty_cash_voucher') }}">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label required">Date</label>
+            <input type="date" name="date" class="form-control" value="{{ today }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">PCV No.</label>
+            <input type="text" name="pcv_number" class="form-control" value="{{ next_pcv }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Payee</label>
+            <div class="payee-wrapper">
+              <input type="text" id="payee-input-modal" class="form-control" autocomplete="off" required>
+              <input type="hidden" id="payee_id_modal" name="payee_id" value="">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Amount</label>
+            <input type="number" name="amount" class="form-control" step="0.01" min="0.01" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-control" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary" style="background: #0f6e56; border-color: #0f6e56;">
+            <i class="bi bi-check-circle"></i> Record Voucher
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Petty Cash Voucher Modal -->
+<div class="modal fade" id="editVoucherModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header" style="background: #0f6e56; color: #fff;">
+        <h5 class="modal-title"><i class="bi bi-pencil"></i> Edit Petty Cash Voucher</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" id="editVoucherForm" action="">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label required">Date</label>
+            <input type="date" name="date" id="edit_date" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">PCV No.</label>
+            <input type="text" name="pcv_number" id="edit_pcv_number" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Payee</label>
+            <div class="payee-wrapper">
+              <input type="text" id="edit-payee-input" class="form-control" autocomplete="off" required>
+              <input type="hidden" id="edit_payee_id" name="payee_id" value="">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Amount</label>
+            <input type="number" name="amount" id="edit_amount" class="form-control" step="0.01" min="0.01" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea name="description" id="edit_description" class="form-control" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary" style="background: #0f6e56; border-color: #0f6e56;">
+            <i class="bi bi-floppy"></i> Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- New Reimbursement Received Modal -->
+<div class="modal fade" id="newReimbursementModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header" style="background: #993c1d; color: #fff;">
+        <h5 class="modal-title"><i class="bi bi-arrow-down-circle"></i> New Reimbursement Received</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="{{ url_for('daily_sales.new_reimbursement_received') }}">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label required">Date</label>
+            <input type="date" name="date" class="form-control" value="{{ today }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Reference No.</label>
+            <input type="text" name="reference_number" class="form-control" value="{{ next_ref }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Bank / Account</label>
+            <div class="bank-account-wrapper">
+              <input type="text" id="bank-account-input-modal" class="form-control" autocomplete="off" required>
+              <input type="hidden" id="bank_account_id_modal" name="bank_account_id" value="">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Amount</label>
+            <input type="number" name="amount" id="reimbursement-amount-modal" class="form-control input-readonly" step="0.01" min="0.01" value="0.00" readonly required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea name="notes" class="form-control" rows="3"></textarea>
+          </div>
+
+          <!-- Pending Reimbursement Reports -->
+          {% if pending_reports %}
+          <div style="margin-top: 1rem; padding: 10px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px;">
+            <div style="font-size: 0.8rem; font-weight: 600; margin-bottom: 8px;">Pending Reimbursement Reports:</div>
+            <div style="max-height: 150px; overflow-y: auto;">
+              {% for report in pending_reports %}
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; margin-bottom: 6px; cursor: pointer;">
+                <input type="checkbox" class="pcv-checkbox reimbursement-report-check-modal"
+                       name="report_ids[]"
+                       data-amount="{{ report.total_amount }}"
+                       value="{{ report.id }}"
+                       onchange="updateReimbursementAmountModal()">
+                <span>{{ report.report_number }} ({{ report.formatted_period }}) - ₱{{ report.formatted_total_amount }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary" style="background: #993c1d; border-color: #993c1d;">
+            <i class="bi bi-check-circle"></i> Record Reimbursement
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
@@ -604,6 +967,9 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-info" onclick="printReimbursementReport()">
+          <i class="bi bi-printer"></i> Print
+        </button>
         <button type="button" class="btn btn-primary" onclick="submitReimbursementReport()">
           <i class="bi bi-check-circle"></i> Submit for Reimbursement
         </button>
@@ -670,9 +1036,9 @@
         <!-- Signatures -->
         <div style="margin-top: 3rem; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2rem;">
           <div>
-            <p style="margin-bottom: 2.5rem; font-size: 0.85rem;"><strong>Requested by:</strong></p>
+            <p style="margin-bottom: 2.5rem; font-size: 0.85rem;"><strong>Prepared by:</strong></p>
             <div style="border-top: 1px solid #000; padding-top: 5px; text-align: center;">
-              <p style="margin: 0; font-weight: 600;" id="pcvDetailRequestedBy">Juan Dela Cruz</p>
+              <p style="margin: 0; font-weight: 600;" id="pcvDetailPreparedBy">Juan Dela Cruz</p>
               <p style="margin: 0; font-size: 0.8rem; color: #6c757d;">Signature over Printed Name</p>
             </div>
           </div>
@@ -688,6 +1054,167 @@
             <div style="border-top: 1px solid #000; padding-top: 5px; text-align: center;">
               <p style="margin: 0; font-weight: 600;" id="pcvDetailReceivedBy">Juan Dela Cruz</p>
               <p style="margin: 0; font-size: 0.8rem; color: #6c757d;">Signature over Printed Name</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="window.print()">
+          <i class="bi bi-printer"></i> Print
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Voucher Details Modal -->
+<div class="modal fade" id="viewVoucherModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background: #0f6e56; color: #fff;">
+        <h5 class="modal-title"><i class="bi bi-file-text"></i> Voucher Details - <span id="viewVoucherNo">PCV-001</span></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Voucher Details -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 1.5rem;">
+          <div>
+            <div style="margin-bottom: 1rem;">
+              <label style="font-size: 0.85rem; font-weight: 600; color: #6c757d; display: block; margin-bottom: 0.25rem;">PCV Number</label>
+              <div style="font-size: 1rem; font-weight: 600;" id="viewPcvNumber">PCV-001</div>
+            </div>
+            <div style="margin-bottom: 1rem;">
+              <label style="font-size: 0.85rem; font-weight: 600; color: #6c757d; display: block; margin-bottom: 0.25rem;">Date</label>
+              <div style="font-size: 1rem;" id="viewPcvDate">24-May-2026</div>
+            </div>
+            <div style="margin-bottom: 1rem;">
+              <label style="font-size: 0.85rem; font-weight: 600; color: #6c757d; display: block; margin-bottom: 0.25rem;">Payee</label>
+              <div style="font-size: 1rem;" id="viewPcvPayee">Joan Hazel Cruz</div>
+            </div>
+          </div>
+          <div>
+            <div style="margin-bottom: 1rem;">
+              <label style="font-size: 0.85rem; font-weight: 600; color: #6c757d; display: block; margin-bottom: 0.25rem;">Amount</label>
+              <div style="font-size: 1.5rem; font-weight: 700; color: #0f6e56;" id="viewPcvAmount">₱200.00</div>
+            </div>
+            <div style="margin-bottom: 1rem;">
+              <label style="font-size: 0.85rem; font-weight: 600; color: #6c757d; display: block; margin-bottom: 0.25rem;">Status</label>
+              <div><span class="status-badge" id="viewPcvStatus">posted</span></div>
+            </div>
+            <div style="margin-bottom: 1rem;">
+              <label style="font-size: 0.85rem; font-weight: 600; color: #6c757d; display: block; margin-bottom: 0.25rem;">Created By</label>
+              <div style="font-size: 1rem;" id="viewPcvCreatedBy">Alvin Cruz</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div style="margin-bottom: 1.5rem;">
+          <label style="font-size: 0.85rem; font-weight: 600; color: #6c757d; display: block; margin-bottom: 0.5rem;">Description</label>
+          <div style="padding: 12px; background: #f8f9fa; border-radius: 6px; font-size: 0.95rem; min-height: 80px;" id="viewPcvDescription">Sample description</div>
+        </div>
+
+        <!-- Amount in Words -->
+        <div style="padding: 12px; background: #e8f5f1; border-radius: 6px; border-left: 4px solid #0f6e56;">
+          <div style="font-size: 0.85rem; font-weight: 600; color: #0f6e56; margin-bottom: 0.25rem;">Amount in Words</div>
+          <div style="font-size: 1rem; font-style: italic;" id="viewPcvAmountWords">Two Hundred Pesos Only</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-info" onclick="viewVoucherHistory()" style="background: #0dcaf0; border-color: #0dcaf0;">
+          <i class="bi bi-clock-history"></i> View History
+        </button>
+        <button type="button" class="btn btn-primary" onclick="printVoucherFromView()" style="background: #0f6e56; border-color: #0f6e56;">
+          <i class="bi bi-printer"></i> Print
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Audit History Modal -->
+<div class="modal fade" id="auditHistoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background: #6c757d; color: #fff;">
+        <h5 class="modal-title"><i class="bi bi-clock-history"></i> Audit History - <span id="auditHistoryVoucherNo">PCV-001</span></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="auditHistoryContent">
+          <div style="text-align: center; padding: 2rem; color: #6c757d;">
+            <i class="bi bi-hourglass-split" style="font-size: 2rem;"></i>
+            <p style="margin-top: 0.5rem;">Loading audit history...</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Print Reimbursement Report Modal -->
+<div class="modal fade" id="printReimbursementModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Print Reimbursement Report</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="reimbursementPrintContent">
+        <!-- Report Header -->
+        <div style="text-align: center; margin-bottom: 2rem; border-bottom: 2px solid #000; padding-bottom: 1rem;">
+          <h5 style="margin: 0; font-weight: 700; font-size: 1.2rem;">THE HEALTH COLLECTIVE INC.</h5>
+          <p style="margin: 0; font-size: 0.9rem; color: #6c757d;">Petty Cash Reimbursement Report</p>
+          <p style="margin: 0; font-size: 0.85rem; color: #6c757d;">Period: <span id="printReportPeriod">May 19-21, 2026</span></p>
+        </div>
+
+        <!-- Vouchers Table -->
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 2rem;">
+          <thead>
+            <tr style="background: #f8f9fa; border-top: 1px solid #000; border-bottom: 1px solid #000;">
+              <th style="padding: 8px; text-align: left; width: 100px;">PCV No.</th>
+              <th style="padding: 8px; text-align: left; width: 100px;">Date</th>
+              <th style="padding: 8px; text-align: left;">Payee</th>
+              <th style="padding: 8px; text-align: left;">Description</th>
+              <th style="padding: 8px; text-align: right; width: 120px;">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="printReportVouchersBody">
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">PCV-0001</td>
+              <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">19-May-2026</td>
+              <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">Juan Dela Cruz</td>
+              <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">Office supplies</td>
+              <td style="padding: 8px; border-bottom: 1px solid #dee2e6; text-align: right;">₱1,000.00</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr style="font-weight: 600; background: #f8f9fa; border-top: 2px solid #000;">
+              <td colspan="4" style="padding: 10px; text-align: right;">Total Amount for Reimbursement:</td>
+              <td style="padding: 10px; text-align: right;" id="printReportTotalAmount">₱6,000.00</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- Signatories -->
+        <div style="margin-top: 3rem; display: grid; grid-template-columns: 1fr 1fr; gap: 3rem;">
+          <div>
+            <p style="margin-bottom: 2.5rem; font-size: 0.85rem;"><strong>Prepared by:</strong></p>
+            <div style="border-top: 1px solid #000; padding-top: 5px; text-align: center;">
+              <p style="margin: 0; font-weight: 600;" id="printPreparedBy">Juan Admin</p>
+              <p style="margin: 0; font-size: 0.8rem; color: #6c757d;">Name and Signature</p>
+            </div>
+          </div>
+          <div>
+            <p style="margin-bottom: 2.5rem; font-size: 0.85rem;"><strong>Approved by:</strong></p>
+            <div style="border-top: 1px solid #000; padding-top: 5px; text-align: center;">
+              <p style="margin: 0; font-weight: 600;">DGO</p>
+              <p style="margin: 0; font-size: 0.8rem; color: #6c757d;">Director General Operations</p>
             </div>
           </div>
         </div>
@@ -787,23 +1314,18 @@
 
 {% block scripts %}
 <script>
-  // Bank account options (mock data - will be populated from server later)
+  // Bank account options from server
   const BANK_ACCOUNT_OPTIONS = [
-    'BDO Savings Account — 1234567890',
-    'BPI Current Account — 0987654321',
-    'BANCO DE ORO — 284-7-28485633-0',
-    'Metrobank Savings — 1122334455',
-    'Security Bank — 9988776655'
+    {% for ba in bank_accounts %}
+    { id: {{ ba.id }}, name: '{{ ba.bank_name }} — {{ ba.account_number }}' }{% if not loop.last %},{% endif %}
+    {% endfor %}
   ];
 
-  // Payee options (mock data - will be populated from server later)
+  // Payee options from server
   const PAYEE_OPTIONS = [
-    'Juan Dela Cruz',
-    'Maria Santos',
-    'Pedro Reyes',
-    'Anna Garcia',
-    'Carlos Mendoza',
-    'Lisa Fernandez'
+    {% for payee in payees %}
+    { id: {{ payee.id }}, name: '{{ payee.name }}' }{% if not loop.last %},{% endif %}
+    {% endfor %}
   ];
 
   // Bank account autocomplete
@@ -821,7 +1343,7 @@
     function getMatches(q) {
       if (!q) return BANK_ACCOUNT_OPTIONS.slice(0, 100);
       const lq = q.toLowerCase();
-      return BANK_ACCOUNT_OPTIONS.filter(function(n) { return n.toLowerCase().includes(lq); });
+      return BANK_ACCOUNT_OPTIONS.filter(function(ba) { return ba.name.toLowerCase().includes(lq); });
     }
 
     function hl(text, q) {
@@ -841,18 +1363,21 @@
       addEl.textContent = '+ Add Bank Account';
       addEl.addEventListener('mousedown', function(e) {
         e.preventDefault();
-        alert('Add Bank Account functionality will be implemented');
+        window.open('{{ url_for("bank_account.add_popup") }}', 'add_bank_account', 'width=650,height=580,resizable=no,scrollbars=no');
         hide();
       });
       dd.appendChild(addEl);
 
-      matches.forEach(function(name) {
+      matches.forEach(function(ba) {
         const item = document.createElement('div');
         item.className = 'bank-ac-item';
-        item.innerHTML = hl(name, q);
+        item.innerHTML = hl(ba.name, q);
+        item.dataset.id = ba.id;
+        item.dataset.name = ba.name;
         item.addEventListener('mousedown', function(e) {
           e.preventDefault();
-          input.value = name;
+          input.value = ba.name;
+          document.getElementById('bank_account_id').value = ba.id;
           hide();
         });
         dd.appendChild(item);
@@ -901,7 +1426,7 @@
     function getMatches(q) {
       if (!q) return PAYEE_OPTIONS.slice(0, 100);
       const lq = q.toLowerCase();
-      return PAYEE_OPTIONS.filter(function(n) { return n.toLowerCase().includes(lq); });
+      return PAYEE_OPTIONS.filter(function(p) { return p.name.toLowerCase().includes(lq); });
     }
 
     function hl(text, q) {
@@ -924,18 +1449,21 @@
       addEl.textContent = '+ Add Payee';
       addEl.addEventListener('mousedown', function(e) {
         e.preventDefault();
-        alert('Add Payee functionality will be implemented');
+        window.open('{{ url_for("payee.add_popup") }}', 'add_payee', 'width=650,height=450,resizable=no,scrollbars=no');
         hide();
       });
       dd.appendChild(addEl);
 
-      matches.forEach(function(name) {
+      matches.forEach(function(p) {
         const item = document.createElement('div');
         item.className = 'payee-ac-item';
-        item.innerHTML = hl(name, q);
+        item.innerHTML = hl(p.name, q);
+        item.dataset.id = p.id;
+        item.dataset.name = p.name;
         item.addEventListener('mousedown', function(e) {
           e.preventDefault();
-          input.value = name;
+          input.value = p.name;
+          document.getElementById('payee_id').value = p.id;
           hide();
         });
         dd.appendChild(item);
@@ -990,9 +1518,64 @@
       return;
     }
 
-    // In real implementation, populate the modal with selected vouchers
-    const modal = new bootstrap.Modal(document.getElementById('reimbursementReportModal'));
-    modal.show();
+    // Collect selected voucher IDs
+    const voucherIds = Array.from(checkboxes).map(cb => cb.value);
+
+    // Fetch voucher data for all selected vouchers
+    Promise.all(voucherIds.map(id =>
+      fetch(`/daily_sales/petty_cash/voucher/${id}/data`).then(r => r.json())
+    )).then(vouchers => {
+      // Calculate date range
+      const dates = vouchers.map(v => new Date(v.record_date)).sort((a, b) => a - b);
+      const startDate = dates[0];
+      const endDate = dates[dates.length - 1];
+
+      const formatDate = (date) => {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+      };
+
+      const period = startDate.toDateString() === endDate.toDateString()
+        ? formatDate(startDate)
+        : `${formatDate(startDate)} - ${formatDate(endDate)}`;
+
+      document.getElementById('reportPeriod').textContent = period;
+
+      // Populate vouchers table
+      let totalAmount = 0;
+      const tbody = document.getElementById('reportVouchersBody');
+      tbody.innerHTML = '';
+
+      vouchers.forEach(voucher => {
+        const amount = parseFloat(voucher.amount);
+        totalAmount += amount;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${voucher.pcv_number}</td>
+          <td>${formatDateForPrint(voucher.record_date)}</td>
+          <td>${voucher.payee_name}</td>
+          <td>${voucher.description || 'N/A'}</td>
+          <td style="text-align: right;">₱${amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      // Update total
+      document.getElementById('reportTotalAmount').textContent =
+        '₱' + totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+      // Get current user name from the page (assuming it's available)
+      const preparedByName = '{{ current_user.first_name }} {{ current_user.last_name }}';
+      document.getElementById('preparedBy').textContent = preparedByName;
+
+      // Show modal
+      const modal = new bootstrap.Modal(document.getElementById('reimbursementReportModal'));
+      modal.show();
+    }).catch(error => {
+      console.error('Error fetching voucher data:', error);
+      alert('Error loading voucher data');
+    });
   }
 
   function submitReimbursementReport() {
@@ -1032,60 +1615,82 @@
   }
 
   // Print PCV
-  function printPCV(pcvNo) {
-    // In real implementation, fetch PCV data from server
-    // For now, show modal with mock data based on PCV number
-    document.getElementById('pcvPrintNo').textContent = pcvNo;
-    document.getElementById('pcvDetailNo').textContent = pcvNo;
+  // Convert number to words (Philippine Pesos)
+  function numberToWords(num) {
+    if (num === 0) return 'Zero Pesos Only';
 
-    // Mock data mapping
-    const pcvData = {
-      'PCV-0001': {
-        date: '19-May-2026',
-        payee: 'Juan Dela Cruz',
-        amount: '₱1,000.00',
-        amountWords: 'One Thousand Pesos Only',
-        description: 'Office supplies',
-        status: 'posted'
-      },
-      'PCV-0002': {
-        date: '19-May-2026',
-        payee: 'Maria Santos',
-        amount: '₱5,000.00',
-        amountWords: 'Five Thousand Pesos Only',
-        description: 'Transportation',
-        status: 'posted'
-      },
-      'PCV-0003': {
-        date: '20-May-2026',
-        payee: 'Pedro Reyes',
-        amount: '₱2,500.00',
-        amountWords: 'Two Thousand Five Hundred Pesos Only',
-        description: 'Utilities payment',
-        status: 'for_reimbursement'
-      },
-      'PCV-0004': {
-        date: '18-May-2026',
-        payee: 'Anna Garcia',
-        amount: '₱3,200.00',
-        amountWords: 'Three Thousand Two Hundred Pesos Only',
-        description: 'Medical supplies',
-        status: 'reimbursed'
-      }
-    };
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
 
-    const data = pcvData[pcvNo] || pcvData['PCV-0001'];
+    function convertLessThanThousand(n) {
+      if (n === 0) return '';
+      if (n < 10) return ones[n];
+      if (n < 20) return teens[n - 10];
+      if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+      return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + convertLessThanThousand(n % 100) : '');
+    }
 
-    document.getElementById('pcvDetailDate').textContent = data.date;
-    document.getElementById('pcvDetailPayee').textContent = data.payee;
-    document.getElementById('pcvDetailAmount').textContent = data.amount;
-    document.getElementById('pcvDetailDesc').textContent = data.description;
-    document.getElementById('pcvDetailAmountWords').textContent = data.amountWords;
-    document.getElementById('pcvDetailRequestedBy').textContent = data.payee;
-    document.getElementById('pcvDetailReceivedBy').textContent = data.payee;
+    const integer = Math.floor(num);
+    const decimal = Math.round((num - integer) * 100);
 
-    const modal = new bootstrap.Modal(document.getElementById('printPCVModal'));
-    modal.show();
+    let result = '';
+
+    if (integer >= 1000000) {
+      result += convertLessThanThousand(Math.floor(integer / 1000000)) + ' Million ';
+      integer %= 1000000;
+    }
+    if (integer >= 1000) {
+      result += convertLessThanThousand(Math.floor(integer / 1000)) + ' Thousand ';
+      integer %= 1000;
+    }
+    if (integer > 0) {
+      result += convertLessThanThousand(integer);
+    }
+
+    result = result.trim() + ' Pesos';
+
+    if (decimal > 0) {
+      result += ' and ' + convertLessThanThousand(decimal) + ' Centavos';
+    }
+
+    return result + ' Only';
+  }
+
+  // Format date to "DD-Mon-YYYY"
+  function formatDateForPrint(dateStr) {
+    const date = new Date(dateStr);
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  }
+
+  function printPCV(voucherId) {
+    // Fetch voucher data from server
+    fetch(`/daily_sales/petty_cash/voucher/${voucherId}/data`)
+      .then(response => response.json())
+      .then(data => {
+        // Populate modal with real data
+        document.getElementById('pcvPrintNo').textContent = data.pcv_number;
+        document.getElementById('pcvDetailNo').textContent = data.pcv_number;
+        document.getElementById('pcvDetailDate').textContent = formatDateForPrint(data.record_date);
+        document.getElementById('pcvDetailPayee').textContent = data.payee_name;
+        document.getElementById('pcvDetailAmount').textContent = '₱' + parseFloat(data.amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('pcvDetailDesc').textContent = data.description || 'N/A';
+        document.getElementById('pcvDetailAmountWords').textContent = numberToWords(data.amount);
+        document.getElementById('pcvDetailPreparedBy').textContent = data.created_by_name;
+        document.getElementById('pcvDetailReceivedBy').textContent = data.payee_name;
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('printPCVModal'));
+        modal.show();
+      })
+      .catch(error => {
+        console.error('Error fetching voucher data:', error);
+        alert('Error loading voucher data for printing');
+      });
   }
 
   // Print report
@@ -1094,10 +1699,522 @@
     // In real implementation: window.print() or generate PDF
   }
 
+  function printReimbursementReport() {
+    // Copy data from the main modal to the print modal
+    const period = document.getElementById('reportPeriod').textContent;
+    const tbody = document.getElementById('reportVouchersBody');
+    const totalAmount = document.getElementById('reportTotalAmount').textContent;
+    const preparedBy = document.getElementById('preparedBy').textContent;
+
+    // Update print modal
+    document.getElementById('printReportPeriod').textContent = period;
+    document.getElementById('printReportTotalAmount').textContent = totalAmount;
+    document.getElementById('printPreparedBy').textContent = preparedBy;
+
+    // Clone the vouchers table body
+    const printTbody = document.getElementById('printReportVouchersBody');
+    printTbody.innerHTML = tbody.innerHTML;
+
+    // Show print modal
+    const printModal = new bootstrap.Modal(document.getElementById('printReimbursementModal'));
+    printModal.show();
+  }
+
+  // Listen for postMessage from popup windows
+  window.addEventListener('message', function(e) {
+    // Handle bank account added
+    if (e.data && e.data.type === 'bank_account_added') {
+      const bankAccountId = e.data.bank_account_id;
+      const bankAccountName = e.data.bank_account_name;
+      // Add to options array
+      BANK_ACCOUNT_OPTIONS.push({ id: bankAccountId, name: bankAccountName });
+      // Set as selected value
+      const input = document.getElementById('bank-account-input');
+      const hiddenInput = document.getElementById('bank_account_id');
+      if (input) input.value = bankAccountName;
+      if (hiddenInput) hiddenInput.value = bankAccountId;
+    }
+    // Handle payee added
+    else if (e.data && e.data.type === 'payee_added') {
+      const payeeId = e.data.payee_id;
+      const payeeName = e.data.payee_name;
+      // Add to options array
+      PAYEE_OPTIONS.push({ id: payeeId, name: payeeName });
+      // Set as selected value
+      const input = document.getElementById('payee-input');
+      const hiddenInput = document.getElementById('payee_id');
+      if (input) input.value = payeeName;
+      if (hiddenInput) hiddenInput.value = payeeId;
+    }
+  });
+
+  // Initialize inline payee autocomplete for editable rows
+  function initInlinePayeeAutocomplete() {
+    const inputs = document.querySelectorAll('.payee-input-inline');
+
+    inputs.forEach(function(input) {
+      const wrapper = input.closest('.payee-wrapper-inline');
+      const hiddenInput = wrapper.querySelector('.payee-id-inline');
+
+      // Create dropdown
+      const dd = document.createElement('div');
+      dd.className = 'payee-ac-dropdown';
+      dd.style.position = 'absolute';
+      dd.style.zIndex = '9999';
+      wrapper.style.position = 'relative';
+      wrapper.appendChild(dd);
+
+      let active = -1;
+
+      function getMatches(q) {
+        if (!q) return PAYEE_OPTIONS.slice(0, 100);
+        const lq = q.toLowerCase();
+        return PAYEE_OPTIONS.filter(function(p) { return p.name.toLowerCase().includes(lq); });
+      }
+
+      function hl(text, q) {
+        if (!q) return text;
+        const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+        return text.replace(re, '<strong style="font-weight:700;color:#1a6473">$1</strong>');
+      }
+
+      function render(q) {
+        const matches = getMatches(q);
+        dd.innerHTML = '';
+        active = -1;
+
+        matches.forEach(function(p) {
+          const item = document.createElement('div');
+          item.className = 'payee-ac-item';
+          item.innerHTML = hl(p.name, q);
+          item.dataset.id = p.id;
+          item.dataset.name = p.name;
+          item.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            input.value = p.name;
+            hiddenInput.value = p.id;
+            hide();
+          });
+          dd.appendChild(item);
+        });
+
+        dd.style.display = 'block';
+      }
+
+      function hide() { dd.style.display = 'none'; active = -1; }
+
+      input.addEventListener('input', function() { render(this.value.trim()); });
+      input.addEventListener('focus', function() { render(this.value.trim()); });
+      input.addEventListener('blur', function() { setTimeout(hide, 150); });
+    });
+  }
+
+  // Open New Voucher Modal
+  function openNewVoucherModal() {
+    const modal = new bootstrap.Modal(document.getElementById('newVoucherModal'));
+    modal.show();
+    // Initialize autocomplete after modal is shown
+    setTimeout(function() {
+      initPayeeAutocompleteModal();
+    }, 100);
+  }
+
+  // Open Edit Voucher Modal
+  function openEditVoucherModal(voucherId) {
+    // Fetch voucher data
+    fetch(`/daily_sales/petty_cash/voucher/${voucherId}/data`)
+      .then(response => response.json())
+      .then(data => {
+        // Populate form fields
+        document.getElementById('edit_date').value = data.record_date;
+        document.getElementById('edit_pcv_number').value = data.pcv_number;
+        document.getElementById('edit-payee-input').value = data.payee_name;
+        document.getElementById('edit_payee_id').value = data.payee_id;
+        document.getElementById('edit_amount').value = data.amount;
+        document.getElementById('edit_description').value = data.description || '';
+
+        // Set form action
+        document.getElementById('editVoucherForm').action = `/daily_sales/petty_cash/voucher/${voucherId}/edit`;
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('editVoucherModal'));
+        modal.show();
+
+        // Initialize autocomplete
+        setTimeout(function() {
+          initEditPayeeAutocomplete();
+        }, 100);
+      })
+      .catch(error => {
+        console.error('Error fetching voucher data:', error);
+        alert('Error loading voucher data');
+      });
+  }
+
+  // View Voucher Details
+  let currentViewVoucherId = null;
+
+  function viewVoucherDetails(voucherId, event) {
+    // Prevent row click if clicking on checkbox or actions
+    if (event && (event.target.closest('.checkbox-col') || event.target.closest('.actions-col'))) {
+      return;
+    }
+
+    currentViewVoucherId = voucherId;
+
+    // Fetch voucher data
+    fetch(`/daily_sales/petty_cash/voucher/${voucherId}/data`)
+      .then(response => response.json())
+      .then(data => {
+        // Populate modal with data
+        document.getElementById('viewVoucherNo').textContent = data.pcv_number;
+        document.getElementById('viewPcvNumber').textContent = data.pcv_number;
+        document.getElementById('viewPcvDate').textContent = formatDateForPrint(data.record_date);
+        document.getElementById('viewPcvPayee').textContent = data.payee_name;
+        document.getElementById('viewPcvAmount').textContent = '₱' + parseFloat(data.amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('viewPcvDescription').textContent = data.description || 'N/A';
+        document.getElementById('viewPcvAmountWords').textContent = numberToWords(data.amount);
+        document.getElementById('viewPcvCreatedBy').textContent = data.created_by_name;
+
+        // Set status badge
+        const statusBadge = document.getElementById('viewPcvStatus');
+        statusBadge.textContent = data.status || 'draft';
+        statusBadge.className = 'status-badge ' + (data.status || 'draft');
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('viewVoucherModal'));
+        modal.show();
+      })
+      .catch(error => {
+        console.error('Error fetching voucher data:', error);
+        alert('Error loading voucher data');
+      });
+  }
+
+  // Print voucher from view modal
+  function printVoucherFromView() {
+    if (currentViewVoucherId) {
+      // Close view modal
+      const viewModal = bootstrap.Modal.getInstance(document.getElementById('viewVoucherModal'));
+      if (viewModal) {
+        viewModal.hide();
+      }
+
+      // Open print modal
+      setTimeout(function() {
+        printPCV(currentViewVoucherId);
+      }, 300);
+    }
+  }
+
+  // View voucher audit history
+  function viewVoucherHistory() {
+    if (!currentViewVoucherId) {
+      alert('No voucher selected');
+      return;
+    }
+
+    // Show loading state
+    document.getElementById('auditHistoryContent').innerHTML = `
+      <div style="text-align: center; padding: 2rem; color: #6c757d;">
+        <i class="bi bi-hourglass-split" style="font-size: 2rem;"></i>
+        <p style="margin-top: 0.5rem;">Loading audit history...</p>
+      </div>
+    `;
+
+    // Show the modal
+    const historyModal = new bootstrap.Modal(document.getElementById('auditHistoryModal'));
+    historyModal.show();
+
+    // Fetch audit history
+    fetch(`/daily_sales/petty_cash/voucher/${currentViewVoucherId}/history`)
+      .then(response => response.json())
+      .then(data => {
+        // Update modal title
+        document.getElementById('auditHistoryVoucherNo').textContent = data.voucher_number;
+
+        // Build history HTML
+        let html = '';
+        if (data.history && data.history.length > 0) {
+          html = '<div class="timeline" style="position: relative; padding-left: 2rem;">';
+
+          data.history.forEach((entry, index) => {
+            const isLast = index === data.history.length - 1;
+
+            html += `
+              <div style="position: relative; padding-bottom: 1.5rem; ${!isLast ? 'border-left: 2px solid #dee2e6;' : ''} padding-left: 1.5rem; margin-left: 0.5rem;">
+                <div style="position: absolute; left: -0.6rem; top: 0; width: 1rem; height: 1rem; border-radius: 50%; background: #0dcaf0; border: 3px solid #fff; box-shadow: 0 0 0 2px #0dcaf0;"></div>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 6px; border-left: 3px solid #0dcaf0;">
+                  <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                    <div>
+                      <strong style="color: #0dcaf0; text-transform: capitalize;">${entry.action}</strong>
+                      <div style="font-size: 0.85rem; color: #6c757d; margin-top: 0.25rem;">
+                        by <strong>${entry.user_full_name}</strong>
+                      </div>
+                    </div>
+                    <div style="font-size: 0.85rem; color: #6c757d; text-align: right;">
+                      ${entry.timestamp}
+                    </div>
+                  </div>
+                  <div style="font-size: 0.9rem; margin-top: 0.5rem;">
+                    ${entry.summary}
+                  </div>
+                  ${entry.reason ? `<div style="font-size: 0.85rem; color: #6c757d; margin-top: 0.5rem; font-style: italic;">Reason: ${entry.reason}</div>` : ''}
+                  ${entry.changed_fields && entry.changed_fields.length > 0 ? `
+                    <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #dee2e6;">
+                      <div style="font-size: 0.8rem; font-weight: 600; color: #495057; margin-bottom: 0.5rem;">Changed Fields:</div>
+                      <div style="font-size: 0.85rem; color: #6c757d;">${entry.changed_fields.join(', ')}</div>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            `;
+          });
+
+          html += '</div>';
+        } else {
+          html = `
+            <div style="text-align: center; padding: 3rem; color: #6c757d;">
+              <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+              <p style="margin-top: 1rem; font-size: 1.1rem;">No audit history found</p>
+              <p style="font-size: 0.9rem;">This voucher has no recorded changes yet.</p>
+            </div>
+          `;
+        }
+
+        document.getElementById('auditHistoryContent').innerHTML = html;
+      })
+      .catch(error => {
+        console.error('Error fetching audit history:', error);
+        document.getElementById('auditHistoryContent').innerHTML = `
+          <div style="text-align: center; padding: 3rem; color: #dc3545;">
+            <i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i>
+            <p style="margin-top: 1rem; font-size: 1.1rem;">Error loading audit history</p>
+            <p style="font-size: 0.9rem;">Please try again later.</p>
+          </div>
+        `;
+      });
+  }
+
+  // Payee autocomplete for edit modal
+  function initEditPayeeAutocomplete() {
+    const input = document.getElementById('edit-payee-input');
+    if (!input || input.dataset.initialized) return;
+
+    input.dataset.initialized = 'true';
+    const wrap = input.parentNode;
+    const dd = document.createElement('div');
+    dd.className = 'payee-ac-dropdown';
+    wrap.appendChild(dd);
+
+    let active = -1;
+
+    function getMatches(q) {
+      if (!q) return PAYEE_OPTIONS.slice(0, 100);
+      const lq = q.toLowerCase();
+      return PAYEE_OPTIONS.filter(function(p) { return p.name.toLowerCase().includes(lq); });
+    }
+
+    function hl(text, q) {
+      if (!q) return text;
+      const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return text.replace(re, '<strong style="font-weight:700;color:#1a6473">$1</strong>');
+    }
+
+    function render(q) {
+      const matches = getMatches(q);
+      dd.innerHTML = '';
+      active = -1;
+
+      matches.forEach(function(p) {
+        const item = document.createElement('div');
+        item.className = 'payee-ac-item';
+        item.innerHTML = hl(p.name, q);
+        item.dataset.id = p.id;
+        item.dataset.name = p.name;
+        item.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          input.value = p.name;
+          document.getElementById('edit_payee_id').value = p.id;
+          hide();
+        });
+        dd.appendChild(item);
+      });
+
+      dd.style.display = 'block';
+    }
+
+    function hide() { dd.style.display = 'none'; active = -1; }
+
+    input.addEventListener('input', function() { render(this.value.trim()); });
+    input.addEventListener('focus', function() { render(this.value.trim()); });
+    input.addEventListener('blur', function() { setTimeout(hide, 150); });
+  }
+
+  // Open New Reimbursement Modal
+  function openNewReimbursementModal() {
+    const modal = new bootstrap.Modal(document.getElementById('newReimbursementModal'));
+    modal.show();
+    // Initialize autocomplete after modal is shown
+    setTimeout(function() {
+      initBankAccountAutocompleteModal();
+    }, 100);
+  }
+
+  // Update reimbursement amount in modal
+  function updateReimbursementAmountModal() {
+    const checkboxes = document.querySelectorAll('.reimbursement-report-check-modal:checked');
+    let total = 0;
+
+    checkboxes.forEach(cb => {
+      const amount = parseFloat(cb.dataset.amount) || 0;
+      total += amount;
+    });
+
+    const amountInput = document.getElementById('reimbursement-amount-modal');
+    if (amountInput) {
+      amountInput.value = total.toFixed(2);
+    }
+  }
+
+  // Payee autocomplete for modal
+  function initPayeeAutocompleteModal() {
+    const input = document.getElementById('payee-input-modal');
+    if (!input || input.dataset.initialized) return;
+
+    input.dataset.initialized = 'true';
+    const wrap = input.parentNode;
+    const dd = document.createElement('div');
+    dd.className = 'payee-ac-dropdown';
+    wrap.appendChild(dd);
+
+    let active = -1;
+
+    function getMatches(q) {
+      if (!q) return PAYEE_OPTIONS.slice(0, 100);
+      const lq = q.toLowerCase();
+      return PAYEE_OPTIONS.filter(function(p) { return p.name.toLowerCase().includes(lq); });
+    }
+
+    function hl(text, q) {
+      if (!q) return text;
+      const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return text.replace(re, '<strong style="font-weight:700;color:#1a6473">$1</strong>');
+    }
+
+    function render(q) {
+      const matches = getMatches(q);
+      dd.innerHTML = '';
+      active = -1;
+
+      const addEl = document.createElement('div');
+      addEl.className = 'payee-ac-item';
+      addEl.style.color = '#1a6473';
+      addEl.style.fontWeight = '600';
+      addEl.style.borderBottom = '1px solid #dee2e6';
+      addEl.textContent = '+ Add Payee';
+      addEl.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        window.open('{{ url_for("payee.add_popup") }}', 'add_payee', 'width=650,height=450,resizable=no,scrollbars=no');
+        hide();
+      });
+      dd.appendChild(addEl);
+
+      matches.forEach(function(p) {
+        const item = document.createElement('div');
+        item.className = 'payee-ac-item';
+        item.innerHTML = hl(p.name, q);
+        item.dataset.id = p.id;
+        item.dataset.name = p.name;
+        item.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          input.value = p.name;
+          document.getElementById('payee_id_modal').value = p.id;
+          hide();
+        });
+        dd.appendChild(item);
+      });
+
+      dd.style.display = 'block';
+    }
+
+    function hide() { dd.style.display = 'none'; active = -1; }
+
+    input.addEventListener('input', function() { render(this.value.trim()); });
+    input.addEventListener('focus', function() { render(this.value.trim()); });
+    input.addEventListener('blur', function() { setTimeout(hide, 150); });
+  }
+
+  // Bank account autocomplete for modal
+  function initBankAccountAutocompleteModal() {
+    const input = document.getElementById('bank-account-input-modal');
+    if (!input || input.dataset.initialized) return;
+
+    input.dataset.initialized = 'true';
+    const wrap = input.parentNode;
+    const dd = document.createElement('div');
+    dd.className = 'bank-ac-dropdown';
+    wrap.appendChild(dd);
+
+    let active = -1;
+
+    function getMatches(q) {
+      if (!q) return BANK_ACCOUNT_OPTIONS.slice(0, 100);
+      const lq = q.toLowerCase();
+      return BANK_ACCOUNT_OPTIONS.filter(function(ba) { return ba.name.toLowerCase().includes(lq); });
+    }
+
+    function hl(text, q) {
+      if (!q) return text;
+      const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return text.replace(re, '<strong style="font-weight:700;color:#1a6473">$1</strong>');
+    }
+
+    function render(q) {
+      const matches = getMatches(q);
+      dd.innerHTML = '';
+      active = -1;
+
+      const addEl = document.createElement('div');
+      addEl.className = 'bank-ac-item bank-ac-add';
+      addEl.textContent = '+ Add Bank Account';
+      addEl.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        window.open('{{ url_for("bank_account.add_popup") }}', 'add_bank_account', 'width=650,height=580,resizable=no,scrollbars=no');
+        hide();
+      });
+      dd.appendChild(addEl);
+
+      matches.forEach(function(ba) {
+        const item = document.createElement('div');
+        item.className = 'bank-ac-item';
+        item.innerHTML = hl(ba.name, q);
+        item.dataset.id = ba.id;
+        item.dataset.name = ba.name;
+        item.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          input.value = ba.name;
+          document.getElementById('bank_account_id_modal').value = ba.id;
+          hide();
+        });
+        dd.appendChild(item);
+      });
+
+      dd.style.display = 'block';
+    }
+
+    function hide() { dd.style.display = 'none'; active = -1; }
+
+    input.addEventListener('input', function() { render(this.value.trim()); });
+    input.addEventListener('focus', function() { render(this.value.trim()); });
+    input.addEventListener('blur', function() { setTimeout(hide, 150); });
+  }
+
   // Initialize on page load
   document.addEventListener('DOMContentLoaded', function() {
     initBankAccountAutocomplete();
     initPayeeAutocomplete();
+    initInlinePayeeAutocomplete();
     updateReimbursementBtn();
     updateReimbursementAmount(); // Initialize amount on page load
   });
