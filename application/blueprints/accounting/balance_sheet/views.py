@@ -38,6 +38,17 @@ def calculate_retained_earnings(as_of_date):
         class_name = account.account_type.account_class.account_class_name.upper()
         type_name = account.account_type.account_type_name.upper()
 
+        # Skip balance sheet accounts (Assets, Liabilities, Equity)
+        is_balance_sheet_account = (
+            'ASSET' in class_name or
+            'LIABILIT' in class_name or
+            'EQUITY' in class_name or
+            'CAPITAL' in class_name
+        )
+
+        if is_balance_sheet_account:
+            continue
+
         # Calculate balances
         balance_prior_year = account.balance(prior_year_end)
         balance_as_of_date = account.balance(as_of_date)
@@ -66,6 +77,17 @@ def calculate_retained_earnings(as_of_date):
 
         class_name = account.account_type.account_class.account_class_name.upper()
         type_name = account.account_type.account_type_name.upper()
+
+        # Skip balance sheet accounts (Assets, Liabilities, Equity)
+        is_balance_sheet_account = (
+            'ASSET' in class_name or
+            'LIABILIT' in class_name or
+            'EQUITY' in class_name or
+            'CAPITAL' in class_name
+        )
+
+        if is_balance_sheet_account:
+            continue
 
         # Prior year balances
         if 'REVENUE' in class_name or 'INCOME' in class_name or 'SALES' in type_name:
