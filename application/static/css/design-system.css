@@ -1,0 +1,464 @@
+/**
+ * The Health Collective Design System
+ * Version 2.0 - Unified Token System
+ *
+ * This file contains all design tokens as CSS custom properties.
+ * Do not modify directly - refer to DESIGN_SYSTEM.md for documentation.
+ */
+
+:root {
+  /* ================================================================
+     1. COLOR TOKENS
+     ================================================================ */
+
+  /* ── 1.1 Primary Brand (Teal) ── */
+  --thc-primary-900: #0d3d47;
+  --thc-primary-800: #105058;
+  --thc-primary-700: #135260;  /* Dark - hover states */
+  --thc-primary-600: #1a6473;  /* Base brand color - DEFAULT */
+  --thc-primary-500: #2d8090;
+  --thc-primary-400: #4d9cad;
+  --thc-primary-300: #8dbcc5;
+  --thc-primary-200: #c6dde1;
+  --thc-primary-100: #e6f3f5;  /* Lightest - backgrounds */
+  --thc-primary-50:  #f4f9fa;
+
+  /* ── 1.2 Success (Green) ── */
+  --thc-success-900: #0a3318;
+  --thc-success-800: #0f4921;
+  --thc-success-700: #14532d;  /* Hover */
+  --thc-success-600: #166534;  /* Base - DEFAULT */
+  --thc-success-500: #22863a;
+  --thc-success-400: #4caf50;  /* Alerts only (legacy) */
+  --thc-success-300: #86d895;
+  --thc-success-200: #bbf7d0;
+  --thc-success-100: #d4edda;  /* Light backgrounds */
+  --thc-success-50:  #f0fdf4;
+
+  /* ── 1.3 Info (Blue) ── */
+  --thc-info-900: #0a2f52;
+  --thc-info-800: #0f4880;  /* Hover */
+  --thc-info-700: #135ba3;
+  --thc-info-600: #185fa5;  /* Base - DEFAULT */
+  --thc-info-500: #2b7cc4;
+  --thc-info-400: #4d9cdb;
+  --thc-info-300: #82bef0;
+  --thc-info-200: #bddff8;
+  --thc-info-100: #e0f2fe;
+  --thc-info-50:  #f0f9ff;
+
+  /* ── 1.4 Warning (Amber) ── */
+  --thc-warning-900: #6b3608;
+  --thc-warning-800: #854309;
+  --thc-warning-700: #92400e;  /* Hover */
+  --thc-warning-600: #b45309;  /* Base - DEFAULT */
+  --thc-warning-500: #d97706;
+  --thc-warning-400: #f59e0b;
+  --thc-warning-300: #fbbf24;
+  --thc-warning-200: #fef3c7;
+  --thc-warning-100: #fef9c3;
+  --thc-warning-50:  #fffbf0;
+
+  /* ── 1.5 Danger (Red) ── */
+  --thc-danger-900: #7a1e16;
+  --thc-danger-800: #991b1b;
+  --thc-danger-700: #a93226;  /* Hover */
+  --thc-danger-600: #c0392b;  /* Base - DEFAULT */
+  --thc-danger-500: #dc4538;
+  --thc-danger-400: #ef5350;
+  --thc-danger-300: #f88078;
+  --thc-danger-200: #fca5a0;
+  --thc-danger-100: #fee2e2;
+  --thc-danger-50:  #fef2f2;
+
+  /* ── 1.6 Neutral Colors (Grays) ── */
+  --thc-gray-900: #111827;
+  --thc-gray-800: #1a2a2a;  /* Primary text - DEFAULT */
+  --thc-gray-700: #374151;
+  --thc-gray-600: #4b5563;
+  --thc-gray-500: #6b7280;  /* Muted text - DEFAULT */
+  --thc-gray-400: #9ca3af;
+  --thc-gray-300: #d1d5db;  /* Form borders */
+  --thc-gray-200: #e2e8f0;  /* Primary border - DEFAULT */
+  --thc-gray-150: #f0f2f5;  /* Light borders (table rows) */
+  --thc-gray-100: #f1f5f9;
+  --thc-gray-50:  #f8f9fa;  /* Page background - DEFAULT */
+  --thc-white:    #ffffff;  /* Surface/cards */
+
+  /* ── 1.7 Extended Palette (Icons, Badges, Status) ── */
+
+  /* Teal (matches primary) */
+  --thc-teal-700: #1a6473;
+  --thc-teal-100: #e6f3f5;
+
+  /* Green (nature) */
+  --thc-green-700: #0f6e56;
+  --thc-green-100: #e6f3f0;
+
+  /* Purple (special) */
+  --thc-purple-700: #3c3489;
+  --thc-purple-100: #eeedfe;
+
+  /* Coral (warm) */
+  --thc-coral-700: #993c1d;
+  --thc-coral-100: #faece7;
+
+  /* Amber (attention) */
+  --thc-amber-700: #854f0b;
+  --thc-amber-100: #faeeda;
+
+  /* Rose (feminine) */
+  --thc-rose-700: #9d174d;
+  --thc-rose-100: #fce7f3;
+
+  /* Red (urgent) */
+  --thc-red-700: #991b1b;
+  --thc-red-100: #fee2e2;
+
+  /* Slate (neutral) */
+  --thc-slate-700: #475569;
+  --thc-slate-100: #f1f5f9;
+
+  /* ── 1.8 Semantic Color Aliases ── */
+
+  /* Background */
+  --thc-bg-page:    var(--thc-gray-50);
+  --thc-bg-surface: var(--thc-white);
+  --thc-bg-subtle:  var(--thc-gray-100);
+  --thc-bg-muted:   var(--thc-gray-150);
+
+  /* Text */
+  --thc-text-primary:   var(--thc-gray-800);
+  --thc-text-secondary: var(--thc-gray-500);
+  --thc-text-disabled:  var(--thc-gray-400);
+  --thc-text-inverse:   var(--thc-white);
+
+  /* Borders */
+  --thc-border-default: var(--thc-gray-200);
+  --thc-border-light:   var(--thc-gray-150);
+  --thc-border-strong:  var(--thc-gray-300);
+  --thc-border-primary: var(--thc-primary-600);
+
+  /* State colors */
+  --thc-state-draft:           var(--thc-gray-100);
+  --thc-state-draft-text:      var(--thc-gray-500);
+  --thc-state-submitted:       var(--thc-success-100);
+  --thc-state-submitted-text:  #155724;
+  --thc-state-approved:        var(--thc-success-100);
+  --thc-state-approved-text:   #155724;
+  --thc-state-cancelled:       var(--thc-coral-100);
+  --thc-state-cancelled-text:  var(--thc-coral-700);
+
+  /* ── 1.9 Backward Compatibility Aliases (DEPRECATED) ── */
+  --thc-primary:       var(--thc-primary-600);      /* Use --thc-primary-600 */
+  --thc-primary-dark:  var(--thc-primary-700);      /* Use --thc-primary-700 */
+  --thc-primary-light: var(--thc-primary-100);      /* Use --thc-primary-100 */
+  --thc-bg:            var(--thc-bg-page);          /* Use --thc-bg-page */
+  --thc-surface:       var(--thc-bg-surface);       /* Use --thc-bg-surface */
+  --thc-border:        var(--thc-border-default);   /* Use --thc-border-default */
+  --thc-text:          var(--thc-text-primary);     /* Use --thc-text-primary */
+  --thc-text-muted:    var(--thc-text-secondary);   /* Use --thc-text-secondary */
+
+
+  /* ================================================================
+     2. TYPOGRAPHY TOKENS
+     ================================================================ */
+
+  /* ── 2.1 Font Families ── */
+  --thc-font-heading: 'Playfair Display', Georgia, serif;
+  --thc-font-body:    'Inter', 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --thc-font-mono:    'DM Mono', 'SF Mono', Monaco, 'Cascadia Code', 'Courier New', monospace;
+
+  /* ── 2.2 Font Size Scale (4px base, 1rem = 16px) ── */
+  --thc-text-xs:   0.75rem;   /* 12px - badges, tiny labels */
+  --thc-text-sm:   0.875rem;  /* 14px - body text, inputs, buttons */
+  --thc-text-base: 1rem;      /* 16px - default */
+  --thc-text-md:   1.125rem;  /* 18px - emphasized body */
+  --thc-text-lg:   1.25rem;   /* 20px - large metrics */
+  --thc-text-xl:   1.5rem;    /* 24px - section titles */
+  --thc-text-2xl:  1.875rem;  /* 30px - page titles */
+  --thc-text-3xl:  2.25rem;   /* 36px - hero text */
+  --thc-text-4xl:  3rem;      /* 48px - display */
+
+  /* ── 2.3 Font Weight Scale ── */
+  --thc-font-normal:    400;
+  --thc-font-medium:    500;
+  --thc-font-semibold:  600;
+  --thc-font-bold:      700;
+  --thc-font-extrabold: 800;
+
+  /* ── 2.4 Line Height Scale ── */
+  --thc-leading-none:    1.0;
+  --thc-leading-tight:   1.25;
+  --thc-leading-snug:    1.375;
+  --thc-leading-normal:  1.5;
+  --thc-leading-relaxed: 1.625;
+  --thc-leading-loose:   1.75;
+
+  /* ── 2.5 Letter Spacing Scale ── */
+  --thc-tracking-tighter: -0.05em;
+  --thc-tracking-tight:   -0.025em;
+  --thc-tracking-normal:  0;
+  --thc-tracking-wide:    0.025em;
+  --thc-tracking-wider:   0.05em;
+  --thc-tracking-widest:  0.1em;
+
+  /* ── 2.6 Semantic Typography Tokens ── */
+
+  /* Display (hero sections) */
+  --thc-display-size:     var(--thc-text-3xl);
+  --thc-display-weight:   var(--thc-font-extrabold);
+  --thc-display-line:     var(--thc-leading-tight);
+  --thc-display-tracking: var(--thc-tracking-tight);
+
+  /* Headings */
+  --thc-h1-size:   var(--thc-text-2xl);
+  --thc-h1-weight: var(--thc-font-semibold);
+  --thc-h1-line:   var(--thc-leading-tight);
+
+  --thc-h2-size:   var(--thc-text-xl);
+  --thc-h2-weight: var(--thc-font-semibold);
+  --thc-h2-line:   var(--thc-leading-tight);
+
+  --thc-h3-size:   var(--thc-text-md);
+  --thc-h3-weight: var(--thc-font-semibold);
+  --thc-h3-line:   var(--thc-leading-snug);
+
+  --thc-h4-size:   var(--thc-text-base);
+  --thc-h4-weight: var(--thc-font-semibold);
+  --thc-h4-line:   var(--thc-leading-snug);
+
+  /* Body */
+  --thc-body-size:    var(--thc-text-sm);
+  --thc-body-weight:  var(--thc-font-normal);
+  --thc-body-line:    var(--thc-leading-normal);
+  --thc-body-lg-size: var(--thc-text-base);
+  --thc-body-sm-size: var(--thc-text-xs);
+
+  /* Labels */
+  --thc-label-size:      var(--thc-text-xs);
+  --thc-label-weight:    var(--thc-font-semibold);
+  --thc-label-line:      var(--thc-leading-normal);
+  --thc-label-tracking:  var(--thc-tracking-widest);
+  --thc-label-transform: uppercase;
+
+  /* Caption */
+  --thc-caption-size:   var(--thc-text-xs);
+  --thc-caption-weight: var(--thc-font-medium);
+  --thc-caption-line:   var(--thc-leading-normal);
+
+
+  /* ================================================================
+     3. SPACING TOKENS (4px Grid System)
+     ================================================================ */
+
+  /* ── 3.1 Core Spacing Scale ── */
+  --thc-space-0:  0;
+  --thc-space-1:  0.25rem;  /* 4px */
+  --thc-space-2:  0.5rem;   /* 8px */
+  --thc-space-3:  0.75rem;  /* 12px */
+  --thc-space-4:  1rem;     /* 16px - DEFAULT */
+  --thc-space-5:  1.25rem;  /* 20px */
+  --thc-space-6:  1.5rem;   /* 24px */
+  --thc-space-7:  1.75rem;  /* 28px */
+  --thc-space-8:  2rem;     /* 32px */
+  --thc-space-10: 2.5rem;   /* 40px */
+  --thc-space-12: 3rem;     /* 48px */
+  --thc-space-16: 4rem;     /* 64px */
+  --thc-space-20: 5rem;     /* 80px */
+  --thc-space-24: 6rem;     /* 96px */
+
+  /* ── 3.2 Semantic Spacing Aliases ── */
+
+  /* Component padding */
+  --thc-padding-input:     var(--thc-space-2) var(--thc-space-3);  /* 8px 12px */
+  --thc-padding-button:    var(--thc-space-2) var(--thc-space-5);  /* 8px 20px */
+  --thc-padding-button-sm: var(--thc-space-2) var(--thc-space-3);  /* 8px 12px */
+  --thc-padding-button-lg: var(--thc-space-3) var(--thc-space-7);  /* 12px 28px */
+  --thc-padding-card:      var(--thc-space-6);                     /* 24px */
+  --thc-padding-card-sm:   var(--thc-space-4);                     /* 16px */
+  --thc-padding-card-lg:   var(--thc-space-8);                     /* 32px */
+
+  /* Component gaps (flexbox/grid) */
+  --thc-gap-xs: var(--thc-space-1);  /* 4px */
+  --thc-gap-sm: var(--thc-space-2);  /* 8px */
+  --thc-gap-md: var(--thc-space-3);  /* 12px - most common */
+  --thc-gap-lg: var(--thc-space-4);  /* 16px */
+  --thc-gap-xl: var(--thc-space-6);  /* 24px */
+
+  /* Stack spacing (vertical rhythm) */
+  --thc-stack-xs: var(--thc-space-2);   /* 8px */
+  --thc-stack-sm: var(--thc-space-3);   /* 12px */
+  --thc-stack-md: var(--thc-space-5);   /* 20px - DEFAULT */
+  --thc-stack-lg: var(--thc-space-7);   /* 28px */
+  --thc-stack-xl: var(--thc-space-12);  /* 48px */
+
+
+  /* ================================================================
+     4. BORDER RADIUS TOKENS
+     ================================================================ */
+
+  --thc-radius-none: 0;
+  --thc-radius-sm:   0.25rem;  /* 4px - very subtle */
+  --thc-radius-md:   0.375rem; /* 6px - buttons, inputs, small elements */
+  --thc-radius-lg:   0.5rem;   /* 8px - compact cards, metrics */
+  --thc-radius-xl:   0.625rem; /* 10px - standard cards */
+  --thc-radius-2xl:  0.75rem;  /* 12px - large cards, modals */
+  --thc-radius-3xl:  1rem;     /* 16px - special elements */
+  --thc-radius-full: 9999px;   /* Pills, circular badges */
+
+
+  /* ================================================================
+     5. SHADOW TOKENS (Elevation System)
+     ================================================================ */
+
+  --thc-shadow-none: none;
+  --thc-shadow-xs:   0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --thc-shadow-sm:   0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --thc-shadow-md:   0 2px 8px 0 rgba(0, 0, 0, 0.07);
+  --thc-shadow-lg:   0 4px 12px 0 rgba(0, 0, 0, 0.10);
+  --thc-shadow-xl:   0 8px 24px 0 rgba(0, 0, 0, 0.12);
+  --thc-shadow-2xl:  0 16px 48px 0 rgba(0, 0, 0, 0.16);
+
+  /* Special shadows */
+  --thc-shadow-focus:        0 0 0 3px rgba(26, 100, 115, 0.12);  /* Primary color ring */
+  --thc-shadow-focus-danger: 0 0 0 3px rgba(192, 57, 43, 0.12);   /* Danger color ring */
+
+
+  /* ================================================================
+     6. LAYOUT TOKENS
+     ================================================================ */
+
+  /* ── 6.1 Container Widths ── */
+  --thc-container-sm:   640px;
+  --thc-container-md:   768px;
+  --thc-container-lg:   1024px;
+  --thc-container-xl:   1280px;  /* Default for standard pages */
+  --thc-container-2xl:  1536px;
+
+  /* Semantic aliases */
+  --thc-container-narrow:   960px;   /* Forms, transactions */
+  --thc-container-standard: 1280px;  /* Default pages */
+  --thc-container-wide:     1536px;  /* Dashboards, reports */
+
+  /* ── 6.2 Breakpoints (Bootstrap 5 Standard) ── */
+  --thc-breakpoint-sm:  576px;
+  --thc-breakpoint-md:  768px;
+  --thc-breakpoint-lg:  992px;
+  --thc-breakpoint-xl:  1200px;
+  --thc-breakpoint-2xl: 1400px;
+
+  /* ── 6.3 Grid System ── */
+  --thc-grid-gap-default: var(--thc-gap-md);  /* 12px */
+
+
+  /* ================================================================
+     7. Z-INDEX SCALE
+     ================================================================ */
+
+  --thc-z-base:           0;
+  --thc-z-dropdown:       1000;
+  --thc-z-sticky:         1020;
+  --thc-z-fixed:          1030;
+  --thc-z-modal-backdrop: 1040;
+  --thc-z-modal:          1050;
+  --thc-z-popover:        1060;
+  --thc-z-tooltip:        1070;
+  --thc-z-toast:          1080;
+
+
+  /* ================================================================
+     8. ANIMATION & TRANSITION TOKENS
+     ================================================================ */
+
+  /* ── 8.1 Duration Tokens ── */
+  --thc-duration-fast:   100ms;
+  --thc-duration-normal: 150ms;
+  --thc-duration-slow:   300ms;
+  --thc-duration-slower: 500ms;
+
+  /* ── 8.2 Easing Functions ── */
+  --thc-ease-in:      cubic-bezier(0.4, 0, 1, 1);
+  --thc-ease-out:     cubic-bezier(0, 0, 0.2, 1);
+  --thc-ease-in-out:  cubic-bezier(0.4, 0, 0.2, 1);
+  --thc-ease-default: ease;
+
+  /* ── 8.3 Common Transitions ── */
+  --thc-transition-base:   all var(--thc-duration-normal) var(--thc-ease-default);
+  --thc-transition-colors: background-color var(--thc-duration-normal) var(--thc-ease-default),
+                           border-color var(--thc-duration-normal) var(--thc-ease-default),
+                           color var(--thc-duration-normal) var(--thc-ease-default);
+  --thc-transition-shadow: box-shadow var(--thc-duration-normal) var(--thc-ease-default);
+}
+
+
+/* ================================================================
+   UTILITY CLASSES (Optional - for quick prototyping)
+   ================================================================ */
+
+/* These classes allow using design tokens without writing custom CSS */
+
+/* ── Background Colors ── */
+.bg-primary   { background-color: var(--thc-primary-600) !important; }
+.bg-success   { background-color: var(--thc-success-600) !important; }
+.bg-info      { background-color: var(--thc-info-600) !important; }
+.bg-warning   { background-color: var(--thc-warning-600) !important; }
+.bg-danger    { background-color: var(--thc-danger-600) !important; }
+.bg-gray      { background-color: var(--thc-gray-100) !important; }
+.bg-surface   { background-color: var(--thc-bg-surface) !important; }
+.bg-page      { background-color: var(--thc-bg-page) !important; }
+
+/* ── Text Colors ── */
+.text-primary   { color: var(--thc-primary-600) !important; }
+.text-success   { color: var(--thc-success-600) !important; }
+.text-info      { color: var(--thc-info-600) !important; }
+.text-warning   { color: var(--thc-warning-600) !important; }
+.text-danger    { color: var(--thc-danger-600) !important; }
+.text-muted     { color: var(--thc-text-secondary) !important; }
+.text-body      { color: var(--thc-text-primary) !important; }
+.text-inverse   { color: var(--thc-text-inverse) !important; }
+
+/* ── Border Colors ── */
+.border-primary { border-color: var(--thc-primary-600) !important; }
+.border-success { border-color: var(--thc-success-600) !important; }
+.border-info    { border-color: var(--thc-info-600) !important; }
+.border-warning { border-color: var(--thc-warning-600) !important; }
+.border-danger  { border-color: var(--thc-danger-600) !important; }
+.border-default { border-color: var(--thc-border-default) !important; }
+.border-light   { border-color: var(--thc-border-light) !important; }
+
+/* ── Spacing Utilities ── */
+.gap-xs { gap: var(--thc-gap-xs) !important; }
+.gap-sm { gap: var(--thc-gap-sm) !important; }
+.gap-md { gap: var(--thc-gap-md) !important; }
+.gap-lg { gap: var(--thc-gap-lg) !important; }
+.gap-xl { gap: var(--thc-gap-xl) !important; }
+
+/* ── Border Radius Utilities ── */
+.rounded-none { border-radius: var(--thc-radius-none) !important; }
+.rounded-sm   { border-radius: var(--thc-radius-sm) !important; }
+.rounded-md   { border-radius: var(--thc-radius-md) !important; }
+.rounded-lg   { border-radius: var(--thc-radius-lg) !important; }
+.rounded-xl   { border-radius: var(--thc-radius-xl) !important; }
+.rounded-2xl  { border-radius: var(--thc-radius-2xl) !important; }
+.rounded-full { border-radius: var(--thc-radius-full) !important; }
+
+/* ── Shadow Utilities ── */
+.shadow-none { box-shadow: var(--thc-shadow-none) !important; }
+.shadow-xs   { box-shadow: var(--thc-shadow-xs) !important; }
+.shadow-sm   { box-shadow: var(--thc-shadow-sm) !important; }
+.shadow-md   { box-shadow: var(--thc-shadow-md) !important; }
+.shadow-lg   { box-shadow: var(--thc-shadow-lg) !important; }
+.shadow-xl   { box-shadow: var(--thc-shadow-xl) !important; }
+
+/* ── Font Weight Utilities ── */
+.font-normal    { font-weight: var(--thc-font-normal) !important; }
+.font-medium    { font-weight: var(--thc-font-medium) !important; }
+.font-semibold  { font-weight: var(--thc-font-semibold) !important; }
+.font-bold      { font-weight: var(--thc-font-bold) !important; }
+.font-extrabold { font-weight: var(--thc-font-extrabold) !important; }
+
+/* ── Font Family Utilities ── */
+.font-heading { font-family: var(--thc-font-heading) !important; }
+.font-body    { font-family: var(--thc-font-body) !important; }
+.font-mono    { font-family: var(--thc-font-mono) !important; }

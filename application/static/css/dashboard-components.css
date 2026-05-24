@@ -1,0 +1,331 @@
+/**
+ * Dashboard Components Styles
+ * Using THC Design System v2.0 tokens
+ * See: DESIGN_SYSTEM.md for token reference
+ */
+
+/* ================================================================
+   Section Header
+   ================================================================ */
+.thc-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--thc-space-3);  /* 12px */
+}
+
+.thc-section-header__label {
+    font-size: var(--thc-label-size);           /* 12px */
+    font-weight: var(--thc-label-weight);       /* 600 */
+    letter-spacing: var(--thc-label-tracking);  /* 0.1em */
+    text-transform: var(--thc-label-transform); /* uppercase */
+    color: var(--thc-text-secondary);           /* Muted text */
+}
+
+.thc-section-header__link {
+    font-size: var(--thc-text-xs);       /* 12px */
+    color: var(--thc-primary-600);
+    text-decoration: none;
+    font-weight: var(--thc-font-semibold);  /* 600 */
+    transition: var(--thc-transition-colors);
+}
+
+.thc-section-header__link:hover {
+    color: var(--thc-primary-700);
+    text-decoration: underline;
+}
+
+
+/* ================================================================
+   Summary Metric Cards
+   ================================================================ */
+.thc-summary-metric {
+    background: var(--thc-bg-surface);         /* White */
+    border: 1px solid var(--thc-border-default);  /* Gray-200 */
+    border-radius: var(--thc-radius-lg);       /* 8px */
+    padding: var(--thc-space-4) var(--thc-space-4);  /* 16px */
+    text-align: center;
+}
+
+.thc-summary-metric--total {
+    background: linear-gradient(135deg, var(--thc-primary-600) 0%, var(--thc-primary-800) 100%);
+    border-color: var(--thc-primary-600);
+}
+
+.thc-summary-metric__label {
+    font-size: var(--thc-label-size);          /* 12px */
+    font-weight: var(--thc-font-semibold);     /* 600 */
+    letter-spacing: var(--thc-tracking-wider);  /* 0.05em */
+    text-transform: uppercase;
+    color: var(--thc-text-secondary);
+    margin-bottom: var(--thc-space-1);  /* 4px */
+}
+
+.thc-summary-metric--total .thc-summary-metric__label {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.thc-summary-metric__value {
+    font-size: var(--thc-text-lg);       /* 20px */
+    font-weight: var(--thc-font-bold);   /* 700 */
+    color: var(--thc-text-primary);
+    font-family: var(--thc-font-mono);
+    line-height: var(--thc-leading-tight);
+}
+
+.thc-summary-metric--total .thc-summary-metric__value {
+    color: var(--thc-white);
+}
+
+@media (max-width: 768px) {
+    .thc-summary-metric__value {
+        font-size: var(--thc-text-md);  /* 18px on mobile */
+    }
+}
+
+
+/* ================================================================
+   Sales Table Card
+   ================================================================ */
+.thc-sales-table-card {
+    background: var(--thc-bg-surface);
+    border: 1px solid var(--thc-border-default);
+    border-radius: var(--thc-radius-lg);  /* 8px */
+    overflow: hidden;
+    max-width: 100%;
+}
+
+.thc-sales-table-header {
+    padding: var(--thc-space-3) var(--thc-space-4);  /* 12px 16px */
+    font-size: var(--thc-text-sm);              /* 14px */
+    font-weight: var(--thc-font-bold);          /* 700 */
+    letter-spacing: var(--thc-tracking-wide);   /* 0.025em */
+    display: flex;
+    align-items: center;
+    gap: var(--thc-gap-sm);  /* 8px */
+}
+
+/* Color variants for sales table headers */
+.thc-sales-table-header--primary {
+    background: var(--thc-primary-100);
+    color: var(--thc-primary-700);
+}
+
+.thc-sales-table-header--success {
+    background: var(--thc-success-100);
+    color: var(--thc-success-700);
+}
+
+.thc-sales-table-header--info {
+    background: var(--thc-info-100);
+    color: var(--thc-info-700);
+}
+
+.thc-sales-table-header--warning {
+    background: var(--thc-warning-100);
+    color: var(--thc-warning-700);
+}
+
+.thc-sales-table-header--green {
+    background: var(--thc-green-100);
+    color: var(--thc-green-700);
+}
+
+.thc-sales-table-header--purple {
+    background: var(--thc-purple-100);
+    color: var(--thc-purple-700);
+}
+
+.thc-sales-table-header--coral {
+    background: var(--thc-coral-100);
+    color: var(--thc-coral-700);
+}
+
+.thc-sales-table-header--amber {
+    background: var(--thc-amber-100);
+    color: var(--thc-amber-700);
+}
+
+.thc-sales-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.thc-sales-table col:first-child {
+    width: 60%;
+}
+
+.thc-sales-table col:last-child {
+    width: 40%;
+}
+
+.thc-sales-table td {
+    padding: var(--thc-space-2) var(--thc-space-4);  /* 8px 16px */
+    font-size: var(--thc-text-sm);                /* 14px */
+    border-bottom: 1px solid var(--thc-gray-100);
+}
+
+.thc-sales-table__label {
+    color: var(--thc-text-primary);
+}
+
+.thc-sales-table__value {
+    text-align: right;
+    font-family: var(--thc-font-mono);
+    font-weight: var(--thc-font-semibold);
+    color: var(--thc-text-primary);
+}
+
+.thc-sales-table__total td {
+    background: var(--thc-bg-subtle);  /* Gray-100 */
+    font-weight: var(--thc-font-bold);
+    border-bottom: none;
+    padding-top: var(--thc-space-3);     /* 12px */
+    padding-bottom: var(--thc-space-3);
+}
+
+.thc-sales-table__total td:first-child {
+    text-align: left;
+}
+
+.thc-sales-table__total td:last-child {
+    text-align: right;
+    font-family: var(--thc-font-mono);
+}
+
+.thc-sales-table tr:last-child:not(.thc-sales-table__total) td {
+    border-bottom: 1px solid var(--thc-border-default);
+}
+
+
+/* ================================================================
+   Action Cards (Dashboard Cards)
+   ================================================================ */
+.thc-action-card {
+    background: var(--thc-bg-surface);
+    border: 1px solid var(--thc-border-default);
+    border-radius: var(--thc-radius-xl);  /* 10px */
+    padding: var(--thc-space-4);          /* 16px */
+    display: flex;
+    align-items: flex-start;
+    gap: var(--thc-space-4);
+    transition: var(--thc-transition-shadow);
+}
+
+.thc-action-card:hover {
+    box-shadow: var(--thc-shadow-md);
+}
+
+.thc-action-card--warn {
+    border-color: var(--thc-warning-300);  /* Amber border when has warning */
+}
+
+.thc-action-card__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--thc-radius-lg);  /* 8px */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--thc-text-md);  /* 18px */
+    flex-shrink: 0;
+}
+
+/* Icon color variants */
+.thc-action-card__icon--warning {
+    background: var(--thc-warning-100);
+    color: var(--thc-warning-700);
+}
+
+.thc-action-card__icon--danger {
+    background: var(--thc-danger-100);
+    color: var(--thc-danger-600);
+}
+
+.thc-action-card__icon--info {
+    background: var(--thc-info-100);
+    color: var(--thc-info-700);
+}
+
+.thc-action-card__icon--success {
+    background: var(--thc-success-100);
+    color: var(--thc-success-700);
+}
+
+.thc-action-card__body {
+    flex: 1;
+    min-width: 0;
+}
+
+.thc-action-card__label {
+    font-size: var(--thc-text-xs);            /* 12px */
+    font-weight: var(--thc-font-semibold);    /* 600 */
+    letter-spacing: var(--thc-tracking-wider); /* 0.05em */
+    text-transform: uppercase;
+    color: var(--thc-text-secondary);
+    margin-bottom: var(--thc-space-1);  /* 4px */
+}
+
+.thc-action-card__value {
+    font-size: var(--thc-text-xl);        /* 24px */
+    font-weight: var(--thc-font-bold);    /* 700 */
+    color: var(--thc-text-primary);
+    line-height: var(--thc-leading-tight);
+}
+
+.thc-action-card__link {
+    display: inline-block;
+    font-size: var(--thc-text-xs);  /* 12px */
+    color: var(--thc-primary-600);
+    text-decoration: none;
+    margin-top: var(--thc-space-1);  /* 4px */
+    font-weight: var(--thc-font-medium);
+    transition: var(--thc-transition-colors);
+}
+
+.thc-action-card__link:hover {
+    text-decoration: underline;
+    color: var(--thc-primary-700);
+}
+
+
+/* ================================================================
+   Action Card Grid
+   ================================================================ */
+.thc-action-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--thc-gap-md);  /* 12px */
+    margin-bottom: var(--thc-space-6);  /* 24px */
+}
+
+@media (max-width: 576px) {
+    .thc-action-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+
+/* ================================================================
+   Quick Action Button
+   ================================================================ */
+.thc-quick-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--thc-gap-sm);  /* 8px */
+    padding: var(--thc-space-2) var(--thc-space-3);  /* 8px 12px */
+    font-size: var(--thc-text-sm);          /* 14px */
+    font-weight: var(--thc-font-semibold);  /* 600 */
+    color: var(--thc-primary-600);
+    background: var(--thc-bg-surface);
+    border: 1px solid var(--thc-primary-600);
+    border-radius: var(--thc-radius-md);  /* 6px */
+    text-decoration: none;
+    transition: var(--thc-transition-colors);
+}
+
+.thc-quick-btn:hover {
+    background: var(--thc-primary-600);
+    color: var(--thc-text-inverse);
+}

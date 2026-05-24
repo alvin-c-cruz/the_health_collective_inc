@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design System Token Test</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    body {
+      font-family: var(--thc-font-body);
+      background: var(--thc-bg-page);
+      color: var(--thc-text-primary);
+      padding: var(--thc-space-8);
+      line-height: var(--thc-leading-normal);
+    }
+
+    .test-section {
+      background: var(--thc-bg-surface);
+      border: 1px solid var(--thc-border-default);
+      border-radius: var(--thc-radius-xl);
+      padding: var(--thc-padding-card);
+      margin-bottom: var(--thc-stack-md);
+      box-shadow: var(--thc-shadow-sm);
+    }
+
+    .test-section h2 {
+      font-size: var(--thc-h2-size);
+      font-weight: var(--thc-h2-weight);
+      margin-bottom: var(--thc-space-4);
+      color: var(--thc-primary-600);
+    }
+
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: var(--thc-gap-md);
+      margin-bottom: var(--thc-space-4);
+    }
+
+    .color-swatch {
+      height: 60px;
+      border-radius: var(--thc-radius-md);
+      border: 1px solid var(--thc-border-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--thc-text-xs);
+      font-weight: var(--thc-font-semibold);
+      color: var(--thc-white);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+
+    .spacing-demo {
+      display: flex;
+      gap: var(--thc-gap-md);
+      flex-wrap: wrap;
+    }
+
+    .spacing-box {
+      background: var(--thc-primary-100);
+      border: 2px solid var(--thc-primary-600);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--thc-text-xs);
+      font-weight: var(--thc-font-semibold);
+      color: var(--thc-primary-700);
+    }
+
+    .shadow-demo {
+      display: flex;
+      gap: var(--thc-gap-lg);
+      flex-wrap: wrap;
+    }
+
+    .shadow-card {
+      width: 100px;
+      height: 100px;
+      background: var(--thc-bg-surface);
+      border-radius: var(--thc-radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--thc-text-xs);
+      font-weight: var(--thc-font-semibold);
+      color: var(--thc-text-secondary);
+    }
+
+    .typography-demo {
+      margin-bottom: var(--thc-space-4);
+    }
+
+    .button-demo {
+      padding: var(--thc-padding-button);
+      font-size: var(--thc-text-sm);
+      font-weight: var(--thc-font-semibold);
+      border: none;
+      border-radius: var(--thc-radius-md);
+      cursor: pointer;
+      transition: var(--thc-transition-colors);
+      margin-right: var(--thc-gap-sm);
+      margin-bottom: var(--thc-gap-sm);
+    }
+
+    .btn-primary {
+      background: var(--thc-primary-600);
+      color: var(--thc-white);
+    }
+
+    .btn-primary:hover {
+      background: var(--thc-primary-700);
+    }
+
+    .btn-success {
+      background: var(--thc-success-600);
+      color: var(--thc-white);
+    }
+
+    .btn-info {
+      background: var(--thc-info-600);
+      color: var(--thc-white);
+    }
+
+    .btn-warning {
+      background: var(--thc-warning-600);
+      color: var(--thc-white);
+    }
+
+    .btn-danger {
+      background: var(--thc-danger-600);
+      color: var(--thc-white);
+    }
+  </style>
+</head>
+<body>
+  <h1 style="font-size: var(--thc-h1-size); font-weight: var(--thc-h1-weight); margin-bottom: var(--thc-space-6);">
+    THC Design System v2.0 - Token Test
+  </h1>
+
+  <!-- Color Tokens Test -->
+  <div class="test-section">
+    <h2>1. Color Tokens</h2>
+
+    <h3 style="font-size: var(--thc-text-base); margin-bottom: var(--thc-space-3);">Primary Scale</h3>
+    <div class="color-grid">
+      <div class="color-swatch" style="background: var(--thc-primary-900);">900</div>
+      <div class="color-swatch" style="background: var(--thc-primary-800);">800</div>
+      <div class="color-swatch" style="background: var(--thc-primary-700);">700</div>
+      <div class="color-swatch" style="background: var(--thc-primary-600);">600</div>
+      <div class="color-swatch" style="background: var(--thc-primary-500);">500</div>
+      <div class="color-swatch" style="background: var(--thc-primary-400);">400</div>
+      <div class="color-swatch" style="background: var(--thc-primary-300); color: var(--thc-gray-800);">300</div>
+      <div class="color-swatch" style="background: var(--thc-primary-200); color: var(--thc-gray-800);">200</div>
+      <div class="color-swatch" style="background: var(--thc-primary-100); color: var(--thc-gray-800);">100</div>
+      <div class="color-swatch" style="background: var(--thc-primary-50); color: var(--thc-gray-800);">50</div>
+    </div>
+
+    <h3 style="font-size: var(--thc-text-base); margin-bottom: var(--thc-space-3); margin-top: var(--thc-space-6);">Semantic Colors</h3>
+    <div class="color-grid">
+      <div class="color-swatch" style="background: var(--thc-success-600);">Success</div>
+      <div class="color-swatch" style="background: var(--thc-info-600);">Info</div>
+      <div class="color-swatch" style="background: var(--thc-warning-600);">Warning</div>
+      <div class="color-swatch" style="background: var(--thc-danger-600);">Danger</div>
+    </div>
+  </div>
+
+  <!-- Typography Tokens Test -->
+  <div class="test-section">
+    <h2>2. Typography Tokens</h2>
+    <div class="typography-demo">
+      <div style="font-size: var(--thc-display-size); font-weight: var(--thc-display-weight); line-height: var(--thc-display-line);">Display Text (36px)</div>
+      <div style="font-size: var(--thc-h1-size); font-weight: var(--thc-h1-weight); line-height: var(--thc-h1-line);">Heading 1 (30px)</div>
+      <div style="font-size: var(--thc-h2-size); font-weight: var(--thc-h2-weight); line-height: var(--thc-h2-line);">Heading 2 (24px)</div>
+      <div style="font-size: var(--thc-h3-size); font-weight: var(--thc-h3-weight);">Heading 3 (18px)</div>
+      <div style="font-size: var(--thc-h4-size); font-weight: var(--thc-h4-weight);">Heading 4 (16px)</div>
+      <div style="font-size: var(--thc-body-size); margin-top: var(--thc-space-3);">Body Text (14px) - Most common for paragraphs and content</div>
+      <div style="font-size: var(--thc-text-xs); margin-top: var(--thc-space-2);">Small Text (12px) - Used for captions and labels</div>
+      <div style="font-family: var(--thc-font-mono); margin-top: var(--thc-space-2);">Monospace: 1234567890.00</div>
+    </div>
+  </div>
+
+  <!-- Spacing Tokens Test -->
+  <div class="test-section">
+    <h2>3. Spacing Tokens (4px Grid)</h2>
+    <div class="spacing-demo">
+      <div class="spacing-box" style="padding: var(--thc-space-1);">4px</div>
+      <div class="spacing-box" style="padding: var(--thc-space-2);">8px</div>
+      <div class="spacing-box" style="padding: var(--thc-space-3);">12px</div>
+      <div class="spacing-box" style="padding: var(--thc-space-4);">16px</div>
+      <div class="spacing-box" style="padding: var(--thc-space-6);">24px</div>
+      <div class="spacing-box" style="padding: var(--thc-space-8);">32px</div>
+    </div>
+  </div>
+
+  <!-- Border Radius Test -->
+  <div class="test-section">
+    <h2>4. Border Radius Tokens</h2>
+    <div class="spacing-demo">
+      <div class="spacing-box" style="padding: var(--thc-space-4); border-radius: var(--thc-radius-none);">none</div>
+      <div class="spacing-box" style="padding: var(--thc-space-4); border-radius: var(--thc-radius-sm);">sm (4px)</div>
+      <div class="spacing-box" style="padding: var(--thc-space-4); border-radius: var(--thc-radius-md);">md (6px)</div>
+      <div class="spacing-box" style="padding: var(--thc-space-4); border-radius: var(--thc-radius-lg);">lg (8px)</div>
+      <div class="spacing-box" style="padding: var(--thc-space-4); border-radius: var(--thc-radius-xl);">xl (10px)</div>
+      <div class="spacing-box" style="padding: var(--thc-space-4); border-radius: var(--thc-radius-2xl);">2xl (12px)</div>
+      <div class="spacing-box" style="padding: var(--thc-space-4); border-radius: var(--thc-radius-full);">full</div>
+    </div>
+  </div>
+
+  <!-- Shadow Test -->
+  <div class="test-section">
+    <h2>5. Shadow Tokens (Elevation)</h2>
+    <div class="shadow-demo">
+      <div class="shadow-card" style="box-shadow: var(--thc-shadow-none);">none</div>
+      <div class="shadow-card" style="box-shadow: var(--thc-shadow-xs);">xs</div>
+      <div class="shadow-card" style="box-shadow: var(--thc-shadow-sm);">sm</div>
+      <div class="shadow-card" style="box-shadow: var(--thc-shadow-md);">md</div>
+      <div class="shadow-card" style="box-shadow: var(--thc-shadow-lg);">lg</div>
+      <div class="shadow-card" style="box-shadow: var(--thc-shadow-xl);">xl</div>
+    </div>
+  </div>
+
+  <!-- Button Components Test -->
+  <div class="test-section">
+    <h2>6. Button Component Tokens</h2>
+    <div>
+      <button class="button-demo btn-primary">Primary Button</button>
+      <button class="button-demo btn-success">Success Button</button>
+      <button class="button-demo btn-info">Info Button</button>
+      <button class="button-demo btn-warning">Warning Button</button>
+      <button class="button-demo btn-danger">Danger Button</button>
+    </div>
+  </div>
+
+  <!-- Utility Classes Test -->
+  <div class="test-section">
+    <h2>7. Utility Classes</h2>
+    <div style="display: flex; gap: var(--thc-gap-md); flex-wrap: wrap;">
+      <div class="bg-primary text-inverse" style="padding: var(--thc-space-3); border-radius: var(--thc-radius-md);">bg-primary</div>
+      <div class="bg-success text-inverse" style="padding: var(--thc-space-3); border-radius: var(--thc-radius-md);">bg-success</div>
+      <div class="bg-info text-inverse" style="padding: var(--thc-space-3); border-radius: var(--thc-radius-md);">bg-info</div>
+      <div class="bg-warning text-inverse" style="padding: var(--thc-space-3); border-radius: var(--thc-radius-md);">bg-warning</div>
+      <div class="bg-danger text-inverse" style="padding: var(--thc-space-3); border-radius: var(--thc-radius-md);">bg-danger</div>
+    </div>
+
+    <div style="margin-top: var(--thc-space-4); display: flex; gap: var(--thc-gap-md); flex-wrap: wrap;">
+      <span class="text-primary font-semibold">text-primary</span>
+      <span class="text-success font-semibold">text-success</span>
+      <span class="text-info font-semibold">text-info</span>
+      <span class="text-warning font-semibold">text-warning</span>
+      <span class="text-danger font-semibold">text-danger</span>
+      <span class="text-muted">text-muted</span>
+    </div>
+  </div>
+
+  <!-- Status Check -->
+  <div class="test-section">
+    <h2>✅ Design System Status</h2>
+    <p style="margin-bottom: var(--thc-space-2);"><strong>All tokens are loaded and accessible!</strong></p>
+    <ul style="padding-left: var(--thc-space-6); line-height: var(--thc-leading-relaxed);">
+      <li>✅ 200+ color tokens (primary, semantic, neutral, extended)</li>
+      <li>✅ Typography scale (9 sizes, 5 weights, 6 line-heights)</li>
+      <li>✅ Spacing scale (14 values on 4px grid)</li>
+      <li>✅ Border radius scale (8 values)</li>
+      <li>✅ Shadow scale (6 elevation levels)</li>
+      <li>✅ Layout tokens (containers, breakpoints, z-index)</li>
+      <li>✅ Animation tokens (durations, easing, transitions)</li>
+      <li>✅ Backward compatibility aliases for legacy variables</li>
+      <li>✅ Utility classes for rapid prototyping</li>
+    </ul>
+    <p style="margin-top: var(--thc-space-4); color: var(--thc-text-secondary); font-size: var(--thc-text-sm);">
+      <em>Tokens can now be used throughout the application via CSS variables (e.g., <code>var(--thc-primary-600)</code>)
+      or utility classes (e.g., <code>bg-primary</code>, <code>text-muted</code>).</em>
+    </p>
+  </div>
+</body>
+</html>

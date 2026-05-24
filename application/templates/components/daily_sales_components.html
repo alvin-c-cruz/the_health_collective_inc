@@ -1,0 +1,152 @@
+{#
+  Daily Sales Components
+  Reusable UI components for daily sales pages
+  Using THC Design System v2.0 tokens
+#}
+
+{# ================================================================
+   Metric Card - Display metric with label and value
+   ================================================================ #}
+{% macro metric_card(label, value, accent=false) %}
+<div class="thc-metric">
+    <div class="thc-metric__label">{{ label }}</div>
+    <div class="thc-metric__value{% if accent %} thc-metric__value--accent{% endif %}">{{ value }}</div>
+</div>
+{% endmacro %}
+
+
+{# ================================================================
+   Transaction Type Card - Large card for new transaction selection
+   ================================================================ #}
+{% macro transaction_card(title, description, icon, icon_color, url, is_featured=false, badges=None, has_batch=false, batch_url='') %}
+<div class="thc-txn-card{% if is_featured %} thc-txn-card--featured{% endif %}"
+     onclick="window.location.href='{{ url }}'">
+    <div class="thc-txn-card__icon thc-txn-card__icon--{{ icon_color }}">
+        <i class="bi {{ icon }}"></i>
+    </div>
+    <div class="thc-txn-card__info">
+        <p class="thc-txn-card__title">{{ title }}</p>
+        <p class="thc-txn-card__desc">{{ description }}</p>
+        {% if badges or has_batch %}
+        <div class="thc-badges">
+            {% if badges %}
+            {% for badge in badges %}
+            <a href="{{ badge.url }}"
+               class="thc-badge thc-badge--{{ icon_color }}"
+               onclick="event.stopPropagation()">
+                {{ badge.label }}
+            </a>
+            {% endfor %}
+            {% endif %}
+            {% if has_batch %}
+            <a href="{{ batch_url }}"
+               class="thc-badge thc-badge--coral"
+               onclick="event.stopPropagation()">
+                <i class="bi bi-collection"></i> APE Batch
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+
+{# ================================================================
+   Cash Management Card - Smaller card for cash operations
+   ================================================================ #}
+{% macro cash_card(title, description, icon, icon_color, url) %}
+<a href="{{ url }}" class="thc-cash-card">
+    <div class="thc-cash-card__icon thc-cash-card__icon--{{ icon_color }}">
+        <i class="bi {{ icon }}"></i>
+    </div>
+    <div class="thc-cash-card__info">
+        <p class="thc-cash-card__title">{{ title }}</p>
+        <p class="thc-cash-card__desc">{{ description }}</p>
+    </div>
+    <i class="bi bi-chevron-right thc-cash-card__chevron"></i>
+</a>
+{% endmacro %}
+
+
+{# ================================================================
+   Transaction List Row - Row for transaction/deposit/collection lists
+   ================================================================ #}
+{% macro transaction_row(url, icon, icon_color, record_number, customer_name, type_label, amount, status, status_variant='draft') %}
+<a href="{{ url }}" class="thc-record-row">
+    <div class="thc-record-row__icon thc-record-row__icon--{{ icon_color }}">
+        <i class="bi {{ icon }}"></i>
+    </div>
+    <div class="thc-record-row__info">
+        <div class="thc-record-row__number">{{ record_number }}</div>
+        <div class="thc-record-row__customer">{{ customer_name }}</div>
+        <div class="thc-record-row__type">{{ type_label }}</div>
+    </div>
+    <div class="thc-record-row__amount">{{ amount }}</div>
+    <div class="thc-record-row__badges">
+        <span class="thc-record-badge thc-record-badge--{{ status_variant }}">{{ status }}</span>
+    </div>
+</a>
+{% endmacro %}
+
+
+{# ================================================================
+   Date Navigation - Prev/Next/Calendar/Today navigation
+   ================================================================ #}
+{% macro date_navigation(prev_url, next_url, selected_date, is_today, max_date, today_url, on_change_js) %}
+<div class="thc-date-nav">
+    <a href="{{ prev_url }}" class="thc-date-nav__btn" title="Previous day">
+        <i class="bi bi-chevron-left"></i>
+    </a>
+
+    <div class="thc-date-nav__input-wrap">
+        <div class="thc-date-nav__display{% if is_today %} thc-date-nav__display--today{% endif %}"
+             title="Click to pick a date">
+            <i class="bi bi-calendar3"></i>
+            {% if is_today %}Today — {% endif %}{{ selected_date.strftime("%b %d, %Y") }}
+            <i class="bi bi-pencil-fill" style="font-size:var(--thc-text-xs);opacity:0.5;margin-left:4px;"></i>
+        </div>
+        <input type="date" class="thc-date-nav__hidden"
+               value="{{ selected_date.isoformat() }}"
+               max="{{ max_date.isoformat() }}"
+               onchange="{{ on_change_js }}">
+    </div>
+
+    <a href="{{ next_url }}"
+       class="thc-date-nav__btn{% if next_url == '#' %} thc-date-nav__btn--disabled{% endif %}"
+       title="Next day">
+        <i class="bi bi-chevron-right"></i>
+    </a>
+</div>
+
+{% if not is_today %}
+<a href="{{ today_url }}" class="thc-date-nav__today-btn">Go to Today</a>
+{% endif %}
+{% endmacro %}
+
+
+{# ================================================================
+   Help Button - Question mark button for guides
+   ================================================================ #}
+{% macro help_button(label, url) %}
+<button type="button" class="thc-help-btn"
+        onclick="window.open('{{ url }}','_blank','width=820,height=700,scrollbars=yes,resizable=yes')">
+    <span class="thc-help-btn__icon">?</span> {{ label }}
+</button>
+{% endmacro %}
+
+
+{# ================================================================
+   User Footer - Cashier/user display at bottom
+   ================================================================ #}
+{% macro user_footer(first_name, last_name, role_label) %}
+<div class="thc-user-footer">
+    <div class="thc-user-footer__avatar">
+        {{ first_name[0] }}{{ last_name[0] if last_name else '' }}
+    </div>
+    <div class="thc-user-footer__info">
+        <p class="thc-user-footer__name">{{ first_name }} {{ last_name }}</p>
+        <p class="thc-user-footer__role">{{ role_label }}</p>
+    </div>
+</div>
+{% endmacro %}

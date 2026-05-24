@@ -1,0 +1,100 @@
+/**
+ * Collections Components CSS
+ * Using THC Design System v2.0 tokens exclusively
+ * No hardcoded values allowed
+ */
+
+/* ================================================================
+   Toggle Group - Horizontal tab-style buttons
+   ================================================================ */
+.thc-toggle-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    border: 1px solid var(--thc-primary-200);
+    border-radius: var(--thc-radius-lg);
+    overflow: hidden;
+    width: fit-content;
+    max-width: 100%;
+}
+
+.thc-toggle {
+    padding: 0.28rem 0.75rem;
+    font-size: var(--thc-text-sm); /* ~0.78rem → 0.875rem */
+    font-weight: var(--thc-font-semibold);
+    text-decoration: none;
+    border-right: 1px solid var(--thc-primary-200);
+    transition: var(--thc-transition-colors);
+    white-space: nowrap;
+}
+
+.thc-toggle:last-child {
+    border-right: none;
+}
+
+.thc-toggle--on {
+    background: var(--thc-primary-600);
+    color: var(--thc-white);
+}
+
+.thc-toggle--off {
+    background: var(--thc-bg-surface);
+    color: var(--thc-text-secondary);
+}
+
+.thc-toggle--off:hover {
+    background: var(--thc-primary-50);
+    color: var(--thc-primary-600);
+}
+
+/* ================================================================
+   Pill Toggle - Single pill-shaped button
+   ================================================================ */
+.thc-pill-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--thc-gap-xs);
+    padding: 0.22rem 0.7rem;
+    font-size: var(--thc-text-xs);
+    font-weight: var(--thc-font-semibold);
+    border-radius: var(--thc-radius-full);
+    border: 1.5px solid;
+    text-decoration: none;
+    transition: var(--thc-transition-colors);
+}
+
+.thc-pill-toggle--off {
+    background: var(--thc-bg-surface);
+    color: var(--thc-gray-400);
+    border-color: var(--thc-gray-300);
+}
+
+.thc-pill-toggle--off:hover {
+    background: var(--thc-gray-100);
+    color: var(--thc-gray-600);
+    border-color: var(--thc-gray-400);
+}
+
+.thc-pill-toggle--on {
+    background: var(--thc-success-100);
+    color: var(--thc-success-700);
+    border-color: var(--thc-success-300);
+}
+
+.thc-pill-toggle--on:hover {
+    background: var(--thc-success-200);
+    color: var(--thc-success-700);
+}
+
+/* ================================================================
+   Table Group Header
+   ================================================================ */
+.thc-group-header td {
+    background: var(--thc-primary-50);
+    color: var(--thc-primary-600);
+    font-size: var(--thc-label-size); /* 0.7rem → 12px */
+    font-weight: var(--thc-font-bold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.5rem;
+}

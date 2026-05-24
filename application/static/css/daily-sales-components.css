@@ -1,0 +1,708 @@
+/**
+ * Daily Sales Components CSS
+ * Using THC Design System v2.0 tokens exclusively
+ * No hardcoded values allowed
+ */
+
+/* ================================================================
+   Page Wrapper
+   ================================================================ */
+.thc-wrap {
+    max-width: var(--thc-container-narrow); /* 960px */
+    margin: 0 auto;
+    padding: var(--thc-space-6) var(--thc-space-4) var(--thc-space-12);
+}
+
+/* ================================================================
+   Top Bar
+   ================================================================ */
+.thc-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--thc-space-6);
+    flex-wrap: wrap;
+    gap: var(--thc-gap-md);
+}
+
+.thc-brand-name {
+    font-family: var(--thc-font-heading);
+    font-size: var(--thc-text-lg); /* 1.05rem → 1.25rem (20px) */
+    font-weight: var(--thc-font-semibold);
+    color: var(--thc-text-primary);
+    margin: 0;
+}
+
+.thc-brand-sub {
+    font-size: var(--thc-text-xs);
+    color: var(--thc-text-secondary);
+    margin: 2px 0 0;
+}
+
+/* ================================================================
+   Date Navigation
+   ================================================================ */
+.thc-date-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--thc-gap-sm);
+}
+
+.thc-date-nav__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--thc-radius-md);
+    border: 1px solid var(--thc-border-default);
+    background: var(--thc-bg-surface);
+    color: var(--thc-text-secondary);
+    text-decoration: none;
+    font-size: var(--thc-text-sm);
+    transition: var(--thc-transition-colors);
+}
+
+.thc-date-nav__btn:hover {
+    border-color: var(--thc-primary-600);
+    color: var(--thc-primary-600);
+    background: var(--thc-primary-50);
+    text-decoration: none;
+}
+
+.thc-date-nav__btn--disabled {
+    pointer-events: none;
+    opacity: 0.35;
+}
+
+.thc-date-nav__input-wrap {
+    position: relative;
+}
+
+.thc-date-nav__display {
+    display: flex;
+    align-items: center;
+    gap: var(--thc-gap-sm);
+    font-size: var(--thc-text-sm);
+    font-weight: var(--thc-font-semibold);
+    color: var(--thc-text-primary);
+    background: var(--thc-bg-surface);
+    border: 1px solid var(--thc-border-default);
+    border-radius: var(--thc-radius-md);
+    padding: 5px var(--thc-space-3);
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+    min-width: 170px;
+    justify-content: center;
+}
+
+.thc-date-nav__display i:first-child {
+    color: var(--thc-primary-600);
+}
+
+.thc-date-nav__display--today {
+    background: var(--thc-primary-50);
+    border-color: var(--thc-primary-600);
+    color: var(--thc-primary-600);
+}
+
+.thc-date-nav__hidden {
+    position: absolute;
+    opacity: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.thc-date-nav__today-btn {
+    font-size: var(--thc-text-xs);
+    font-weight: var(--thc-font-semibold);
+    padding: 4px 10px;
+    border-radius: var(--thc-radius-md);
+    border: 1px solid var(--thc-primary-600);
+    color: var(--thc-primary-600);
+    background: var(--thc-bg-surface);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.thc-date-nav__today-btn:hover {
+    background: var(--thc-primary-50);
+    text-decoration: none;
+}
+
+/* ================================================================
+   Help Button
+   ================================================================ */
+.thc-help-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--thc-gap-xs);
+    color: var(--thc-text-secondary);
+    font-size: var(--thc-text-sm);
+    font-weight: var(--thc-font-medium);
+    background: none;
+    border: none;
+    padding: var(--thc-space-2) var(--thc-space-1);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: var(--thc-transition-colors);
+}
+
+.thc-help-btn:hover {
+    color: var(--thc-primary-600);
+}
+
+.thc-help-btn__icon {
+    width: 1.15rem;
+    height: 1.15rem;
+    border-radius: var(--thc-radius-full);
+    border: 1.5px solid currentColor;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.68rem;
+    font-weight: var(--thc-font-bold);
+    flex-shrink: 0;
+}
+
+/* ================================================================
+   Metric Cards
+   ================================================================ */
+.thc-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--thc-gap-md);
+    margin-bottom: var(--thc-space-6);
+}
+
+.thc-metric {
+    background: var(--thc-bg-surface);
+    border: 1px solid var(--thc-border-default);
+    border-radius: var(--thc-radius-lg);
+    padding: 14px var(--thc-space-4);
+}
+
+.thc-metric__label {
+    font-size: var(--thc-label-size); /* 12px */
+    color: var(--thc-text-secondary);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.thc-metric__value {
+    font-size: var(--thc-text-xl); /* ~1.35rem → 1.5rem (24px) */
+    font-weight: var(--thc-font-semibold);
+    color: var(--thc-text-primary);
+    font-family: var(--thc-font-mono);
+}
+
+.thc-metric__value--accent {
+    color: var(--thc-primary-600);
+}
+
+/* ================================================================
+   Section Label (reuse from dashboard pattern)
+   ================================================================ */
+.thc-sec-lbl {
+    font-size: 0.65rem;
+    font-weight: var(--thc-font-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--thc-text-secondary);
+    margin-bottom: var(--thc-space-3);
+}
+
+/* ================================================================
+   Transaction Type Cards (Large)
+   ================================================================ */
+.thc-txn-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--thc-gap-md);
+    margin-bottom: var(--thc-space-6);
+}
+
+.thc-txn-card {
+    background: var(--thc-bg-surface);
+    border: 1px solid var(--thc-border-default);
+    border-radius: var(--thc-radius-xl);
+    padding: var(--thc-space-4);
+    cursor: pointer;
+    transition: var(--thc-transition-colors);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: inherit;
+}
+
+.thc-txn-card:hover {
+    border-color: var(--thc-gray-400);
+    background: var(--thc-primary-50);
+    color: inherit;
+}
+
+.thc-txn-card--featured {
+    border: 1.5px solid var(--thc-primary-600);
+}
+
+.thc-txn-card--featured:hover {
+    background: var(--thc-primary-50);
+}
+
+.thc-txn-card__icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--thc-radius-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--thc-text-xl);
+    flex-shrink: 0;
+}
+
+/* Icon color variants */
+.thc-txn-card__icon--blue {
+    background: var(--thc-primary-50);
+    color: var(--thc-primary-600);
+}
+
+.thc-txn-card__icon--green {
+    background: var(--thc-success-100);
+    color: var(--thc-success-700);
+}
+
+.thc-txn-card__icon--purple {
+    background: var(--thc-purple-100);
+    color: var(--thc-purple-700);
+}
+
+.thc-txn-card__icon--coral {
+    background: var(--thc-coral-100);
+    color: var(--thc-coral-700);
+}
+
+.thc-txn-card__icon--amber {
+    background: var(--thc-warning-100);
+    color: var(--thc-warning-700);
+}
+
+.thc-txn-card__icon--rose {
+    background: var(--thc-rose-100);
+    color: var(--thc-rose-700);
+}
+
+.thc-txn-card__icon--red {
+    background: var(--thc-danger-100);
+    color: var(--thc-danger-700);
+}
+
+.thc-txn-card__icon--slate {
+    background: var(--thc-gray-100);
+    color: var(--thc-gray-600);
+}
+
+.thc-txn-card__info {
+    flex: 1;
+    min-width: 0;
+}
+
+.thc-txn-card__title {
+    font-family: var(--thc-font-heading);
+    font-size: var(--thc-text-base); /* ~0.9rem → 1rem (16px) */
+    font-weight: var(--thc-font-semibold);
+    color: var(--thc-text-primary);
+    margin: 0 0 2px;
+}
+
+.thc-txn-card__desc {
+    font-size: var(--thc-text-xs);
+    color: var(--thc-text-secondary);
+    margin: 0 0 var(--thc-gap-sm);
+    line-height: var(--thc-leading-normal);
+}
+
+/* ================================================================
+   Badges (for transaction type shortcuts)
+   ================================================================ */
+.thc-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.thc-badge {
+    font-size: 0.65rem;
+    padding: 2px 9px;
+    border-radius: var(--thc-radius-sm);
+    font-weight: var(--thc-font-semibold);
+    text-decoration: none;
+    display: inline-block;
+    letter-spacing: 0.03em;
+    color: var(--thc-white);
+}
+
+.thc-badge:hover {
+    opacity: 0.8;
+    text-decoration: none;
+}
+
+.thc-badge--blue {
+    background: var(--thc-primary-600);
+}
+
+.thc-badge--green {
+    background: var(--thc-success-700);
+}
+
+.thc-badge--purple {
+    background: var(--thc-purple-700);
+}
+
+.thc-badge--coral {
+    background: var(--thc-coral-700);
+}
+
+.thc-badge--amber {
+    background: var(--thc-warning-700);
+}
+
+.thc-badge--rose {
+    background: var(--thc-rose-700);
+}
+
+.thc-badge--slate {
+    background: var(--thc-gray-600);
+}
+
+/* ================================================================
+   Cash Management Cards (Smaller)
+   ================================================================ */
+.thc-cash-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--thc-gap-md);
+    margin-bottom: var(--thc-space-6);
+}
+
+.thc-cash-card {
+    background: var(--thc-bg-surface);
+    border: 1px solid var(--thc-border-default);
+    border-radius: var(--thc-radius-xl);
+    padding: 14px var(--thc-space-4);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--thc-gap-md);
+    text-decoration: none;
+    color: inherit;
+    transition: var(--thc-transition-colors);
+}
+
+.thc-cash-card:hover {
+    border-color: var(--thc-gray-400);
+    background: var(--thc-primary-50);
+    text-decoration: none;
+    color: inherit;
+}
+
+.thc-cash-card__icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--thc-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--thc-text-base);
+    flex-shrink: 0;
+}
+
+/* Icon color variants (same as transaction cards) */
+.thc-cash-card__icon--blue {
+    background: var(--thc-primary-50);
+    color: var(--thc-primary-600);
+}
+
+.thc-cash-card__icon--green {
+    background: var(--thc-success-100);
+    color: var(--thc-success-700);
+}
+
+.thc-cash-card__icon--purple {
+    background: var(--thc-purple-100);
+    color: var(--thc-purple-700);
+}
+
+.thc-cash-card__icon--amber {
+    background: var(--thc-warning-100);
+    color: var(--thc-warning-700);
+}
+
+.thc-cash-card__icon--orange {
+    background: var(--thc-coral-100);
+    color: var(--thc-coral-700);
+}
+
+.thc-cash-card__icon--red {
+    background: var(--thc-danger-100);
+    color: var(--thc-danger-700);
+}
+
+.thc-cash-card__info {
+    flex: 1;
+}
+
+.thc-cash-card__title {
+    font-size: var(--thc-text-sm);
+    font-weight: var(--thc-font-semibold);
+    color: var(--thc-text-primary);
+    margin: 0;
+}
+
+.thc-cash-card__desc {
+    font-size: var(--thc-label-size);
+    color: var(--thc-text-secondary);
+    margin: 2px 0 0;
+}
+
+.thc-cash-card__chevron {
+    color: var(--thc-text-secondary);
+    font-size: var(--thc-text-sm);
+}
+
+/* ================================================================
+   Transaction List Rows
+   ================================================================ */
+.thc-txn-list {
+    margin-bottom: var(--thc-space-6);
+}
+
+.thc-record-row {
+    background: var(--thc-bg-surface);
+    border: 1px solid var(--thc-border-default);
+    border-radius: var(--thc-radius-lg);
+    padding: 11px 14px;
+    display: flex;
+    align-items: center;
+    gap: var(--thc-gap-md);
+    margin-bottom: var(--thc-gap-sm);
+    text-decoration: none;
+    color: inherit;
+    transition: var(--thc-transition-colors);
+}
+
+.thc-record-row:hover {
+    border-color: var(--thc-gray-400);
+    background: var(--thc-primary-50);
+    text-decoration: none;
+    color: inherit;
+}
+
+.thc-record-row__icon {
+    width: 30px;
+    height: 30px;
+    border-radius: var(--thc-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--thc-text-sm);
+    flex-shrink: 0;
+}
+
+/* Icon color variants (same as transaction cards) */
+.thc-record-row__icon--blue {
+    background: var(--thc-primary-50);
+    color: var(--thc-primary-600);
+}
+
+.thc-record-row__icon--green {
+    background: var(--thc-success-100);
+    color: var(--thc-success-700);
+}
+
+.thc-record-row__icon--purple {
+    background: var(--thc-purple-100);
+    color: var(--thc-purple-700);
+}
+
+.thc-record-row__icon--coral {
+    background: var(--thc-coral-100);
+    color: var(--thc-coral-700);
+}
+
+.thc-record-row__icon--amber {
+    background: var(--thc-warning-100);
+    color: var(--thc-warning-700);
+}
+
+.thc-record-row__icon--rose {
+    background: var(--thc-rose-100);
+    color: var(--thc-rose-700);
+}
+
+.thc-record-row__icon--red {
+    background: var(--thc-danger-100);
+    color: var(--thc-danger-700);
+}
+
+.thc-record-row__icon--slate {
+    background: var(--thc-gray-100);
+    color: var(--thc-gray-600);
+}
+
+.thc-record-row__info {
+    flex: 1;
+    min-width: 0;
+}
+
+.thc-record-row__number {
+    font-size: 0.68rem;
+    color: var(--thc-text-secondary);
+    font-family: var(--thc-font-mono);
+}
+
+.thc-record-row__customer {
+    font-size: var(--thc-text-sm);
+    font-weight: var(--thc-font-semibold);
+    color: var(--thc-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.thc-record-row__type {
+    font-size: var(--thc-label-size);
+    color: var(--thc-text-secondary);
+    margin-top: 1px;
+}
+
+.thc-record-row__amount {
+    font-family: var(--thc-font-mono);
+    font-size: var(--thc-text-base); /* ~0.88rem → 1rem (16px) */
+    font-weight: var(--thc-font-semibold);
+    color: var(--thc-text-primary);
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.thc-record-row__badges {
+    flex-shrink: 0;
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.thc-record-badge {
+    font-size: 0.62rem;
+    font-weight: var(--thc-font-semibold);
+    padding: 2px var(--thc-gap-sm);
+    border-radius: var(--thc-radius-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.thc-record-badge--draft {
+    background: var(--thc-gray-100);
+    color: var(--thc-text-secondary);
+}
+
+.thc-record-badge--submitted {
+    background: var(--thc-success-100);
+    color: var(--thc-success-700);
+}
+
+.thc-record-badge--approved {
+    background: var(--thc-success-100);
+    color: var(--thc-success-800);
+}
+
+.thc-record-badge--cancelled {
+    background: var(--thc-coral-100);
+    color: var(--thc-coral-700);
+}
+
+.thc-record-badge--posted {
+    background: var(--thc-success-100);
+    color: var(--thc-success-800);
+}
+
+.thc-record-badge--reimbursed {
+    background: var(--thc-success-100);
+    color: var(--thc-success-900);
+}
+
+.thc-record-badge--for_reimbursement {
+    background: var(--thc-warning-100);
+    color: var(--thc-warning-800);
+}
+
+/* ================================================================
+   Empty State
+   ================================================================ */
+.thc-empty {
+    text-align: center;
+    padding: var(--thc-space-5);
+    color: var(--thc-text-secondary);
+    font-size: var(--thc-text-sm);
+    background: var(--thc-bg-surface);
+    border: 1px solid var(--thc-border-default);
+    border-radius: var(--thc-radius-lg);
+}
+
+/* ================================================================
+   User Footer
+   ================================================================ */
+.thc-user-footer {
+    display: flex;
+    align-items: center;
+    gap: var(--thc-gap-md);
+    padding-top: var(--thc-space-4);
+    border-top: 1px solid var(--thc-border-default);
+    margin-top: var(--thc-space-4);
+}
+
+.thc-user-footer__avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--thc-radius-full);
+    background: var(--thc-primary-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--thc-label-size);
+    font-weight: var(--thc-font-semibold);
+    color: var(--thc-white);
+    flex-shrink: 0;
+}
+
+.thc-user-footer__name {
+    font-size: var(--thc-text-sm);
+    font-weight: var(--thc-font-semibold);
+    color: var(--thc-text-primary);
+    margin: 0;
+}
+
+.thc-user-footer__role {
+    font-size: var(--thc-label-size);
+    color: var(--thc-text-secondary);
+    margin: 1px 0 0;
+}
+
+/* ================================================================
+   Responsive
+   ================================================================ */
+@media (max-width: 600px) {
+    .thc-txn-grid,
+    .thc-cash-grid,
+    .thc-metrics {
+        grid-template-columns: 1fr;
+    }
+
+    .thc-date-nav__display {
+        min-width: 140px;
+    }
+}

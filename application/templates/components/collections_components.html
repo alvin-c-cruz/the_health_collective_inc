@@ -1,0 +1,32 @@
+{#
+  Collections Components
+  Reusable UI components for collections/receivables pages
+  Using THC Design System v2.0 tokens
+#}
+
+{# ================================================================
+   Toggle Group - Horizontal tab-style toggles
+   Usage: Filter buttons (All, Cash, Check, etc.)
+   ================================================================ #}
+{% macro toggle_group(items) %}
+<div class="thc-toggle-group">
+    {% for item in items %}
+    <a href="{{ item.url }}"
+       class="thc-toggle{% if item.active %} thc-toggle--on{% else %} thc-toggle--off{% endif %}">
+        {{ item.label }}
+    </a>
+    {% endfor %}
+</div>
+{% endmacro %}
+
+
+{# ================================================================
+   Pill Toggle - Single pill-shaped toggle button
+   Usage: Show/hide filters (e.g., "Show settled")
+   ================================================================ #}
+{% macro pill_toggle(label, url, is_on=false) %}
+<a href="{{ url }}"
+   class="thc-pill-toggle{% if is_on %} thc-pill-toggle--on{% else %} thc-pill-toggle--off{% endif %}">
+    {{ label }}
+</a>
+{% endmacro %}

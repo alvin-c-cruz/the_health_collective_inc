@@ -1,0 +1,97 @@
+{#
+  Dashboard Components
+  Reusable UI components for dashboard pages
+  Using THC Design System v2.0 tokens
+#}
+
+{# ================================================================
+   Section Header - Label with optional action link
+   ================================================================ #}
+{% macro section_header(label, link_url=None, link_text=None, link_icon=None) %}
+<div class="thc-section-header">
+    <div class="thc-section-header__label">{{ label }}</div>
+    {% if link_url %}
+    <a href="{{ link_url }}" {% if link_text and 'Report' in link_text %}target="_blank"{% endif %}
+       class="thc-section-header__link">
+        {% if link_icon %}<i class="bi {{ link_icon }}"></i> {% endif %}{{ link_text }} &rarr;
+    </a>
+    {% endif %}
+</div>
+{% endmacro %}
+
+
+{# ================================================================
+   Summary Metric Card - Displays a metric with label and value
+   ================================================================ #}
+{% macro summary_metric(label, value, is_total=false) %}
+<div class="thc-summary-metric{% if is_total %} thc-summary-metric--total{% endif %}">
+    <div class="thc-summary-metric__label">{{ label }}</div>
+    <div class="thc-summary-metric__value">{{ value }}</div>
+</div>
+{% endmacro %}
+
+
+{# ================================================================
+   Sales Table Card - Card with colored header and data table
+   ================================================================ #}
+{% macro sales_table_card(title, icon, color_variant='primary') %}
+<div class="thc-sales-table-card">
+    <div class="thc-sales-table-header thc-sales-table-header--{{ color_variant }}">
+        {% if icon %}<i class="bi {{ icon }}"></i> {% endif %}{{ title }}
+    </div>
+    <table class="thc-sales-table">
+        <colgroup>
+            <col style="width: 60%;">
+            <col style="width: 40%;">
+        </colgroup>
+        <tbody>
+            {{ caller() }}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
+
+
+{# ================================================================
+   Sales Table Row - Row for sales table
+   ================================================================ #}
+{% macro sales_table_row(label, value, is_total=false) %}
+<tr{% if is_total %} class="thc-sales-table__total"{% endif %}>
+    <td{% if not is_total %} class="thc-sales-table__label"{% endif %}>{{ label }}</td>
+    <td{% if not is_total %} class="thc-sales-table__value"{% endif %}>{{ value }}</td>
+</tr>
+{% endmacro %}
+
+
+{# ================================================================
+   Action Card - Card with icon, label, value, and link
+   ================================================================ #}
+{% macro action_card(label, value, link_url, icon, link_text="View", icon_color='warning', has_warning=false) %}
+<div class="thc-action-card{% if has_warning %} thc-action-card--warn{% endif %}">
+    <div class="thc-action-card__icon thc-action-card__icon--{{ icon_color }}">
+        <i class="bi {{ icon }}"></i>
+    </div>
+    <div class="thc-action-card__body">
+        <div class="thc-action-card__label">{{ label }}</div>
+        <div class="thc-action-card__value">{{ value }}</div>
+        <a href="{{ link_url }}" class="thc-action-card__link">{{ link_text }} &rarr;</a>
+    </div>
+</div>
+{% endmacro %}
+
+
+{# ================================================================
+   Quick Action Button - Small button for quick actions
+   ================================================================ #}
+{% macro quick_action_button(label, url, icon=None, open_popup=false, popup_specs='width=1200,height=700,scrollbars=yes,resizable=yes') %}
+{% if open_popup %}
+<a href="#" class="thc-quick-btn"
+   onclick="window.open('{{ url }}','_blank','{{ popup_specs }}');return false;">
+    {% if icon %}<i class="bi {{ icon }}"></i> {% endif %}{{ label }}
+</a>
+{% else %}
+<a href="{{ url }}" class="thc-quick-btn">
+    {% if icon %}<i class="bi {{ icon }}"></i> {% endif %}{{ label }}
+</a>
+{% endif %}
+{% endmacro %}
