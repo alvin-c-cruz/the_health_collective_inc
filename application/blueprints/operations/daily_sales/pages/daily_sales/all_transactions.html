@@ -3,52 +3,84 @@
 
 {% block styles %}
 <style>
-  .thc-wrap { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+  .thc-wrap { max-width: 1200px; margin: 0 auto; padding: var(--thc-space-6) var(--thc-space-4) var(--thc-space-8); }
 
   /* ── top bar ── */
-  .thc-topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: .75rem; }
-  .thc-brand-name { font-family: var(--thc-font-heading); font-size: 1.05rem; font-weight: 600; color: var(--thc-text); margin: 0; }
-  .thc-brand-sub { font-size: .75rem; color: var(--thc-text-muted); margin: 2px 0 0; }
+  .thc-topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--thc-space-6); flex-wrap: wrap; gap: var(--thc-gap-sm); }
+  .thc-brand-name { font-family: var(--thc-font-heading); font-size: var(--thc-h3-size); font-weight: 600; color: var(--thc-text-primary); margin: 0; }
+  .thc-brand-sub { font-size: var(--thc-label-size); color: var(--thc-text-secondary); margin: var(--thc-space-1) 0 0; }
 
-  /* ── section label ── */
-  .thc-sec-lbl { font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--thc-text-muted); margin-bottom: .6rem; display: flex; align-items: center; gap: .5rem; }
-  .thc-type-header { display: flex; align-items: center; gap: .75rem; margin-top: 2rem; margin-bottom: .75rem; }
-  .thc-type-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+  /* ── category header ── */
+  .thc-category-header { margin-top: var(--thc-space-8); margin-bottom: var(--thc-space-4); padding-bottom: var(--thc-space-3); border-bottom: 2px solid var(--thc-border-strong); }
+  .thc-category-title { font-family: var(--thc-font-heading); font-size: var(--thc-h2-size); font-weight: 600; color: var(--thc-text-primary); margin: 0; }
+  .thc-category-desc { font-size: var(--thc-text-sm); color: var(--thc-text-secondary); margin: var(--thc-space-1) 0 0; }
+
+  /* ── type header (for sales sub-types) ── */
+  .thc-type-header { display: flex; align-items: center; gap: var(--thc-gap-md); margin-top: var(--thc-space-5); margin-bottom: var(--thc-space-3); }
+  .thc-type-icon { width: 36px; height: 36px; border-radius: var(--thc-radius-lg); display: flex; align-items: center; justify-content: center; font-size: var(--thc-text-lg); flex-shrink: 0; }
   .thc-type-info { flex: 1; }
-  .thc-type-name { font-family: var(--thc-font-heading); font-size: 1rem; font-weight: 600; color: var(--thc-text); margin: 0; }
-  .thc-type-count { font-size: .7rem; color: var(--thc-text-muted); margin: 2px 0 0; }
+  .thc-type-name { font-family: var(--thc-font-heading); font-size: var(--thc-text-lg); font-weight: 600; color: var(--thc-text-primary); margin: 0; }
+  .thc-type-count { font-size: var(--thc-text-xs); color: var(--thc-text-secondary); margin: 2px 0 0; }
 
   /* ── transaction list ── */
-  .thc-txn-list { margin-bottom: 1.5rem; }
-  .thc-rec-row { background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; padding: 11px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 6px; text-decoration: none; color: inherit; transition: border-color .15s, background .15s; }
-  .thc-rec-row:hover { border-color: #a0b4b8; background: var(--thc-primary-light); text-decoration: none; color: inherit; }
-  .thc-rec-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  .thc-rec-num { font-size: .68rem; color: var(--thc-text-muted); font-family: var(--thc-font-mono); min-width: 80px; }
-  .thc-rec-customer { font-size: .85rem; font-weight: 600; color: var(--thc-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 180px; flex: 1; }
-  .thc-rec-date { font-size: .7rem; color: var(--thc-text-muted); min-width: 90px; }
-  .thc-rec-amount { font-family: var(--thc-font-mono); font-size: .88rem; font-weight: 600; color: var(--thc-text); text-align: right; flex-shrink: 0; min-width: 100px; }
-  .thc-rec-badge { flex-shrink: 0; font-size: .62rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: .04em; }
-  .badge-draft     { background: #f0f0f0; color: var(--thc-text-muted); }
-  .badge-submitted { background: #fef3c7; color: #92400e; }
-  .badge-approved  { background: #d1fae5; color: #065f46; }
-  .badge-cancelled { background: #fee2e2; color: #991b1b; }
-  .thc-empty { text-align: center; padding: 1.25rem; color: var(--thc-text-muted); font-size: .8rem; background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; }
+  .thc-txn-list { margin-bottom: var(--thc-space-6); }
+  .thc-rec-row {
+    background: var(--thc-bg-surface);
+    border: 1px solid var(--thc-border-default);
+    border-radius: var(--thc-radius-lg);
+    padding: var(--thc-space-3) var(--thc-space-4);
+    display: flex;
+    align-items: center;
+    gap: var(--thc-gap-md);
+    margin-bottom: var(--thc-space-2);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color .15s, background .15s;
+  }
+  .thc-rec-row:hover { border-color: var(--thc-border-strong); background: var(--thc-bg-hover); text-decoration: none; color: inherit; }
+  .thc-rec-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--thc-gap-md); flex-wrap: wrap; }
+  .thc-rec-num { font-size: var(--thc-text-xs); color: var(--thc-text-tertiary); font-family: var(--thc-font-mono); min-width: 80px; }
+  .thc-rec-customer { font-size: var(--thc-body-size); font-weight: 600; color: var(--thc-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 180px; flex: 1; }
+  .thc-rec-date { font-size: var(--thc-text-xs); color: var(--thc-text-secondary); min-width: 90px; }
+  .thc-rec-amount { font-family: var(--thc-font-mono); font-size: var(--thc-body-size); font-weight: 600; color: var(--thc-text-primary); text-align: right; flex-shrink: 0; min-width: 100px; }
+  .thc-rec-badge { flex-shrink: 0; font-size: var(--thc-text-xs); font-weight: 600; padding: 2px 8px; border-radius: var(--thc-radius-sm); text-transform: uppercase; letter-spacing: .04em; }
+  .badge-draft     { background: var(--thc-gray-100); color: var(--thc-text-secondary); }
+  .badge-submitted { background: var(--thc-warning-100); color: var(--thc-warning-700); }
+  .badge-approved  { background: var(--thc-success-100); color: var(--thc-success-700); }
+  .badge-cancelled { background: var(--thc-danger-100); color: var(--thc-danger-700); }
+  .badge-posted    { background: var(--thc-primary-100); color: var(--thc-primary-700); }
+  .badge-pending   { background: var(--thc-warning-100); color: var(--thc-warning-700); }
+  .badge-reimbursed { background: var(--thc-success-100); color: var(--thc-success-700); }
+  .thc-empty { text-align: center; padding: var(--thc-space-5); color: var(--thc-text-tertiary); font-size: var(--thc-text-sm); background: var(--thc-bg-surface); border: 1px solid var(--thc-border-default); border-radius: var(--thc-radius-lg); }
 
-  .ic-blue   { background: var(--thc-primary-light); color: var(--thc-primary); }
-  .ic-green  { background: #e6f3f0; color: #0f6e56; }
+  .ic-blue   { background: var(--thc-primary-100); color: var(--thc-primary-600); }
+  .ic-green  { background: var(--thc-success-100); color: var(--thc-success-600); }
   .ic-purple { background: #eeedfe; color: #3c3489; }
   .ic-coral  { background: #faece7; color: #993c1d; }
-  .ic-amber  { background: #faeeda; color: #854f0b; }
+  .ic-amber  { background: var(--thc-warning-100); color: var(--thc-warning-600); }
   .ic-rose   { background: #fce7f3; color: #9d174d; }
-  .ic-slate  { background: #f1f5f9; color: #475569; }
+  .ic-slate  { background: var(--thc-gray-100); color: var(--thc-gray-600); }
 
   /* ── back button ── */
-  .back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; font-weight: 600; color: var(--thc-primary); text-decoration: none; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--thc-border); background: #fff; transition: all .15s; }
-  .back-btn:hover { background: var(--thc-primary-light); border-color: var(--thc-primary); text-decoration: none; }
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--thc-gap-sm);
+    font-size: var(--thc-text-sm);
+    font-weight: 600;
+    color: var(--thc-primary-600);
+    text-decoration: none;
+    padding: var(--thc-space-2) var(--thc-space-3);
+    border-radius: var(--thc-radius-md);
+    border: 1px solid var(--thc-border-default);
+    background: var(--thc-bg-surface);
+    transition: all .15s;
+  }
+  .back-btn:hover { background: var(--thc-primary-100); border-color: var(--thc-primary-600); text-decoration: none; }
 
   /* Responsive adjustments */
   @media (max-width: 768px) {
-    .thc-rec-info { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .thc-rec-info { flex-direction: column; align-items: flex-start; gap: var(--thc-gap-xs); }
     .thc-rec-num, .thc-rec-customer, .thc-rec-date { min-width: auto; }
   }
 </style>
@@ -61,16 +93,23 @@
   <div class="thc-topbar">
     <div>
       <p class="thc-brand-name">The Health Collective Inc.</p>
-      <p class="thc-brand-sub">All Transactions by Type</p>
+      <p class="thc-brand-sub">All Transactions</p>
     </div>
     <a href="{{ url_for('dashboard.home') }}" class="back-btn">
       <i class="bi bi-arrow-left"></i> Back to Dashboard
     </a>
   </div>
 
-  {# ── Grouped transactions by type ── #}
-  {% if grouped_transactions %}
-    {% for transaction_type, transactions in grouped_transactions.items() %}
+  {# ========================================================================== #}
+  {# CATEGORY 1: SALES - Revenue transactions #}
+  {# ========================================================================== #}
+  <div class="thc-category-header">
+    <h2 class="thc-category-title">Sales</h2>
+    <p class="thc-category-desc">Revenue transactions (Walk-in patient, Home service, APE, Dialysis, Tele Consult)</p>
+  </div>
+
+  {% if sales_by_type %}
+    {% for transaction_type, transactions in sales_by_type.items() %}
       <div class="thc-type-header">
         <div class="thc-type-icon {{ transaction_type.icon_color if transaction_type.icon_color else 'ic-slate' }}">
           <i class="bi {{ transaction_type.icon if transaction_type.icon else 'bi-tag' }}"></i>
@@ -87,8 +126,7 @@
           {% for d in t.transaction_details %}{% set net.val = net.val + d.amount - d.discount %}{% endfor %}
           {% set net.val = net.val - (t.discount or 0) %}
 
-          <a href="{{ url_for('daily_sales.view_transaction', transaction_id=t.id) }}"
-             class="thc-rec-row">
+          <a href="{{ url_for('daily_sales.view_transaction', transaction_id=t.id) }}" class="thc-rec-row">
             <div class="thc-rec-info">
               <div class="thc-rec-num"># {{ t.record_number }}</div>
               <div class="thc-rec-customer">{{ t.customer.customer_name if t.customer else '—' }}</div>
@@ -111,9 +149,239 @@
       </div>
     {% endfor %}
   {% else %}
-    <div class="thc-empty">
-      No transactions found.
+    <div class="thc-empty">No sales transactions found.</div>
+  {% endif %}
+
+  {# ========================================================================== #}
+  {# CATEGORY 2: DEPOSITS - Bank deposit transactions #}
+  {# ========================================================================== #}
+  <div class="thc-category-header">
+    <h2 class="thc-category-title">Deposits</h2>
+    <p class="thc-category-desc">Bank deposit transactions</p>
+  </div>
+
+  {% if deposits %}
+    <div class="thc-txn-list">
+      {% for d in deposits %}
+        <a href="{{ url_for('daily_sales.view_deposit', deposit_id=d.id) }}" class="thc-rec-row">
+          <div class="thc-rec-info">
+            <div class="thc-rec-num"># {{ d.reference_number or d.id }}</div>
+            <div class="thc-rec-customer">{{ d.bank_account.account_name if d.bank_account else '—' }}</div>
+            <div class="thc-rec-date">{{ d.record_date }}</div>
+          </div>
+          <div class="thc-rec-amount">₱{{ "{:,.2f}".format(d.net_bank_credit) }}</div>
+          <div>
+            {% if d.is_cancelled %}
+              <span class="thc-rec-badge badge-cancelled">Cancelled</span>
+            {% elif d.is_posted %}
+              <span class="thc-rec-badge badge-posted">Posted</span>
+            {% elif d.is_submitted %}
+              <span class="thc-rec-badge badge-submitted">Submitted</span>
+            {% else %}
+              <span class="thc-rec-badge badge-draft">Draft</span>
+            {% endif %}
+          </div>
+        </a>
+      {% endfor %}
     </div>
+  {% else %}
+    <div class="thc-empty">No deposit transactions found.</div>
+  {% endif %}
+
+  {# ========================================================================== #}
+  {# CATEGORY 3: COLLECTIONS - Collection transactions from customers #}
+  {# ========================================================================== #}
+  <div class="thc-category-header">
+    <h2 class="thc-category-title">Collections</h2>
+    <p class="thc-category-desc">Collection transactions from customers</p>
+  </div>
+
+  {% if collections %}
+    <div class="thc-txn-list">
+      {% for c in collections %}
+        <a href="{{ url_for('collections.view_collection', collection_id=c.id) }}" class="thc-rec-row">
+          <div class="thc-rec-info">
+            <div class="thc-rec-num"># {{ c.reference or c.id }}</div>
+            <div class="thc-rec-customer">{{ c.tender.tender_name if c.tender else '—' }}</div>
+            <div class="thc-rec-date">{{ c.collection_date }}</div>
+          </div>
+          <div class="thc-rec-amount">₱{{ "{:,.2f}".format(c.net_amount) }}</div>
+          <div>
+            {% if c.status == 'cancelled' %}
+              <span class="thc-rec-badge badge-cancelled">Cancelled</span>
+            {% elif c.status == 'posted' %}
+              <span class="thc-rec-badge badge-posted">Posted</span>
+            {% elif c.status == 'submitted' %}
+              <span class="thc-rec-badge badge-submitted">Submitted</span>
+            {% else %}
+              <span class="thc-rec-badge badge-draft">Draft</span>
+            {% endif %}
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="thc-empty">No collection transactions found.</div>
+  {% endif %}
+
+  {# ========================================================================== #}
+  {# CATEGORY 4: ACCOUNTABILITIES - Accountability-related transactions #}
+  {# ========================================================================== #}
+  <div class="thc-category-header">
+    <h2 class="thc-category-title">Accountabilities</h2>
+    <p class="thc-category-desc">Accountability-related transactions (Fund received and disbursed)</p>
+  </div>
+
+  {% if accountabilities_received or accountabilities_disbursed %}
+    {# Fund Received #}
+    {% if accountabilities_received %}
+      <div class="thc-type-header">
+        <div class="thc-type-icon ic-green">
+          <i class="bi bi-arrow-down-circle"></i>
+        </div>
+        <div class="thc-type-info">
+          <p class="thc-type-name">Fund Received</p>
+          <p class="thc-type-count">{{ accountabilities_received|length }} transaction{{ 's' if accountabilities_received|length != 1 else '' }}</p>
+        </div>
+      </div>
+
+      <div class="thc-txn-list">
+        {% for fr in accountabilities_received %}
+          <div class="thc-rec-row">
+            <div class="thc-rec-info">
+              <div class="thc-rec-num"># {{ fr.reference_number or fr.id }}</div>
+              <div class="thc-rec-customer">{{ fr.fund_category.name if fr.fund_category else '—' }}</div>
+              <div class="thc-rec-date">{{ fr.record_date }}</div>
+            </div>
+            <div class="thc-rec-amount">₱{{ "{:,.2f}".format(fr.amount) }}</div>
+            <div>
+              {% if fr.status == 'cancelled' %}
+                <span class="thc-rec-badge badge-cancelled">Cancelled</span>
+              {% elif fr.status == 'posted' %}
+                <span class="thc-rec-badge badge-posted">Posted</span>
+              {% elif fr.status == 'submitted' %}
+                <span class="thc-rec-badge badge-submitted">Submitted</span>
+              {% else %}
+                <span class="thc-rec-badge badge-draft">Draft</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {# Fund Disbursed #}
+    {% if accountabilities_disbursed %}
+      <div class="thc-type-header">
+        <div class="thc-type-icon ic-rose">
+          <i class="bi bi-arrow-up-circle"></i>
+        </div>
+        <div class="thc-type-info">
+          <p class="thc-type-name">Fund Disbursed</p>
+          <p class="thc-type-count">{{ accountabilities_disbursed|length }} transaction{{ 's' if accountabilities_disbursed|length != 1 else '' }}</p>
+        </div>
+      </div>
+
+      <div class="thc-txn-list">
+        {% for fd in accountabilities_disbursed %}
+          <div class="thc-rec-row">
+            <div class="thc-rec-info">
+              <div class="thc-rec-num"># {{ fd.reference_number or fd.id }}</div>
+              <div class="thc-rec-customer">{{ fd.fund_category.name if fd.fund_category else '—' }} - {{ fd.recipient_name }}</div>
+              <div class="thc-rec-date">{{ fd.record_date }}</div>
+            </div>
+            <div class="thc-rec-amount">₱{{ "{:,.2f}".format(fd.amount) }}</div>
+            <div>
+              {% if fd.status == 'cancelled' %}
+                <span class="thc-rec-badge badge-cancelled">Cancelled</span>
+              {% elif fd.status == 'posted' %}
+                <span class="thc-rec-badge badge-posted">Posted</span>
+              {% elif fd.status == 'submitted' %}
+                <span class="thc-rec-badge badge-submitted">Submitted</span>
+              {% else %}
+                <span class="thc-rec-badge badge-draft">Draft</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="thc-empty">No accountability transactions found.</div>
+  {% endif %}
+
+  {# ========================================================================== #}
+  {# CATEGORY 5: PETTY CASH EXPENSES - Expense transactions from petty cash #}
+  {# ========================================================================== #}
+  <div class="thc-category-header">
+    <h2 class="thc-category-title">Petty Cash Expenses</h2>
+    <p class="thc-category-desc">Expense transactions from petty cash</p>
+  </div>
+
+  {% if petty_cash_expenses %}
+    <div class="thc-txn-list">
+      {% for pcv in petty_cash_expenses %}
+        <div class="thc-rec-row">
+          <div class="thc-rec-info">
+            <div class="thc-rec-num"># {{ pcv.pcv_number }}</div>
+            <div class="thc-rec-customer">{{ pcv.payee.name if pcv.payee else '—' }}</div>
+            <div class="thc-rec-date">{{ pcv.record_date }}</div>
+          </div>
+          <div class="thc-rec-amount">₱{{ "{:,.2f}".format(pcv.amount) }}</div>
+          <div>
+            {% if pcv.is_cancelled %}
+              <span class="thc-rec-badge badge-cancelled">Cancelled</span>
+            {% elif pcv.is_reimbursed %}
+              <span class="thc-rec-badge badge-reimbursed">Reimbursed</span>
+            {% elif pcv.is_for_reimbursement %}
+              <span class="thc-rec-badge badge-pending">For Reimbursement</span>
+            {% elif pcv.is_posted %}
+              <span class="thc-rec-badge badge-posted">Posted</span>
+            {% elif pcv.is_submitted %}
+              <span class="thc-rec-badge badge-submitted">Submitted</span>
+            {% else %}
+              <span class="thc-rec-badge badge-draft">Draft</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="thc-empty">No petty cash expense transactions found.</div>
+  {% endif %}
+
+  {# ========================================================================== #}
+  {# CATEGORY 6: PETTY CASH REIMBURSEMENTS - Reimbursement transactions #}
+  {# ========================================================================== #}
+  <div class="thc-category-header">
+    <h2 class="thc-category-title">Petty Cash Reimbursements</h2>
+    <p class="thc-category-desc">Reimbursement transactions to petty cash</p>
+  </div>
+
+  {% if petty_cash_reimbursements %}
+    <div class="thc-txn-list">
+      {% for rr in petty_cash_reimbursements %}
+        <div class="thc-rec-row">
+          <div class="thc-rec-info">
+            <div class="thc-rec-num"># {{ rr.report_number }}</div>
+            <div class="thc-rec-customer">{{ rr.period_start }} to {{ rr.period_end }}</div>
+            <div class="thc-rec-date">{{ rr.created_date }}</div>
+          </div>
+          <div class="thc-rec-amount">₱{{ "{:,.2f}".format(rr.total_amount) }}</div>
+          <div>
+            {% if rr.is_reimbursed %}
+              <span class="thc-rec-badge badge-reimbursed">Reimbursed</span>
+            {% elif rr.is_submitted %}
+              <span class="thc-rec-badge badge-submitted">Submitted</span>
+            {% else %}
+              <span class="thc-rec-badge badge-pending">Pending</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="thc-empty">No petty cash reimbursement transactions found.</div>
   {% endif %}
 
 </div>

@@ -306,25 +306,45 @@ def drafts():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def all_transactions():
-    """Show all transactions grouped by transaction type"""
+    """Show all transactions grouped by category"""
     from sqlalchemy import func
+    from ..collections.models import Collection
 
-    # Get all transaction types
+    # Category 1: SALES - Revenue transactions
     transaction_types = TransactionType.query.filter_by(active=True).order_by(TransactionType.sort_order).all()
-
-    # Build grouped data: {transaction_type: [transactions]}
-    grouped_transactions = {}
+    sales_by_type = {}
     for tt in transaction_types:
         transactions = Transaction.query.filter(
             Transaction.transaction_type_id == tt.id
         ).order_by(Transaction.record_date.desc(), Transaction.id.desc()).all()
+        if transactions:
+            sales_by_type[tt] = transactions
 
-        if transactions:  # Only include types that have transactions
-            grouped_transactions[tt] = transactions
+    # Category 2: DEPOSITS - Bank deposit transactions
+    deposits = Deposit.query.order_by(Deposit.record_date.desc(), Deposit.id.desc()).all()
+
+    # Category 3: COLLECTIONS - Collection transactions from customers
+    collections = Collection.query.order_by(Collection.collection_date.desc(), Collection.id.desc()).all()
+
+    # Category 4: ACCOUNTABILITIES - Fund received and disbursed
+    accountabilities_received = FundReceived.query.order_by(FundReceived.record_date.desc(), FundReceived.id.desc()).all()
+    accountabilities_disbursed = FundDisbursed.query.order_by(FundDisbursed.record_date.desc(), FundDisbursed.id.desc()).all()
+
+    # Category 5: PETTY CASH EXPENSES - Expense transactions from petty cash
+    petty_cash_expenses = PettyCashVoucher.query.order_by(PettyCashVoucher.record_date.desc(), PettyCashVoucher.id.desc()).all()
+
+    # Category 6: PETTY CASH REIMBURSEMENTS - Reimbursement transactions
+    petty_cash_reimbursements = ReimbursementReport.query.order_by(ReimbursementReport.created_date.desc(), ReimbursementReport.id.desc()).all()
 
     context = {
         "app_label": app_label,
-        "grouped_transactions": grouped_transactions,
+        "sales_by_type": sales_by_type,
+        "deposits": deposits,
+        "collections": collections,
+        "accountabilities_received": accountabilities_received,
+        "accountabilities_disbursed": accountabilities_disbursed,
+        "petty_cash_expenses": petty_cash_expenses,
+        "petty_cash_reimbursements": petty_cash_reimbursements,
         "page_title": "All Transactions",
     }
     return render_template("daily_sales/all_transactions.html", **context)
