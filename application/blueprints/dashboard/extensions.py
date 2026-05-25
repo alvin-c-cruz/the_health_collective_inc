@@ -13,6 +13,7 @@ from ..register.tender.models import Tender
 def get_dashboard_stats(today: date) -> dict:
     today_str = today.strftime("%Y-%m-%d")
     month_start_str = today.replace(day=1).strftime("%Y-%m-%d")
+    year_start_str = today.replace(month=1, day=1).strftime("%Y-%m-%d")
 
     active = (
         (Transaction.cancelled == None) |
@@ -56,6 +57,27 @@ def get_dashboard_stats(today: date) -> dict:
     mtd_discounts = (
         db.session.query(func.sum(Transaction.discount))
         .filter(Transaction.record_date >= month_start_str,
+                Transaction.record_date <= today_str, active)
+        .scalar() or 0.0
+    )
+
+    # Year-to-date
+    ytd_count = (
+        db.session.query(func.count(Transaction.id))
+        .filter(Transaction.record_date >= year_start_str,
+                Transaction.record_date <= today_str, active)
+        .scalar() or 0
+    )
+    ytd_sales = (
+        db.session.query(func.sum(TransactionDetail.amount))
+        .join(Transaction)
+        .filter(Transaction.record_date >= year_start_str,
+                Transaction.record_date <= today_str, active)
+        .scalar() or 0.0
+    )
+    ytd_discounts = (
+        db.session.query(func.sum(Transaction.discount))
+        .filter(Transaction.record_date >= year_start_str,
                 Transaction.record_date <= today_str, active)
         .scalar() or 0.0
     )
@@ -223,6 +245,8 @@ def get_dashboard_stats(today: date) -> dict:
         "today_net_sales": round(today_sales - today_discounts, 2),
         "mtd_count": mtd_count,
         "mtd_net_sales": round(mtd_sales - mtd_discounts, 2),
+        "ytd_count": ytd_count,
+        "ytd_net_sales": round(ytd_sales - ytd_discounts, 2),
         "drafts_count": drafts_count,
         "pending_approval_count": pending_approval_count,
         "pending_fund_cancellations": pending_fund_cancellations,
@@ -233,4 +257,5 @@ def get_dashboard_stats(today: date) -> dict:
         "product_types": product_types,
         "product_type_totals": {k: round(v, 2) for k, v in product_type_totals.items()},
         "month_start": today.replace(day=1),
+        "year_start": today.replace(month=1, day=1),
     }

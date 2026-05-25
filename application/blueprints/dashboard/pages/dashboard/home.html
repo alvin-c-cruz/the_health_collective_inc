@@ -24,21 +24,60 @@
         </div>
     </div>
 
-    {# ── Sales Summary (Month to Date) ── #}
+    {# ── Sales Overview ── #}
     <div class="mb-6">
         {{ section_header(
-            'Sales Summary — ' ~ month_start.strftime("%B %d") ~ ' to ' ~ today.strftime("%B %d, %Y"),
+            'Sales Overview',
             link_url=url_for('daily_sales.sales_summary_report'),
             link_text='Full Report',
             link_icon='bi-bar-chart-line'
         ) }}
+
+        {# Sales Period Metrics - MTD and YTD side by side #}
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div style="background: var(--thc-bg-surface); border: 1px solid var(--thc-border-default); border-radius: var(--thc-radius-xl); padding: var(--thc-space-5); box-shadow: var(--thc-shadow-sm);">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="mb-0" style="color: var(--thc-text-secondary); font-size: var(--thc-label-size); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Month to Date</h6>
+                        <span style="color: var(--thc-text-tertiary); font-size: var(--thc-text-sm);">{{ month_start.strftime("%b %d") }} – {{ today.strftime("%b %d, %Y") }}</span>
+                    </div>
+                    <div style="font-family: var(--thc-font-mono); font-size: var(--thc-text-3xl); font-weight: 700; color: var(--thc-primary-600);">
+                        ₱{{ "{:,.2f}".format(mtd_net_sales) }}
+                    </div>
+                    <div style="color: var(--thc-text-tertiary); font-size: var(--thc-text-sm); margin-top: var(--thc-space-2);">
+                        {{ mtd_count }} transaction{{ 's' if mtd_count != 1 else '' }}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div style="background: var(--thc-bg-surface); border: 1px solid var(--thc-border-default); border-radius: var(--thc-radius-xl); padding: var(--thc-space-5); box-shadow: var(--thc-shadow-sm);">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="mb-0" style="color: var(--thc-text-secondary); font-size: var(--thc-label-size); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Year to Date</h6>
+                        <span style="color: var(--thc-text-tertiary); font-size: var(--thc-text-sm);">{{ year_start.strftime("%b %d") }} – {{ today.strftime("%b %d, %Y") }}</span>
+                    </div>
+                    <div style="font-family: var(--thc-font-mono); font-size: var(--thc-text-3xl); font-weight: 700; color: var(--thc-success-600);">
+                        ₱{{ "{:,.2f}".format(ytd_net_sales) }}
+                    </div>
+                    <div style="color: var(--thc-text-tertiary); font-size: var(--thc-text-sm); margin-top: var(--thc-space-2);">
+                        {{ ytd_count }} transaction{{ 's' if ytd_count != 1 else '' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Product Type Breakdown (Month to Date) #}
+        <div class="mb-3">
+            <h6 style="color: var(--thc-text-secondary); font-size: var(--thc-label-size); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--thc-space-3);">
+                Sales by Product Type (MTD)
+            </h6>
+        </div>
 
         {# Summary Cards #}
         <div class="thc-summary-grid mb-4" style="grid-template-columns: repeat({{ product_types|length + 1 }}, 1fr);">
             {% for pt in product_types %}
             {{ summary_metric(pt.product_type_name, '₱' ~ "{:,.2f}".format(product_type_totals.get(pt.product_type_name, 0))) }}
             {% endfor %}
-            {{ summary_metric('Total Sales', '₱' ~ "{:,.2f}".format(mtd_net_sales), is_total=true) }}
+            {{ summary_metric('Total', '₱' ~ "{:,.2f}".format(mtd_net_sales), is_total=true) }}
         </div>
 
         {# Sales Tables - Dynamic based on Product Types #}
