@@ -39,6 +39,18 @@
 /* ================================================================
    Summary Metric Cards
    ================================================================ */
+.thc-summary-grid {
+    display: grid;
+    gap: var(--thc-gap-md);  /* 12px */
+    /* grid-template-columns set inline dynamically based on product type count */
+}
+
+@media (max-width: 768px) {
+    .thc-summary-grid {
+        grid-template-columns: 1fr !important;  /* Stack vertically on mobile */
+    }
+}
+
 .thc-summary-metric {
     background: var(--thc-bg-surface);         /* White */
     border: 1px solid var(--thc-border-default);  /* Gray-200 */
@@ -80,6 +92,22 @@
 @media (max-width: 768px) {
     .thc-summary-metric__value {
         font-size: var(--thc-text-md);  /* 18px on mobile */
+    }
+}
+
+
+/* ================================================================
+   Product Type Grid
+   ================================================================ */
+.thc-product-grid {
+    display: grid;
+    gap: var(--thc-gap-md);  /* 12px */
+    /* grid-template-columns set inline dynamically based on product type count */
+}
+
+@media (max-width: 768px) {
+    .thc-product-grid {
+        grid-template-columns: 1fr !important;  /* Stack vertically on mobile */
     }
 }
 
