@@ -12,9 +12,18 @@
 
     <div class="thc-page-header">
         <h4>Dashboard</h4>
-        <span class="thc-text-sm text-secondary">
-            {{ today.strftime("%B %d, %Y") }}
-        </span>
+        <div class="d-flex align-items-center" style="gap: var(--thc-gap-md);">
+            <span class="thc-text-sm text-secondary">As of:</span>
+            <form method="GET" action="{{ url_for('dashboard.home') }}" class="d-flex align-items-center" style="gap: var(--thc-gap-sm);">
+                <input type="date"
+                       name="as_of_date"
+                       id="as_of_date"
+                       value="{{ today.strftime('%Y-%m-%d') }}"
+                       class="form-control form-control-sm"
+                       style="width: auto; font-size: var(--thc-text-sm);"
+                       onchange="this.form.submit()">
+            </form>
+        </div>
         <div class="ms-auto d-flex" style="gap: var(--thc-gap-sm); flex-wrap: wrap;">
             {% if "Daily Sales" in current_user.user_roles %}
             {{ quick_action_button('Daily Sales', url_for('daily_sales.home'), icon='bi-journal-text') }}
