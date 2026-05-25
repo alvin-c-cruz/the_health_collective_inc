@@ -101,12 +101,14 @@
 
     <div class="thc-date-nav__input-wrap">
         <div class="thc-date-nav__display{% if is_today %} thc-date-nav__display--today{% endif %}"
-             title="Click to pick a date">
+             title="Click to pick a date"
+             onclick="this.nextElementSibling.showPicker ? this.nextElementSibling.showPicker() : this.nextElementSibling.click()">
             <i class="bi bi-calendar3"></i>
             {% if is_today %}Today — {% endif %}{{ selected_date.strftime("%b %d, %Y") }}
             <i class="bi bi-pencil-fill" style="font-size:var(--thc-text-xs);opacity:0.5;margin-left:4px;"></i>
         </div>
         <input type="date" class="thc-date-nav__hidden"
+               id="date-picker-input"
                value="{{ selected_date.isoformat() }}"
                max="{{ max_date.isoformat() }}"
                onchange="{{ on_change_js }}">

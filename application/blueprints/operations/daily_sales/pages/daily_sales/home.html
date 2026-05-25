@@ -62,7 +62,7 @@
   <div class="thc-txn-grid">
     {% for txn_type in transaction_types %}
     <div class="thc-txn-card{% if loop.first %} thc-txn-card--featured{% endif %}"
-         onclick="window.location.href='{{ url_for('daily_sales.new_transaction', type_id=txn_type.id) }}'">
+         onclick="window.location.href='{{ url_for('daily_sales.new_transaction', type_id=txn_type.id, date=selected_date.isoformat()) }}'">
       <div class="thc-txn-card__icon thc-txn-card__icon--{{ txn_type.icon_color.replace('ic-', '') }}">
         <i class="bi {{ txn_type.icon }}"></i>
       </div>
@@ -72,7 +72,7 @@
         <div class="thc-badges">
           {% for t in txn_type_tenders.get(txn_type.type_code, []) %}
           {% if t.symbol or t.tender_name %}
-          <a href="{{ url_for('daily_sales.new_transaction', type_id=txn_type.id, prefill_tender_id=t.id) }}"
+          <a href="{{ url_for('daily_sales.new_transaction', type_id=txn_type.id, prefill_tender_id=t.id, date=selected_date.isoformat()) }}"
              class="thc-badge thc-badge--{{ txn_type.badge_color.replace('thc-badge-', '') }}"
              onclick="event.stopPropagation()">{{ t.symbol or t.tender_name }}</a>
           {% endif %}
@@ -95,18 +95,18 @@
   <div class="thc-sec-lbl">Cash management</div>
   <div class="thc-cash-grid">
     {{ cash_card('Deposits', 'Log cash deposited to bank', 'bi-bank2', 'blue',
-                 url_for('daily_sales.record_deposit')) }}
+                 url_for('daily_sales.record_deposit', date=selected_date.isoformat())) }}
 
     {{ cash_card('Accountabilities', 'Funds received and going out', 'bi-wallet2', 'amber',
-                 url_for('daily_sales.accountabilities')) }}
+                 url_for('daily_sales.accountabilities', date=selected_date.isoformat())) }}
 
     {% if "Collections" in current_user.user_roles %}
     {{ cash_card('Collections', 'Receivables and collections', 'bi-cash-coin', 'green',
-                 url_for('collections.new_collection')) }}
+                 url_for('collections.new_collection', date=selected_date.isoformat())) }}
     {% endif %}
 
     {{ cash_card('Petty Cash Management', 'Manage petty cash expenses', 'bi-wallet', 'purple',
-                 url_for('daily_sales.petty_cash_management')) }}
+                 url_for('daily_sales.petty_cash_management', date=selected_date.isoformat())) }}
 
     {% if "APE Batch" in current_user.user_roles %}
     {{ cash_card('APE Batches', 'Annual physical exam batches', 'bi-building', 'orange',

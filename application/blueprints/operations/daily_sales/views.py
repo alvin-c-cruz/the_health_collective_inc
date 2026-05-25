@@ -322,7 +322,11 @@ def new_transaction():
 
     form = Form()
     form.user_prepare_id = current_user.id
-    form.record_date = str(ph_today())
+
+    # Use date from query parameter (from daily sales home page) or default to today
+    default_date = request.args.get('date', str(ph_today()))
+    form.record_date = default_date
+
     form.record_number = _generate_record_number()
     form.transaction_type_id = transaction_type.id if transaction_type else None
     if ape_batch_id_arg:
