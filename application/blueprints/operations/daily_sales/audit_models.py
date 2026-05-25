@@ -51,8 +51,8 @@ class AuditLog(db.Model):
     # IP address (optional, for security)
     ip_address = db.Column(db.String(45))
 
-    # Additional metadata
-    metadata = db.Column(db.Text)  # JSON for extra context
+    # Additional metadata (column name 'metadata' in DB, but use 'extra_metadata' in Python to avoid SQLAlchemy reserved name)
+    extra_metadata = db.Column('metadata', db.Text)  # JSON for extra context
 
     @property
     def old_values(self):
@@ -87,12 +87,12 @@ class AuditLog(db.Model):
     @property
     def metadata_dict(self):
         """Deserialize metadata from JSON"""
-        return json.loads(self.metadata) if self.metadata else {}
+        return json.loads(self.extra_metadata) if self.extra_metadata else {}
 
     @metadata_dict.setter
     def metadata_dict(self, val):
         """Serialize metadata to JSON"""
-        self.metadata = json.dumps(val) if val else None
+        self.extra_metadata = json.dumps(val) if val else None
 
     def __repr__(self):
         return f'<AuditLog {self.action} {self.record_type}#{self.record_id} by user#{self.user_id} at {self.created_at}>'
