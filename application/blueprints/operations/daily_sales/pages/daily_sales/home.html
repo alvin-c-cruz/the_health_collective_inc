@@ -55,9 +55,9 @@
     {{ metric_card('Cash on hand', '₱' ~ "{:,.2f}".format(summary.cash_on_hand)) }}
   </div>
 
-  {# ── New transaction — only shown for today, and only for staff/admin/superuser ── #}
+  {# ── New transaction — shown for all dates, only for staff/admin/superuser ── #}
   {% set can_transact = current_user.superuser or current_user.admin or current_user.staff %}
-  {% if is_today and can_transact  %}
+  {% if can_transact %}
   <div class="thc-sec-lbl">New transaction</div>
   <div class="thc-txn-grid">
     {% for txn_type in transaction_types %}
