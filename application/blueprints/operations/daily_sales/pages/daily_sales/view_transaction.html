@@ -83,7 +83,7 @@
 
   {# ── Header ── #}
   <div class="txn-page-header">
-    <a href="{{ url_for('daily_sales.home') }}" style="color:var(--thc-text-muted);text-decoration:none;font-size:0.85rem;">
+    <a href="{{ url_for('daily_sales.home', date=record.record_date) }}" style="color:var(--thc-text-muted);text-decoration:none;font-size:0.85rem;">
       ← Daily Sales
     </a>
     <h4>Transaction</h4>
