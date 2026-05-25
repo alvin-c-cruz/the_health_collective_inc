@@ -15,6 +15,7 @@ def get_dashboard_stats(today: date) -> dict:
     month_start_str = today.replace(day=1).strftime("%Y-%m-%d")
     year_start_str = today.replace(month=1, day=1).strftime("%Y-%m-%d")
 
+    # Only include submitted (not draft) and not cancelled transactions
     active = (
         (Transaction.cancelled == None) |
         (Transaction.cancelled == '') |
@@ -22,21 +23,26 @@ def get_dashboard_stats(today: date) -> dict:
         (Transaction.cancelled == False)
     )
 
+    submitted = (
+        (Transaction.submitted != None) &
+        (Transaction.submitted != '')
+    )
+
     # Today
     today_count = (
         db.session.query(func.count(Transaction.id))
-        .filter(Transaction.record_date == today_str, active)
+        .filter(Transaction.record_date == today_str, active, submitted)
         .scalar() or 0
     )
     today_sales = (
         db.session.query(func.sum(TransactionDetail.amount))
         .join(Transaction)
-        .filter(Transaction.record_date == today_str, active)
+        .filter(Transaction.record_date == today_str, active, submitted)
         .scalar() or 0.0
     )
     today_discounts = (
         db.session.query(func.sum(Transaction.discount))
-        .filter(Transaction.record_date == today_str, active)
+        .filter(Transaction.record_date == today_str, active, submitted)
         .scalar() or 0.0
     )
 
@@ -44,20 +50,20 @@ def get_dashboard_stats(today: date) -> dict:
     mtd_count = (
         db.session.query(func.count(Transaction.id))
         .filter(Transaction.record_date >= month_start_str,
-                Transaction.record_date <= today_str, active)
+                Transaction.record_date <= today_str, active, submitted)
         .scalar() or 0
     )
     mtd_sales = (
         db.session.query(func.sum(TransactionDetail.amount))
         .join(Transaction)
         .filter(Transaction.record_date >= month_start_str,
-                Transaction.record_date <= today_str, active)
+                Transaction.record_date <= today_str, active, submitted)
         .scalar() or 0.0
     )
     mtd_discounts = (
         db.session.query(func.sum(Transaction.discount))
         .filter(Transaction.record_date >= month_start_str,
-                Transaction.record_date <= today_str, active)
+                Transaction.record_date <= today_str, active, submitted)
         .scalar() or 0.0
     )
 
@@ -65,20 +71,20 @@ def get_dashboard_stats(today: date) -> dict:
     ytd_count = (
         db.session.query(func.count(Transaction.id))
         .filter(Transaction.record_date >= year_start_str,
-                Transaction.record_date <= today_str, active)
+                Transaction.record_date <= today_str, active, submitted)
         .scalar() or 0
     )
     ytd_sales = (
         db.session.query(func.sum(TransactionDetail.amount))
         .join(Transaction)
         .filter(Transaction.record_date >= year_start_str,
-                Transaction.record_date <= today_str, active)
+                Transaction.record_date <= today_str, active, submitted)
         .scalar() or 0.0
     )
     ytd_discounts = (
         db.session.query(func.sum(Transaction.discount))
         .filter(Transaction.record_date >= year_start_str,
-                Transaction.record_date <= today_str, active)
+                Transaction.record_date <= today_str, active, submitted)
         .scalar() or 0.0
     )
 
@@ -140,11 +146,11 @@ def get_dashboard_stats(today: date) -> dict:
         for tt in transaction_types:
             sales_summary[pt.product_type_name][tt.type_code] = {'total': 0, 'tenders': {}}
 
-    # Query MTD transactions
+    # Query MTD transactions (only submitted, not drafts)
     mtd_transactions = Transaction.query.filter(
         Transaction.record_date >= month_start_str,
         Transaction.record_date <= today_str,
-        Transaction.submitted.isnot(None),
+        submitted,
         active
     ).all()
 
@@ -207,14 +213,14 @@ def get_dashboard_stats(today: date) -> dict:
         ).all()
         receivable_tender_ids = [t.id for t in receivable_tenders]
 
-        # Get all transaction tenders for receivable types from approved transactions
+        # Get all transaction tenders for receivable types from submitted transactions
         if receivable_tender_ids:
             receivable_transaction_tenders = (
                 db.session.query(TransactionTender)
                 .join(Transaction)
                 .filter(
                     TransactionTender.tender_id.in_(receivable_tender_ids),
-                    Transaction.submitted.isnot(None),
+                    submitted,
                     active
                 )
                 .all()
