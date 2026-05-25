@@ -413,6 +413,10 @@ def edit_transaction(transaction_id):
     if 'drafts' in return_url.lower() or '/transaction/new' in return_url.lower() or '/edit' in return_url.lower():
         return_url = url_for('daily_sales.home')
 
+    # If return_url is daily sales home without date parameter, add the record date
+    if '/daily_sales/' in return_url and '?date=' not in return_url and 'date=' not in return_url:
+        return_url = url_for('daily_sales.home', date=record.record_date)
+
     if record.submitted or record.cancelled:
         flash('This transaction is locked and cannot be edited.', 'warning')
         return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
