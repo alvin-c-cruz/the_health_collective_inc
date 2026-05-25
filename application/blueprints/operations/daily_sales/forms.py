@@ -399,7 +399,9 @@ class Form:
                 log_update('transaction', record, old_snapshot, notes='Transaction updated')
             db.session.commit()
         except Exception as e:
-            # Don't fail the transaction save if audit logging fails
+            # Don't fail the transaction save if audit logging fails, but warn user
+            from flask import flash
+            flash(f'Transaction saved, but audit logging failed: {str(e)}', 'warning')
             print(f"Audit logging failed: {e}")
 
     # ------------------------------------------------------------------ #
@@ -417,6 +419,8 @@ class Form:
             log_status_change('transaction', record, 'submitted', notes='Transaction submitted for approval')
             db.session.commit()
         except Exception as e:
+            from flask import flash
+            flash(f'Transaction submitted, but audit logging failed: {str(e)}', 'warning')
             print(f"Audit logging failed: {e}")
 
     def _cancel(self):

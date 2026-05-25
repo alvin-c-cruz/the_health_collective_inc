@@ -608,7 +608,10 @@ def request_cancellation(transaction_id):
         log_status_change('transaction', record, 'cancellation_requested', reason=reason)
         db.session.commit()
     except Exception as e:
-        print(f"Audit logging failed: {e}")
+        db.session.rollback()
+        flash(f'Cancellation requested, but audit logging failed: {str(e)}', 'warning')
+        print(f"Audit logging failed for transaction {transaction_id}: {e}")
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
 
     flash('Cancellation request submitted. Waiting for admin approval.', 'success')
     return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
@@ -652,7 +655,10 @@ def approve_cancellation(transaction_id):
         log_status_change('transaction', record, 'cancellation_approved', reason=record.cancellation_reason)
         db.session.commit()
     except Exception as e:
-        print(f"Audit logging failed: {e}")
+        db.session.rollback()
+        flash(f'Cancellation approved, but audit logging failed: {str(e)}', 'warning')
+        print(f"Audit logging failed for transaction {transaction_id}: {e}")
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
 
     flash('Cancellation approved. Transaction has been cancelled.', 'success')
     return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
@@ -692,7 +698,10 @@ def reject_cancellation(transaction_id):
         log_status_change('transaction', record, 'cancellation_rejected', reason=reason_text)
         db.session.commit()
     except Exception as e:
-        print(f"Audit logging failed: {e}")
+        db.session.rollback()
+        flash(f'Cancellation rejected, but audit logging failed: {str(e)}', 'warning')
+        print(f"Audit logging failed for transaction {transaction_id}: {e}")
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
 
     flash('Cancellation request rejected.', 'success')
     return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
@@ -995,7 +1004,10 @@ def disapprove_transaction(transaction_id):
         log_status_change('transaction', record, 'returned_to_draft', reason=reason)
         db.session.commit()
     except Exception as e:
-        print(f"Audit logging failed: {e}")
+        db.session.rollback()
+        flash(f'Transaction returned to draft, but audit logging failed: {str(e)}', 'warning')
+        print(f"Audit logging failed for transaction {transaction_id}: {e}")
+        return redirect(url_for(f'{app_name}.pending_approval'))
 
     # Notification via flash message (staff will see when they next login/view their transactions)
     flash(
