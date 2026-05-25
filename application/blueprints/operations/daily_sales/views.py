@@ -299,6 +299,38 @@ def drafts():
 
 
 # ---------------------------------------------------------------------------
+# All Transactions - Show all transactions grouped by type
+# ---------------------------------------------------------------------------
+
+@bp.route("/all_transactions", methods=["GET"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def all_transactions():
+    """Show all transactions grouped by transaction type"""
+    from sqlalchemy import func
+
+    # Get all transaction types
+    transaction_types = TransactionType.query.filter_by(active=True).order_by(TransactionType.sort_order).all()
+
+    # Build grouped data: {transaction_type: [transactions]}
+    grouped_transactions = {}
+    for tt in transaction_types:
+        transactions = Transaction.query.filter(
+            Transaction.transaction_type_id == tt.id
+        ).order_by(Transaction.record_date.desc(), Transaction.id.desc()).all()
+
+        if transactions:  # Only include types that have transactions
+            grouped_transactions[tt] = transactions
+
+    context = {
+        "app_label": app_label,
+        "grouped_transactions": grouped_transactions,
+        "page_title": "All Transactions",
+    }
+    return render_template("daily_sales/all_transactions.html", **context)
+
+
+# ---------------------------------------------------------------------------
 # New transaction  (GET: show form | POST: save)
 # ---------------------------------------------------------------------------
 

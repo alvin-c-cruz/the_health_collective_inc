@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}All Transactions — The Health Collective Inc.{% endblock %}
+
+{% block styles %}
+<style>
+  .thc-wrap { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
+  /* ── top bar ── */
+  .thc-topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: .75rem; }
+  .thc-brand-name { font-family: var(--thc-font-heading); font-size: 1.05rem; font-weight: 600; color: var(--thc-text); margin: 0; }
+  .thc-brand-sub { font-size: .75rem; color: var(--thc-text-muted); margin: 2px 0 0; }
+
+  /* ── section label ── */
+  .thc-sec-lbl { font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--thc-text-muted); margin-bottom: .6rem; display: flex; align-items: center; gap: .5rem; }
+  .thc-type-header { display: flex; align-items: center; gap: .75rem; margin-top: 2rem; margin-bottom: .75rem; }
+  .thc-type-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+  .thc-type-info { flex: 1; }
+  .thc-type-name { font-family: var(--thc-font-heading); font-size: 1rem; font-weight: 600; color: var(--thc-text); margin: 0; }
+  .thc-type-count { font-size: .7rem; color: var(--thc-text-muted); margin: 2px 0 0; }
+
+  /* ── transaction list ── */
+  .thc-txn-list { margin-bottom: 1.5rem; }
+  .thc-rec-row { background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; padding: 11px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 6px; text-decoration: none; color: inherit; transition: border-color .15s, background .15s; }
+  .thc-rec-row:hover { border-color: #a0b4b8; background: var(--thc-primary-light); text-decoration: none; color: inherit; }
+  .thc-rec-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .thc-rec-num { font-size: .68rem; color: var(--thc-text-muted); font-family: var(--thc-font-mono); min-width: 80px; }
+  .thc-rec-customer { font-size: .85rem; font-weight: 600; color: var(--thc-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 180px; flex: 1; }
+  .thc-rec-date { font-size: .7rem; color: var(--thc-text-muted); min-width: 90px; }
+  .thc-rec-amount { font-family: var(--thc-font-mono); font-size: .88rem; font-weight: 600; color: var(--thc-text); text-align: right; flex-shrink: 0; min-width: 100px; }
+  .thc-rec-badge { flex-shrink: 0; font-size: .62rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: .04em; }
+  .badge-draft     { background: #f0f0f0; color: var(--thc-text-muted); }
+  .badge-submitted { background: #fef3c7; color: #92400e; }
+  .badge-approved  { background: #d1fae5; color: #065f46; }
+  .badge-cancelled { background: #fee2e2; color: #991b1b; }
+  .thc-empty { text-align: center; padding: 1.25rem; color: var(--thc-text-muted); font-size: .8rem; background: #fff; border: 1px solid var(--thc-border); border-radius: 8px; }
+
+  .ic-blue   { background: var(--thc-primary-light); color: var(--thc-primary); }
+  .ic-green  { background: #e6f3f0; color: #0f6e56; }
+  .ic-purple { background: #eeedfe; color: #3c3489; }
+  .ic-coral  { background: #faece7; color: #993c1d; }
+  .ic-amber  { background: #faeeda; color: #854f0b; }
+  .ic-rose   { background: #fce7f3; color: #9d174d; }
+  .ic-slate  { background: #f1f5f9; color: #475569; }
+
+  /* ── back button ── */
+  .back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; font-weight: 600; color: var(--thc-primary); text-decoration: none; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--thc-border); background: #fff; transition: all .15s; }
+  .back-btn:hover { background: var(--thc-primary-light); border-color: var(--thc-primary); text-decoration: none; }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .thc-rec-info { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .thc-rec-num, .thc-rec-customer, .thc-rec-date { min-width: auto; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="thc-wrap">
+
+  {# ── Top bar ── #}
+  <div class="thc-topbar">
+    <div>
+      <p class="thc-brand-name">The Health Collective Inc.</p>
+      <p class="thc-brand-sub">All Transactions by Type</p>
+    </div>
+    <a href="{{ url_for('dashboard.home') }}" class="back-btn">
+      <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+
+  {# ── Grouped transactions by type ── #}
+  {% if grouped_transactions %}
+    {% for transaction_type, transactions in grouped_transactions.items() %}
+      <div class="thc-type-header">
+        <div class="thc-type-icon {{ transaction_type.icon_color if transaction_type.icon_color else 'ic-slate' }}">
+          <i class="bi {{ transaction_type.icon if transaction_type.icon else 'bi-tag' }}"></i>
+        </div>
+        <div class="thc-type-info">
+          <p class="thc-type-name">{{ transaction_type.type_name }}</p>
+          <p class="thc-type-count">{{ transactions|length }} transaction{{ 's' if transactions|length != 1 else '' }}</p>
+        </div>
+      </div>
+
+      <div class="thc-txn-list">
+        {% for t in transactions %}
+          {% set net = namespace(val=0) %}
+          {% for d in t.transaction_details %}{% set net.val = net.val + d.amount - d.discount %}{% endfor %}
+          {% set net.val = net.val - (t.discount or 0) %}
+
+          <a href="{{ url_for('daily_sales.view_transaction', transaction_id=t.id) }}"
+             class="thc-rec-row">
+            <div class="thc-rec-info">
+              <div class="thc-rec-num"># {{ t.record_number }}</div>
+              <div class="thc-rec-customer">{{ t.customer.customer_name if t.customer else '—' }}</div>
+              <div class="thc-rec-date">{{ t.record_date }}</div>
+            </div>
+            <div class="thc-rec-amount">₱{{ "{:,.2f}".format(net.val) }}</div>
+            <div>
+              {% if t.cancelled %}
+                <span class="thc-rec-badge badge-cancelled">Cancelled</span>
+              {% elif t.submitted and t.approved %}
+                <span class="thc-rec-badge badge-approved">Approved</span>
+              {% elif t.submitted %}
+                <span class="thc-rec-badge badge-submitted">Submitted</span>
+              {% else %}
+                <span class="thc-rec-badge badge-draft">Draft</span>
+              {% endif %}
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="thc-empty">
+      No transactions found.
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
