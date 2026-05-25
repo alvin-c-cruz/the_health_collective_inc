@@ -870,12 +870,16 @@ def approve_transaction(transaction_id):
     ))
     db.session.commit()
 
-    # Audit logging
+    # Audit logging - ensure it's created
     try:
         log_status_change('transaction', record, 'approved')
         db.session.commit()
     except Exception as e:
-        print(f"Audit logging failed: {e}")
+        # If audit logging fails, log the error and alert user
+        db.session.rollback()
+        flash(f'Transaction approved, but audit logging failed: {str(e)}', 'warning')
+        print(f"Audit logging failed for transaction {transaction_id}: {e}")
+        return redirect(url_for(f'{app_name}.pending_approval'))
 
     flash('Transaction approved.', 'success')
     return redirect(url_for(f'{app_name}.pending_approval'))
