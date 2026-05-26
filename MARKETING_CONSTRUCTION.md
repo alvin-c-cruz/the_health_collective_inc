@@ -10,7 +10,7 @@ A powerful, integrated accounting platform designed specifically for constructio
 
 **Built for construction companies that need:**
 - Complete double-entry bookkeeping system
-- Multiple journal types for different transaction categories
+- Essential journal types for different transaction categories
 - Real-time financial statements
 - User access controls and approval workflows
 - Comprehensive audit trails for compliance
@@ -21,7 +21,7 @@ A powerful, integrated accounting platform designed specifically for constructio
 ## ✨ Key Benefits
 
 ### 📊 **Complete Financial Control**
-Maintain complete control over your company's finances with a full-featured double-entry accounting system including 10 journal types and 4 essential financial reports.
+Maintain complete control over your company's finances with a full-featured double-entry accounting system including 5 essential journal types and 4 financial reports.
 
 ### ⚡ **Save Time, Reduce Errors**
 Eliminate manual calculations and reduce errors with automated trial balance verification, running balances, and built-in validation rules.
@@ -46,10 +46,9 @@ Get enterprise-level accounting features without enterprise pricing or complexit
 
 #### Flexible Account Structure
 - Design your account hierarchy with custom numbering
-- Classify accounts by type (Asset, Liability, Equity, Revenue, Expense)
-- Group accounts by class for better reporting
 - Unlimited account creation
 - Account descriptions and notes
+- Group accounts for better reporting
 
 #### Easy Data Management
 - Bulk import accounts from Excel/CSV
@@ -58,65 +57,42 @@ Get enterprise-level accounting features without enterprise pricing or complexit
 - Auto-complete search for quick entry
 - Approval workflow for new accounts
 
-#### Account Types Supported
-- **Assets** - Cash, Receivables, Inventory, Equipment, Property
-- **Liabilities** - Payables, Loans, Accrued Expenses
-- **Equity** - Capital, Retained Earnings, Drawings
-- **Revenue** - Project Revenue, Service Income, Other Income
-- **Expenses** - Materials, Labor, Subcontractors, Overhead
-
 ---
 
 ### **Complete Accounting Journal System**
 
-The system provides **10 journal types** to properly categorize all your business transactions:
+The system provides **5 essential journal types** to properly categorize all your business transactions:
 
-#### Core Journals (5)
-
-**1. Sales Journal (SJ)**
+#### **1. Sales Journal (SJ)**
 - Record project billings and revenue
 - Link to customers/projects
 - Track payment terms
 - Generate sales reports
 
-**2. Cash Receipt Journal (CR)**
+#### **2. Cash Receipt Journal (CR)**
 - Record all cash and check receipts
 - Customer payments tracking
 - Bank deposit reconciliation
 - Apply payments to invoices
 
-**3. Accounts Payable Journal (APJ)**
+#### **3. Accounts Payable Journal (APJ)**
 - Record vendor invoices
 - Track amounts owed
 - Payment due dates
 - Vendor statements
 
-**4. Disbursement Journal (DJ)**
+#### **4. Disbursement Journal (DJ)**
 - Record all cash payments
 - Check register functionality
 - Vendor payments
 - Expense reimbursements
 
-**5. General Journal (GJ)**
+#### **5. General Journal (GJ)**
 - Adjusting entries
 - Depreciation entries
 - Transfer between accounts
 - Accruals and deferrals
 - Correction entries
-
-#### Extra Journals (5)
-For companies with complex needs, we provide 5 additional parallel journals:
-- Sales Extra (SJ-Extra)
-- Receipt Extra (CR-Extra)
-- Accounts Payable Extra (APJ-Extra)
-- Disbursement Extra (DJ-Extra)
-- General Extra (GJ-Extra)
-
-**Use these for:**
-- Separate divisions or entities
-- Special project accounting
-- Additional transaction categorization
-- Parallel record-keeping requirements
 
 ---
 
@@ -232,13 +208,6 @@ For companies with complex needs, we provide 5 additional parallel journals:
 
 ## 💼 Construction-Specific Benefits
 
-### **Project-Based Accounting**
-While our system doesn't include project management modules, it fully supports project-based accounting through:
-- Customer/Project master data
-- Link journal entries to specific projects
-- Filter reports by customer/project
-- Track project profitability via ledger analysis
-
 ### **Vendor Management**
 Construction companies deal with many vendors:
 - Materials suppliers
@@ -268,12 +237,44 @@ Use the chart of accounts to track:
 - Maintenance costs (Expense accounts)
 - Asset disposal (General Journal entries)
 
-### **Payroll Integration**
-While payroll isn't built-in, the system easily accommodates payroll:
-- Record payroll summary in General Journal
-- Break down by labor type (direct vs. indirect)
-- Track payroll taxes and benefits
-- Link to specific projects via descriptions
+---
+
+## 🚀 Future Development & Integration
+
+While the current system focuses on core accounting functions, we can develop and integrate additional modules based on your specific needs:
+
+### **Project-Based Accounting Module**
+*Can be developed and integrated*
+- Track costs and revenues by project
+- Project profitability analysis
+- Budget vs. actual tracking
+- Progress billing management
+- Project-specific reports
+
+### **Payroll System Integration**
+*Can be developed and integrated*
+- Payroll processing
+- Direct labor cost allocation to projects
+- Indirect labor tracking
+- Payroll tax calculation
+- Employee benefits management
+- Integration with accounting journals
+
+### **Inventory Management**
+*Can be developed and integrated*
+- Materials inventory tracking
+- Purchase order management
+- Stock level monitoring
+- Cost of goods sold calculation
+
+### **Custom Reporting**
+*Can be developed per requirements*
+- Custom financial reports
+- Management dashboards
+- Project performance analytics
+- Cash flow projections
+
+**Note:** These modules can be developed based on your company's specific requirements and integrated seamlessly with the core accounting system.
 
 ---
 
@@ -288,8 +289,8 @@ While payroll isn't built-in, the system easily accommodates payroll:
 - **Bookkeeper** - Enter and edit entries
 - **View-Only** - Reports and inquiry only
 
-#### Granular Permissions (40+ roles):
-- **Accounting Journals** - Separate permissions for each of 10 journals
+#### Granular Permissions:
+- **Accounting Journals** - Separate permissions for each of 5 journals
 - **Chart of Accounts** - Create, edit, approve accounts
 - **Financial Reports** - Access to reports
 - **Master Data** - Customers, vendors, accounts
@@ -494,8 +495,7 @@ Proper handling of cancelled entries:
 
 ### **Accounting Core**
 - ✅ Complete Chart of Accounts management
-- ✅ Account Type and Class classification
-- ✅ 10 journal types (5 core + 5 extra)
+- ✅ 5 essential journal types (SJ, CR, APJ, DJ, GJ)
 - ✅ Journal entry creation and management
 - ✅ Approval workflows
 - ✅ Change request system
@@ -515,7 +515,7 @@ Proper handling of cancelled entries:
 
 ### **User & Security**
 - ✅ Multi-user support
-- ✅ Role-based access (40+ permission roles)
+- ✅ Role-based access control
 - ✅ User authentication
 - ✅ Activity logging
 
@@ -564,7 +564,7 @@ Proper handling of cancelled entries:
 - Real-time financial visibility
 - Instant reports anytime
 - Trend analysis with historical data
-- Project profitability tracking
+- Account-level profitability tracking
 
 ---
 
@@ -572,7 +572,7 @@ Proper handling of cancelled entries:
 
 ### **Construction Companies**
 - ✅ General contractors
-- ✅ Specialty contractors (electrical, plumbing, etc.)
+- ✅ Specialty contractors (electrical, plumbing, HVAC, etc.)
 - ✅ Construction material suppliers
 - ✅ Equipment rental companies
 - ✅ Engineering firms
@@ -606,8 +606,7 @@ Proper handling of cancelled entries:
 **Week 2: Chart of Accounts**
 1. Design account structure
 2. Import or create accounts
-3. Set account types and classes
-4. Review and approve accounts
+3. Review and approve accounts
 
 **Week 3: Master Data**
 1. Import customer list
@@ -700,14 +699,14 @@ A: Yes. We provide Excel templates for bulk import. You can set up your entire c
 ### **Q: How many users can use the system?**
 A: Unlimited users. No per-user fees. Set up as many user accounts as needed.
 
-### **Q: Can I customize the journal types?**
-A: The 10 journal types are standard and work for most businesses. You can use descriptions and notes to categorize transactions within journals.
+### **Q: Can I track multiple projects?**
+A: The current system uses customer/project fields and descriptions to tag entries. A full project accounting module can be developed and integrated based on your requirements.
 
 ### **Q: What if I make a mistake in a posted entry?**
 A: Use the change request system to propose corrections. An admin reviews and approves the change with full audit trail.
 
-### **Q: Can I track multiple projects?**
-A: Yes. Use customer/project fields and descriptions to tag entries by project. Run ledger reports filtered by project.
+### **Q: Does it handle payroll?**
+A: Payroll is not currently built-in, but can be developed and integrated. The system can accommodate payroll summary entries in the General Journal while the module is being developed.
 
 ### **Q: Does it handle foreign currency?**
 A: The system is designed for Philippine Peso. Foreign currency transactions can be recorded at converted amounts with notes.
@@ -750,6 +749,12 @@ A: Generate audit reports, print journal entries, export ledgers to Excel. Compl
 - Regular updates
 - Active development
 
+### **Extensible**
+- Core accounting system ready now
+- Additional modules can be developed
+- Customize to your needs
+- Integration with existing systems
+
 ---
 
 ## 📞 Next Steps
@@ -770,7 +775,7 @@ Start with a pilot implementation on one project or division before full rollout
 | Feature | Our System | Expensive ERP | Spreadsheets |
 |---------|-----------|---------------|--------------|
 | Complete Double-Entry Accounting | ✅ Yes | ✅ Yes | ❌ No |
-| 10 Journal Types | ✅ Yes | ✅ Yes | ⚠️ Manual |
+| 5 Essential Journal Types | ✅ Yes | ✅ Yes | ⚠️ Manual |
 | Trial Balance | ✅ Auto | ✅ Auto | ❌ Manual |
 | Income Statement | ✅ Auto | ✅ Auto | ⚠️ Manual |
 | Balance Sheet | ✅ Auto | ✅ Auto | ⚠️ Manual |
@@ -784,6 +789,7 @@ Start with a pilot implementation on one project or division before full rollout
 | Cost (Annual, 5 users) | ✅ Low | ❌ High | ✅ Free (high labor) |
 | Implementation Time | ✅ 1 month | ❌ 3-6 months | ⚠️ Ongoing |
 | IT Requirements | ✅ Minimal | ❌ High | ✅ None |
+| Future Expandability | ✅ Yes | ✅ Yes | ❌ No |
 
 ---
 
@@ -792,11 +798,12 @@ Start with a pilot implementation on one project or division before full rollout
 The Construction Accounting Management System provides **complete, professional accounting** for construction companies without the complexity and cost of enterprise ERP systems.
 
 ### **What You Get:**
-✅ **Complete accounting system** - 10 journals, chart of accounts, financial reports
+✅ **Complete accounting system** - 5 journals, chart of accounts, 4 financial reports
 ✅ **Easy to use** - Clean interface, logical workflows, minimal training
 ✅ **Secure & compliant** - Audit trails, approvals, user controls
 ✅ **Affordable** - One-time cost, no per-user fees
 ✅ **Fast implementation** - Up and running in 4 weeks
+✅ **Expandable** - Additional modules can be developed as needed
 
 ### **Perfect For:**
 - Construction companies currently using spreadsheets
