@@ -4,6 +4,39 @@ This guide contains instructions for AI assistants (Claude) working on this code
 
 ---
 
+## File Organization
+
+### **Rule: Keep the root directory clean**
+
+The root directory should only contain essential project files. This makes the codebase easier to navigate and maintain.
+
+**Root Directory - Allowed Files:**
+- `CLAUDE.md` - AI development guide
+- `DESIGN_SYSTEM.md` - Design system specification
+- `DESIGN_TOKENS_USAGE.md` - Token usage guide
+- `FEATURES.md` - Feature documentation
+- `MARKETING_CONSTRUCTION.md` - Current marketing materials
+- Standard project files (`.gitignore`, `requirements.txt`, `README.md`, etc.)
+
+**Root Directory - NOT Allowed:**
+- ❌ Client-specific proposals or documents
+- ❌ Temporary analysis reports
+- ❌ Conversion instructions
+- ❌ Old bug reports or implementation summaries
+- ❌ Migration summaries (use `docs/migration-history/` instead)
+
+**Process for Documentation:**
+1. **Analysis reports** - Create in root during work, then move to `docs/` when complete
+2. **Migration summaries** - Move to `docs/migration-history/` after migration is done
+3. **Client documents** - Create outside the repository, never commit
+4. **Temporary files** - Remove immediately when no longer needed
+
+**Subdirectories for Documentation:**
+- `docs/` - Technical documentation, architecture notes, user guides
+- `docs/migration-history/` - Historical migration summaries (archived)
+
+---
+
 ## Design System
 
 ### **Rule: All UI must use design system tokens**
@@ -202,7 +235,7 @@ margin-bottom: var(--thc-stack-md);     /* 20px - vertical spacing */
 
 - **[`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md)** - Complete design system specification
 - **[`DESIGN_TOKENS_USAGE.md`](DESIGN_TOKENS_USAGE.md)** - How to use design tokens
-- **[`IMPLEMENTATION_SUMMARY.md`](IMPLEMENTATION_SUMMARY.md)** - Token implementation status
+- **[`docs/migration-history/IMPLEMENTATION_SUMMARY.md`](docs/migration-history/IMPLEMENTATION_SUMMARY.md)** - Token implementation status
 - **[`docs/ui-audit.md`](docs/ui-audit.md)** - Original UI audit
 - **`application/static/css/design-system.css`** - Token definitions (source of truth)
 - **`application/static/css/design-system-test.html`** - Visual token reference
@@ -286,5 +319,5 @@ Before submitting UI changes, verify:
 
 ---
 
-**Last Updated**: 2026-05-24
+**Last Updated**: 2026-05-29
 **Design System Version**: 2.0
