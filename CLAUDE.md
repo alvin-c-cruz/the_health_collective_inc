@@ -46,6 +46,48 @@ The root directory should only contain essential project files. This makes the c
 - `scripts/database/` - Database inspection and utility scripts
 - `scripts/testing/` - Testing utilities and checklist generators
 
+### **Automated Enforcement - Pre-commit Hook**
+
+A pre-commit hook automatically enforces these rules:
+
+**What it does:**
+- ✅ Allows only essential files in root directory
+- ❌ Rejects commits with .py or .md files that don't belong in root
+- 📝 Shows helpful error messages with correct directory locations
+- 🚫 Prevents accidental clutter before it gets committed
+
+**Setup (automatic):**
+The pre-commit hook is already installed at `.git/hooks/pre-commit`. It runs automatically on every commit.
+
+**If you need to reinstall:**
+```bash
+chmod +x .git/hooks/pre-commit
+```
+
+**Example rejection message:**
+```
+❌ ERROR: Root directory clutter detected!
+
+The following files should NOT be in the root directory:
+  - test_script.py
+  - analysis_notes.md
+
+Please move them to appropriate directories:
+  • Python scripts (.py):
+    - scripts/migrations/     (database migration helpers)
+    - scripts/data-cleanup/   (data deletion utilities)
+    - scripts/database/       (database inspection tools)
+    - scripts/testing/        (testing utilities)
+
+  • Markdown files (.md):
+    - docs/                   (technical documentation)
+    - docs/migration-history/ (migration summaries)
+
+Commit rejected. Please reorganize files and try again.
+```
+
+**Note to Claude:** When creating new utility scripts or documentation, always place them in the correct subdirectory from the start. The pre-commit hook will prevent root directory clutter automatically.
+
 ---
 
 ## Design System
