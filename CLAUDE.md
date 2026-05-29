@@ -11,6 +11,7 @@ This guide contains instructions for AI assistants (Claude) working on this code
 The root directory should only contain essential project files. This makes the codebase easier to navigate and maintain.
 
 **Root Directory - Allowed Files:**
+- `flask_app.py` - Main application entry point
 - `CLAUDE.md` - AI development guide
 - `DESIGN_SYSTEM.md` - Design system specification
 - `DESIGN_TOKENS_USAGE.md` - Token usage guide
@@ -24,6 +25,10 @@ The root directory should only contain essential project files. This makes the c
 - ❌ Conversion instructions
 - ❌ Old bug reports or implementation summaries
 - ❌ Migration summaries (use `docs/migration-history/` instead)
+- ❌ Utility scripts (use `scripts/` subdirectories instead)
+- ❌ Data cleanup scripts
+- ❌ Testing scripts
+- ❌ Database utility scripts
 
 **Process for Documentation:**
 1. **Analysis reports** - Create in root during work, then move to `docs/` when complete
@@ -34,6 +39,12 @@ The root directory should only contain essential project files. This makes the c
 **Subdirectories for Documentation:**
 - `docs/` - Technical documentation, architecture notes, user guides
 - `docs/migration-history/` - Historical migration summaries (archived)
+
+**Subdirectories for Scripts:**
+- `scripts/migrations/` - Database migration scripts (Alembic helpers)
+- `scripts/data-cleanup/` - Data deletion and cleanup utilities
+- `scripts/database/` - Database inspection and utility scripts
+- `scripts/testing/` - Testing utilities and checklist generators
 
 ---
 
