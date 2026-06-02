@@ -265,11 +265,51 @@ def toggle_viewer():
     return redirect(url_for('user.user_group', record_id=user_id))
 
 
+@bp.route("/toggle_maintenance_mode", methods=["POST"])
+@login_required
+def toggle_maintenance_mode():
+    """Toggle maintenance mode - only accessible to superusers"""
+    if not current_user.is_superuser:
+        flash("Only superusers can toggle maintenance mode.", category="error")
+        return redirect(url_for('dashboard.home'))
+
+    import os
+    from pathlib import Path
+
+    # Path to config file
+    config_path = Path(os.path.dirname(__file__)).parent.parent / 'instance' / 'config.py'
+
+    # Read current config
+    with open(config_path, 'r') as f:
+        config_content = f.read()
+
+    # Toggle MAINTENANCE_MODE
+    if 'MAINTENANCE_MODE = True' in config_content:
+        new_content = config_content.replace('MAINTENANCE_MODE = True', 'MAINTENANCE_MODE = False')
+        new_status = False
+        message = "Maintenance mode DISABLED. Site is now accessible to all users."
+    else:
+        new_content = config_content.replace('MAINTENANCE_MODE = False', 'MAINTENANCE_MODE = True')
+        new_status = True
+        message = "Maintenance mode ENABLED. Only superusers can access the site."
+
+    # Write updated config
+    with open(config_path, 'w') as f:
+        f.write(new_content)
+
+    # Update runtime config
+    from flask import current_app
+    current_app.config['MAINTENANCE_MODE'] = new_status
+
+    flash(message, category="success")
+    return redirect(request.referrer or url_for('dashboard.home'))
+
+
 @bp.route("/login", methods=["POST", "GET"])
 def login():
     if current_user.is_authenticated:
         return redirect("/")
-    
+
     if request.method == "POST":
         form = LoginForm()
         form.post(request.form)

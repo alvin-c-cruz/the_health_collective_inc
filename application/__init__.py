@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, url_for, abort, g
+from flask import Flask, request, redirect, url_for, abort, g, render_template, session
 
 from pathlib import Path
 from http import HTTPStatus
@@ -38,8 +38,31 @@ def create_app(test=False):
         if request.blueprint == 'api':
             abort(HTTPStatus.UNAUTHORIZED)
         return redirect(url_for('user.login'))
-    
-    
+
+    # Maintenance mode check
+    @app.before_request
+    def check_maintenance_mode():
+        # Skip maintenance check for maintenance page itself and static files
+        if request.endpoint and (request.endpoint == 'maintenance' or request.endpoint.startswith('static')):
+            return None
+
+        # Check if maintenance mode is enabled
+        if app.config.get('MAINTENANCE_MODE', False):
+            # Allow superusers to bypass maintenance mode
+            user_id = session.get('user_id')
+            if user_id:
+                user = User.query.get(user_id)
+                if user and user.is_superuser:
+                    return None  # Superuser can access the site
+                else:
+                    # Log out non-superusers
+                    session.clear()
+
+            # Redirect everyone else to maintenance page
+            return render_template('maintenance.html'), 503
+
+        return None
+
     # Register Blueprints
     modules = [
         getattr(blueprints, module) 

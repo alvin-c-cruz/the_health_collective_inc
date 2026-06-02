@@ -1,6 +1,120 @@
-# The Health Collective Inc. - Claude Development Guide
+# CLAUDE.md
 
-This guide contains instructions for AI assistants (Claude) working on this codebase.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+---
+
+## Running the Application
+
+```bash
+# Start Flask development server
+python flask_app.py
+```
+
+Application runs on `http://localhost:9000` (or your machine's IP on port 9000).
+
+The server auto-reloads on file changes in development mode.
+
+## Database Migrations
+
+```bash
+# Create migration after model changes
+flask db migrate -m "Description of changes"
+
+# Apply migrations to database
+flask db upgrade
+
+# Rollback last migration
+flask db downgrade
+
+# Show migration history
+flask db history
+```
+
+**Note**: Database file is `the_health_collective_inc.db` in the project root (automatically named from `COMPANY_NAME` in config).
+
+## Key Architecture
+
+### Blueprint Pattern
+
+Every module follows this structure:
+```
+application/blueprints/{category}/{module_name}/
+├── __init__.py          # Exports app_name, app_label, menu_label, bp, Model
+├── models.py            # SQLAlchemy models (Obj, ObjUser, ObjAdmin)
+├── forms.py             # Flask-WTF forms
+├── views.py             # Flask routes (bp Blueprint)
+├── admin_models.py      # Admin interface (legacy, being phased out)
+└── pages/               # Jinja2 templates
+    └── {module_name}/
+        ├── home.html    # List view
+        └── form.html    # Add/edit form
+```
+
+**Blueprint Registration**: Automatic via `application/__init__.py`
+- Discovers all modules with `bp` attribute in `blueprints/__init__.py`
+- Registers blueprints automatically
+- Builds menu from `menu_label` tuples: `(app_name, url_prefix, display_label)`
+
+### Role-Based Access Control
+
+Authentication uses `@login_required` and `@roles_accepted([role_names])` decorators:
+
+```python
+from application.blueprints.user import login_required, roles_accepted
+
+@bp.route("/")
+@login_required
+@roles_accepted(["Account"])  # Role name from app_label
+def home():
+    # ...
+```
+
+**Role Management**:
+- Roles sync automatically on app startup from registered blueprints
+- Each blueprint's `app_label` becomes a role name
+- Roles are grouped in navbar: Operations, Accounting, Register, System
+- User-role mapping in `UserRole` junction table
+
+### Versioning System
+
+Version displayed in navbar: `v1.0.{commit_count}[-dirty]`
+
+Powered by `application/utils/version.py`:
+- Counts git commits for patch version
+- Adds `-dirty` suffix if uncommitted changes exist
+- Falls back to `v1.0.dev` if git unavailable
+- Cached on first call for performance
+
+### Philippine Timezone & Date Utilities
+
+Application uses Philippine time (`Asia/Manila`, UTC+8):
+
+```python
+from application.extensions import ph_today, year_first_day, month_first_day
+
+today = ph_today()  # Returns date object in PH timezone
+```
+
+Utility functions in `application/extensions.py`:
+- `ph_today()` - Current PH date
+- `year_first_day()` - First day of current year
+- `month_first_day()` - First day of current month
+- `year_last_day()` - Last day of current year
+- `month_last_day()` - Last day of current month
+- `next_control_number(obj, field, date)` - Auto-increment document numbers
+- `long_date(str_date)` - Format as "January 01, 2026"
+- `short_date(str_date)` - Format as "01-Jan-2026"
+
+### Configuration
+
+Instance configuration at `instance/config.py`:
+- `COMPANY_NAME` - Company name (used for database naming)
+- `SECRET_KEY` - Flask secret key
+- `SQLALCHEMY_DATABASE_URI` - Database connection (auto-generated from company name)
+- `CSRF_TOKEN_NAME`, `CSRF_TOKEN_BYTES` - CSRF settings
+
+Database file name is auto-generated: Company name → lowercase → remove special chars → replace spaces with underscores.
 
 ---
 

@@ -157,6 +157,22 @@
                   <li class="nav-item">
                       <a class="dropdown-item" href="{{ url_for('user.change_password') }}">User Change Password</a>
                   </li>
+                  {% if current_user.is_superuser %}
+                  <li><hr class="dropdown-divider"></li>
+                  <li class="nav-item">
+                      <form method="POST" action="{{ url_for('user.toggle_maintenance_mode') }}" style="margin: 0;">
+                          <button type="submit" class="dropdown-item"
+                                  onclick="return confirm('{% if config.MAINTENANCE_MODE %}Disable{% else %}Enable{% endif %} maintenance mode?')">
+                              <i class="bi bi-{% if config.MAINTENANCE_MODE %}unlock{% else %}lock{% endif %} me-1"></i>
+                              {% if config.MAINTENANCE_MODE %}
+                              <span style="color: var(--thc-danger-600);">Disable Maintenance Mode</span>
+                              {% else %}
+                              <span>Enable Maintenance Mode</span>
+                              {% endif %}
+                          </button>
+                      </form>
+                  </li>
+                  {% endif %}
                   <li><hr class="dropdown-divider"></li>
                   <li class="nav-item">
                       <a class="dropdown-item" href="{{ url_for('dashboard.about') }}">About</a>
