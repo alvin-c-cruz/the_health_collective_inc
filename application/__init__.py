@@ -1,4 +1,5 @@
 from flask import Flask, request, redirect, url_for, abort, g, render_template, session
+from flask_login import current_user
 
 from pathlib import Path
 from http import HTTPStatus
@@ -37,29 +38,39 @@ def create_app(test=False):
     def unauthorized():
         if request.blueprint == 'api':
             abort(HTTPStatus.UNAUTHORIZED)
+        # Check maintenance mode before redirecting to login
+        if app.config.get('MAINTENANCE_MODE', False):
+            return redirect(url_for('maintenance'))
         return redirect(url_for('user.login'))
+
+    # Maintenance page route
+    @app.route('/maintenance')
+    def maintenance():
+        """Show maintenance page"""
+        return render_template('maintenance.html'), 503
 
     # Maintenance mode check
     @app.before_request
     def check_maintenance_mode():
-        # Skip maintenance check for maintenance page itself and static files
-        if request.endpoint and (request.endpoint == 'maintenance' or request.endpoint.startswith('static')):
-            return None
+        # Skip maintenance check for maintenance page itself, static files, and login
+        allowed_endpoints = ['maintenance', 'user.login', 'static']
+        if request.endpoint:
+            if request.endpoint == 'maintenance' or request.endpoint.startswith('static'):
+                return None
+            if request.endpoint == 'user.login':
+                return None
 
         # Check if maintenance mode is enabled
         if app.config.get('MAINTENANCE_MODE', False):
-            # Allow superusers to bypass maintenance mode
-            user_id = session.get('user_id')
-            if user_id:
-                user = User.query.get(user_id)
-                if user and user.is_superuser:
+            # Check if user is a superuser using Flask-Login's current_user
+            if current_user.is_authenticated:
+                # Get user from database to check superuser status
+                user = User.query.get(current_user.get_id())
+                if user and user.superuser:
                     return None  # Superuser can access the site
-                else:
-                    # Log out non-superusers
-                    session.clear()
 
             # Redirect everyone else to maintenance page
-            return render_template('maintenance.html'), 503
+            return redirect(url_for('maintenance'))
 
         return None
 

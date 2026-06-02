@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_user, current_user, logout_user
 from functools import wraps
 from collections import defaultdict
@@ -312,21 +312,26 @@ def login():
     if request.method == "POST":
         form = LoginForm()
         form.post(request.form)
-        
+
         if form.validate():
             user = User.query.filter_by(user_name=form.user_name).first()
             if user:
                 if user.check_pass_word(form.pass_word):
+                    # Check if maintenance mode is active and user is not a superuser
+                    if current_app.config.get('MAINTENANCE_MODE', False):
+                        if not user.superuser:
+                            return redirect(url_for('maintenance'))
+
                     login_user(user)
                     flash(f"Welcome {user.user_name}.", category="success")
                     return redirect("/")
-                
+
             flash("Invalid username / password.", category="error")
     else:
         form = LoginForm()
-    
+
     check_roles()
-    
+
     context = {
         "form": form,
     }
