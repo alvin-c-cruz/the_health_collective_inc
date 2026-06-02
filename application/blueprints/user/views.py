@@ -273,11 +273,11 @@ def toggle_maintenance_mode():
         flash("Only superusers can toggle maintenance mode.", category="error")
         return redirect(url_for('dashboard.home'))
 
-    import os
+    from flask import current_app
     from pathlib import Path
 
-    # Path to config file
-    config_path = Path(os.path.dirname(__file__)).parent.parent / 'instance' / 'config.py'
+    # Path to config file - use Flask's instance_path
+    config_path = Path(current_app.instance_path) / 'config.py'
 
     # Read current config
     with open(config_path, 'r') as f:
@@ -298,7 +298,6 @@ def toggle_maintenance_mode():
         f.write(new_content)
 
     # Update runtime config
-    from flask import current_app
     current_app.config['MAINTENANCE_MODE'] = new_status
 
     flash(message, category="success")
