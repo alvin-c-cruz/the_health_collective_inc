@@ -320,6 +320,17 @@ def all_transactions():
         if transactions:
             sales_by_type[tt] = transactions
 
+    # Include transactions without a transaction type (e.g., imported CSV transactions)
+    transactions_without_type = Transaction.query.filter(
+        Transaction.transaction_type_id == None
+    ).order_by(Transaction.record_date.desc(), Transaction.id.desc()).all()
+    if transactions_without_type:
+        # Create a pseudo transaction type for display
+        from collections import namedtuple
+        PseudoType = namedtuple('PseudoType', ['type_name'])
+        untyped = PseudoType(type_name='Unclassified')
+        sales_by_type[untyped] = transactions_without_type
+
     # Category 2: DEPOSITS - Bank deposit transactions
     deposits = Deposit.query.order_by(Deposit.record_date.desc(), Deposit.id.desc()).all()
 
