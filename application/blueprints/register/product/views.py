@@ -112,12 +112,14 @@ def delete(record_id):
             flash(f"Cannot delete {obj} because it is used in {related_details} transaction(s).", category="error")
             return redirect(url_for(f'{app_name}.home'))
 
-        # Delete related admin/user records first
-        approver = obj.approved
-        if approver:
-            db.session.delete(approver)
-        if preparer:
-            db.session.delete(preparer)
+        # Delete ALL related admin/user records first (there can be multiple)
+        # Delete all preparers
+        for prep in obj.user_prepare:
+            db.session.delete(prep)
+
+        # Delete all approvers
+        for appr in obj.user_approved:
+            db.session.delete(appr)
 
         # Now delete the product
         db.session.delete(obj)
