@@ -169,10 +169,11 @@ def review():
             flash('No transactions selected for import', 'warning')
             return redirect(request.url)
 
-        # Store selected indices
+        # Store selected indices in session
         session['csv_import_selected'] = selected_indices
 
-        return redirect(url_for('csv_import.process_import'))
+        # Call the import process directly
+        return process_import_internal()
 
     # GET request - show review page
     # Add index to each transaction for selection
@@ -195,11 +196,8 @@ def review():
     return render_template('daily_sales/csv_import/review.html', **context)
 
 
-@csv_import_bp.route('/process', methods=['POST'])
-@login_required
-@roles_accepted(['Daily Sales'])
-def process_import():
-    """Step 3: Process and import selected transactions"""
+def process_import_internal():
+    """Internal function to process and import selected transactions"""
 
     transactions = session.get('csv_import_transactions')
     selected_indices = session.get('csv_import_selected')
