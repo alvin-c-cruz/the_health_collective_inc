@@ -112,14 +112,10 @@ def delete(record_id):
             flash(f"Cannot delete {obj} because it is used in {related_details} transaction(s).", category="error")
             return redirect(url_for(f'{app_name}.home'))
 
-        # Delete ALL related admin/user records first (there can be multiple)
-        # Delete all preparers
-        for prep in obj.user_prepare:
-            db.session.delete(prep)
-
-        # Delete all approvers
-        for appr in obj.user_approved:
-            db.session.delete(appr)
+        # Delete ALL related admin/user records using direct query
+        # This avoids SQLAlchemy relationship cascade issues
+        Preparer.query.filter_by(product_id=record_id).delete()
+        Approver.query.filter_by(product_id=record_id).delete()
 
         # Now delete the product
         db.session.delete(obj)
@@ -128,9 +124,13 @@ def delete(record_id):
 
     except (IntegrityError, AssertionError) as e:
         db.session.rollback()
-        flash(f"Cannot delete {obj} because it has related records.", category="error")
+        print(f"DEBUG: IntegrityError/AssertionError: {type(e).__name__}: {str(e)}")
+        flash(f"Cannot delete {obj} because it has related records. Error: {str(e)}", category="error")
     except Exception as e:
         db.session.rollback()
+        print(f"DEBUG: Unexpected error: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         flash(f"Error deleting {obj}: {str(e)}", category="error")
 
     return redirect(url_for(f'{app_name}.home'))
