@@ -14,6 +14,27 @@
         </p>
     </div>
 
+    {% if unknown_referrers %}
+    <!-- Unknown Referrers Warning -->
+    <div style="background: var(--thc-warning-50); border: 1px solid var(--thc-warning-300); border-radius: var(--thc-radius-lg); padding: var(--thc-space-4); margin-bottom: var(--thc-space-4);">
+        <div style="display: flex; align-items: flex-start; gap: var(--thc-gap-md);">
+            <i class="bi bi-exclamation-triangle-fill" style="color: var(--thc-warning-600); font-size: 1.25rem; flex-shrink: 0;"></i>
+            <div>
+                <h3 style="font-size: var(--thc-body-size); font-weight: 600; color: var(--thc-warning-900); margin: 0 0 var(--thc-space-2) 0;">
+                    Unknown Referrer Types Found
+                </h3>
+                <p style="color: var(--thc-warning-800); font-size: var(--thc-body-sm-size); margin: 0;">
+                    The following referrers were not recognized and will not have a transaction type assigned:
+                    <strong>{% for ref in unknown_referrers %}"{{ ref }}"{% if not loop.last %}, {% endif %}{% endfor %}</strong>
+                </p>
+                <p style="color: var(--thc-warning-800); font-size: var(--thc-body-sm-size); margin: var(--thc-space-2) 0 0 0;">
+                    Known referrers: WALK IN, HOME SERVICE, APE, DIALYSIS, TELE CONSULT
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <form method="POST" id="reviewForm">
 
         <!-- Action Bar -->

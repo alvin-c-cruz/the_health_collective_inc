@@ -16,8 +16,18 @@ from application.blueprints.register.customer.models import Customer
 from application.blueprints.register.product.models import Product
 from application.blueprints.register.tender.models import Tender
 from application.blueprints.register.sex.models import Sex
+from application.blueprints.operations.transaction_type.models import TransactionType
 
 csv_import_bp = Blueprint('csv_import', __name__, url_prefix='/daily_sales/csv_import')
+
+# Mapping of CSV Referrer values to transaction type codes
+REFERRER_TYPE_MAPPING = {
+    'WALK IN': 'walk_in',
+    'HOME SERVICE': 'home_service',
+    'APE': 'ape',
+    'DIALYSIS': 'dialysis',
+    'TELE CONSULT': 'tele_consult',
+}
 
 
 def allowed_file(filename):
@@ -123,12 +133,28 @@ def upload():
                 os.remove(filepath)
                 return redirect(request.url)
 
+            # Check for unknown referrers
+            unknown_referrers = set()
+            for txn in transactions:
+                referrer = (txn.get(' Referrer') or txn.get('Referrer') or '').strip()
+                if referrer:
+                    referrer_upper = referrer.upper()
+                    if referrer_upper not in REFERRER_TYPE_MAPPING:
+                        unknown_referrers.add(referrer)
+
             # Store file path and settings in session
             session['csv_import_file'] = filepath
             session['csv_import_default_sex'] = default_sex_id
             session['csv_import_transactions'] = transactions
+            session['csv_import_unknown_referrers'] = list(unknown_referrers)
 
             flash(f'CSV file uploaded successfully. Found {len(transactions)} transactions.', 'success')
+
+            # Warn about unknown referrers
+            if unknown_referrers:
+                referrer_list = ', '.join(f'"{r}"' for r in unknown_referrers)
+                flash(f'Warning: Unknown referrers found: {referrer_list}. These transactions will not have a transaction type assigned.', 'warning')
+
             return redirect(url_for('csv_import.review'))
 
         except Exception as e:
@@ -188,9 +214,13 @@ def review():
 
         indexed_transactions.append(txn_copy)
 
+    # Get unknown referrers from session
+    unknown_referrers = session.get('csv_import_unknown_referrers', [])
+
     context = {
         'transactions': indexed_transactions,
-        'total_count': len(indexed_transactions)
+        'total_count': len(indexed_transactions),
+        'unknown_referrers': unknown_referrers
     }
 
     return render_template('daily_sales/csv_import/review.html', **context)
@@ -305,6 +335,16 @@ def process_import_internal():
 
                     customer_cache[customer_key] = customer
 
+                # Determine transaction type from referrer
+                transaction_type_id = None
+                if referrer:
+                    referrer_upper = referrer.strip().upper()
+                    type_code = REFERRER_TYPE_MAPPING.get(referrer_upper)
+                    if type_code:
+                        txn_type = TransactionType.query.filter_by(type_code=type_code).first()
+                        if txn_type:
+                            transaction_type_id = txn_type.id
+
                 # Create transaction
                 description_parts = []
                 if tags:
@@ -320,6 +360,7 @@ def process_import_internal():
                     record_number=record_number,
                     dashlabs_number=receipt_num,
                     customer_id=customer.id,
+                    transaction_type_id=transaction_type_id,
                     status='draft',
                     description=' | '.join(description_parts) if description_parts else None,
                     created_by_id=session.get('user_id')
