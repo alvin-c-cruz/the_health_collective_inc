@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Import CSV - Daily Sales{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="padding: var(--thc-space-6);">
+    <!-- Page Header -->
+    <div style="margin-bottom: var(--thc-space-6);">
+        <h1 style="font-family: var(--thc-font-heading); font-size: var(--thc-h1-size); color: var(--thc-text-primary); margin-bottom: var(--thc-space-2);">
+            Import Transactions from CSV
+        </h1>
+        <p style="color: var(--thc-text-secondary); font-size: var(--thc-body-size);">
+            Upload a CSV file containing transaction data. You'll be able to review and select which transactions to import.
+        </p>
+    </div>
+
+    <!-- Upload Card -->
+    <div style="background: var(--thc-bg-surface); border-radius: var(--thc-radius-xl); padding: var(--thc-padding-card); box-shadow: var(--thc-shadow-sm); max-width: 600px;">
+
+        <form method="POST" enctype="multipart/form-data">
+
+            <!-- Default Sex Selection -->
+            <div style="margin-bottom: var(--thc-space-6);">
+                <label style="display: block; font-weight: 600; color: var(--thc-text-primary); margin-bottom: var(--thc-space-2); font-size: var(--thc-label-size);">
+                    Default Sex for New Customers
+                </label>
+                <p style="color: var(--thc-text-secondary); font-size: var(--thc-body-sm-size); margin-bottom: var(--thc-space-3);">
+                    When creating new customers from CSV, this will be the default sex assigned.
+                </p>
+                <select name="default_sex_id" class="form-control" required
+                        style="padding: var(--thc-padding-input); border: 1px solid var(--thc-border-strong); border-radius: var(--thc-radius-md);">
+                    {% for sex in sexes %}
+                    <option value="{{ sex.id }}" {% if sex.id == default_sex_id %}selected{% endif %}>
+                        {{ sex.sex_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- File Upload -->
+            <div style="margin-bottom: var(--thc-space-6);">
+                <label style="display: block; font-weight: 600; color: var(--thc-text-primary); margin-bottom: var(--thc-space-2); font-size: var(--thc-label-size);">
+                    CSV File
+                </label>
+                <input type="file" name="csv_file" accept=".csv" required class="form-control"
+                       style="padding: var(--thc-padding-input); border: 1px solid var(--thc-border-strong); border-radius: var(--thc-radius-md);">
+                <p style="color: var(--thc-text-secondary); font-size: var(--thc-body-sm-size); margin-top: var(--thc-space-2);">
+                    Upload a CSV file with transaction data. The file should include columns for Date, Receipt Number, Patient, Status, Products, etc.
+                </p>
+            </div>
+
+            <!-- Expected Format Info -->
+            <div style="background: var(--thc-bg-subtle); border-left: 3px solid var(--thc-primary-600); padding: var(--thc-space-4); border-radius: var(--thc-radius-md); margin-bottom: var(--thc-space-6);">
+                <p style="font-weight: 600; color: var(--thc-text-primary); margin-bottom: var(--thc-space-2);">
+                    <i class="bi bi-info-circle"></i> Expected CSV Format:
+                </p>
+                <ul style="color: var(--thc-text-secondary); font-size: var(--thc-body-sm-size); margin-left: var(--thc-space-4); margin-bottom: 0;">
+                    <li>Date - Transaction date</li>
+                    <li>Receipt Number - Will be stored as Dashlabs Number</li>
+                    <li>Patient - Full name (Last First Middle)</li>
+                    <li>Status - Transaction status (PAID, etc.)</li>
+                    <li>MOP - Payment method (CASH, E-WALLET, GCASH)</li>
+                    <li>Product - Pipe-separated list (Product 1 | Product 2)</li>
+                    <li>Item Price - Pipe-separated prices matching products</li>
+                </ul>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: var(--thc-gap-md); justify-content: flex-end;">
+                <a href="{{ url_for('daily_sales.home') }}"
+                   style="padding: var(--thc-padding-button); border-radius: var(--thc-radius-md); text-decoration: none; background: var(--thc-bg-subtle); color: var(--thc-text-primary); border: 1px solid var(--thc-border-default); display: inline-flex; align-items: center; gap: var(--thc-space-2);">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </a>
+                <button type="submit"
+                        style="padding: var(--thc-padding-button); border-radius: var(--thc-radius-md); background: var(--thc-primary-600); color: white; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: var(--thc-space-2);">
+                    <i class="bi bi-upload"></i> Upload & Review
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+{% endblock %}

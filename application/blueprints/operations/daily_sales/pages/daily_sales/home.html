@@ -41,6 +41,10 @@
          url_for('daily_sales.sales_summary_report'),
          icon='bi-bar-chart-line', open_popup=true,
          popup_specs='width=1400,height=800,scrollbars=yes,resizable=yes') }}
+
+      {{ quick_action_button('Import CSV',
+         url_for('csv_import.upload'),
+         icon='bi-file-earmark-arrow-up') }}
     </div>
   </div>
 

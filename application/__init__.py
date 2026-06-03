@@ -100,6 +100,10 @@ def create_app(test=False):
         from .blueprints.user.views import check_roles
         check_roles()
 
+    # Register CSV Import blueprint
+    from .blueprints.operations.daily_sales.csv_import_views import csv_import_bp
+    app.register_blueprint(csv_import_bp)
+
     # Make version available to all templates
     @app.context_processor
     def inject_version():

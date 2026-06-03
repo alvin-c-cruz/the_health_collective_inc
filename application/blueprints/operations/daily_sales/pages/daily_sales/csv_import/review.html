@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}Review Transactions - CSV Import{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="padding: var(--thc-space-6);">
+    <!-- Page Header -->
+    <div style="margin-bottom: var(--thc-space-6);">
+        <h1 style="font-family: var(--thc-font-heading); font-size: var(--thc-h1-size); color: var(--thc-text-primary); margin-bottom: var(--thc-space-2);">
+            Review & Select Transactions
+        </h1>
+        <p style="color: var(--thc-text-secondary); font-size: var(--thc-body-size);">
+            Select which transactions are real and should be imported. Uncheck test/fake transactions.
+        </p>
+    </div>
+
+    <form method="POST" id="reviewForm">
+
+        <!-- Action Bar -->
+        <div style="background: var(--thc-bg-surface); border-radius: var(--thc-radius-lg); padding: var(--thc-space-4); margin-bottom: var(--thc-space-4); display: flex; justify-content: space-between; align-items: center; box-shadow: var(--thc-shadow-sm);">
+            <div>
+                <span style="font-weight: 600; color: var(--thc-text-primary); font-size: var(--thc-body-size);">
+                    <span id="selectedCount">{{ total_count }}</span> of {{ total_count }} transactions selected
+                </span>
+            </div>
+            <div style="display: flex; gap: var(--thc-gap-md);">
+                <button type="button" onclick="selectAll()"
+                        style="padding: var(--thc-space-2) var(--thc-space-4); border-radius: var(--thc-radius-md); background: var(--thc-bg-subtle); color: var(--thc-text-primary); border: 1px solid var(--thc-border-default); cursor: pointer; font-size: var(--thc-body-sm-size);">
+                    <i class="bi bi-check-square"></i> Select All
+                </button>
+                <button type="button" onclick="deselectAll()"
+                        style="padding: var(--thc-space-2) var(--thc-space-4); border-radius: var(--thc-radius-md); background: var(--thc-bg-subtle); color: var(--thc-text-primary); border: 1px solid var(--thc-border-default); cursor: pointer; font-size: var(--thc-body-sm-size);">
+                    <i class="bi bi-square"></i> Deselect All
+                </button>
+            </div>
+        </div>
+
+        <!-- Transactions Table -->
+        <div style="background: var(--thc-bg-surface); border-radius: var(--thc-radius-xl); padding: var(--thc-padding-card); box-shadow: var(--thc-shadow-sm); overflow-x: auto;">
+            <table class="table table-hover" style="margin-bottom: 0;">
+                <thead style="border-bottom: 2px solid var(--thc-border-default);">
+                    <tr>
+                        <th style="width: 50px; text-align: center;">Select</th>
+                        <th>Receipt #</th>
+                        <th>Patient</th>
+                        <th>Date</th>
+                        <th>Products</th>
+                        <th>Payment</th>
+                        <th style="text-align: right;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for txn in transactions %}
+                    <tr>
+                        <td style="text-align: center;">
+                            <input type="checkbox"
+                                   name="selected_transactions"
+                                   value="{{ txn.index }}"
+                                   checked
+                                   class="transaction-checkbox"
+                                   style="width: 18px; height: 18px; cursor: pointer;">
+                        </td>
+                        <td style="font-family: var(--thc-font-mono); font-weight: 500;">
+                            {{ txn.get(' Receipt Number') or txn.get('Receipt Number') }}
+                        </td>
+                        <td>{{ (txn.get(' Patient') or txn.get('Patient') or '')[:30] }}{% if (txn.get(' Patient') or txn.get('Patient') or '')|length > 30 %}...{% endif %}</td>
+                        <td style="font-size: var(--thc-body-sm-size); color: var(--thc-text-secondary);">
+                            {{ txn.get('Date') or txn.get(' Date') }}
+                        </td>
+                        <td>
+                            <span style="background: var(--thc-primary-50); color: var(--thc-primary-700); padding: 2px 8px; border-radius: var(--thc-radius-sm); font-size: var(--thc-body-sm-size);">
+                                {{ txn.product_count }} item{% if txn.product_count != 1 %}s{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <span style="font-size: var(--thc-body-sm-size);">
+                                {{ txn.get(' MOP') or txn.get('MOP') or '-' }}
+                            </span>
+                        </td>
+                        <td style="text-align: right; font-family: var(--thc-font-mono); font-weight: 500;">
+                            {{ txn.get(' Order Total') or txn.get('Order Total') or '0' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="margin-top: var(--thc-space-6); display: flex; gap: var(--thc-gap-md); justify-content: flex-end;">
+            <a href="{{ url_for('csv_import.cancel') }}"
+               style="padding: var(--thc-padding-button); border-radius: var(--thc-radius-md); text-decoration: none; background: var(--thc-bg-subtle); color: var(--thc-text-primary); border: 1px solid var(--thc-border-default); display: inline-flex; align-items: center; gap: var(--thc-space-2);">
+                <i class="bi bi-x-circle"></i> Cancel
+            </a>
+            <button type="submit"
+                    style="padding: var(--thc-padding-button); border-radius: var(--thc-radius-md); background: var(--thc-success-600); color: white; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: var(--thc-space-2);">
+                <i class="bi bi-check-circle"></i> Import Selected Transactions
+            </button>
+        </div>
+
+    </form>
+
+</div>
+
+<script>
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.transaction-checkbox');
+    const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
+    document.getElementById('selectedCount').textContent = checked;
+}
+
+function selectAll() {
+    const checkboxes = document.querySelectorAll('.transaction-checkbox');
+    checkboxes.forEach(cb => cb.checked = true);
+    updateSelectedCount();
+}
+
+function deselectAll() {
+    const checkboxes = document.querySelectorAll('.transaction-checkbox');
+    checkboxes.forEach(cb => cb.checked = false);
+    updateSelectedCount();
+}
+
+// Update count when checkboxes change
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.transaction-checkbox');
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateSelectedCount);
+    });
+});
+</script>
+{% endblock %}
