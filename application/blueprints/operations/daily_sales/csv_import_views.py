@@ -227,17 +227,36 @@ def process_import():
     for tender in Tender.query.all():
         tender_cache[tender.tender_name.strip().upper()] = tender
 
-    try:
-        for index in selected_indices:
-            if index >= len(transactions):
-                continue
+    # Helper function to generate record number
+    def generate_record_number():
+        last = Transaction.query.filter(
+            Transaction.record_number.isnot(None)
+        ).order_by(Transaction.record_number.desc()).first()
+        if last and last.record_number:
+            try:
+                seq = int(last.record_number) + 1
+            except ValueError:
+                seq = 1
+        else:
+            seq = 1
+        return f"{seq:05d}"
 
+    # Sort selected transactions by dashlabs_number (receipt number)
+    selected_transactions = []
+    for index in selected_indices:
+        if index < len(transactions):
             row = transactions[index]
+            receipt_num = (row.get(' Receipt Number') or row.get('Receipt Number') or '').strip()
+            selected_transactions.append((receipt_num, index, row))
 
+    # Sort by receipt number
+    selected_transactions.sort(key=lambda x: x[0])
+
+    try:
+        for receipt_num, index, row in selected_transactions:
             try:
                 # Parse transaction data
                 date_str = (row.get('Date') or '').strip()
-                receipt_num = (row.get(' Receipt Number') or row.get('Receipt Number') or '').strip()
                 patient_name = (row.get(' Patient') or row.get('Patient') or '').strip()
                 status = (row.get(' Status') or row.get('Status') or '').strip()
                 tags = (row.get(' Tags') or row.get('Tags') or '').strip()
@@ -295,8 +314,12 @@ def process_import():
                 if referrer:
                     description_parts.append(f"Referrer: {referrer}")
 
+                # Generate record number
+                record_number = generate_record_number()
+
                 transaction = Transaction(
                     record_date=record_date,
+                    record_number=record_number,
                     dashlabs_number=receipt_num,
                     customer_id=customer.id,
                     status='draft',
