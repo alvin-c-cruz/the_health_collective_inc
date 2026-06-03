@@ -99,17 +99,37 @@ def edit(record_id):
 @bp.route("/delete/<int:record_id>", methods=["POST", "GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
-def delete(record_id):   
+def delete(record_id):
     obj = Obj.query.get_or_404(record_id)
     preparer = obj.preparer
+
     try:
-        if preparer:  db.session.delete(preparer)
+        # Check for related transaction details
+        from application.blueprints.operations.daily_sales.models import TransactionDetail
+        related_details = TransactionDetail.query.filter_by(product_id=record_id).count()
+
+        if related_details > 0:
+            flash(f"Cannot delete {obj} because it is used in {related_details} transaction(s).", category="error")
+            return redirect(url_for(f'{app_name}.home'))
+
+        # Delete related admin/user records first
+        approver = obj.approved
+        if approver:
+            db.session.delete(approver)
+        if preparer:
+            db.session.delete(preparer)
+
+        # Now delete the product
         db.session.delete(obj)
         db.session.commit()
         flash(f"{obj} has been deleted.", category="success")
-    except IntegrityError:
+
+    except (IntegrityError, AssertionError) as e:
         db.session.rollback()
         flash(f"Cannot delete {obj} because it has related records.", category="error")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting {obj}: {str(e)}", category="error")
 
     return redirect(url_for(f'{app_name}.home'))
 
