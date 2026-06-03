@@ -332,13 +332,30 @@ def process_import_internal():
                 products = parse_pipe_separated(products_str)
                 prices = parse_pipe_separated(prices_str)
 
-                # Create transaction details
+                # Separate positive (regular items) and negative (discounts) prices
+                transaction_discount = 0.0
+
+                # Create transaction details only for positive-priced items
                 for i, product_name in enumerate(products):
                     if not product_name:
                         continue
 
                     product_name = product_name.strip()
 
+                    # Get price for this product
+                    amount = 0.0
+                    if i < len(prices):
+                        try:
+                            amount = float(prices[i].replace(',', ''))
+                        except (ValueError, AttributeError):
+                            amount = 0.0
+
+                    # If negative price, add to transaction discount and skip creating detail
+                    if amount < 0:
+                        transaction_discount += abs(amount)
+                        continue
+
+                    # Only create TransactionDetail for positive prices
                     # Find or create product
                     product_key = product_name.upper()
 
@@ -358,21 +375,17 @@ def process_import_internal():
 
                         product_cache[product_key] = product
 
-                    # Get price for this product
-                    amount = 0.0
-                    if i < len(prices):
-                        try:
-                            amount = float(prices[i].replace(',', ''))
-                        except (ValueError, AttributeError):
-                            amount = 0.0
-
-                    # Create transaction detail
+                    # Create transaction detail with positive amount
                     detail = TransactionDetail(
                         transaction_id=transaction.id,
                         product_id=product.id,
-                        amount=abs(amount)  # Store as positive
+                        amount=amount
                     )
                     db.session.add(detail)
+
+                # Update transaction with total discount
+                if transaction_discount > 0:
+                    transaction.discount = transaction_discount
 
                 # Create transaction tender (payment method)
                 if mop:
@@ -380,8 +393,12 @@ def process_import_internal():
                     tender = tender_cache.get(mop_key)
 
                     if tender:
-                        # Calculate total amount for tender
-                        total_amount = sum(abs(float(p.replace(',', ''))) for p in prices if p)
+                        # Use Order Total from CSV (net amount after discounts)
+                        order_total_str = (row.get(' Order Total') or row.get('Order Total') or '0').strip()
+                        try:
+                            total_amount = float(order_total_str.replace(',', ''))
+                        except (ValueError, AttributeError):
+                            total_amount = 0.0
 
                         tender_record = TransactionTender(
                             transaction_id=transaction.id,
