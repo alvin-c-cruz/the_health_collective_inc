@@ -14,8 +14,8 @@ from ...register.product import Product
 from ...register.tender import Tender
 
 
-DETAIL_ROWS = 50  # Increased from 10 to support more items per transaction
-TENDER_ROWS = 10  # Increased from 5 to support more payment methods
+DETAIL_ROWS = 100  # Support up to 100 line items per transaction
+TENDER_ROWS = 20   # Support up to 20 payment methods per transaction
 
 
 # ---------------------------------------------------------------------------
