@@ -831,6 +831,11 @@ def delete_transaction(transaction_id):
     db.session.commit()
 
     flash('Transaction deleted.', 'success')
+
+    # Redirect back to referrer if it's the all_transactions page, otherwise go to home
+    referrer = request.referrer
+    if referrer and 'all_transactions' in referrer:
+        return redirect(url_for(f'{app_name}.all_transactions'))
     return redirect(url_for(f'{app_name}.home'))
 
 

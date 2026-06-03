@@ -78,6 +78,27 @@
   }
   .back-btn:hover { background: var(--thc-primary-100); border-color: var(--thc-primary-600); text-decoration: none; }
 
+  /* Delete button */
+  .btn-delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--thc-radius-md);
+    background: transparent;
+    color: var(--thc-danger-600);
+    border: 1px solid var(--thc-danger-300);
+    cursor: pointer;
+    transition: all .15s;
+    font-size: var(--thc-text-sm);
+  }
+  .btn-delete:hover {
+    background: var(--thc-danger-600);
+    color: white;
+    border-color: var(--thc-danger-600);
+  }
+
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .thc-rec-info { flex-direction: column; align-items: flex-start; gap: var(--thc-gap-xs); }
@@ -126,25 +147,36 @@
           {% for d in t.transaction_details %}{% set net.val = net.val + d.amount - d.discount %}{% endfor %}
           {% set net.val = net.val - (t.discount or 0) %}
 
-          <a href="{{ url_for('daily_sales.view_transaction', transaction_id=t.id) }}" class="thc-rec-row">
-            <div class="thc-rec-info">
-              <div class="thc-rec-num"># {{ t.record_number }}</div>
-              <div class="thc-rec-customer">{{ t.customer.customer_name if t.customer else '—' }}</div>
-              <div class="thc-rec-date">{{ t.record_date }}</div>
-            </div>
-            <div class="thc-rec-amount">₱{{ "{:,.2f}".format(net.val) }}</div>
-            <div>
-              {% if t.cancelled %}
-                <span class="thc-rec-badge badge-cancelled">Cancelled</span>
-              {% elif t.submitted and t.approved %}
-                <span class="thc-rec-badge badge-approved">Approved</span>
-              {% elif t.submitted %}
-                <span class="thc-rec-badge badge-submitted">Submitted</span>
-              {% else %}
-                <span class="thc-rec-badge badge-draft">Draft</span>
-              {% endif %}
-            </div>
-          </a>
+          <div class="thc-rec-row" style="display: flex; gap: var(--thc-gap-md);">
+            <a href="{{ url_for('daily_sales.view_transaction', transaction_id=t.id) }}" style="flex: 1; display: flex; align-items: center; gap: var(--thc-gap-md); text-decoration: none; color: inherit;">
+              <div class="thc-rec-info">
+                <div class="thc-rec-num"># {{ t.record_number }}</div>
+                <div class="thc-rec-customer">{{ t.customer.customer_name if t.customer else '—' }}</div>
+                <div class="thc-rec-date">{{ t.record_date }}</div>
+              </div>
+              <div class="thc-rec-amount">₱{{ "{:,.2f}".format(net.val) }}</div>
+              <div>
+                {% if t.cancelled %}
+                  <span class="thc-rec-badge badge-cancelled">Cancelled</span>
+                {% elif t.submitted and t.approved %}
+                  <span class="thc-rec-badge badge-approved">Approved</span>
+                {% elif t.submitted %}
+                  <span class="thc-rec-badge badge-submitted">Submitted</span>
+                {% else %}
+                  <span class="thc-rec-badge badge-draft">Draft</span>
+                {% endif %}
+              </div>
+            </a>
+            {% if current_user.is_superuser and not t.submitted and not t.cancelled %}
+              <form method="POST" action="{{ url_for('daily_sales.delete_transaction', transaction_id=t.id) }}"
+                    onsubmit="return confirm('Are you sure you want to delete this transaction? This action cannot be undone.')"
+                    style="flex-shrink: 0;">
+                <button type="submit" class="btn-delete" title="Delete transaction">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            {% endif %}
+          </div>
         {% endfor %}
       </div>
     {% endfor %}
