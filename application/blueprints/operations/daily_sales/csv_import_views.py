@@ -91,6 +91,12 @@ def parse_pipe_separated(value):
 @roles_accepted(['Daily Sales'])
 def upload():
     """Step 1: Upload CSV file"""
+    from flask import abort
+    from flask_login import current_user
+
+    # Only superusers can import CSV
+    if not current_user.is_superuser:
+        abort(403)
 
     if request.method == 'POST':
         # Check if file was uploaded
@@ -179,6 +185,12 @@ def upload():
 @roles_accepted(['Daily Sales'])
 def review():
     """Step 2: Review and select transactions to import"""
+    from flask import abort
+    from flask_login import current_user
+
+    # Only superusers can import CSV
+    if not current_user.is_superuser:
+        abort(403)
 
     transactions = session.get('csv_import_transactions')
 
@@ -195,8 +207,19 @@ def review():
             flash('No transactions selected for import', 'warning')
             return redirect(request.url)
 
-        # Store selected indices in session
+        # Get user-provided referrer mappings
+        unknown_referrers = session.get('csv_import_unknown_referrers', [])
+        user_mappings = {}
+        for ref in unknown_referrers:
+            mapping_key = f'referrer_mapping_{ref}'
+            if mapping_key in request.form:
+                mapping_value = request.form[mapping_key]
+                if mapping_value and mapping_value != 'none':
+                    user_mappings[ref.upper()] = mapping_value
+
+        # Store selected indices and mappings in session
         session['csv_import_selected'] = selected_indices
+        session['csv_import_user_mappings'] = user_mappings
 
         # Call the import process directly
         return process_import_internal()
@@ -217,10 +240,14 @@ def review():
     # Get unknown referrers from session
     unknown_referrers = session.get('csv_import_unknown_referrers', [])
 
+    # Get all active transaction types from database
+    transaction_types = TransactionType.query.filter_by(active=True).order_by(TransactionType.sort_order).all()
+
     context = {
         'transactions': indexed_transactions,
         'total_count': len(indexed_transactions),
-        'unknown_referrers': unknown_referrers
+        'unknown_referrers': unknown_referrers,
+        'transaction_types': transaction_types
     }
 
     return render_template('daily_sales/csv_import/review.html', **context)
@@ -232,6 +259,7 @@ def process_import_internal():
     transactions = session.get('csv_import_transactions')
     selected_indices = session.get('csv_import_selected')
     default_sex_id = session.get('csv_import_default_sex', 2)
+    user_mappings = session.get('csv_import_user_mappings', {})
 
     if not transactions or not selected_indices:
         flash('No transactions selected for import', 'error')
@@ -336,10 +364,18 @@ def process_import_internal():
                     customer_cache[customer_key] = customer
 
                 # Determine transaction type from referrer
+                # Use user-provided mappings first, then fall back to hardcoded mappings
                 transaction_type_id = None
                 if referrer:
                     referrer_upper = referrer.strip().upper()
-                    type_code = REFERRER_TYPE_MAPPING.get(referrer_upper)
+
+                    # Check user-provided mappings first
+                    type_code = user_mappings.get(referrer_upper)
+
+                    # Fall back to hardcoded mappings if not found
+                    if not type_code:
+                        type_code = REFERRER_TYPE_MAPPING.get(referrer_upper)
+
                     if type_code:
                         txn_type = TransactionType.query.filter_by(type_code=type_code).first()
                         if txn_type:
@@ -485,6 +521,12 @@ def process_import_internal():
 @login_required
 def cancel():
     """Cancel import and clean up"""
+    from flask import abort
+    from flask_login import current_user
+
+    # Only superusers can import CSV
+    if not current_user.is_superuser:
+        abort(403)
 
     # Clean up uploaded file
     filepath = session.get('csv_import_file')

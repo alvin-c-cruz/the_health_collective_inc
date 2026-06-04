@@ -57,11 +57,11 @@
   </div>
 
   {# ── Transaction list ── #}
-  <div class="thc-sec-lbl">
-    All Draft Transactions ({{ transactions|length }})
-  </div>
-  <div class="thc-txn-list">
-    {% if transactions %}
+  {% if transactions %}
+    <div class="thc-sec-lbl">
+      Draft Transactions ({{ transactions|length }})
+    </div>
+    <div class="thc-txn-list">
       {% for t in transactions %}
         {% set net = namespace(val=0) %}
         {% for d in t.transaction_details %}{% set net.val = net.val + d.amount - d.discount %}{% endfor %}
@@ -84,12 +84,45 @@
           </div>
         </a>
       {% endfor %}
-    {% else %}
-      <div class="thc-empty">
-        No draft transactions found.
-      </div>
-    {% endif %}
-  </div>
+    </div>
+  {% endif %}
+
+  {# ── Deposit list ── #}
+  {% if deposits %}
+    <div class="thc-sec-lbl" style="margin-top: 1.5rem;">
+      Draft Deposits ({{ deposits|length }})
+    </div>
+    <div class="thc-txn-list">
+      {% for d in deposits %}
+        <a href="{{ url_for('daily_sales.view_deposit', deposit_id=d.id, return_url=request.url) }}"
+           class="thc-rec-row">
+          <div class="thc-rec-icon ic-green">
+            <i class="bi bi-bank2"></i>
+          </div>
+          <div class="thc-rec-info">
+            <div class="thc-rec-num">Deposit #{{ d.id }}</div>
+            <div class="thc-rec-customer">{{ d.bank_account_display }}</div>
+            <div class="thc-rec-type">{{ d.reference_number or '—' }}</div>
+            <div class="thc-rec-date">{{ d.record_date }}</div>
+          </div>
+          <div class="thc-rec-amount">₱{{ d.formatted_total_amount }}</div>
+          <div>
+            <span class="thc-rec-badge badge-draft">Draft</span>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {# ── Empty state ── #}
+  {% if not transactions and not deposits %}
+    <div class="thc-sec-lbl">
+      All Draft Records (0)
+    </div>
+    <div class="thc-empty">
+      No draft transactions or deposits found.
+    </div>
+  {% endif %}
 
 </div>
 {% endblock %}

@@ -17,13 +17,17 @@
   <!-- Action Buttons -->
   <div class="row mb-3">
     <div class="col">
-      <a href="{{ url_for('daily_sales.deposit_report') }}" class="btn btn-secondary btn-sm">
-        <i class="bi bi-arrow-left"></i> Back to Report
+      <a href="{{ return_url if return_url else url_for('daily_sales.deposit_report') }}" class="btn btn-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Back
       </a>
 
       {% if deposit.status == 'draft' %}
+        <a href="{{ url_for('daily_sales.edit_deposit', deposit_id=deposit.id, return_url=return_url) }}" class="btn btn-warning btn-sm">
+          <i class="bi bi-pencil"></i> Edit
+        </a>
         <form method="POST" action="{{ url_for('daily_sales.submit_deposit', deposit_id=deposit.id) }}"
               style="display: inline;" onsubmit="return confirm('Submit this deposit for approval?');">
+          <input type="hidden" name="return_url" value="{{ return_url }}">
           <button type="submit" class="btn btn-success btn-sm">
             <i class="bi bi-check-circle"></i> Submit for Approval
           </button>

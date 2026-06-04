@@ -15,23 +15,52 @@
     </div>
 
     {% if unknown_referrers %}
-    <!-- Unknown Referrers Warning -->
+    <!-- Unknown Referrers Mapping -->
     <div style="background: var(--thc-warning-50); border: 1px solid var(--thc-warning-300); border-radius: var(--thc-radius-lg); padding: var(--thc-space-4); margin-bottom: var(--thc-space-4);">
-        <div style="display: flex; align-items: flex-start; gap: var(--thc-gap-md);">
+        <div style="display: flex; align-items: flex-start; gap: var(--thc-gap-md); margin-bottom: var(--thc-space-4);">
             <i class="bi bi-exclamation-triangle-fill" style="color: var(--thc-warning-600); font-size: 1.25rem; flex-shrink: 0;"></i>
-            <div>
+            <div style="flex: 1;">
                 <h3 style="font-size: var(--thc-body-size); font-weight: 600; color: var(--thc-warning-900); margin: 0 0 var(--thc-space-2) 0;">
                     Unknown Referrer Types Found
                 </h3>
                 <p style="color: var(--thc-warning-800); font-size: var(--thc-body-sm-size); margin: 0;">
-                    The following referrers were not recognized and will not have a transaction type assigned:
-                    <strong>{% for ref in unknown_referrers %}"{{ ref }}"{% if not loop.last %}, {% endif %}{% endfor %}</strong>
-                </p>
-                <p style="color: var(--thc-warning-800); font-size: var(--thc-body-sm-size); margin: var(--thc-space-2) 0 0 0;">
-                    Known referrers: WALK IN, HOME SERVICE, APE, DIALYSIS, TELE CONSULT
+                    Map these unknown referrers to transaction types before importing:
                 </p>
             </div>
         </div>
+
+        <!-- Mapping Table -->
+        <table class="table table-sm" style="background: white; margin-bottom: 0;">
+            <thead>
+                <tr>
+                    <th style="width: 40%;">Referrer from CSV</th>
+                    <th style="width: 60%;">Transaction Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ref in unknown_referrers %}
+                <tr>
+                    <td style="font-family: var(--thc-font-mono); font-weight: 600; color: var(--thc-warning-900);">
+                        "{{ ref }}"
+                    </td>
+                    <td>
+                        <select name="referrer_mapping_{{ ref }}" class="form-select form-select-sm" required
+                                style="border-color: var(--thc-warning-300);">
+                            <option value="">-- Select Transaction Type --</option>
+                            {% for tt in transaction_types %}
+                            <option value="{{ tt.type_code }}">{{ tt.type_name }}</option>
+                            {% endfor %}
+                            <option value="none">No Transaction Type (leave unclassified)</option>
+                        </select>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p style="color: var(--thc-warning-800); font-size: var(--thc-body-sm-size); margin: var(--thc-space-3) 0 0 0;">
+            <i class="bi bi-info-circle"></i> <strong>Note:</strong> Known referrers: WALK IN, HOME SERVICE, APE, DIALYSIS, TELE CONSULT
+        </p>
     </div>
     {% endif %}
 

@@ -88,14 +88,52 @@ def get_dashboard_stats(today: date) -> dict:
         .scalar() or 0.0
     )
 
-    # Drafts: not submitted, not cancelled
-    drafts_count = (
+    # Drafts: ALL records with status='draft' across all modules
+    # Count draft transactions (legacy: using submitted field)
+    draft_transactions_count = (
         db.session.query(func.count(Transaction.id))
         .filter(
             (Transaction.submitted == None) | (Transaction.submitted == ''),
             active
         )
         .scalar() or 0
+    )
+
+    # Count draft deposits
+    draft_deposits_count = (
+        db.session.query(func.count(Deposit.id))
+        .filter(Deposit.status == 'draft')
+        .scalar() or 0
+    )
+
+    # Count draft petty cash vouchers
+    draft_pcv_count = (
+        db.session.query(func.count(PettyCashVoucher.id))
+        .filter(PettyCashVoucher.status == 'draft')
+        .scalar() or 0
+    )
+
+    # Count draft funds received
+    draft_funds_received_count = (
+        db.session.query(func.count(FundReceived.id))
+        .filter(FundReceived.status == 'draft')
+        .scalar() or 0
+    )
+
+    # Count draft funds disbursed
+    draft_funds_disbursed_count = (
+        db.session.query(func.count(FundDisbursed.id))
+        .filter(FundDisbursed.status == 'draft')
+        .scalar() or 0
+    )
+
+    # Total drafts across all modules
+    drafts_count = (
+        draft_transactions_count +
+        draft_deposits_count +
+        draft_pcv_count +
+        draft_funds_received_count +
+        draft_funds_disbursed_count
     )
 
     # Pending approval: submitted but no AdminTransaction record
@@ -125,8 +163,28 @@ def get_dashboard_stats(today: date) -> dict:
         .scalar() or 0
     )
 
-    # Total pending approvals (transactions + deposits + petty cash vouchers)
-    pending_approval_count = pending_transactions_count + pending_deposits_count + pending_pcv_count
+    # Pending funds received: FRs with status = 'submitted'
+    pending_funds_received_count = (
+        db.session.query(func.count(FundReceived.id))
+        .filter(FundReceived.status == 'submitted')
+        .scalar() or 0
+    )
+
+    # Pending funds disbursed: FDs with status = 'submitted'
+    pending_funds_disbursed_count = (
+        db.session.query(func.count(FundDisbursed.id))
+        .filter(FundDisbursed.status == 'submitted')
+        .scalar() or 0
+    )
+
+    # Total pending approvals across all modules
+    pending_approval_count = (
+        pending_transactions_count +
+        pending_deposits_count +
+        pending_pcv_count +
+        pending_funds_received_count +
+        pending_funds_disbursed_count
+    )
 
     # Sales Summary by Product Type and Transaction Type (Month-to-Date)
     # Get all active product types

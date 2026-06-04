@@ -279,12 +279,17 @@ def home():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def drafts():
-    """Show all draft transactions (not submitted)"""
+    """Show all draft transactions and deposits (not submitted)"""
     # Get all transactions where submitted is NULL (draft status)
     draft_transactions = Transaction.query.filter(
         Transaction.submitted == None,
         Transaction.cancelled == None
     ).order_by(Transaction.record_date.desc(), Transaction.id.desc()).all()
+
+    # Get all deposits with draft status
+    draft_deposits = Deposit.query.filter(
+        Deposit.status == 'draft'
+    ).order_by(Deposit.record_date.desc(), Deposit.id.desc()).all()
 
     transaction_types = TransactionType.query.filter_by(active=True).order_by(TransactionType.sort_order).all()
     type_lookup = {tt.type_code: tt for tt in transaction_types}
@@ -292,8 +297,9 @@ def drafts():
     context = {
         "app_label": app_label,
         "transactions": draft_transactions,
+        "deposits": draft_deposits,
         "type_lookup": type_lookup,
-        "page_title": "Draft Transactions",
+        "page_title": "Draft Records",
     }
     return render_template("daily_sales/drafts.html", **context)
 
@@ -472,8 +478,9 @@ def edit_transaction(transaction_id):
     # Get return URL from query parameter or referer
     return_url = request.args.get('return_url') or request.referrer or url_for('daily_sales.home')
 
-    # If return_url points to drafts page, new transaction page, or edit page, redirect to daily sales home instead
-    if 'drafts' in return_url.lower() or '/transaction/new' in return_url.lower() or '/edit' in return_url.lower():
+    # If return_url points to new transaction page or edit page, redirect to daily sales home instead
+    # Allow returning to drafts page after submission
+    if '/transaction/new' in return_url.lower() or '/edit' in return_url.lower():
         return_url = url_for('daily_sales.home')
 
     # If return_url is daily sales home without date parameter, add the record date
@@ -1358,6 +1365,9 @@ def view_deposit(deposit_id):
     """View deposit details"""
     deposit = Deposit.query.get_or_404(deposit_id)
 
+    # Get return URL from query parameter or referer
+    return_url = request.args.get('return_url') or request.referrer or url_for('daily_sales.deposit_report')
+
     # Get audit history for this deposit
     audit_history = get_audit_history('deposit', deposit_id)
 
@@ -1365,9 +1375,131 @@ def view_deposit(deposit_id):
         'app_label': app_label,
         'deposit': deposit,
         'audit_history': audit_history,
+        'return_url': return_url,
     }
 
     return render_template(f'{app_name}/view_deposit.html', **context)
+
+
+@bp.route('/deposit/edit/<int:deposit_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def edit_deposit(deposit_id):
+    """Edit draft deposit"""
+    if not _can_transact():
+        abort(403)
+
+    from .models import Deposit, DepositItem
+    from flask_login import current_user
+    from application.blueprints.operations.bank_account.models import BankAccount
+
+    deposit = Deposit.query.get_or_404(deposit_id)
+
+    # Get return URL from query parameter or referer
+    return_url = request.args.get('return_url') or request.referrer or url_for('daily_sales.deposit_report')
+
+    # Only draft deposits can be edited
+    if deposit.status != 'draft':
+        flash('Only draft deposits can be edited.', 'warning')
+        return redirect(url_for(f'{app_name}.view_deposit', deposit_id=deposit_id))
+
+    # Check if user is the creator
+    if deposit.created_by_id != current_user.id:
+        flash('You can only edit your own deposits.', 'danger')
+        return redirect(url_for(f'{app_name}.view_deposit', deposit_id=deposit_id))
+
+    if request.method == 'POST':
+        try:
+            # Update deposit fields
+            deposit.record_date = request.form.get('record_date')
+            deposit.reference_number = request.form.get('reference_number', '')
+            deposit.bank_account_id = request.form.get('bank_account_id', type=int) or None
+            deposit.notes = request.form.get('notes', '')
+            deposit.deductions = float(request.form.get('deductions', 0))
+            deposit.deduction_details = request.form.get('deduction_details', '')
+            deposit.updated_at = datetime.now()
+
+            # Delete existing deposit items
+            DepositItem.query.filter_by(deposit_id=deposit.id).delete()
+
+            # Add new deposit items from selected transactions
+            total_amount = 0
+            transaction_ids = request.form.getlist('transaction_ids')
+
+            for trans_id in transaction_ids:
+                amount = float(request.form.get(f'amount_{trans_id}', 0))
+                if amount > 0:
+                    item = DepositItem()
+                    item.deposit_id = deposit.id
+                    item.transaction_id = int(trans_id)
+                    item.amount = amount
+                    db.session.add(item)
+                    total_amount += amount
+
+            db.session.commit()
+
+            flash(f'Deposit updated successfully! Total amount: ₱{total_amount:,.2f}', 'success')
+            return redirect(return_url)
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating deposit: {str(e)}', 'danger')
+            return redirect(url_for(f'{app_name}.edit_deposit', deposit_id=deposit_id, return_url=return_url))
+
+    # GET request - show form with existing data
+    # Get undeposited transactions (excluding transactions in OTHER deposits, but include transactions in THIS deposit)
+    undeposited_transactions = get_undeposited_cash_transactions()
+
+    # Get transactions currently in this deposit (even if they're marked as deposited)
+    current_deposit_transaction_ids = [item.transaction_id for item in deposit.deposit_items]
+    current_deposit_transactions = []
+
+    for item in deposit.deposit_items:
+        txn = item.transaction
+        if txn:
+            # Calculate cash amount for this transaction
+            cash_amount = 0
+            for tender in txn.transaction_tenders:
+                if tender.tender and 'cash' in tender.tender.tender_name.lower():
+                    cash_amount += tender.amount
+
+            # Calculate how much is deposited in OTHER deposits
+            other_deposited = sum(
+                di.amount for di in txn.deposit_items
+                if di.deposit_id != deposit.id and di.deposit.status not in ['cancelled']
+            )
+
+            remaining_cash = cash_amount - other_deposited
+
+            if remaining_cash > 0:
+                current_deposit_transactions.append({
+                    'transaction': txn,
+                    'cash_amount': cash_amount,
+                    'deposited_amount': other_deposited,
+                    'remaining_cash': remaining_cash,
+                })
+
+    # Merge: current deposit transactions + undeposited transactions (avoiding duplicates)
+    all_available_transactions = current_deposit_transactions.copy()
+    for undeposited in undeposited_transactions:
+        if undeposited['transaction'].id not in current_deposit_transaction_ids:
+            all_available_transactions.append(undeposited)
+
+    bank_accounts = BankAccount.query.filter_by(active=True).order_by(BankAccount.bank_name).all()
+
+    # Get currently selected transaction IDs
+    selected_transaction_ids = current_deposit_transaction_ids
+
+    context = {
+        'app_label': app_label,
+        'deposit': deposit,
+        'undeposited_transactions': all_available_transactions,
+        'bank_accounts': bank_accounts,
+        'selected_transaction_ids': selected_transaction_ids,
+        'return_url': return_url,
+    }
+
+    return render_template('daily_sales/edit_deposit.html', **context)
 
 
 @bp.route('/deposit/<int:deposit_id>/audit_history', methods=['GET'])
@@ -1394,47 +1526,33 @@ def submit_deposit(deposit_id):
     """Submit deposit for approval"""
     deposit = Deposit.query.get_or_404(deposit_id)
 
+    # Get return URL from form or referrer
+    return_url = request.form.get('return_url') or request.referrer or url_for(f'{app_name}.deposit_report')
+
     # Only draft deposits can be submitted
     if deposit.status != 'draft':
         flash('Only draft deposits can be submitted.', 'danger')
-        return redirect(url_for(f'{app_name}.deposit_report'))
+        return redirect(return_url)
 
     # Check if user is the creator
     if deposit.created_by_id != current_user.id:
         flash('You can only submit your own deposits.', 'danger')
-        return redirect(url_for(f'{app_name}.deposit_report'))
+        return redirect(return_url)
 
-    # Admin auto-approve: If user is admin, automatically approve deposit
-    if current_user.is_admin:
-        deposit.status = 'posted'
-        deposit.submitted_by_id = current_user.id
-        deposit.submitted_at = datetime.now()
-        deposit.approved_by_id = current_user.id
-        deposit.approved_at = datetime.now()
-        deposit.updated_at = datetime.now()
+    # Always require submission + approval workflow (even for admins)
+    deposit.status = 'submitted'
+    deposit.submitted_by_id = current_user.id
+    deposit.submitted_at = datetime.now()
+    deposit.updated_at = datetime.now()
 
-        db.session.commit()
+    db.session.commit()
 
-        # Log audit trail for both submit and approve
-        log_status_change('deposit', deposit, 'submitted', user=current_user)
-        log_status_change('deposit', deposit, 'approved', user=current_user)
+    # Log audit trail
+    log_status_change('deposit', deposit, 'submitted', user=current_user)
 
-        flash(f'Deposit auto-approved and posted! Total amount: ₱{deposit.formatted_total_amount}', 'success')
-    else:
-        # Regular user: submit for approval
-        deposit.status = 'submitted'
-        deposit.submitted_by_id = current_user.id
-        deposit.submitted_at = datetime.now()
-        deposit.updated_at = datetime.now()
+    flash(f'Deposit submitted successfully! Waiting for admin approval. Total amount: ₱{deposit.formatted_total_amount}', 'success')
 
-        db.session.commit()
-
-        # Log audit trail
-        log_status_change('deposit', deposit, 'submitted', user=current_user)
-
-        flash(f'Deposit submitted successfully! Waiting for admin approval. Total amount: ₱{deposit.formatted_total_amount}', 'success')
-
-    return redirect(url_for(f'{app_name}.deposit_report'))
+    return redirect(return_url)
 
 
 @bp.route('/transaction/reject/<int:transaction_id>', methods=['POST'])
@@ -2027,6 +2145,105 @@ def daily_report():
         "next_date": curr_date + timedelta(days=1),
     }
     return render_template("daily_sales/daily_sales_report.html", **context)
+
+
+@bp.route("/daily_report_details", methods=["GET"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def daily_report_details():
+    """Page 2: Detailed transaction list, deposits, and expenses"""
+    from datetime import timedelta
+
+    report_date_str = request.args.get('date', str(ph_today()))
+    try:
+        report_date = date.fromisoformat(report_date_str)
+    except ValueError:
+        report_date = ph_today()
+
+    # Get all submitted transactions for the date
+    transactions = Transaction.query.filter(
+        Transaction.record_date == str(report_date),
+        Transaction.submitted.isnot(None),
+        Transaction.cancelled.is_(None)
+    ).order_by(Transaction.id).all()
+
+    # Group transactions by tender
+    transactions_by_tender = {}
+    for txn in transactions:
+        for tender_record in txn.transaction_tenders:
+            tender_name = tender_record.tender.tender_name if tender_record.tender else 'Unknown'
+            if tender_name not in transactions_by_tender:
+                transactions_by_tender[tender_name] = []
+
+            # Calculate transaction total
+            total = sum(detail.amount - detail.discount for detail in txn.transaction_details)
+            total -= (txn.discount or 0)
+
+            transactions_by_tender[tender_name].append({
+                'transaction': txn,
+                'tender_amount': tender_record.amount,
+                'total': total,
+                'type_name': txn.transaction_type.type_name if txn.transaction_type else 'Unclassified'
+            })
+
+    # Calculate totals by tender
+    tender_totals = {}
+    for tender_name, txn_list in transactions_by_tender.items():
+        tender_totals[tender_name] = sum(item['tender_amount'] for item in txn_list)
+
+    # Get deposits for the date
+    deposits = Deposit.query.filter(
+        Deposit.record_date == str(report_date),
+        Deposit.status.in_(['submitted', 'posted'])
+    ).order_by(Deposit.id).all()
+
+    total_deposited = sum(d.total_amount for d in deposits)
+
+    # Get funds received
+    funds_received = FundReceived.query.filter(
+        FundReceived.record_date == str(report_date),
+        FundReceived.status.in_(['submitted', 'posted'])
+    ).order_by(FundReceived.id).all()
+
+    total_funds_received = sum(f.amount for f in funds_received)
+
+    # Get expenses (fund disbursed + petty cash vouchers)
+    fund_disbursed = FundDisbursed.query.filter(
+        FundDisbursed.record_date == str(report_date),
+        FundDisbursed.status.in_(['submitted', 'posted'])
+    ).order_by(FundDisbursed.id).all()
+
+    petty_cash = PettyCashVoucher.query.filter(
+        PettyCashVoucher.record_date == str(report_date),
+        PettyCashVoucher.status.in_(['submitted', 'posted'])
+    ).order_by(PettyCashVoucher.id).all()
+
+    total_expenses = sum(f.amount for f in fund_disbursed) + sum(p.amount for p in petty_cash)
+
+    # Sort tenders by sort_order
+    all_tenders = Tender.query.order_by(Tender.sort_order.desc()).all()
+    tender_order = {t.tender_name: t.sort_order for t in all_tenders}
+    sorted_tender_names = sorted(transactions_by_tender.keys(),
+                                  key=lambda k: tender_order.get(k, 0),
+                                  reverse=True)
+
+    context = {
+        "app_label": app_label,
+        "report_date": report_date,
+        "prev_date": report_date - timedelta(days=1),
+        "next_date": report_date + timedelta(days=1),
+        "transactions_by_tender": transactions_by_tender,
+        "sorted_tender_names": sorted_tender_names,
+        "tender_totals": tender_totals,
+        "deposits": deposits,
+        "total_deposited": total_deposited,
+        "funds_received": funds_received,
+        "total_funds_received": total_funds_received,
+        "fund_disbursed": fund_disbursed,
+        "petty_cash": petty_cash,
+        "total_expenses": total_expenses,
+    }
+    return render_template("daily_sales/daily_report_details.html", **context)
 
 
 @bp.route("/sales_summary_report", methods=["GET"])

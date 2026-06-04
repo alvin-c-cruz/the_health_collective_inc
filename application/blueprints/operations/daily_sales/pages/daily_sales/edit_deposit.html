@@ -1,0 +1,490 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Deposit{% endblock %}
+
+{% block styles %}
+<style>
+  .transaction-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+
+  .amount-input {
+    width: 150px;
+    text-align: right;
+  }
+
+  .transaction-row {
+    background: white;
+  }
+
+  .transaction-row.selected {
+    background: #e8f4fd;
+  }
+
+  .deposit-summary {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+  }
+
+  .deposit-summary h5 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .deposit-summary .total {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #0066cc;
+  }
+
+  /* Bank account autocomplete dropdown */
+  .bank-ac-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.10);
+    max-height: 240px;
+    overflow-y: auto;
+    display: none;
+    font-size: 0.875rem;
+  }
+
+  .bank-ac-item {
+    padding: 7px 14px;
+    cursor: pointer;
+    color: #1a2a2a;
+  }
+
+  .bank-ac-item:hover,
+  .bank-ac-item--active {
+    background: #e6f3f5;
+    color: #1a6473;
+    font-weight: 500;
+  }
+
+  .bank-ac-add {
+    color: #1a6473 !important;
+    font-weight: 600 !important;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .bank-account-wrapper {
+    position: relative;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="thc-page">
+
+  <div class="row mb-3">
+    <div class="col">
+      <h4>Edit Deposit #{{ deposit.id }}</h4>
+      <hr>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <form method="POST" id="depositForm">
+
+    <!-- Deposit Details -->
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <label class="form-label">Deposit Date <span class="text-danger">*</span></label>
+        <input type="date" name="record_date" id="record_date" class="form-control" value="{{ deposit.record_date }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Reference Number</label>
+        <input type="text" name="reference_number" class="form-control upper-case" placeholder="Bank slip / ref no." value="{{ deposit.reference_number or '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Bank / Account</label>
+        <div class="bank-account-wrapper">
+          <input type="text" id="bank-account-input" class="form-control upper-case" placeholder="e.g. BDO Savings - 1234" autocomplete="off" value="{{ deposit.bank_account_display if deposit.bank_account else '' }}">
+          <input type="hidden" id="bank_account_id" name="bank_account_id" value="{{ deposit.bank_account_id or '' }}">
+        </div>
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <label class="form-label">Deductions</label>
+        <input type="number" name="deductions" id="deductions" class="form-control" step="0.01" min="0" value="{{ deposit.deductions or 0.00 }}" placeholder="0.00">
+        <small class="text-muted">Bank charges, fees, etc.</small>
+      </div>
+      <div class="col-md-8">
+        <label class="form-label">Deduction Details</label>
+        <input type="text" name="deduction_details" id="deduction_details" class="form-control" placeholder="e.g., Bank transfer fee, Check clearing fee" value="{{ deposit.deduction_details or '' }}">
+        <small class="text-muted">Describe what the deduction is for</small>
+      </div>
+    </div>
+
+    <div class="row mb-4">
+      <div class="col-md-12">
+        <label class="form-label">Notes</label>
+        <input type="text" name="notes" class="form-control" placeholder="Optional" value="{{ deposit.notes or '' }}">
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mb-3">
+      <div class="col d-flex gap-2">
+        <button type="submit" class="btn btn-primary" id="saveButton">Update Deposit</button>
+        <a href="{{ return_url }}" class="btn btn-secondary btn-sm">Cancel</a>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Undeposited Cash Sales -->
+    <div class="row mb-3">
+      <div class="col">
+        <h5>Select Transactions to Deposit</h5>
+        <p class="text-muted">Check the transactions to include in this deposit. You can adjust the amount for each transaction (cannot exceed cash amount).</p>
+      </div>
+    </div>
+
+    <!-- Deposit Summary -->
+    <div class="deposit-summary">
+      <div class="row">
+        <div class="col-md-4">
+          <h5>Deposit Summary</h5>
+          <p class="mb-0"><span id="selected_count">0</span> transaction(s) selected</p>
+        </div>
+        <div class="col-md-5">
+          <div style="font-size: 0.9rem;">
+            <div class="d-flex justify-content-between mb-1">
+              <span>Total Cash Deposited:</span>
+              <span style="font-weight: 600;">₱<span id="total_amount">0.00</span></span>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+              <span>Less: Deductions:</span>
+              <span style="font-weight: 600; color: #dc3545;">₱<span id="deductions_display">0.00</span></span>
+            </div>
+            <div class="d-flex justify-content-between pt-2" style="border-top: 2px solid #0066cc;">
+              <span style="font-weight: 700;">Net Bank Credit:</span>
+              <span class="total" style="font-size: 1.3rem;">₱<span id="net_amount">0.00</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 text-end">
+          <a href="{{ url_for('daily_sales.deposit_report') }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-file-earmark-bar-graph"></i> View Deposit Report
+          </a>
+        </div>
+      </div>
+    </div>
+
+    {% if undeposited_transactions %}
+    <div class="row">
+      <div class="col">
+        <table class="thc-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">
+                <input type="checkbox" id="select_all" class="transaction-checkbox" onclick="toggleSelectAll()">
+              </th>
+              <th>Date</th>
+              <th>Trans #</th>
+              <th>Patient</th>
+              <th class="text-end">Cash Amount</th>
+              <th class="text-end">Deposited</th>
+              <th class="text-end">Remaining</th>
+              <th class="text-end">Deposit Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in undeposited_transactions %}
+            <tr class="transaction-row" id="row_{{ item.transaction.id }}">
+              <td>
+                <input type="checkbox" name="transaction_ids" value="{{ item.transaction.id }}"
+                       class="transaction-checkbox transaction-check"
+                       data-cash="{{ item.remaining_cash }}"
+                       onclick="toggleRow({{ item.transaction.id }})">
+              </td>
+              <td>{{ item.transaction.formatted_record_date }}</td>
+              <td>{{ item.transaction.record_number }}</td>
+              <td>{{ item.transaction.customer.customer_name if item.transaction.customer else '' }}</td>
+              <td class="text-end">₱{{ "{:,.2f}".format(item.cash_amount) }}</td>
+              <td class="text-end">₱{{ "{:,.2f}".format(item.deposited_amount) }}</td>
+              <td class="text-end">₱{{ "{:,.2f}".format(item.remaining_cash) }}</td>
+              <td class="text-end">
+                <input type="number" name="amount_{{ item.transaction.id }}"
+                       id="amount_{{ item.transaction.id }}"
+                       class="form-control amount-input"
+                       value="{{ "{:.2f}".format(item.remaining_cash) }}"
+                       step="0.01"
+                       min="0"
+                       max="{{ item.remaining_cash }}"
+                       disabled
+                       onchange="updateTotal()">
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="row">
+      <div class="col">
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i> No undeposited cash sales found. All cash has been deposited.
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </form>
+
+</div>
+
+<script>
+  // Bank account options from server
+  const BANK_ACCOUNT_OPTIONS = [
+    {% for ba in bank_accounts %}
+    { id: {{ ba.id }}, name: '{{ ba.bank_name }} — {{ ba.account_number }}' }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  // Set today's date as default
+  document.getElementById('record_date').valueAsDate = new Date();
+
+  // Update totals when deductions change
+  document.getElementById('deductions').addEventListener('input', updateTotal);
+
+  function toggleRow(transactionId) {
+    const checkbox = document.querySelector(`input[value="${transactionId}"]`);
+    const amountInput = document.getElementById(`amount_${transactionId}`);
+    const row = document.getElementById(`row_${transactionId}`);
+
+    if (checkbox.checked) {
+      amountInput.disabled = false;
+      row.classList.add('selected');
+    } else {
+      amountInput.disabled = true;
+      row.classList.remove('selected');
+    }
+
+    updateTotal();
+  }
+
+  function toggleSelectAll() {
+    const selectAll = document.getElementById('select_all');
+    const checkboxes = document.querySelectorAll('.transaction-check');
+
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = selectAll.checked;
+      const transId = checkbox.value;
+      const amountInput = document.getElementById(`amount_${transId}`);
+      const row = document.getElementById(`row_${transId}`);
+
+      if (selectAll.checked) {
+        amountInput.disabled = false;
+        row.classList.add('selected');
+      } else {
+        amountInput.disabled = true;
+        row.classList.remove('selected');
+      }
+    });
+
+    updateTotal();
+  }
+
+  function updateTotal() {
+    const checkboxes = document.querySelectorAll('.transaction-check:checked');
+    let total = 0;
+    let count = 0;
+
+    checkboxes.forEach(checkbox => {
+      const transId = checkbox.value;
+      const amountInput = document.getElementById(`amount_${transId}`);
+      const amount = parseFloat(amountInput.value) || 0;
+      const maxAmount = parseFloat(checkbox.dataset.cash) || 0;
+
+      // Ensure amount doesn't exceed remaining cash
+      if (amount > maxAmount) {
+        amountInput.value = maxAmount.toFixed(2);
+      }
+
+      total += parseFloat(amountInput.value) || 0;
+      count++;
+    });
+
+    // Get deductions
+    const deductionsInput = document.getElementById('deductions');
+    const deductions = parseFloat(deductionsInput.value) || 0;
+
+    // Calculate net amount (total - deductions)
+    const netAmount = total - deductions;
+
+    // Update display
+    document.getElementById('total_amount').textContent = total.toLocaleString('en-PH', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    document.getElementById('deductions_display').textContent = deductions.toLocaleString('en-PH', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    document.getElementById('net_amount').textContent = netAmount.toLocaleString('en-PH', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    document.getElementById('selected_count').textContent = count;
+
+    // Enable/disable save button
+    const saveButton = document.getElementById('saveButton');
+    saveButton.disabled = (count === 0);
+  }
+
+  // Bank account autocomplete
+  function initBankAccountAutocomplete() {
+    const input = document.getElementById('bank-account-input');
+    if (!input) return;
+
+    const wrap = input.parentNode;
+    const dd = document.createElement('div');
+    dd.className = 'bank-ac-dropdown';
+    wrap.appendChild(dd);
+
+    let active = -1;
+
+    function getMatches(q) {
+      if (!q) return BANK_ACCOUNT_OPTIONS.slice(0, 100);
+      const lq = q.toLowerCase();
+      return BANK_ACCOUNT_OPTIONS.filter(function(ba) { return ba.name.toLowerCase().includes(lq); });
+    }
+
+    function hl(text, q) {
+      if (!q) return text;
+      const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return text.replace(re, '<strong style="font-weight:700;color:#1a6473">$1</strong>');
+    }
+
+    function render(q) {
+      const matches = getMatches(q);
+      dd.innerHTML = '';
+      active = -1;
+
+      // Add "Add Bank Account" button at the top
+      const addEl = document.createElement('div');
+      addEl.className = 'bank-ac-item bank-ac-add';
+      addEl.textContent = '+ Add Bank Account';
+      addEl.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        window.open('{{ url_for("bank_account.add_popup") }}', 'add_bank_account', 'width=650,height=580,resizable=no,scrollbars=no');
+        hide();
+      });
+      dd.appendChild(addEl);
+
+      matches.forEach(function(ba) {
+        const item = document.createElement('div');
+        item.className = 'bank-ac-item';
+        item.innerHTML = hl(ba.name, q);
+        item.dataset.id = ba.id;
+        item.dataset.name = ba.name;
+        item.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          input.value = ba.name;
+          document.getElementById('bank_account_id').value = ba.id;
+          hide();
+        });
+        dd.appendChild(item);
+      });
+
+      dd.style.display = 'block';
+    }
+
+    function hide() { dd.style.display = 'none'; active = -1; }
+
+    function setActive(i) {
+      const items = dd.querySelectorAll('.bank-ac-item');
+      items.forEach(function(el, idx) {
+        el.classList.toggle('bank-ac-item--active', idx === i);
+      });
+      active = i;
+    }
+
+    input.addEventListener('input', function() { render(this.value.trim()); });
+    input.addEventListener('focus', function() { render(this.value.trim()); });
+    input.addEventListener('blur', function() { setTimeout(hide, 150); });
+    input.addEventListener('keydown', function(e) {
+      if (dd.style.display === 'none') return;
+      const items = dd.querySelectorAll('.bank-ac-item');
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(active + 1, items.length - 1)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(active - 1, 0)); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (active >= 0 && items[active]) items[active].dispatchEvent(new MouseEvent('mousedown'));
+      } else if (e.key === 'Escape') { hide(); }
+    });
+  }
+
+  // Listen for postMessage from popup window
+  window.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'bank_account_added') {
+      const bankAccountId = e.data.bank_account_id;
+      const bankAccountName = e.data.bank_account_name;
+      // Add to options array
+      BANK_ACCOUNT_OPTIONS.push({ id: bankAccountId, name: bankAccountName });
+      // Set as selected value
+      const input = document.getElementById('bank-account-input');
+      const hiddenInput = document.getElementById('bank_account_id');
+      if (input) input.value = bankAccountName;
+      if (hiddenInput) hiddenInput.value = bankAccountId;
+    }
+  });
+
+  // Update total when amount inputs change
+  document.addEventListener('DOMContentLoaded', function() {
+    const amountInputs = document.querySelectorAll('.amount-input');
+    amountInputs.forEach(input => {
+      input.addEventListener('input', updateTotal);
+    });
+
+    // Initialize bank account autocomplete
+    initBankAccountAutocomplete();
+
+    // Pre-check selected transactions and populate amounts
+    const selectedTransactionIds = [
+      {% for tid in selected_transaction_ids %}{{ tid }}{% if not loop.last %},{% endif %}{% endfor %}
+    ];
+
+    const depositItems = {
+      {% for item in deposit.deposit_items %}
+      {{ item.transaction_id }}: {{ item.amount }}{% if not loop.last %},{% endif %}
+      {% endfor %}
+    };
+
+    // Check checkboxes and populate amounts for selected transactions
+    selectedTransactionIds.forEach(tid => {
+      const checkbox = document.querySelector(`input[name="transaction_ids"][value="${tid}"]`);
+      if (checkbox) {
+        checkbox.checked = true;
+        const row = checkbox.closest('tr');
+        if (row) {
+          row.classList.add('selected');
+          const amountInput = document.getElementById(`amount_${tid}`);
+          if (amountInput && depositItems[tid]) {
+            amountInput.value = depositItems[tid].toFixed(2);
+          }
+        }
+      }
+    });
+
+    // Update total after pre-populating
+    updateTotal();
+  });
+</script>
+
+{% endblock %}

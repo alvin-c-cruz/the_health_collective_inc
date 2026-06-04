@@ -149,6 +149,9 @@
     <a href="?date={{ prev_date }}">&larr; {{ prev_date.strftime("%b %d") }}</a>
     <span class="curr-lbl">{{ curr_report.report_date.strftime("%B %d, %Y") }}</span>
     <a href="?date={{ next_date }}">&rarr; {{ next_date.strftime("%b %d") }}</a>
+    <span style="margin-left: auto;">
+      <a href="{{ url_for('daily_sales.daily_report_details', date=report_date) }}">View Transaction Details →</a>
+    </span>
   </div>
 
 <div class="page">
