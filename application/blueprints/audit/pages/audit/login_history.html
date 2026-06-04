@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width:1400px; margin:0 auto; padding:20px;">
+
+    <!-- Header -->
+    <div style="margin-bottom:30px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h1 style="margin:0; font-size:28px; font-weight:600;">Login History</h1>
+            <a href="{{ url_for('audit.audit_log') }}" class="btn-secondary" style="text-decoration:none;">
+                <i class="bi bi-arrow-left"></i> Back to Audit Log
+            </a>
+        </div>
+        <p style="margin:0; font-size:14px; color:#666;">
+            Security log of all login attempts (successful and failed)
+        </p>
+    </div>
+
+    <!-- Filters Card -->
+    <div style="background:white; border:1px solid #e5e7eb; border-radius:8px; padding:20px; margin-bottom:20px;">
+        <form method="GET" action="{{ url_for('audit.login_history') }}">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:15px;">
+                <!-- User Filter -->
+                <div>
+                    <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">
+                        User
+                    </label>
+                    <select name="user_id" class="form-select" style="width:100%;">
+                        <option value="">All Users</option>
+                        {% for user in available_users %}
+                        <option value="{{ user.id }}" {% if user.id|string == user_id_filter %}selected{% endif %}>
+                            {{ user.user_name }} ({{ user.first_name }} {{ user.last_name }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Status Filter -->
+                <div>
+                    <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">
+                        Status
+                    </label>
+                    <select name="status" class="form-select" style="width:100%;">
+                        <option value="">All Statuses</option>
+                        <option value="success" {% if status_filter == 'success' %}selected{% endif %}>Success</option>
+                        <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+                    </select>
+                </div>
+
+                <!-- Date From -->
+                <div>
+                    <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">
+                        Date From
+                    </label>
+                    <input type="date" name="date_from" class="form-control" value="{{ date_from }}" style="width:100%;">
+                </div>
+
+                <!-- Date To -->
+                <div>
+                    <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">
+                        Date To
+                    </label>
+                    <input type="date" name="date_to" class="form-control" value="{{ date_to }}" style="width:100%;">
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display:flex; gap:10px;">
+                <button type="submit" class="btn-primary">
+                    <i class="bi bi-funnel"></i> Apply Filters
+                </button>
+                <a href="{{ url_for('audit.login_history') }}" class="btn-secondary" style="text-decoration:none;">
+                    <i class="bi bi-x-circle"></i> Clear Filters
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Statistics Bar -->
+    <div style="background:#f8f9fa; border:1px solid #e5e7eb; border-radius:8px; padding:15px; margin-bottom:20px;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:15px;">
+            <div>
+                <div style="font-size:12px; color:#666; margin-bottom:4px;">Total Logins</div>
+                <div style="font-size:24px; font-weight:600; color:#374151;">{{ total_logs }}</div>
+            </div>
+            <div>
+                <div style="font-size:12px; color:#666; margin-bottom:4px;">Successful</div>
+                <div style="font-size:24px; font-weight:600; color:#059669;">{{ total_success }}</div>
+            </div>
+            <div>
+                <div style="font-size:12px; color:#666; margin-bottom:4px;">Failed</div>
+                <div style="font-size:24px; font-weight:600; color:#dc2626;">{{ total_failed }}</div>
+            </div>
+            <div>
+                <div style="font-size:12px; color:#666; margin-bottom:4px;">Success Rate</div>
+                <div style="font-size:24px; font-weight:600; color:#3b82f6;">
+                    {% if total_logs > 0 %}
+                    {{ ((total_success / total_logs) * 100)|round(1) }}%
+                    {% else %}
+                    N/A
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login History Table -->
+    <div style="background:white; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+        {% if login_logs %}
+        <div style="overflow-x:auto;">
+            <table class="table table-hover" style="margin:0; width:100%;">
+                <thead style="background:#f8f9fa; border-bottom:2px solid #e5e7eb;">
+                    <tr>
+                        <th style="padding:12px; font-size:13px; font-weight:600; color:#374151;">Timestamp</th>
+                        <th style="padding:12px; font-size:13px; font-weight:600; color:#374151;">User</th>
+                        <th style="padding:12px; font-size:13px; font-weight:600; color:#374151;">Status</th>
+                        <th style="padding:12px; font-size:13px; font-weight:600; color:#374151;">IP Address</th>
+                        <th style="padding:12px; font-size:13px; font-weight:600; color:#374151;">Failure Reason</th>
+                        <th style="padding:12px; font-size:13px; font-weight:600; color:#374151;">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in login_logs %}
+                    <tr>
+                        <!-- Timestamp -->
+                        <td style="padding:12px; font-size:13px; color:#374151; white-space:nowrap;">
+                            {{ log.formatted_login_time }}
+                        </td>
+
+                        <!-- User -->
+                        <td style="padding:12px; font-size:13px; color:#374151;">
+                            <div style="font-weight:600;">{{ log.username }}</div>
+                            {% if log.full_name %}
+                            <div style="font-size:12px; color:#666;">{{ log.full_name }}</div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Status -->
+                        <td style="padding:12px; font-size:13px;">
+                            {% if log.status == 'success' %}
+                            <span class="thc-rec-badge" style="background:#d1fae5; color:#065f46;">
+                                <i class="bi bi-check-circle-fill"></i> Success
+                            </span>
+                            {% else %}
+                            <span class="thc-rec-badge" style="background:#fee2e2; color:#991b1b;">
+                                <i class="bi bi-x-circle-fill"></i> Failed
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- IP Address -->
+                        <td style="padding:12px; font-size:13px; font-family:monospace; color:#374151;">
+                            {{ log.ip_address or 'N/A' }}
+                        </td>
+
+                        <!-- Failure Reason -->
+                        <td style="padding:12px; font-size:13px; color:#dc2626;">
+                            {{ log.failure_reason or '-' }}
+                        </td>
+
+                        <!-- Details Button -->
+                        <td style="padding:12px; font-size:13px;">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="toggleDetails('login-{{ log.id }}')" style="padding:4px 12px; font-size:12px;">
+                                <i class="bi bi-chevron-down"></i> Details
+                            </button>
+                        </td>
+                    </tr>
+
+                    <!-- Expandable Details Row -->
+                    <tr id="login-{{ log.id }}" style="display:none;">
+                        <td colspan="6" style="padding:0; background:#f8f9fa; border-top:1px solid #e5e7eb;">
+                            <div style="padding:20px;">
+                                <!-- User Agent -->
+                                {% if log.user_agent %}
+                                <div style="margin-bottom:15px;">
+                                    <div style="font-size:11px; color:#666; font-weight:600; margin-bottom:6px;">USER AGENT:</div>
+                                    <div style="padding:10px; background:white; border:1px solid #e5e7eb; border-radius:4px; font-family:monospace; font-size:12px; color:#374151; word-break:break-all;">
+                                        {{ log.user_agent }}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <!-- Additional Info -->
+                                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
+                                    <div>
+                                        <div style="font-size:11px; color:#666; margin-bottom:4px;">USER ID</div>
+                                        <div style="font-size:13px; color:#374151;">{{ log.user_id or 'N/A' }}</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size:11px; color:#666; margin-bottom:4px;">LOGIN TIME (FULL)</div>
+                                        <div style="font-size:13px; color:#374151;">{{ log.login_time }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <div style="padding:20px; border-top:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-size:14px; color:#666;">
+                Page {{ pagination.page }} of {{ pagination.pages }}
+            </div>
+            <div style="display:flex; gap:8px;">
+                {% if pagination.has_prev %}
+                <a href="{{ url_for('audit.login_history', page=pagination.prev_num, user_id=user_id_filter, status=status_filter, date_from=date_from, date_to=date_to, per_page=per_page) }}"
+                   class="btn btn-sm btn-outline-secondary">
+                    &larr; Previous
+                </a>
+                {% endif %}
+
+                {% if pagination.has_next %}
+                <a href="{{ url_for('audit.login_history', page=pagination.next_num, user_id=user_id_filter, status=status_filter, date_from=date_from, date_to=date_to, per_page=per_page) }}"
+                   class="btn btn-sm btn-outline-secondary">
+                    Next &rarr;
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div style="padding:60px 20px; text-align:center;">
+            <div style="font-size:48px; color:#e5e7eb; margin-bottom:15px;">
+                <i class="bi bi-shield-lock"></i>
+            </div>
+            <p style="font-size:18px; font-weight:600; color:#374151; margin:0 0 8px 0;">No Login History Found</p>
+            <p style="font-size:14px; color:#666; margin:0;">
+                {% if user_id_filter or status_filter or date_from or date_to %}
+                Try adjusting your filters to see more results.
+                {% else %}
+                Login history will appear here once users start logging in.
+                {% endif %}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+function toggleDetails(rowId) {
+    var row = document.getElementById(rowId);
+    if (row.style.display === 'none') {
+        row.style.display = 'table-row';
+    } else {
+        row.style.display = 'none';
+    }
+}
+</script>
+
+{% endblock %}

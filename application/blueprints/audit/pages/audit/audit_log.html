@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width:1400px; margin:0 auto; padding:20px;">
+
+    <!-- Header -->
+    <div style="margin-bottom:30px;">
+        <h1 style="margin:0 0 10px 0; font-size:28px; font-weight:600;">Audit Trail Viewer</h1>
+        <p style="margin:0; font-size:14px; color:#666;">
+            Comprehensive audit log of all changes across all modules
+            {% if stats_period != 'all time' %}
+            ({{ stats_period }})
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- Filters Card -->
+    <div style="background:white; border:1px solid #e5e7eb; border-radius:8px; padding:20px; margin-bottom:20px;">
+        <form method="GET" action="{{ url_for('audit.audit_log') }}">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:15px;">
+                <!-- Module Filter -->
+                <div>
+                    <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">
+                        Module
+                    </label>
+                    <select name="module" class="form-select" style="width:100%;">
+                        <option value="">All Modules</option>
+                        {% for module in available_modules %}
+                        <option value="{{ module }}" {% if module == module_filter %}selected{% endif %}>
+                            {{ module | replace('_', ' ') | title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Action Filter -->
+                <div>
+                    <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">
+                        Action
+                    </label>
+                    <select name="action" class="form-select" style="width:100%;">
+                        <option value="">All Actions</option>
+                        {% for action in available_actions %}
+                        <option value="{{ action }}" {% if action == action_filter %}selected{% endif %}>
+                            {{ action | replace('_', ' ') | title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- User Filter -->
+                <div>
+                    <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">
+                        User
+                    </label>
+                    <select name="user_id" class="form-select" style="width:100%;">
+                        <option value="">All Users</option>
+                        {% for user in available_users %}
+                        <option value="{{ user.id }}" {% if user.id|string == user_id_filter %}selected{% endif %}>
+                            {{ user.user_name }} ({{ user.first_name }} {{ user.last_name }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Date From -->
+                <div>
+                    <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">
+                        Date From
+                    </label>
+                    <input type="date" name="date_from" class="form-control" value="{{ date_from }}" style="width:100%;">
+                </div>
+
+                <!-- Date To -->
+                <div>
+                    <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">
+                        Date To
+                    </label>
+                    <input type="date" name="date_to" class="form-control" value="{{ date_to }}" style="width:100%;">
+                </div>
+
+                <!-- Search -->
+                <div>
+                    <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">
+                        Search
+                    </label>
+                    <input type="text" name="search" class="form-control" placeholder="Search records..." value="{{ search }}" style="width:100%;">
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display:flex; gap:10px;">
+                <button type="submit" class="btn-primary">
+                    <i class="bi bi-funnel"></i> Apply Filters
+                </button>
+                <a href="{{ url_for('audit.audit_log') }}" class="btn-secondary" style="text-decoration:none;">
+                    <i class="bi bi-x-circle"></i> Clear Filters
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Statistics Bar -->
+    <div style="background:#f8f9fa; border:1px solid #e5e7eb; border-radius:8px; padding:15px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+            <span style="font-size:14px; color:#666;">Total Audit Entries:</span>
+            <span style="font-size:18px; font-weight:600; color:#374151; margin-left:8px;">{{ total_logs }}</span>
+        </div>
+        <div style="font-size:14px; color:#666;">
+            Showing {{ audit_logs|length }} entries (Page {{ pagination.page }} of {{ pagination.pages }})
+        </div>
+    </div>
+
+    <!-- Audit Log Table -->
+    <div style="background:white; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+        {% if audit_logs %}
+        <div style="overflow-x:auto;">
+            <table class="table table-hover" style="margin:0; width:100%;">
+                <thead style="background:#f8f9fa; border-bottom:2px solid #e5e7eb;">
+                    <tr>
+                        <th style="padding:12px; font-size:13px; font-weight:600; color:#374151;">Timestamp</th>
+                        <th style="padding:12px; font-size:13px; font-weight:600; color:#374151;">Module</th>
+                        <th style="padding:12px; font-size:13px; font-weight:600; color:#374151;">Action</th>
+                        <th style="padding:12px; font-size:13px; font-weight:600; color:#374151;">Record</th>
+                        <th style="padding:12px; font-size:13px; font-weight:600; color:#374151;">User</th>
+                        <th style="padding:12px; font-size:13px; font-weight:600; color:#374151;">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in audit_logs %}
+                    <tr>
+                        <!-- Timestamp -->
+                        <td style="padding:12px; font-size:13px; color:#374151; white-space:nowrap;">
+                            {{ log.formatted_timestamp }}
+                        </td>
+
+                        <!-- Module -->
+                        <td style="padding:12px; font-size:13px;">
+                            <span class="thc-rec-badge" style="background:#e0e7ff; color:#3730a3;">
+                                {{ log.module | replace('_', ' ') | title }}
+                            </span>
+                        </td>
+
+                        <!-- Action -->
+                        <td style="padding:12px; font-size:13px;">
+                            <span class="thc-rec-badge" style="
+                                {% if log.action == 'created' %}background:#d1fae5; color:#065f46;
+                                {% elif log.action == 'updated' %}background:#dbeafe; color:#1e40af;
+                                {% elif log.action == 'deleted' %}background:#fee2e2; color:#991b1b;
+                                {% elif log.action == 'submitted' %}background:#ede9fe; color:#5b21b6;
+                                {% elif log.action == 'approved' %}background:#d1fae5; color:#065f46;
+                                {% elif log.action == 'cancelled' %}background:#fee2e2; color:#991b1b;
+                                {% else %}background:#e5e7eb; color:#374151;
+                                {% endif %}">
+                                {{ log.action | replace('_', ' ') | title }}
+                            </span>
+                        </td>
+
+                        <!-- Record Identifier -->
+                        <td style="padding:12px; font-size:13px; color:#374151;">
+                            {{ log.record_identifier or 'N/A' }}
+                        </td>
+
+                        <!-- User -->
+                        <td style="padding:12px; font-size:13px; color:#374151;">
+                            {% if log.user %}
+                                {{ log.user.user_name }}
+                            {% elif log.username %}
+                                {{ log.username }} <span style="color:#999;">(deleted)</span>
+                            {% else %}
+                                Unknown
+                            {% endif %}
+                        </td>
+
+                        <!-- Details Button -->
+                        <td style="padding:12px; font-size:13px;">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="toggleDetails('log-{{ log.id }}')" style="padding:4px 12px; font-size:12px;">
+                                <i class="bi bi-chevron-down"></i> Details
+                            </button>
+                        </td>
+                    </tr>
+
+                    <!-- Expandable Details Row -->
+                    <tr id="log-{{ log.id }}" style="display:none;">
+                        <td colspan="6" style="padding:0; background:#f8f9fa; border-top:1px solid #e5e7eb;">
+                            <div style="padding:20px;">
+                                <!-- Summary -->
+                                <div style="font-size:14px; font-weight:600; margin-bottom:15px; color:#374151;">
+                                    {{ log.summary }}
+                                </div>
+
+                                <!-- Metadata -->
+                                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:15px;">
+                                    <div>
+                                        <div style="font-size:11px; color:#666; margin-bottom:4px;">IP ADDRESS</div>
+                                        <div style="font-size:13px; color:#374151;">{{ log.ip_address or 'N/A' }}</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size:11px; color:#666; margin-bottom:4px;">RECORD ID</div>
+                                        <div style="font-size:13px; color:#374151;">{{ log.record_id or 'N/A' }}</div>
+                                    </div>
+                                </div>
+
+                                <!-- Reason -->
+                                {% if log.reason %}
+                                <div style="background:#fef3c7; border-left:3px solid #f59e0b; padding:10px; margin-bottom:10px; border-radius:4px;">
+                                    <div style="font-size:11px; color:#92400e; font-weight:600; margin-bottom:4px;">REASON:</div>
+                                    <div style="font-size:13px; color:#78350f;">{{ log.reason }}</div>
+                                </div>
+                                {% endif %}
+
+                                <!-- Notes -->
+                                {% if log.notes %}
+                                <div style="background:#f1f5f9; border-left:3px solid #64748b; padding:10px; margin-bottom:10px; border-radius:4px;">
+                                    <div style="font-size:11px; color:#475569; font-weight:600; margin-bottom:4px;">NOTES:</div>
+                                    <div style="font-size:13px; color:#334155;">{{ log.notes }}</div>
+                                </div>
+                                {% endif %}
+
+                                <!-- Changed Fields -->
+                                {% if log.changed_fields %}
+                                <div style="margin-top:15px;">
+                                    <div style="font-size:12px; color:#666; margin-bottom:10px; font-weight:600;">
+                                        CHANGES ({{ log.changed_fields|length }} fields):
+                                    </div>
+                                    <div style="display:grid; gap:8px;">
+                                        {% for field in log.changed_fields %}
+                                        <div style="background:white; padding:10px 12px; border-radius:4px; border:1px solid #e5e7eb; display:grid; grid-template-columns:180px 1fr 1fr; gap:12px; font-size:13px;">
+                                            <div style="font-weight:600; color:#374151;">{{ field | replace('_', ' ') | title }}:</div>
+                                            <div style="color:#dc2626;">
+                                                <span style="font-size:11px; color:#666; display:block; margin-bottom:2px;">Old Value:</span>
+                                                <code style="background:#fee2e2; padding:2px 6px; border-radius:3px; font-size:12px;">{{ log.old_values.get(field, 'N/A') }}</code>
+                                            </div>
+                                            <div style="color:#059669;">
+                                                <span style="font-size:11px; color:#666; display:block; margin-bottom:2px;">New Value:</span>
+                                                <code style="background:#d1fae5; padding:2px 6px; border-radius:3px; font-size:12px;">{{ log.new_values.get(field, 'N/A') }}</code>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <!-- User Agent (collapsed by default) -->
+                                {% if log.user_agent %}
+                                <details style="margin-top:15px; font-size:12px;">
+                                    <summary style="cursor:pointer; color:#666; font-weight:600;">User Agent</summary>
+                                    <div style="margin-top:8px; padding:8px; background:white; border:1px solid #e5e7eb; border-radius:4px; font-family:monospace; font-size:11px; color:#374151; word-break:break-all;">
+                                        {{ log.user_agent }}
+                                    </div>
+                                </details>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <div style="padding:20px; border-top:1px solid #e5e7eb; display:flex; justify-content:between; align-items:center;">
+            <div style="font-size:14px; color:#666;">
+                Page {{ pagination.page }} of {{ pagination.pages }}
+            </div>
+            <div style="display:flex; gap:8px;">
+                {% if pagination.has_prev %}
+                <a href="{{ url_for('audit.audit_log', page=pagination.prev_num, module=module_filter, action=action_filter, user_id=user_id_filter, date_from=date_from, date_to=date_to, search=search, per_page=per_page) }}"
+                   class="btn btn-sm btn-outline-secondary">
+                    &larr; Previous
+                </a>
+                {% endif %}
+
+                {% if pagination.has_next %}
+                <a href="{{ url_for('audit.audit_log', page=pagination.next_num, module=module_filter, action=action_filter, user_id=user_id_filter, date_from=date_from, date_to=date_to, search=search, per_page=per_page) }}"
+                   class="btn btn-sm btn-outline-secondary">
+                    Next &rarr;
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div style="padding:60px 20px; text-align:center;">
+            <div style="font-size:48px; color:#e5e7eb; margin-bottom:15px;">
+                <i class="bi bi-inbox"></i>
+            </div>
+            <p style="font-size:18px; font-weight:600; color:#374151; margin:0 0 8px 0;">No Audit Logs Found</p>
+            <p style="font-size:14px; color:#666; margin:0;">
+                {% if module_filter or action_filter or user_id_filter or date_from or date_to or search %}
+                Try adjusting your filters to see more results.
+                {% else %}
+                Audit logs will appear here once system activity is recorded.
+                {% endif %}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+function toggleDetails(rowId) {
+    var row = document.getElementById(rowId);
+    if (row.style.display === 'none') {
+        row.style.display = 'table-row';
+    } else {
+        row.style.display = 'none';
+    }
+}
+</script>
+
+{% endblock %}
