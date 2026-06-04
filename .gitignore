@@ -157,3 +157,11 @@ dmypy.json
 NUL
 *.tmp
 *.bak
+
+# Backup HTML files
+*_backup.html
+*_old_backup.html
+*_enhanced.html
+*_improved.html
+*_new.html
+*_v2_backup.html
