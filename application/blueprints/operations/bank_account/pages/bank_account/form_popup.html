@@ -255,6 +255,22 @@
                     {% endif %}
                 </div>
 
+                <!-- Display Name (Editable) -->
+                <div class="mb-3">
+                    <label for="display_name" class="form-label">Display Name (how it appears in dropdowns)</label>
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="display_name"
+                        name="display_name"
+                        value="{{ form.display_name or '' }}"
+                        placeholder="Auto-generated if left empty"
+                        style="font-family: monospace; font-weight: 600; font-size: 0.875rem;">
+                    <small class="text-muted d-block mt-1" style="font-size: 0.7rem;">
+                        ℹ️ Leave empty to auto-generate as "Bank Name — Account Number"
+                    </small>
+                </div>
+
                 <div class="mb-3">
                     <label for="notes" class="form-label">Notes</label>
                     <textarea
@@ -293,12 +309,57 @@
         // Track if form is being submitted
         let formSubmitting = false;
 
-        // Auto-focus first input
+        // Auto-focus first input and setup display name updater
         document.addEventListener('DOMContentLoaded', function() {
             const firstInput = document.getElementById('bank_name');
             if (firstInput) {
                 firstInput.focus();
             }
+
+            // Setup display name auto-suggest
+            const bankNameInput = document.getElementById('bank_name');
+            const accountNumberInput = document.getElementById('account_number');
+            const displayNameInput = document.getElementById('display_name');
+
+            // Track if user has manually edited display_name
+            let userEditedDisplayName = false;
+
+            // Mark as edited when user types in display_name field
+            displayNameInput.addEventListener('input', function() {
+                if (displayNameInput.value.trim() !== '') {
+                    userEditedDisplayName = true;
+                } else {
+                    userEditedDisplayName = false;
+                }
+            });
+
+            function updateDisplayNamePlaceholder() {
+                const bankName = bankNameInput.value.trim();
+                const accountNumber = accountNumberInput.value.trim();
+
+                // Update placeholder to show what will be auto-generated
+                if (bankName && accountNumber) {
+                    displayNameInput.placeholder = `${bankName} — ${accountNumber}`;
+                } else if (bankName) {
+                    displayNameInput.placeholder = bankName;
+                } else if (accountNumber) {
+                    displayNameInput.placeholder = accountNumber;
+                } else {
+                    displayNameInput.placeholder = 'Auto-generated if left empty';
+                }
+
+                // Auto-fill display_name if user hasn't manually edited it
+                if (!userEditedDisplayName && bankName && accountNumber) {
+                    displayNameInput.value = `${bankName} — ${accountNumber}`;
+                }
+            }
+
+            // Update on input
+            bankNameInput.addEventListener('input', updateDisplayNamePlaceholder);
+            accountNumberInput.addEventListener('input', updateDisplayNamePlaceholder);
+
+            // Initial update
+            updateDisplayNamePlaceholder();
         });
 
         // Handle form submission

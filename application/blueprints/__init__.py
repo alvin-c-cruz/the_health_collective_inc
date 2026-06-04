@@ -1,5 +1,6 @@
 from . import dashboard
 from . import user
+from . import audit
 
 from .register import vendor
 from .register import customer

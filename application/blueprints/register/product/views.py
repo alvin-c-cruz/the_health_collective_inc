@@ -12,6 +12,10 @@ from .forms import Form
 from application.extensions import db
 from application.blueprints.user import login_required, roles_accepted
 from flask_login import current_user
+from application.blueprints.audit.utils import (
+    log_create, log_update, log_delete,
+    model_to_dict, get_record_identifier
+)
 
 from . import app_name, app_label
 
@@ -103,6 +107,13 @@ def delete(record_id):
     obj = Obj.query.get_or_404(record_id)
     preparer = obj.preparer
 
+    # Capture values before deletion
+    old_values = model_to_dict(obj, [
+        'product_name', 'product_type_id'
+    ])
+    record_id_for_log = obj.id
+    identifier = str(obj)
+
     try:
         # Check for related transaction details
         from application.blueprints.operations.daily_sales.models import TransactionDetail
@@ -119,8 +130,17 @@ def delete(record_id):
 
         # Now delete the product
         db.session.delete(obj)
+
+        # Log deletion before commit
+        log_delete(
+            module='product',
+            record_id=record_id_for_log,
+            record_identifier=identifier,
+            old_values=old_values
+        )
+
         db.session.commit()
-        flash(f"{obj} has been deleted.", category="success")
+        flash(f"{identifier} has been deleted.", category="success")
 
     except (IntegrityError, AssertionError) as e:
         db.session.rollback()
@@ -242,6 +262,19 @@ def upload():
                 )
 
                 db.session.add(product)
+                db.session.flush()
+
+                # Log creation after flush to get ID
+                log_create(
+                    module='product',
+                    record_id=product.id,
+                    record_identifier=str(product),
+                    new_values=model_to_dict(product, [
+                        'product_name', 'product_type_id'
+                    ]),
+                    notes='Product imported from Excel'
+                )
+
                 db.session.commit()
 
                 preparer_data = {

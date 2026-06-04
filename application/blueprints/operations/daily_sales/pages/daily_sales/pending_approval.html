@@ -19,7 +19,7 @@
     {% endwith %}
 
     <!-- Transactions Section -->
-    {% if transactions or deposits or funds_received or funds_disbursed or petty_cash_vouchers %}
+    {% if transactions %}
     <div class="thc-card mb-4">
         <h5 class="mb-3">Transactions</h5>
         <table class="table table-sm table-hover mb-0">
@@ -53,20 +53,16 @@
                            class="thc-btn thc-btn-sm thc-btn-secondary">View</a>
                     </td>
                 </tr>
-                {% else %}
-                <tr>
-                    <td colspan="6" class="text-center text-muted py-4">No transactions pending approval.</td>
-                </tr>
                 {% endfor %}
             </tbody>
         </table>
-        {% if transactions %}
         <div class="text-muted small mt-2">{{ transactions | length }} transaction{{ 's' if transactions | length != 1 }} pending approval</div>
-        {% endif %}
     </div>
+    {% endif %}
 
     <!-- Deposits Section -->
-    <div class="thc-card">
+    {% if deposits %}
+    <div class="thc-card mb-4">
         <h5 class="mb-3">Deposits</h5>
         <table class="table table-sm table-hover mb-0">
             <thead>
@@ -108,19 +104,60 @@
                            class="thc-btn thc-btn-sm thc-btn-secondary">View</a>
                     </td>
                 </tr>
-                {% else %}
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="text-muted small mt-2">{{ deposits | length }} deposit{{ 's' if deposits | length != 1 }} pending approval</div>
+    </div>
+    {% endif %}
+
+    <!-- Collections Section -->
+    {% if collections %}
+    <div class="thc-card mb-4">
+        <h5 class="mb-3">Collections</h5>
+        <table class="table table-sm table-hover mb-0">
+            <thead>
                 <tr>
-                    <td colspan="8" class="text-center text-muted py-4">No deposits pending approval.</td>
+                    <th>Date</th>
+                    <th>Tender</th>
+                    <th>Reference #</th>
+                    <th class="text-end">Total Amount</th>
+                    <th class="text-end">Deductions</th>
+                    <th class="text-end">Net Amount</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for collection in collections %}
+                <tr>
+                    <td class="text-nowrap">{{ collection.collection_date }}</td>
+                    <td>{{ collection.tender.tender_name if collection.tender else '—' }}</td>
+                    <td class="font-monospace small">{{ collection.reference or '—' }}</td>
+                    <td class="text-end font-monospace">{{ collection.formatted_total_amount }}</td>
+                    <td class="text-end font-monospace" style="color: #dc3545;">
+                        {% if collection.total_deductions and collection.total_deductions > 0 %}
+                            {{ "{:,.2f}".format(collection.total_deductions) }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td class="text-end font-monospace fw-bold" style="color: #0066cc;">
+                        {{ "{:,.2f}".format(collection.total_amount - (collection.total_deductions or 0)) }}
+                    </td>
+                    <td class="text-end" style="white-space:nowrap;">
+                        <a href="{{ url_for('collections.view_collection', collection_id=collection.id) }}"
+                           class="thc-btn thc-btn-sm thc-btn-secondary">View</a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-        {% if deposits %}
-        <div class="text-muted small mt-2">{{ deposits | length }} deposit{{ 's' if deposits | length != 1 }} pending approval</div>
-        {% endif %}
+        <div class="text-muted small mt-2">{{ collections | length }} collection{{ 's' if collections | length != 1 }} pending approval</div>
     </div>
+    {% endif %}
 
     <!-- Funds Received Section -->
+    {% if funds_received %}
     <div class="thc-card mb-4">
         <h5 class="mb-3">Funds Received</h5>
         <table class="table table-sm table-hover mb-0">
@@ -148,20 +185,16 @@
                         </form>
                     </td>
                 </tr>
-                {% else %}
-                <tr>
-                    <td colspan="6" class="text-center text-muted py-4">No funds received pending approval.</td>
-                </tr>
                 {% endfor %}
             </tbody>
         </table>
-        {% if funds_received %}
         <div class="text-muted small mt-2">{{ funds_received | length }} fund{{ 's' if funds_received | length != 1 }} received pending approval</div>
-        {% endif %}
     </div>
+    {% endif %}
 
     <!-- Funds Disbursed Section -->
-    <div class="thc-card">
+    {% if funds_disbursed or petty_cash_vouchers %}
+    <div class="thc-card mb-4">
         <h5 class="mb-3">Funds Disbursed</h5>
         <table class="table table-sm table-hover mb-0">
             <thead>
@@ -175,6 +208,7 @@
                 </tr>
             </thead>
             <tbody>
+                {% if funds_disbursed %}
                 {% for fund in funds_disbursed %}
                 <tr>
                     <td class="text-nowrap">{{ fund.record_date }}</td>
@@ -188,16 +222,16 @@
                         </form>
                     </td>
                 </tr>
-                {% else %}
-                <tr>
-                    <td colspan="6" class="text-center text-muted py-4">No funds disbursed pending approval.</td>
-                </tr>
                 {% endfor %}
+                {% endif %}
 
                 <!-- Petty Cash Vouchers Section -->
+                {% if petty_cash_vouchers %}
+                {% if funds_disbursed %}
                 <tr class="table-section-header">
                     <td colspan="6"><strong>Petty Cash Vouchers</strong></td>
                 </tr>
+                {% endif %}
                 {% for voucher in petty_cash_vouchers %}
                 <tr>
                     <td class="text-nowrap">{{ voucher.record_date }}</td>
@@ -212,11 +246,8 @@
                         </form>
                     </td>
                 </tr>
-                {% else %}
-                <tr>
-                    <td colspan="6" class="text-center text-muted py-4">No petty cash vouchers pending approval.</td>
-                </tr>
                 {% endfor %}
+                {% endif %}
             </tbody>
         </table>
         {% if funds_disbursed %}
@@ -226,9 +257,12 @@
         <div class="text-muted small mt-2">{{ petty_cash_vouchers | length }} petty cash voucher{{ 's' if petty_cash_vouchers | length != 1 }} pending approval</div>
         {% endif %}
     </div>
-    {% else %}
+    {% endif %}
+
+    <!-- Empty State -->
+    {% if not (transactions or deposits or collections or funds_received or funds_disbursed or petty_cash_vouchers) %}
     <div class="thc-card">
-        <div class="text-center text-muted py-4">All caught up — no transactions, deposits, funds, or petty cash vouchers pending approval.</div>
+        <div class="text-center text-muted py-4">All caught up — no transactions, deposits, collections, funds, or petty cash vouchers pending approval.</div>
     </div>
     {% endif %}
 

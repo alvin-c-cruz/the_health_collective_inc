@@ -9,6 +9,10 @@ from .models import ObjAdmin as Approver
 from .models import ObjUser as Preparer
 from .forms import Form
 from . import app_name, app_label
+from application.blueprints.audit.utils import (
+    log_create, log_update, log_delete,
+    model_to_dict, get_record_identifier
+)
 
 bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_name}")
 ROLES_ACCEPTED = app_label
@@ -74,13 +78,30 @@ def edit(record_id):
 @roles_accepted([ROLES_ACCEPTED])
 def delete(record_id):
     obj = Obj.query.get_or_404(record_id)
+
+    # Capture values before deletion
+    old_values = model_to_dict(obj, [
+        'company_name', 'contact_person', 'contact_number', 'address', 'tin', 'active'
+    ])
+    record_id_for_log = obj.id
+    identifier = str(obj)
+
     try:
         preparer = obj.preparer
         if preparer:
             db.session.delete(preparer)
         db.session.delete(obj)
+
+        # Log deletion before commit
+        log_delete(
+            module='company',
+            record_id=record_id_for_log,
+            record_identifier=identifier,
+            old_values=old_values
+        )
+
         db.session.commit()
-        flash(f"{obj} deleted.", "success")
+        flash(f"{identifier} deleted.", "success")
     except IntegrityError:
         db.session.rollback()
         flash(f"Cannot delete {obj} — it has related records.", "danger")
@@ -103,6 +124,19 @@ def quick_add():
         active=True,
     )
     db.session.add(company)
+    db.session.flush()
+
+    # Log creation after flush to get ID
+    log_create(
+        module='company',
+        record_id=company.id,
+        record_identifier=str(company),
+        new_values=model_to_dict(company, [
+            'company_name', 'contact_person', 'contact_number', 'address', 'tin', 'active'
+        ]),
+        notes='Company quick-added'
+    )
+
     db.session.commit()
     return jsonify({"id": company.id, "company_name": company.company_name})
 

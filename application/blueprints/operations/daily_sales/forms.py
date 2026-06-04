@@ -7,7 +7,14 @@ from .models import TransactionTender as ObjTender
 from .admin_models import UserTransaction as Preparer
 from datetime import datetime
 from . import app_name
-from .audit_logger import log_create, log_update, log_status_change, get_model_snapshot
+from .audit_logger import log_status_change, get_model_snapshot
+
+# Centralized audit logging
+from application.blueprints.audit.utils import (
+    log_create as audit_log_create,
+    log_update as audit_log_update,
+    model_to_dict
+)
 
 from ...register.customer import Customer
 from ...register.product import Product
@@ -393,10 +400,47 @@ class Form:
         # Audit logging
         try:
             from flask_login import current_user
+
+            # Build transaction identifier
+            customer_name = record.customer.customer_name if record.customer else 'No customer'
+            txn_type = record.transaction_type.type_name if record.transaction_type else 'No type'
+
+            # Calculate total amount
+            total_amount = sum(t.amount for t in record.transaction_tenders)
+
+            # Get tender names
+            tender_names = ', '.join([t.tender.tender_name for t in record.transaction_tenders if t.tender])
+
+            record_identifier = f"Transaction #{record.record_number} - {customer_name}"
+
             if is_new:
-                log_create('transaction', record, notes='Transaction created')
+                # CREATE action
+                notes = f"{txn_type} • Total: ₱{total_amount:,.2f} • {tender_names if tender_names else 'No tender'}"
+
+                audit_log_create(
+                    module='daily_sales',
+                    record_id=record.id,
+                    record_identifier=record_identifier,
+                    new_values=model_to_dict(record, [
+                        'record_date', 'record_number', 'dashlabs_number', 'pos_number',
+                        'transaction_type_id', 'customer_id', 'discount', 'description', 'status'
+                    ]),
+                    notes=notes
+                )
             elif old_snapshot:
-                log_update('transaction', record, old_snapshot, notes='Transaction updated')
+                # UPDATE action
+                new_snapshot = get_model_snapshot(record)
+                notes = f"{txn_type} • Total: ₱{total_amount:,.2f} • {tender_names if tender_names else 'No tender'}"
+
+                audit_log_update(
+                    module='daily_sales',
+                    record_id=record.id,
+                    record_identifier=record_identifier,
+                    old_values=old_snapshot,
+                    new_values=new_snapshot,
+                    notes=notes
+                )
+
             db.session.commit()
         except Exception as e:
             # Don't fail the transaction save if audit logging fails, but warn user

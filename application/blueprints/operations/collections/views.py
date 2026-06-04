@@ -12,6 +12,11 @@ from ..ape_batch.models import ApeBatch
 from ..bank_account.models import BankAccount
 from ...register.tender.models import Tender
 
+from application.blueprints.audit.utils import (
+    log_create, log_update, log_delete, log_status_change,
+    model_to_dict, get_record_identifier
+)
+
 bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_name}")
 ROLES_ACCEPTED = app_label
 
@@ -31,6 +36,7 @@ def _outstanding_lines(tender_id=None, ape_batch_id=None):
         TransactionTender.tender_id.in_(receivable_ids)
     ).join(TransactionTender.transaction).filter(
         db.text("\"transaction\".submitted IS NOT NULL"),
+        db.text("\"transaction\".approved_at IS NOT NULL"),  # Only approved transactions
         db.text("\"transaction\".cancelled IS NULL"),
     )
     if tender_id:
@@ -40,11 +46,22 @@ def _outstanding_lines(tender_id=None, ape_batch_id=None):
     return query.all()
 
 
-def _collected(tt_id):
-    """Sum already applied to a TransactionTender line."""
-    result = db.session.query(
+def _collected(tt_id, exclude_collection_id=None):
+    """Sum already applied to a TransactionTender line.
+
+    Args:
+        tt_id: Transaction tender ID
+        exclude_collection_id: Optional collection ID to exclude (for editing)
+    """
+    query = db.session.query(
         db.func.coalesce(db.func.sum(CollectionDetail.amount_applied), 0)
-    ).filter_by(transaction_tender_id=tt_id).scalar()
+    ).filter_by(transaction_tender_id=tt_id)
+
+    # Exclude specific collection if specified (for edit mode)
+    if exclude_collection_id:
+        query = query.filter(CollectionDetail.collection_id != exclude_collection_id)
+
+    result = query.scalar()
     return float(result)
 
 
@@ -163,6 +180,7 @@ def new_collection():
             db.session.add(col)
             db.session.flush()
 
+            txn_list = []  # Build list for audit log
             for lid, lamt in zip(line_ids, line_amounts):
                 try:
                     amt = float(lamt)
@@ -177,12 +195,39 @@ def new_collection():
                 )
                 db.session.add(detail)
 
+                # Add to audit log list
+                from application.blueprints.operations.daily_sales.models import TransactionTender
+                txn_tender = TransactionTender.query.get(int(lid))
+                if txn_tender and txn_tender.transaction:
+                    txn = txn_tender.transaction
+                    txn_list.append(f"#{txn.record_number} - {txn.customer.customer_name if txn.customer else 'No customer'} (₱{amt:,.2f})")
+
+            # Build transaction details for audit log
+            txn_details = "; ".join(txn_list) if txn_list else "No transactions"
+
+            # Log collection creation
+            log_create(
+                module='collection',
+                record_id=col.id,
+                record_identifier=f"Collection #{col.id} - {col.tender.tender_name if col.tender else 'N/A'} - ₱{col.formatted_total_amount}",
+                new_values=model_to_dict(col, [
+                    'collection_date', 'tender_id', 'bank_account_id', 'ape_batch_id',
+                    'reference', 'notes', 'status'
+                ]),
+                notes=f'Draft collection created with {len(line_ids)} line items. Transactions: {txn_details}'
+            )
+
             db.session.commit()
             flash(f"Collection saved as draft. Net amount: ₱{col.formatted_net_amount}", "success")
             return redirect(url_for(f"{app_name}.view_collection", collection_id=col.id))
 
     tender_id_pre    = request.args.get("tender_id", type=int)
     ape_batch_id_pre = request.args.get("ape_batch_id", type=int)
+
+    # Get Credit tender ID for APE collections
+    credit_tender = Tender.query.filter(Tender.tender_name == 'Credit').first()
+    credit_tender_id = credit_tender.id if credit_tender else None
+
     lines = _outstanding_lines(tender_id_pre, ape_batch_id_pre) if (tender_id_pre or ape_batch_id_pre) else []
     outstanding_rows = []
     for tt in lines:
@@ -199,7 +244,172 @@ def new_collection():
         "outstanding_rows": outstanding_rows,
         "selected_tender_id": tender_id_pre,
         "selected_ape_batch_id": ape_batch_id_pre,
+        "ape_batch_id_pre": ape_batch_id_pre,
+        "credit_tender_id": credit_tender_id,
         "today": str(ph_today()),
+    }
+    return render_template("collections/new_collection.html", **context)
+
+
+# ---------------------------------------------------------------------------
+# Edit collection (draft only)
+# ---------------------------------------------------------------------------
+
+@bp.route("/<int:collection_id>/edit", methods=["GET", "POST"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def edit_collection(collection_id):
+    col = Collection.query.get_or_404(collection_id)
+
+    # Only allow editing of draft collections
+    if col.status != 'draft':
+        flash("Only draft collections can be edited.", "danger")
+        return redirect(url_for(f"{app_name}.view_collection", collection_id=col.id))
+
+    # Check ownership (creator or admin)
+    if col.created_by_id != current_user.id and not current_user.is_admin:
+        flash("You don't have permission to edit this collection.", "danger")
+        return redirect(url_for(f"{app_name}.view_collection", collection_id=col.id))
+
+    tenders      = _receivable_tenders()
+    bank_accounts = BankAccount.query.filter_by(active=True).order_by(BankAccount.bank_name).all()
+    ape_batches  = ApeBatch.query.order_by(ApeBatch.batch_date.desc()).all()
+
+    if request.method == "POST":
+        import json
+        f = request.form
+
+        # Store old values for audit log
+        old_values = model_to_dict(col, [
+            'collection_date', 'tender_id', 'bank_account_id', 'ape_batch_id',
+            'reference', 'notes', 'status'
+        ])
+
+        collection_date = f.get("collection_date", str(ph_today()))
+        tender_id       = f.get("tender_id", type=int)
+        bank_account_id = f.get("bank_account_id", type=int) or None
+        ape_batch_id    = f.get("ape_batch_id", type=int) or None
+        reference       = (f.get("reference") or "").strip()
+        notes           = (f.get("notes") or "").strip()
+
+        # Get deductions
+        deduction_descriptions = f.getlist("deduction_description[]")
+        deduction_amounts = f.getlist("deduction_amount[]")
+
+        # Build deductions JSON
+        deductions_list = []
+        for desc, amt in zip(deduction_descriptions, deduction_amounts):
+            try:
+                amount = float(amt or 0)
+                if amount > 0:  # Only include non-zero deductions
+                    deductions_list.append({
+                        "description": desc.strip(),
+                        "amount": amount
+                    })
+            except (ValueError, TypeError):
+                continue
+
+        deductions_json = json.dumps(deductions_list)
+
+        line_ids     = f.getlist("line_id")
+        line_amounts = f.getlist("line_amount")
+
+        if not tender_id:
+            flash("Please select a tender.", "danger")
+        elif not line_ids:
+            flash("Please select at least one transaction line.", "danger")
+        else:
+            # Update collection fields
+            col.collection_date = collection_date
+            col.tender_id = tender_id
+            col.bank_account_id = bank_account_id
+            col.ape_batch_id = ape_batch_id
+            col.reference = reference
+            col.notes = notes
+            col.deductions = deductions_json
+            col.updated_at = datetime.now()
+
+            # Delete existing details
+            CollectionDetail.query.filter_by(collection_id=col.id).delete()
+
+            # Add new details
+            for lid, lamt in zip(line_ids, line_amounts):
+                try:
+                    amt = float(lamt)
+                except (ValueError, TypeError):
+                    continue
+                if amt <= 0:
+                    continue
+                detail = CollectionDetail(
+                    collection_id=col.id,
+                    transaction_tender_id=int(lid),
+                    amount_applied=amt,
+                )
+                db.session.add(detail)
+
+            # Log collection update
+            new_values = model_to_dict(col, [
+                'collection_date', 'tender_id', 'bank_account_id', 'ape_batch_id',
+                'reference', 'notes', 'status'
+            ])
+            log_update(
+                module='collection',
+                record_id=col.id,
+                record_identifier=f"Collection #{col.id} - {col.tender.tender_name if col.tender else 'N/A'} - ₱{col.formatted_total_amount}",
+                old_values=old_values,
+                new_values=new_values,
+                notes=f'Draft collection updated with {len(line_ids)} line items'
+            )
+
+            db.session.commit()
+            flash(f"Collection updated. Net amount: ₱{col.formatted_net_amount}", "success")
+            return redirect(url_for(f"{app_name}.view_collection", collection_id=col.id))
+
+    # GET request - load collection data for editing
+    # Get Credit tender ID for APE collections
+    credit_tender = Tender.query.filter(Tender.tender_name == 'Credit').first()
+    credit_tender_id = credit_tender.id if credit_tender else None
+
+    # Load existing collection details
+    existing_details = {}
+    for detail in col.details:
+        existing_details[detail.transaction_tender_id] = detail.amount_applied
+
+    # Load outstanding lines plus already-collected lines from this collection
+    lines = _outstanding_lines(col.tender_id, col.ape_batch_id)
+    outstanding_rows = []
+    for tt in lines:
+        collected = _collected(tt.id, exclude_collection_id=col.id)  # Exclude current collection
+        outstanding = tt.amount - collected
+        if outstanding > 0 or tt.id in existing_details:  # Include if has outstanding OR already in this collection
+            outstanding_rows.append({
+                "tt": tt,
+                "outstanding": outstanding,
+                "selected": tt.id in existing_details,
+                "amount_applied": existing_details.get(tt.id, outstanding)
+            })
+
+    # Parse existing deductions
+    import json
+    try:
+        existing_deductions = json.loads(col.deductions or '[]')
+    except:
+        existing_deductions = []
+
+    context = {
+        "app_label": app_label,
+        "tenders": tenders,
+        "bank_accounts": bank_accounts,
+        "ape_batches": ape_batches,
+        "outstanding_rows": outstanding_rows,
+        "selected_tender_id": col.tender_id,
+        "selected_ape_batch_id": col.ape_batch_id,
+        "ape_batch_id_pre": col.ape_batch_id,
+        "credit_tender_id": credit_tender_id,
+        "today": str(ph_today()),
+        "collection": col,
+        "existing_deductions": existing_deductions,
+        "edit_mode": True,
     }
     return render_template("collections/new_collection.html", **context)
 
@@ -277,7 +487,26 @@ def history():
 @roles_accepted([ROLES_ACCEPTED])
 def delete_collection(collection_id):
     col = Collection.query.get_or_404(collection_id)
+
+    # Capture old values before deletion
+    old_values = model_to_dict(col, [
+        'collection_date', 'tender_id', 'bank_account_id', 'status',
+        'reference', 'notes'
+    ])
+    record_id = col.id
+    identifier = f"Collection #{col.id} - {col.tender.tender_name if col.tender else 'N/A'}"
+
     db.session.delete(col)
+
+    # Log deletion
+    log_delete(
+        module='collection',
+        record_id=record_id,
+        record_identifier=identifier,
+        old_values=old_values,
+        reason='Collection deleted by user'
+    )
+
     db.session.commit()
     flash("Collection deleted.", "warning")
     return redirect(url_for(f"{app_name}.history"))
@@ -291,7 +520,7 @@ def delete_collection(collection_id):
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def submit_collection(collection_id):
-    """Submit a draft collection for approval (or auto-approve if admin)"""
+    """Submit a draft collection for approval"""
     col = Collection.query.get_or_404(collection_id)
 
     if col.status != 'draft':
@@ -303,28 +532,35 @@ def submit_collection(collection_id):
         flash('You can only submit your own collections.', 'danger')
         return redirect(url_for(f'{app_name}.history'))
 
-    # Admin auto-approve: If user is admin, automatically approve collection
-    if current_user.is_admin:
-        col.status = 'posted'
-        col.submitted_by_id = current_user.id
-        col.submitted_at = datetime.now()
-        col.approved_by_id = current_user.id
-        col.approved_at = datetime.now()
-        col.updated_at = datetime.now()
+    # Submit for approval (no auto-approval even for admins)
+    col.status = 'submitted'
+    col.submitted_by_id = current_user.id
+    col.submitted_at = datetime.now()
+    col.updated_at = datetime.now()
 
-        db.session.commit()
+    # Build transaction list for audit log
+    txn_list = []
+    for detail in col.details:
+        txn_tender = detail.transaction_tender
+        txn = txn_tender.transaction
+        txn_list.append(f"#{txn.record_number} - {txn.customer.customer_name if txn.customer else 'No customer'} (₱{detail.formatted_amount})")
 
-        flash(f'Collection auto-approved and posted! Total amount: ₱{col.formatted_total_amount}', 'success')
-    else:
-        # Regular user: submit for approval
-        col.status = 'submitted'
-        col.submitted_by_id = current_user.id
-        col.submitted_at = datetime.now()
-        col.updated_at = datetime.now()
+    txn_details = "; ".join(txn_list) if txn_list else "No transactions"
 
-        db.session.commit()
+    # Log submission
+    log_status_change(
+        module='collection',
+        record_id=col.id,
+        record_identifier=f"Collection #{col.id} - {col.tender.tender_name if col.tender else 'No tender'}",
+        action='submitted',
+        old_status='draft',
+        new_status='submitted',
+        notes=f'Submitted for approval. Net amount: ₱{col.formatted_net_amount}. Transactions: {txn_details}'
+    )
 
-        flash(f'Collection submitted successfully! Waiting for admin approval. Total amount: ₱{col.formatted_total_amount}', 'success')
+    db.session.commit()
+
+    flash(f'Collection submitted successfully! Waiting for approval. Net amount: ₱{col.formatted_net_amount}', 'success')
 
     return redirect(url_for(f'{app_name}.view_collection', collection_id=collection_id))
 
@@ -349,6 +585,26 @@ def approve_collection(collection_id):
     col.approved_at = datetime.now()
     col.updated_at = datetime.now()
 
+    # Build transaction list for audit log
+    txn_list = []
+    for detail in col.details:
+        txn_tender = detail.transaction_tender
+        txn = txn_tender.transaction
+        txn_list.append(f"#{txn.record_number} - {txn.customer.customer_name if txn.customer else 'No customer'} (₱{detail.formatted_amount})")
+
+    txn_details = "; ".join(txn_list) if txn_list else "No transactions"
+
+    # Log approval
+    log_status_change(
+        module='collection',
+        record_id=col.id,
+        record_identifier=f"Collection #{col.id} - {col.tender.tender_name if col.tender else 'No tender'}",
+        action='approved',
+        old_status='submitted',
+        new_status='posted',
+        notes=f'Approved and posted. Total: ₱{col.formatted_total_amount}. Transactions: {txn_details}'
+    )
+
     db.session.commit()
 
     flash(f'Collection approved and posted! Total amount: ₱{col.formatted_total_amount}', 'success')
@@ -368,6 +624,17 @@ def reject_collection(collection_id):
 
     col.status = 'draft'
     col.updated_at = datetime.now()
+
+    # Log rejection
+    log_status_change(
+        module='collection',
+        record_id=col.id,
+        record_identifier=f"Collection #{col.id}",
+        action='rejected',
+        old_status='submitted',
+        new_status='draft',
+        notes='Rejected - returned to draft'
+    )
 
     db.session.commit()
 
@@ -397,11 +664,23 @@ def cancel_collection(collection_id):
             flash('Please provide a cancellation reason.', 'danger')
             return redirect(url_for(f'{app_name}.cancel_collection', collection_id=collection_id))
 
+        old_status = col.status
         col.status = 'cancelled'
         col.cancelled_by_id = current_user.id
         col.cancelled_at = datetime.now()
         col.cancellation_reason = reason
         col.updated_at = datetime.now()
+
+        # Log cancellation
+        log_status_change(
+            module='collection',
+            record_id=col.id,
+            record_identifier=f"Collection #{col.id}",
+            action='cancelled',
+            old_status=old_status,
+            new_status='cancelled',
+            reason=reason
+        )
 
         db.session.commit()
 

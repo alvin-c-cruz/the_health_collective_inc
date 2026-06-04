@@ -73,8 +73,15 @@
                 <label class="col-sm-3 col-form-label fw-semibold">LOA Reference</label>
                 <div class="col-sm-9">
                     <input type="text" name="loa_soa_number" class="form-control form-control-sm"
-                           value="{{ batch.loa_soa_number if batch else '' }}"
-                           placeholder="Reference number">
+                           value="{{ batch.loa_soa_number if batch else '' }}">
+                </div>
+            </div>
+
+            <div class="mb-3 row">
+                <label class="col-sm-3 col-form-label fw-semibold">Reference Number</label>
+                <div class="col-sm-9">
+                    <input type="text" name="reference_number" class="form-control form-control-sm"
+                           value="{{ batch.reference_number if batch else '' }}">
                 </div>
             </div>
 
@@ -83,8 +90,7 @@
                 <div class="col-sm-5">
                     <input type="number" name="package_amount" class="form-control form-control-sm text-end"
                            step="0.01" min="0"
-                           value="{{ batch.package_amount if batch else '0.00' }}"
-                           placeholder="0.00">
+                           value="{{ batch.package_amount if batch else '0.00' }}">
                     <div class="form-text">Standard per-employee package price billed to the company.</div>
                 </div>
             </div>
@@ -92,8 +98,7 @@
             <div class="mb-3 row">
                 <label class="col-sm-3 col-form-label fw-semibold">Notes</label>
                 <div class="col-sm-9">
-                    <textarea name="notes" class="form-control form-control-sm" rows="3"
-                              placeholder="Optional notes">{{ batch.notes if batch else '' }}</textarea>
+                    <textarea name="notes" class="form-control form-control-sm" rows="3">{{ batch.notes if batch else '' }}</textarea>
                 </div>
             </div>
         </div>

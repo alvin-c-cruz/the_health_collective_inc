@@ -190,9 +190,8 @@ class Deposit(db.Model):
     def bank_account_display(self):
         """Format bank account for display"""
         if self.bank_account:
-            if self.bank_account.account_number:
-                return f"{self.bank_account.bank_name} ({self.bank_account.account_number})"
-            return self.bank_account.bank_name
+            # Use the BankAccount model's __str__ method which respects display_name
+            return str(self.bank_account)
         return '-'
 
     @property

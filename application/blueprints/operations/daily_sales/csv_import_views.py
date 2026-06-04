@@ -17,17 +17,47 @@ from application.blueprints.register.product.models import Product
 from application.blueprints.register.tender.models import Tender
 from application.blueprints.register.sex.models import Sex
 from application.blueprints.operations.transaction_type.models import TransactionType
+from application.blueprints.audit.utils import log_audit
 
 csv_import_bp = Blueprint('csv_import', __name__, url_prefix='/daily_sales/csv_import')
 
 # Mapping of CSV Referrer values to transaction type codes
+# Uses "starts with" matching to handle variants like "WALK IN-CASH", "DIALYSIS PHIC", etc.
 REFERRER_TYPE_MAPPING = {
     'WALK IN': 'walk_in',
     'HOME SERVICE': 'home_service',
     'APE': 'ape',
     'DIALYSIS': 'dialysis',
+    'HD': 'dialysis',  # HD (Hemodialysis) is also dialysis
     'TELE CONSULT': 'tele_consult',
 }
+
+def match_referrer_to_type(referrer):
+    """
+    Match referrer string to transaction type using 'starts with' logic.
+    This handles variants like "WALK IN-CASH", "DIALYSIS PHIC", "HD PHIC", etc.
+
+    Args:
+        referrer (str): Referrer string from CSV
+
+    Returns:
+        str: Transaction type code, or None if no match
+    """
+    if not referrer:
+        return None
+
+    referrer_upper = referrer.upper().strip()
+
+    # Try exact match first
+    if referrer_upper in REFERRER_TYPE_MAPPING:
+        return REFERRER_TYPE_MAPPING[referrer_upper]
+
+    # Try "starts with" match for variants
+    for key, value in REFERRER_TYPE_MAPPING.items():
+        if referrer_upper.startswith(key):
+            return value
+
+    return None
 
 
 def allowed_file(filename):
@@ -56,7 +86,8 @@ def parse_csv_file(filepath):
                 continue
 
             # Clean up column names (remove leading/trailing spaces)
-            cleaned_row = {k.strip() if k else k: v for k, v in row.items()}
+            # Skip None keys to avoid serialization errors
+            cleaned_row = {k.strip(): v for k, v in row.items() if k}
             transactions.append(cleaned_row)
 
     return transactions
@@ -144,8 +175,8 @@ def upload():
             for txn in transactions:
                 referrer = (txn.get(' Referrer') or txn.get('Referrer') or '').strip()
                 if referrer:
-                    referrer_upper = referrer.upper()
-                    if referrer_upper not in REFERRER_TYPE_MAPPING:
+                    # Use the new matching function
+                    if match_referrer_to_type(referrer) is None:
                         unknown_referrers.add(referrer)
 
             # Store file path and settings in session
@@ -369,12 +400,12 @@ def process_import_internal():
                 if referrer:
                     referrer_upper = referrer.strip().upper()
 
-                    # Check user-provided mappings first
+                    # Check user-provided mappings first (exact match)
                     type_code = user_mappings.get(referrer_upper)
 
-                    # Fall back to hardcoded mappings if not found
+                    # Fall back to hardcoded mappings if not found (uses starts-with matching)
                     if not type_code:
-                        type_code = REFERRER_TYPE_MAPPING.get(referrer_upper)
+                        type_code = match_referrer_to_type(referrer)
 
                     if type_code:
                         txn_type = TransactionType.query.filter_by(type_code=type_code).first()
@@ -427,6 +458,16 @@ def process_import_internal():
                         except (ValueError, AttributeError):
                             amount = 0.0
 
+                    # Special handling: Override amount for Dialysis + Philhealth
+                    if transaction_type_id and mop:
+                        txn_type = TransactionType.query.get(transaction_type_id)
+                        if txn_type and txn_type.type_code == 'dialysis':
+                            # Check if tender is Philhealth
+                            mop_key = mop.strip().upper()
+                            tender = tender_cache.get(mop_key)
+                            if tender and tender.tender_name and 'philhealth' in tender.tender_name.lower():
+                                amount = 6350.00
+
                     # If negative price, add to transaction discount and skip creating detail
                     if amount < 0:
                         transaction_discount += abs(amount)
@@ -442,9 +483,18 @@ def process_import_internal():
                         product = Product.query.filter_by(product_name=product_name).first()
 
                         if not product:
+                            # Determine product type based on transaction type
+                            # DIALYSIS transaction type → DIALYSIS product type (ID 2)
+                            # All other transaction types → DIAGNOSTIC product type (ID 1)
+                            product_type_id = 1  # Default to DIAGNOSTIC
+                            if transaction_type_id:
+                                txn_type = TransactionType.query.get(transaction_type_id)
+                                if txn_type and txn_type.type_code == 'dialysis':
+                                    product_type_id = 2  # DIALYSIS product type
+
                             product = Product(
                                 product_name=product_name,
-                                product_type_id=1  # Default to first product type
+                                product_type_id=product_type_id
                             )
                             db.session.add(product)
                             db.session.flush()
@@ -477,6 +527,14 @@ def process_import_internal():
                         except (ValueError, AttributeError):
                             total_amount = 0.0
 
+                        # Special handling: Dialysis + Philhealth = fixed amount of 6,350.00
+                        if transaction_type_id:
+                            txn_type = TransactionType.query.get(transaction_type_id)
+                            if txn_type and txn_type.type_code == 'dialysis':
+                                # Check if tender is Philhealth
+                                if tender.tender_name and 'philhealth' in tender.tender_name.lower():
+                                    total_amount = 6350.00
+
                         tender_record = TransactionTender(
                             transaction_id=transaction.id,
                             tender_id=tender.id,
@@ -493,6 +551,24 @@ def process_import_internal():
 
         # Commit all changes
         db.session.commit()
+
+        # Log CSV import to audit trail
+        csv_filename = session.get('csv_import_file', '').split('\\')[-1].split('/')[-1]  # Extract filename from path
+        import_summary = {
+            'filename': csv_filename,
+            'total_imported': stats['imported'],
+            'new_customers': stats['new_customers'],
+            'new_products': stats['new_products'],
+            'skipped': stats['skipped']
+        }
+
+        log_audit(
+            module='daily_sales',
+            action='csv_import',
+            record_identifier=f"{csv_filename} — {stats['imported']} transactions",
+            new_values=import_summary,
+            notes=f"Imported {stats['imported']} transactions from CSV file. New customers: {stats['new_customers']}, New products: {stats['new_products']}, Skipped: {stats['skipped']}"
+        )
 
         # Clean up session
         session.pop('csv_import_file', None)

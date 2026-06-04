@@ -8,6 +8,10 @@ from .models import User, Role, UserRole
 from .forms import LoginForm, UserForm
 
 from application.extensions import db
+from application.blueprints.audit.utils import (
+    log_create, log_update, log_delete, log_status_change, log_login,
+    model_to_dict, get_record_identifier
+)
 
 # Maps role name -> (parent_group, sub_group). '' sub_group = no sub-header.
 _ROLE_CATEGORIES = {
@@ -142,7 +146,20 @@ def user_admin():
 
     user = User.query.get(user_id)
     if user.user_name != "admin":
+        old_value = user.admin
         user.admin = value
+
+        # Log admin status change
+        log_status_change(
+            module='user',
+            record_id=user.id,
+            record_identifier=f"{user.user_name} - {user.first_name} {user.last_name}",
+            action='admin_changed',
+            old_status='enabled' if old_value else 'disabled',
+            new_status='enabled' if value else 'disabled',
+            notes=f'Admin status {"enabled" if value else "disabled"}'
+        )
+
         db.session.commit()
     else:
         flash("Cannot change the master admin account.", category="error")
@@ -160,7 +177,20 @@ def user_superuser():
     value = int(request.args.get("value"))
     user = User.query.get(user_id)
     if user.user_name != "admin":
+        old_value = user.superuser
         user.superuser = value
+
+        # Log superuser status change
+        log_status_change(
+            module='user',
+            record_id=user.id,
+            record_identifier=f"{user.user_name} - {user.first_name} {user.last_name}",
+            action='superuser_changed',
+            old_status='enabled' if old_value else 'disabled',
+            new_status='enabled' if value else 'disabled',
+            notes=f'Superuser status {"enabled" if value else "disabled"}'
+        )
+
         db.session.commit()
     else:
         flash("Cannot change the master admin account.", category="error")
@@ -175,7 +205,20 @@ def user_staff():
     value = int(request.args.get("value"))
     user = User.query.get(user_id)
     if user.user_name != "admin":
+        old_value = user.staff
         user.staff = value
+
+        # Log staff status change
+        log_status_change(
+            module='user',
+            record_id=user.id,
+            record_identifier=f"{user.user_name} - {user.first_name} {user.last_name}",
+            action='staff_changed',
+            old_status='enabled' if old_value else 'disabled',
+            new_status='enabled' if value else 'disabled',
+            notes=f'Staff status {"enabled" if value else "disabled"}'
+        )
+
         db.session.commit()
     else:
         flash("Cannot change the master admin account.", category="error")
@@ -191,7 +234,20 @@ def user_active():
 
     user = User.query.get(user_id)
     if user.user_name != "admin":
+        old_value = user.active
         user.active = value
+
+        # Log active status change
+        log_status_change(
+            module='user',
+            record_id=user.id,
+            record_identifier=f"{user.user_name} - {user.first_name} {user.last_name}",
+            action='active_changed',
+            old_status='active' if old_value else 'inactive',
+            new_status='active' if value else 'inactive',
+            notes=f'User {"activated" if value else "deactivated"}'
+        )
+
         db.session.commit()
     else:
         flash("Cannot change super admin status", category="error")
@@ -320,11 +376,22 @@ def login():
                     # Check if maintenance mode is active and user is not a superuser
                     if current_app.config.get('MAINTENANCE_MODE', False):
                         if not user.superuser:
+                            # Log failed login due to maintenance mode
+                            log_login(user, status='failed', failure_reason='Site in maintenance mode')
                             return redirect(url_for('maintenance'))
+
+                    # Log successful login
+                    log_login(user, status='success')
 
                     login_user(user)
                     flash(f"Welcome {user.user_name}.", category="success")
                     return redirect("/")
+                else:
+                    # Log failed login - wrong password
+                    log_login(form.user_name, status='failed', failure_reason='Invalid password')
+            else:
+                # Log failed login - user not found
+                log_login(form.user_name, status='failed', failure_reason='User not found')
 
             flash("Invalid username / password.", category="error")
     else:
@@ -358,10 +425,24 @@ def register():
                 user.admin = True
                 
             user.set_pass_word(form.pass_word)
-            
+
             db.session.add(user)
+            db.session.flush()  # Get ID without committing
+
+            # Log user creation
+            log_create(
+                module='user',
+                record_id=user.id,
+                record_identifier=f"{user.user_name} - {user.first_name} {user.last_name}",
+                new_values=model_to_dict(user, [
+                    'user_name', 'first_name', 'middle_name', 'last_name', 'email',
+                    'admin', 'staff', 'superuser', 'active'
+                ]),
+                notes='User self-registration'
+            )
+
             db.session.commit()
-            
+
             if form.user_name == "admin":
                 if not Role.query.all():
                     check_roles()
@@ -447,15 +528,29 @@ def inactive():
 def add_role():
     user_id = int(request.args.get("user_id"))
     role_id = int(request.args.get("role_id"))
-    
+
+    user = User.query.get(user_id)
+    role = Role.query.get(role_id)
+
     user_role = UserRole(
         user_id=user_id,
         role_id=role_id
     )
-    
+
     db.session.add(user_role)
+
+    # Log role assignment
+    log_status_change(
+        module='user',
+        record_id=user.id,
+        record_identifier=f"{user.user_name} - {user.first_name} {user.last_name}",
+        action='role_added',
+        new_status=role.role_name,
+        notes=f'Role "{role.role_name}" granted'
+    )
+
     db.session.commit()
-    
+
     return redirect(url_for('user.user_group', record_id=user_id))
     
 @bp.route("/remove_role")
@@ -464,10 +559,10 @@ def add_role():
 def remove_role():
     user_id = int(request.args.get("user_id"))
     role_id = int(request.args.get("role_id"))
-    
+
     user = User.query.get(user_id)
     role = Role.query.get(role_id)
-    
+
     if user.user_name == 'admin' and role.role_name == 'user':
         flash("Cannot remove user role for super admin", category='error')
     else:
@@ -475,10 +570,21 @@ def remove_role():
             user_id=user_id,
             role_id=role_id
         ).first()
-        
+
         db.session.delete(user_role)
+
+        # Log role removal
+        log_status_change(
+            module='user',
+            record_id=user.id,
+            record_identifier=f"{user.user_name} - {user.first_name} {user.last_name}",
+            action='role_removed',
+            old_status=role.role_name,
+            notes=f'Role "{role.role_name}" revoked'
+        )
+
         db.session.commit()
-    
+
     return redirect(url_for('user.user_group', record_id=user_id))
 
 

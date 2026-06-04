@@ -238,6 +238,11 @@
     align-items: center;
     gap: 14px;
     color: inherit;
+    position: relative;
+}
+
+.thc-txn-card--with-action {
+    padding-right: 3.5rem;
 }
 
 .thc-txn-card:hover {
@@ -324,6 +329,44 @@
     color: var(--thc-text-secondary);
     margin: 0 0 var(--thc-gap-sm);
     line-height: var(--thc-leading-normal);
+}
+
+.thc-txn-card__action-btn {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    height: 2.25rem;
+    padding: 0 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    background: var(--thc-coral-700);
+    color: white;
+    border-radius: var(--thc-radius-lg);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+    white-space: nowrap;
+}
+
+.thc-txn-card__action-btn i {
+    font-size: 0.95rem;
+}
+
+.thc-txn-card__action-btn:hover {
+    background: #7d3018;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    color: white;
+    text-decoration: none;
+}
+
+.thc-txn-card__action-btn:active {
+    transform: translateY(0);
 }
 
 /* ================================================================

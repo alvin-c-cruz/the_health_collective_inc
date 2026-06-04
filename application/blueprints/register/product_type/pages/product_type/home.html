@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 {% from "macros_button.html" import edit_button, delete_button, approve_button, unlock_button %}
 
-{% block title %}Product Type{% endblock %}
+{% block title %}Service Type{% endblock %}
 
 {% block content %}
 <div class="thc-page">
         <div class="thc-page-header">
-        <h4>Product Type</h4>
+        <h4>Service Type</h4>
     </div>
 
     <div class="mb-3 d-flex justify-content-between align-items-center">
-        <a href="{{ url_for('product_type.add') }}" class="btn btn-primary btn-sm">Add Product Type</a>
+        <a href="{{ url_for('product_type.add') }}" class="btn btn-primary btn-sm">Add Service Type</a>
 
         <div class="d-flex gap-2">
     <form method="POST" action="{{ url_for('product_type.upload') }}" enctype="multipart/form-data">

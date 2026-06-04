@@ -12,6 +12,10 @@ from .forms import Form
 from application.extensions import db
 from application.blueprints.user import login_required, roles_accepted
 from flask_login import current_user
+from application.blueprints.audit.utils import (
+    log_create, log_update, log_delete,
+    model_to_dict, get_record_identifier
+)
 
 from . import app_name, app_label
 
@@ -81,14 +85,29 @@ def edit(record_id):
 @bp.route("/delete/<int:record_id>", methods=["POST", "GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
-def delete(record_id):   
+def delete(record_id):
     obj = Obj.query.get_or_404(record_id)
     preparer = obj.preparer
+
+    # Capture values before deletion
+    old_values = model_to_dict(obj, ['measure_name'])
+    record_id_for_log = obj.id
+    identifier = str(obj)
+
     try:
         if preparer:  db.session.delete(preparer)
         db.session.delete(obj)
+
+        # Log deletion before commit
+        log_delete(
+            module='measure',
+            record_id=record_id_for_log,
+            record_identifier=identifier,
+            old_values=old_values
+        )
+
         db.session.commit()
-        flash(f"{obj} has been deleted.", category="success")
+        flash(f"{identifier} has been deleted.", category="success")
     except IntegrityError:
         db.session.rollback()
         flash(f"Cannot delete {obj} because it has related records.", category="error")
@@ -202,6 +221,17 @@ def upload():
                 )
 
                 db.session.add(measure)
+                db.session.flush()
+
+                # Log creation after flush to get ID
+                log_create(
+                    module='measure',
+                    record_id=measure.id,
+                    record_identifier=str(measure),
+                    new_values=model_to_dict(measure, ['measure_name']),
+                    notes='Measure imported from Excel'
+                )
+
                 db.session.commit()
 
                 preparer_data = {

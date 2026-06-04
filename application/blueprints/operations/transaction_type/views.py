@@ -6,6 +6,7 @@ from application.blueprints.user import login_required, roles_accepted, current_
 from . import app_name, app_label
 from .models import TransactionType as Obj
 from application.blueprints.register.tender.models import Tender
+from application.blueprints.audit.utils import log_create, log_update, log_delete, log_status_change, model_to_dict
 
 bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_name}")
 ROLES_ACCEPTED = app_label
@@ -75,6 +76,19 @@ def add():
 
                 tender.transaction_types = ','.join(existing_types) if existing_types else None
 
+            # Log creation
+            try:
+                log_create(
+                    module='transaction_type',
+                    record_id=obj.id,
+                    record_identifier=f"{obj.type_name} ({obj.type_code})",
+                    new_values=model_to_dict(obj, ['type_code', 'type_name', 'description', 'icon', 'icon_color', 'badge_color', 'sort_order', 'active']),
+                    notes='Transaction type created'
+                )
+            except Exception as e:
+                flash(f'Transaction type saved, but audit logging failed: {str(e)}', 'warning')
+                print(f"Audit logging failed: {e}")
+
             db.session.commit()
             flash(f'Service type "{obj.type_name}" added.', 'success')
             return redirect(url_for('transaction_type.home'))
@@ -94,6 +108,9 @@ def edit(record_id):
     tenders = Tender.query.order_by(Tender.sort_order.desc()).all()
 
     if request.method == 'POST':
+        # Capture old values before updating
+        old_values = model_to_dict(obj, ['type_code', 'type_name', 'description', 'icon', 'icon_color', 'badge_color', 'sort_order', 'active'])
+
         old_code = obj.type_code
         new_code = request.form.get('type_code', '').strip().lower().replace(' ', '_')
         obj.type_name = request.form.get('type_name', '').strip()
@@ -137,6 +154,21 @@ def edit(record_id):
 
                 tender.transaction_types = ','.join(existing_types) if existing_types else None
 
+            # Log update
+            try:
+                new_values = model_to_dict(obj, ['type_code', 'type_name', 'description', 'icon', 'icon_color', 'badge_color', 'sort_order', 'active'])
+                log_update(
+                    module='transaction_type',
+                    record_id=obj.id,
+                    record_identifier=f"{obj.type_name} ({obj.type_code})",
+                    old_values=old_values,
+                    new_values=new_values,
+                    notes='Transaction type updated'
+                )
+            except Exception as e:
+                flash(f'Transaction type updated, but audit logging failed: {str(e)}', 'warning')
+                print(f"Audit logging failed: {e}")
+
             db.session.commit()
             flash(f'Service type "{obj.type_name}" updated.', 'success')
             return redirect(url_for('transaction_type.home'))
@@ -150,7 +182,25 @@ def edit(record_id):
 @roles_accepted([ROLES_ACCEPTED])
 def toggle(record_id):
     obj = Obj.query.get_or_404(record_id)
+    old_status = 'active' if obj.active else 'inactive'
     obj.active = not obj.active
+    new_status = 'active' if obj.active else 'inactive'
+
+    # Log status change
+    try:
+        log_status_change(
+            module='transaction_type',
+            record_id=obj.id,
+            record_identifier=f"{obj.type_name} ({obj.type_code})",
+            action='toggled',
+            old_status=old_status,
+            new_status=new_status,
+            notes=f'Transaction type {"enabled" if obj.active else "disabled"}'
+        )
+    except Exception as e:
+        flash(f'Status changed, but audit logging failed: {str(e)}', 'warning')
+        print(f"Audit logging failed: {e}")
+
     db.session.commit()
     status = 'enabled' if obj.active else 'disabled'
     flash(f'"{obj.type_name}" {status}.', 'success' if obj.active else 'warning')
@@ -183,7 +233,26 @@ def delete(record_id):
     if count > 0:
         flash(f'Cannot delete "{obj.type_name}" — it has {count} linked transaction(s).', 'danger')
         return redirect(url_for('transaction_type.home'))
+
+    # Capture old values before deletion
+    old_values = model_to_dict(obj, ['type_code', 'type_name', 'description', 'icon', 'icon_color', 'badge_color', 'sort_order', 'active'])
+    record_identifier = f"{obj.type_name} ({obj.type_code})"
+
     db.session.delete(obj)
+
+    # Log deletion
+    try:
+        log_delete(
+            module='transaction_type',
+            record_id=record_id,
+            record_identifier=record_identifier,
+            old_values=old_values,
+            reason='Transaction type deleted by superuser'
+        )
+    except Exception as e:
+        flash(f'Transaction type deleted, but audit logging failed: {str(e)}', 'warning')
+        print(f"Audit logging failed: {e}")
+
     db.session.commit()
     flash(f'Service type "{obj.type_name}" deleted.', 'success')
     return redirect(url_for('transaction_type.home'))

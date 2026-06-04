@@ -140,7 +140,6 @@
       <tr>
         <th style="width:2rem;">#</th>
         <th>Patient / Employee</th>
-        <th>Date of Service</th>
         <th>Sales #</th>
         <th class="r">Amount</th>
       </tr>
@@ -151,14 +150,13 @@
       <tr>
         <td class="muted">{{ loop.index }}</td>
         <td>{{ t.customer.customer_name if t.customer else '—' }}</td>
-        <td class="muted">{{ t.formatted_record_date or t.record_date }}</td>
         <td class="muted mono">{{ t.record_number or '—' }}</td>
         <td class="r">{{ '{:,.2f}'.format(t.transaction_details | sum(attribute='amount')) }}</td>
       </tr>
       {% endif %}
       {% else %}
       <tr>
-        <td colspan="5" style="text-align:center;color:var(--muted);padding:1rem;">No transactions on this batch.</td>
+        <td colspan="4" style="text-align:center;color:var(--muted);padding:1rem;">No transactions on this batch.</td>
       </tr>
       {% endfor %}
     </tbody>

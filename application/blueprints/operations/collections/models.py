@@ -95,8 +95,13 @@ class CollectionDetail(db.Model):
     id                    = db.Column(db.Integer, primary_key=True)
     collection_id         = db.Column(db.Integer, db.ForeignKey("collection.id"), nullable=False)
     transaction_tender_id = db.Column(db.Integer, db.ForeignKey("transaction_tender.id"), nullable=False)
-    transaction_tender    = db.relationship("TransactionTender", lazy=True)
+    transaction_tender    = db.relationship("TransactionTender", backref="collection_lines", lazy=True)
     amount_applied        = db.Column(db.Float, default=0)
+
+    @property
+    def amount_collected(self):
+        """Alias for amount_applied to maintain template compatibility"""
+        return self.amount_applied
 
     @property
     def formatted_amount(self):

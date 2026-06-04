@@ -7,6 +7,7 @@ from application.extensions import db
 from . import app_name, app_label
 from .models import BankAccount as Obj
 from .forms import Form
+from application.blueprints.audit.utils import log_delete, model_to_dict
 
 bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_name}")
 ROLES_ACCEPTED = app_label
@@ -31,10 +32,10 @@ def add():
         form = Form()
         form._post(request.form)
         if form._validate_on_submit():
-            form._save()
+            obj = form._save()
             if popup:
                 # Send postMessage to parent window with bank account details
-                bank_account_display = f"{form.bank_name} — {form.account_number}"
+                bank_account_display = str(obj)
                 return render_template_string(
                     '<!doctype html><html><head><meta charset="utf-8"></head><body>'
                     '<script>'
@@ -82,7 +83,7 @@ def add_popup():
         if form._validate_on_submit():
             obj = form._save()
             # Send postMessage to parent window with bank account details
-            bank_account_display = f"{form.bank_name} — {form.account_number}"
+            bank_account_display = str(obj)
             return render_template_string(
                 '<!doctype html><html><head><meta charset="utf-8"></head><body>'
                 '<script>'
@@ -107,11 +108,30 @@ def add_popup():
 @roles_accepted([ROLES_ACCEPTED])
 def delete(record_id):
     obj = Obj.query.get_or_404(record_id)
+
+    # Capture old values before deletion
+    old_values = model_to_dict(obj, ['bank_name', 'account_name', 'account_number', 'notes', 'active'])
+    record_identifier = str(obj)
+
     try:
         db.session.delete(obj)
+
+        # Log deletion
+        log_delete(
+            module='bank_account',
+            record_id=record_id,
+            record_identifier=record_identifier,
+            old_values=old_values,
+            reason='Bank account deleted by user'
+        )
+
         db.session.commit()
-        flash(f"{obj} deleted.", "success")
+        flash(f"{record_identifier} deleted.", "success")
     except IntegrityError:
         db.session.rollback()
         flash("Cannot delete — this bank account is referenced by existing collections.", "danger")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting bank account: {str(e)}", "danger")
+        print(f"Delete operation failed: {e}")
     return redirect(url_for(f"{app_name}.home"))

@@ -252,12 +252,12 @@
   // Bank account options from server
   const BANK_ACCOUNT_OPTIONS = [
     {% for ba in bank_accounts %}
-    { id: {{ ba.id }}, name: '{{ ba.bank_name }} — {{ ba.account_number }}' }{% if not loop.last %},{% endif %}
+    { id: {{ ba.id }}, name: '{{ ba }}' }{% if not loop.last %},{% endif %}
     {% endfor %}
   ];
 
-  // Set today's date as default
-  document.getElementById('record_date').valueAsDate = new Date();
+  // Note: Date field value is already set from server (deposit.record_date)
+  // Do NOT override it with today's date during edit
 
   // Update totals when deductions change
   document.getElementById('deductions').addEventListener('input', updateTotal);
@@ -475,8 +475,12 @@
         if (row) {
           row.classList.add('selected');
           const amountInput = document.getElementById(`amount_${tid}`);
-          if (amountInput && depositItems[tid]) {
-            amountInput.value = depositItems[tid].toFixed(2);
+          if (amountInput) {
+            // CRITICAL: Enable the input so it gets submitted with the form
+            amountInput.disabled = false;
+            if (depositItems[tid]) {
+              amountInput.value = depositItems[tid].toFixed(2);
+            }
           }
         }
       }

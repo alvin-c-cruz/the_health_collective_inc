@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Record Collection{% endblock %}
+{% block title %}{% if edit_mode %}Edit Collection{% else %}Record Collection{% endif %}{% endblock %}
 
 {% block styles %}
 <style>
@@ -44,10 +44,18 @@
   /* Dynamic deduction rows */
   .deduction-row {
     display: grid;
-    grid-template-columns: 2fr 1fr 32px;
+    grid-template-columns: 2fr 140px 32px;
     gap: var(--thc-space-2);
     margin-bottom: var(--thc-space-2);
     align-items: center;
+  }
+
+  .deduction-row .input-group-text {
+    background-color: var(--thc-gray-100);
+    border-color: var(--thc-border);
+    color: var(--thc-text-secondary);
+    font-size: var(--thc-text-sm);
+    font-weight: var(--thc-font-semibold);
   }
 
   .btn-add-row {
@@ -102,7 +110,7 @@
 
   <div class="row mb-3">
     <div class="col">
-      <h4>Record Collection</h4>
+      <h4>{% if edit_mode %}Edit Collection #{{ collection.id }}{% else %}Record Collection{% endif %}</h4>
       <hr>
     </div>
   </div>
@@ -123,42 +131,54 @@
     <div class="row mb-3">
       <div class="col-md-3">
         <label class="form-label">Collection Date <span class="text-danger">*</span></label>
-        <input type="date" name="collection_date" id="collection_date" class="form-control" value="{{ today }}" required>
+        <input type="date" name="collection_date" id="collection_date" class="form-control" value="{{ collection.collection_date if edit_mode else today }}" required>
       </div>
       <div class="col-md-3">
         <label class="form-label">Receivable from <span class="text-danger">*</span></label>
-        <div class="ac-wrap">
-          <input type="text" id="tender-display" class="form-control" placeholder="Search tender..."
-                 value="{{ tenders|selectattr('id','equalto',selected_tender_id)|map(attribute='tender_name')|first if selected_tender_id else '' }}"
-                 autocomplete="off">
-          <input type="hidden" id="tender_id" name="tender_id"
-                 value="{{ selected_tender_id or '' }}" required>
-          <div id="tender-dropdown" class="ac-dropdown"></div>
-        </div>
+        {% if ape_batch_id_pre %}
+          {# For APE collections, automatically set to Credit and make it read-only #}
+          <input type="text" class="form-control" value="Credit" readonly>
+          <input type="hidden" id="tender_id" name="tender_id" value="{{ credit_tender_id }}" required>
+        {% else %}
+          <div class="ac-wrap">
+            <input type="text" id="tender-display" class="form-control" placeholder="Search tender..."
+                   value="{{ tenders|selectattr('id','equalto',selected_tender_id)|map(attribute='tender_name')|first if selected_tender_id else '' }}"
+                   autocomplete="off">
+            <input type="hidden" id="tender_id" name="tender_id"
+                   value="{{ selected_tender_id or '' }}" required>
+            <div id="tender-dropdown" class="ac-dropdown"></div>
+          </div>
+        {% endif %}
       </div>
       <div class="col-md-3">
         <label class="form-label">Reference Number</label>
-        <input type="text" name="reference" class="form-control upper-case" placeholder="Check no., OR no., etc.">
+        <input type="text" name="reference" class="form-control upper-case" placeholder="Check no., OR no., etc." value="{{ collection.reference if edit_mode else '' }}">
       </div>
       <div class="col-md-3">
         <label class="form-label">Bank / Account</label>
         <div class="bank-account-wrapper">
-          <input type="text" id="bank-account-input" class="form-control upper-case" placeholder="e.g. BDO Savings - 1234" autocomplete="off">
-          <input type="hidden" id="bank_account_id" name="bank_account_id" value="">
+          <input type="text" id="bank-account-input" class="form-control upper-case" placeholder="e.g. BDO Savings - 1234" autocomplete="off" value="{% if edit_mode and collection.bank_account %}{{ collection.bank_account.display_name or (collection.bank_account.bank_name ~ ' — ' ~ collection.bank_account.account_number) }}{% endif %}">
+          <input type="hidden" id="bank_account_id" name="bank_account_id" value="{% if edit_mode and collection.bank_account %}{{ collection.bank_account_id }}{% endif %}">
         </div>
       </div>
     </div>
 
     <!-- Deductions Section -->
-    <div class="deductions-card">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h6>Deductions</h6>
-        <button type="button" class="btn-add-row" onclick="addDeductionRow()">+ Add deduction</button>
-      </div>
-      <small class="text-muted d-block mb-3">Bank charges, fees, etc.</small>
+    <div class="row mb-3">
+      <div class="col-12">
+        <div class="deductions-card">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <h6 class="mb-0">Deductions</h6>
+              <small class="text-muted">Bank charges, fees, etc.</small>
+            </div>
+            <button type="button" class="btn-add-row" onclick="addDeductionRow()">+ Add deduction</button>
+          </div>
 
-      <div id="deductions-container">
-        <!-- Deduction rows will be added here -->
+          <div id="deductions-container" class="mt-3">
+            <!-- Deduction rows will be added here dynamically -->
+          </div>
+        </div>
       </div>
     </div>
 
@@ -177,7 +197,7 @@
       </div>
       <div class="col-md-6">
         <label class="form-label">Notes</label>
-        <input type="text" name="notes" class="form-control" placeholder="Optional remarks">
+        <input type="text" name="notes" class="form-control" placeholder="Optional remarks" value="{{ collection.notes if edit_mode else '' }}">
       </div>
     </div>
 
@@ -185,6 +205,11 @@
     <div class="row mb-3">
       <div class="col d-flex gap-2">
         <button type="submit" class="btn btn-primary" id="saveButton" disabled>Save Collection</button>
+        {% if edit_mode and collection.status == 'draft' %}
+        <button type="button" class="btn btn-success" id="submitButton" onclick="submitForApproval()">
+          <i class="bi bi-send"></i> Submit for Approval
+        </button>
+        {% endif %}
         <a href="{{ url_for('daily_sales.home') }}" class="btn btn-secondary btn-sm">Cancel</a>
       </div>
     </div>
@@ -245,8 +270,10 @@
         {% for row in outstanding_rows %}
         {% set tt = row.tt %}
         {% set collected = tt.amount - row.outstanding %}
-        <tr class="line-row">
-          <td><input type="checkbox" class="line-checkbox line-check" name="line_id" value="{{ tt.id }}" onchange="syncAmount(this)"></td>
+        {% set is_selected = row.get('selected', False) %}
+        {% set applied_amount = row.get('amount_applied', row.outstanding) %}
+        <tr class="line-row {% if is_selected %}selected{% endif %}">
+          <td><input type="checkbox" class="line-checkbox line-check" name="line_id" value="{{ tt.id }}" onchange="syncAmount(this)" {% if is_selected %}checked{% endif %}></td>
           <td class="text-nowrap">{{ tt.transaction.record_date or '—' }}</td>
           <td class="font-monospace small">{{ tt.transaction.record_number or '—' }}</td>
           <td>{{ tt.transaction.customer.customer_name if tt.transaction.customer else '—' }}</td>
@@ -255,8 +282,8 @@
           <td class="text-end font-monospace fw-semibold">{{ '{:,.2f}'.format(row.outstanding) }}</td>
           <td class="text-end">
             <input type="number" class="form-control form-control-sm text-end amount-input line-amount"
-                   name="line_amount" value="{{ row.outstanding }}" step="0.01" min="0.01"
-                   disabled data-max="{{ row.outstanding }}">
+                   name="line_amount" value="{{ applied_amount }}" step="0.01" min="0.01"
+                   {% if not is_selected %}disabled{% endif %} data-max="{{ row.outstanding }}">
           </td>
         </tr>
         {% endfor %}
@@ -340,7 +367,7 @@
 // ── Bank Account Autocomplete ──
 const BANK_OPTIONS = [
   {% for b in bank_accounts %}
-  { id: {{ b.id }}, name: {{ (b.bank_name + (' (' + b.account_number + ')' if b.account_number else '')) | tojson }} }{% if not loop.last %},{% endif %}
+  { id: {{ b.id }}, name: {{ b.__str__() | tojson }} }{% if not loop.last %},{% endif %}
   {% endfor %}
 ];
 
@@ -499,7 +526,6 @@ function initBankAccountAutocomplete() {
     } else if (e.key === 'Escape') { hide(); }
   });
 }
-initBankAccountAutocomplete();
 
 // Listen for postMessage from popup window
 window.addEventListener('message', e => {
@@ -512,25 +538,6 @@ window.addEventListener('message', e => {
     if (input) input.value = bankAccountName;
     if (hiddenInput) hiddenInput.value = bankAccountId;
   }
-});
-
-makeAutocomplete({
-  displayId: 'tender-display',
-  hiddenId: 'tender_id',
-  dropdownId: 'tender-dropdown',
-  options: TENDER_OPTIONS,
-  onChange: (tenderId, tenderName) => {
-    loadLines(tenderId);
-    adjustDeductionRows(tenderName);
-  }
-});
-
-makeAutocomplete({
-  displayId: 'ape-batch-display',
-  hiddenId: 'ape_batch_id',
-  dropdownId: 'ape-batch-dropdown',
-  options: APE_BATCH_OPTIONS,
-  onChange: (batchId) => loadLines(document.getElementById('tender_id').value, batchId)
 });
 
 // ── Number formatting helpers ──
@@ -561,36 +568,116 @@ function adjustDeductionRows(tenderName) {
 
   // Add appropriate number of rows
   if (isCreditCard) {
-    // Credit Card: add 2 deduction rows
-    addDeductionRow('', '0.00');
-    addDeductionRow('', '0.00');
+    // Credit Card: add 2 deduction rows with auto-calculated amounts
+    // Get the current total amount to calculate deductions
+    const totalAmount = getTotalSelectedAmount();
+
+    // Commission: 3.5% of total
+    const commissionAmount = totalAmount * 0.035;
+
+    // Withholding Tax: 0.5% of total
+    const withholdingTaxAmount = totalAmount * 0.005;
+
+    // Add rows with pre-filled values (user can still edit these)
+    addDeductionRow('Commission', commissionAmount.toFixed(2));
+    addDeductionRow('Withholding Tax', withholdingTaxAmount.toFixed(2));
   } else {
     // Other tenders: add 1 deduction row
     addDeductionRow('', '0.00');
   }
 }
 
+// Helper function to get total selected amount
+function getTotalSelectedAmount() {
+  let total = 0;
+  document.querySelectorAll('input[name="line_id"]:checked').forEach(chk => {
+    const row = chk.closest('tr');
+    const amtInput = row.querySelector('.amount-input');
+    if (amtInput) {
+      total += parseNum(amtInput.value);
+    }
+  });
+  return total;
+}
+
+// Update Credit Card deductions when amounts change
+function updateCreditCardDeductions() {
+  // Get tender name from display input (for autocomplete) or from select
+  const tenderDisplay = document.getElementById('tender-display');
+  const tenderHidden = document.getElementById('tender_id');
+
+  let tenderName = '';
+  if (tenderDisplay) {
+    tenderName = tenderDisplay.value;
+  } else if (tenderHidden) {
+    // Try to find from TENDER_OPTIONS if available
+    const tenderId = parseInt(tenderHidden.value);
+    if (typeof TENDER_OPTIONS !== 'undefined') {
+      const option = TENDER_OPTIONS.find(opt => opt.id === tenderId);
+      tenderName = option ? option.name : '';
+    }
+  }
+
+  const isCreditCard = tenderName && tenderName.toLowerCase().includes('credit card');
+
+  if (!isCreditCard) return;
+
+  // Get all deduction rows
+  const deductionDescriptions = document.querySelectorAll('input[name="deduction_description[]"]');
+  const deductionAmounts = document.querySelectorAll('input[name="deduction_amount[]"]');
+
+  // Get current total amount
+  const totalAmount = getTotalSelectedAmount();
+
+  // Update Commission (3.5%)
+  for (let i = 0; i < deductionDescriptions.length; i++) {
+    const desc = deductionDescriptions[i].value.trim();
+    if (desc.toLowerCase() === 'commission') {
+      const commissionAmount = totalAmount * 0.035;
+      deductionAmounts[i].value = commissionAmount.toFixed(2);
+    }
+    // Update Withholding Tax (0.5%)
+    else if (desc.toLowerCase().includes('withholding')) {
+      const withholdingTaxAmount = totalAmount * 0.005;
+      deductionAmounts[i].value = withholdingTaxAmount.toFixed(2);
+    }
+  }
+}
+
 // ── Dynamic Deductions ──
 function addDeductionRow(description = '', amount = '0.00') {
   const container = document.getElementById('deductions-container');
+  if (!container) {
+    console.error('Deductions container not found!');
+    return;
+  }
+
   const div = document.createElement('div');
   div.className = 'deduction-row';
+
+  // Format the amount value
+  const formattedAmount = parseFloat(amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
   div.innerHTML = `
-    <input type="text" name="deduction_description[]" class="form-control" placeholder="e.g., Bank transfer fee, Check clearing fee" value="${description}">
-    <input type="text" name="deduction_amount[]" class="form-control num-input" placeholder="0.00" value="${fmt(parseFloat(amount))}" onchange="updateSummary()">
+    <input type="text" name="deduction_description[]" class="form-control form-control-sm" placeholder="e.g., Bank transfer fee, Check clearing fee" value="${description}">
+    <div class="input-group input-group-sm">
+      <span class="input-group-text">₱</span>
+      <input type="text" name="deduction_amount[]" class="form-control num-input text-end" placeholder="0.00" value="${formattedAmount}" onchange="updateSummary()">
+    </div>
     <button type="button" class="btn-remove-row" onclick="removeDeductionRow(this)" title="Remove">✕</button>
   `;
   container.appendChild(div);
   updateSummary();
+  console.log('Deduction row added');
 }
 
 function removeDeductionRow(btn) {
-  btn.closest('.deduction-row').remove();
-  updateSummary();
+  const row = btn.closest('.deduction-row');
+  if (row) {
+    row.remove();
+    updateSummary();
+  }
 }
-
-// Initialize with one deduction row
-addDeductionRow();
 
 // ── Number input focus/blur events ──
 document.addEventListener('focus', function (e) {
@@ -661,32 +748,60 @@ function loadLines(tenderId, batchId) {
       html += '</tbody></table>';
       container.innerHTML = html;
 
-      document.getElementById('check_all').addEventListener('change', function () {
-        document.querySelectorAll('.line-check').forEach(cb => {
-          cb.checked = this.checked;
-          syncAmount(cb);
-        });
-      });
+      // No need to attach event listener here - wireCheckAll() uses event delegation
+      // on the lines-container, so it will handle the dynamically created check_all too
+      console.log('loadLines: table created, event delegation will handle check_all');
+
+      // Adjust deduction rows based on selected tender
+      const tenderDisplay = document.getElementById('tender-display');
+      const tenderHidden = document.getElementById('tender_id');
+
+      let tenderName = '';
+      if (tenderDisplay) {
+        tenderName = tenderDisplay.value;
+      } else if (tenderHidden && tenderHidden.value) {
+        // Try to find from TENDER_OPTIONS if available
+        const tenderId = parseInt(tenderHidden.value);
+        if (typeof TENDER_OPTIONS !== 'undefined') {
+          const option = TENDER_OPTIONS.find(opt => opt.id === tenderId);
+          tenderName = option ? option.label : '';
+        }
+      }
+
+      if (tenderName) {
+        adjustDeductionRows(tenderName);
+      }
+
+      // Update summary to recalculate totals
+      updateSummary();
     });
 }
 
-// Wire check_all for server-rendered table
+// Wire check_all for server-rendered table using event delegation
 function wireCheckAll() {
-  const ca = document.getElementById('check_all');
-  if (ca) ca.addEventListener('change', function () {
-    document.querySelectorAll('.line-check').forEach(cb => {
-      cb.checked = this.checked;
-      syncAmount(cb);
-    });
-  });
-}
-wireCheckAll();
+  const linesContainer = document.getElementById('lines-container');
+  console.log('wireCheckAll called, lines-container:', linesContainer);
 
-// Load lines if tender or APE batch is pre-selected
-const preTender = document.getElementById('tender_id').value;
-const preBatch = document.getElementById('ape_batch_id').value;
-const alreadyLoaded = document.querySelector('#lines-container table');
-if ((preTender || preBatch) && !alreadyLoaded) loadLines(preTender, preBatch);
+  if (!linesContainer) {
+    console.log('lines-container not found');
+    return;
+  }
+
+  // Use event delegation on the container instead of directly on check_all
+  // This ensures it works even if the table is dynamically replaced
+  linesContainer.addEventListener('change', function(e) {
+    if (e.target && e.target.id === 'check_all') {
+      console.log('check_all changed via delegation, checked =', e.target.checked);
+      const lineChecks = document.querySelectorAll('.line-check');
+      console.log('Found line-check elements:', lineChecks.length);
+      lineChecks.forEach(cb => {
+        cb.checked = e.target.checked;
+        syncAmount(cb);
+      });
+    }
+  });
+  console.log('Event delegation attached to lines-container for check_all');
+}
 
 // ── Line Selection Logic ──
 function syncAmount(cb) {
@@ -695,7 +810,6 @@ function syncAmount(cb) {
   input.disabled = !cb.checked;
   if (cb.checked) {
     row.classList.add('selected');
-    input.focus();
   } else {
     row.classList.remove('selected');
   }
@@ -713,6 +827,9 @@ function updateSummary() {
     const amt = parseFloat(row.querySelector('.line-amount').value) || 0;
     total += amt;
   });
+
+  // Update Credit Card deductions if applicable
+  updateCreditCardDeductions();
 
   // Calculate total deductions
   let totalDeductions = 0;
@@ -738,11 +855,156 @@ document.addEventListener('input', function(e) {
   }
 });
 
-// Strip commas from num-inputs before form submission
-document.getElementById('collectionForm').addEventListener('submit', function(e) {
-  document.querySelectorAll('.num-input').forEach(el => {
-    if (!el.readOnly) el.value = fmtRaw(parseNum(el.value));
-  });
+// ── Auto-select First Tender with Outstanding ──
+async function autoSelectFirstTenderWithOutstanding() {
+  // Check each tender to find the first one with outstanding balances
+  if (typeof TENDER_OPTIONS === 'undefined' || !TENDER_OPTIONS.length) {
+    return;
+  }
+
+  for (const tender of TENDER_OPTIONS) {
+    try {
+      // Try to load lines for this tender
+      const url = `{{ url_for('collections.get_lines') }}?tender_id=${tender.id}`;
+      const response = await fetch(url);
+      const lines = await response.json();
+
+      // If this tender has outstanding lines, select it
+      if (lines && lines.length > 0) {
+        // Set the tender in the autocomplete
+        const tenderDisplay = document.getElementById('tender-display');
+        const tenderHidden = document.getElementById('tender_id');
+
+        if (tenderDisplay && tenderHidden) {
+          tenderDisplay.value = tender.name;
+          tenderHidden.value = tender.id;
+
+          // Trigger the change to load lines
+          loadLines(tender.id);
+          adjustDeductionRows(tender.name);
+        }
+
+        // Found a tender with outstanding, stop searching
+        break;
+      }
+    } catch (error) {
+      console.error(`Error checking tender ${tender.name}:`, error);
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// Initialize when DOM is ready
+// ══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize autocomplete dropdowns
+  initBankAccountAutocomplete();
+
+  // Only initialize tender autocomplete if the elements exist (not in APE mode)
+  if (document.getElementById('tender-display')) {
+    makeAutocomplete({
+      displayId: 'tender-display',
+      hiddenId: 'tender_id',
+      dropdownId: 'tender-dropdown',
+      options: TENDER_OPTIONS,
+      onChange: (tenderId, tenderName) => {
+        loadLines(tenderId);
+        adjustDeductionRows(tenderName);
+      }
+    });
+  }
+
+  // Only initialize APE batch autocomplete if the elements exist
+  if (document.getElementById('ape-batch-display')) {
+    makeAutocomplete({
+      displayId: 'ape-batch-display',
+      hiddenId: 'ape_batch_id',
+      dropdownId: 'ape-batch-dropdown',
+      options: APE_BATCH_OPTIONS,
+      onChange: (batchId) => loadLines(document.getElementById('tender_id').value, batchId)
+    });
+  }
+
+  // Initialize check_all functionality
+  wireCheckAll();
+
+  // Initialize deduction rows
+  const deductionsContainer = document.getElementById('deductions-container');
+  {% if edit_mode and existing_deductions %}
+    // Load existing deductions in edit mode
+    {% for deduction in existing_deductions %}
+      addDeductionRow('{{ deduction.description }}', '{{ deduction.amount }}');
+    {% endfor %}
+  {% else %}
+    // Check if Credit Card is pre-selected on page load
+    const tenderSelect = document.getElementById('tender_id');
+    const tenderDisplay = document.getElementById('tender-display');
+    let tenderName = '';
+
+    if (tenderSelect && tenderSelect.value) {
+      // Get tender name from select options
+      const selectedOption = tenderSelect.options[tenderSelect.selectedIndex];
+      tenderName = selectedOption ? selectedOption.text : '';
+    } else if (tenderDisplay) {
+      tenderName = tenderDisplay.value;
+    }
+
+    // Initialize deduction rows based on tender
+    if (tenderName.toLowerCase().includes('credit card')) {
+      // For Credit Card, adjustDeductionRows will be called when loadLines completes
+      // So we don't add default rows here
+    } else {
+      // For other tenders, add one default row if container is empty
+      if (deductionsContainer && deductionsContainer.children.length === 0) {
+        addDeductionRow();
+      }
+    }
+  {% endif %}
+
+  // Load lines if tender or APE batch is pre-selected
+  const tenderIdInput = document.getElementById('tender_id');
+  const apeBatchIdInput = document.getElementById('ape_batch_id');
+  if (tenderIdInput && apeBatchIdInput) {
+    const preTender = tenderIdInput.value;
+    const preBatch = apeBatchIdInput.value;
+    const alreadyLoaded = document.querySelector('#lines-container table');
+    if ((preTender || preBatch) && !alreadyLoaded) {
+      loadLines(preTender, preBatch);
+    } else if (!preTender && !preBatch && !alreadyLoaded) {
+      // Auto-select first tender with outstanding balances
+      autoSelectFirstTenderWithOutstanding();
+    } else if (alreadyLoaded) {
+      // In edit mode, lines are already rendered by server
+      // Call updateSummary to enable Save button if lines are checked
+      updateSummary();
+    }
+  }
+
+  // Strip commas from num-inputs before form submission
+  const form = document.getElementById('collectionForm');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      document.querySelectorAll('.num-input').forEach(el => {
+        if (!el.readOnly) el.value = fmtRaw(parseNum(el.value));
+      });
+    });
+  }
+
+  // Submit for approval function
+  window.submitForApproval = function() {
+    if (!confirm('Submit this collection for approval?')) {
+      return;
+    }
+
+    {% if edit_mode and collection %}
+    // Create a form to submit to the submit_collection route
+    const submitForm = document.createElement('form');
+    submitForm.method = 'POST';
+    submitForm.action = "{{ url_for('collections.submit_collection', collection_id=collection.id) }}";
+    document.body.appendChild(submitForm);
+    submitForm.submit();
+    {% endif %}
+  };
 });
 </script>
 {% endblock %}

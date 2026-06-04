@@ -114,15 +114,19 @@
   <div class="txn-card">
     <div class="txn-card-title">Transaction Info</div>
     <div class="row g-3">
-      <div class="col-md-4">
+      <div class="col-md-3">
+        <div class="vt-label">Transaction Type</div>
+        <div class="vt-value">{{ record.transaction_type.transaction_type_name if record.transaction_type else '—' }}</div>
+      </div>
+      <div class="col-md-3">
         <div class="vt-label">Patient</div>
         <div class="vt-value">{{ record.customer.customer_name if record.customer else '—' }}</div>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
         <div class="vt-label">POS Number</div>
         <div class="vt-value">{{ record.pos_number or '—' }}</div>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
         <div class="vt-label">DashLabs Number</div>
         <div class="vt-value">{{ record.dashlabs_number or '—' }}</div>
       </div>
@@ -153,8 +157,6 @@
         <tr>
           <th>Service</th>
           <th class="num">Amount</th>
-          <th class="num">Discount</th>
-          <th class="num">Net</th>
         </tr>
       </thead>
       <tbody>
@@ -162,8 +164,6 @@
         <tr>
           <td class="name">{{ detail.product.product_name if detail.product else '—' }}</td>
           <td class="num">{{ detail.formatted_amount }}</td>
-          <td class="num">{{ detail.formatted_discount }}</td>
-          <td class="num">{{ '{:,.2f}'.format(detail.amount - detail.discount) }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -226,6 +226,155 @@
       </div>
     </div>
   </div>
+
+  {# ── Deposit / Collection Status ── #}
+  {% if record.submitted and record.user_approved %}
+  {% set cash_tenders = [] %}
+  {% set receivable_tenders = [] %}
+  {% for t in record.transaction_tenders %}
+    {% if t.tender.is_receivable %}
+      {% set _ = receivable_tenders.append(t) %}
+    {% else %}
+      {% set _ = cash_tenders.append(t) %}
+    {% endif %}
+  {% endfor %}
+
+  {% if cash_tenders or receivable_tenders %}
+  <div class="txn-card">
+    <div class="txn-card-title">Deposit / Collection Status</div>
+
+    {# Cash Tenders - Deposits #}
+    {% if cash_tenders %}
+    <div style="margin-bottom: 1.5rem;">
+      <div style="font-size: 0.75rem; font-weight: 600; color: var(--thc-text-muted); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Cash / Deposits</div>
+      <table class="vt-table">
+        <thead>
+          <tr>
+            <th>Tender</th>
+            <th class="num">Amount</th>
+            <th class="num">Deposited</th>
+            <th class="num">Remaining</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in cash_tenders %}
+          {% set deposited_amount = 0 %}
+          {% set deposit_info = [] %}
+          {% for item in record.deposit_items %}
+            {% if item.deposit.status != 'cancelled' %}
+              {% set deposited_amount = deposited_amount + item.amount %}
+              {% set _ = deposit_info.append(item) %}
+            {% endif %}
+          {% endfor %}
+          {% set remaining = t.amount - deposited_amount %}
+          <tr>
+            <td class="name">{{ t.tender.tender_name }}</td>
+            <td class="num">{{ t.formatted_amount }}</td>
+            <td class="num">{{ '{:,.2f}'.format(deposited_amount) }}</td>
+            <td class="num" style="color: {% if remaining | abs < 0.01 %}#2e7d32{% else %}#c0392b{% endif %};">
+              {{ '{:,.2f}'.format(remaining) }}
+            </td>
+            <td>
+              {% if remaining | abs < 0.01 %}
+                <span class="badge-submitted" style="background:#e8f5e9;color:#2e7d32;">✓ Fully Deposited</span>
+              {% elif deposited_amount > 0 %}
+                <span class="badge-pending" style="background:#fff8e1;color:#856404;">Partially Deposited</span>
+              {% else %}
+                <span class="badge-pending">Pending Deposit</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% if deposit_info %}
+          <tr style="background: #f8f9fa;">
+            <td colspan="5" style="padding: 0.5rem 0.75rem; font-size: 0.8rem; color: var(--thc-text-muted);">
+              <strong>Deposits:</strong>
+              {% for item in deposit_info %}
+                <a href="{{ url_for('daily_sales.view_deposit', deposit_id=item.deposit.id) }}" style="color: var(--thc-accent); text-decoration: none; margin-left: 0.5rem;">
+                  #{{ item.deposit.id }} ({{ item.deposit.bank_account or 'N/A' }}, {{ '{:,.2f}'.format(item.amount) }})
+                  {% if item.deposit.status == 'draft' %}[Draft]
+                  {% elif item.deposit.status == 'submitted' %}[Submitted]
+                  {% elif item.deposit.status == 'posted' %}[Posted]
+                  {% endif %}
+                </a>
+                {% if not loop.last %}, {% endif %}
+              {% endfor %}
+            </td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    {# Receivable Tenders - Collections #}
+    {% if receivable_tenders %}
+    <div>
+      <div style="font-size: 0.75rem; font-weight: 600; color: var(--thc-text-muted); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Receivables / Collections</div>
+      <table class="vt-table">
+        <thead>
+          <tr>
+            <th>Tender</th>
+            <th class="num">Amount</th>
+            <th class="num">Collected</th>
+            <th class="num">Outstanding</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in receivable_tenders %}
+          {% set collected_amount = 0 %}
+          {% set collection_info = [] %}
+          {% for line in t.collection_lines %}
+            {% if line.collection.status != 'cancelled' %}
+              {% set collected_amount = collected_amount + line.amount_collected %}
+              {% set _ = collection_info.append(line) %}
+            {% endif %}
+          {% endfor %}
+          {% set outstanding = t.amount - collected_amount %}
+          <tr>
+            <td class="name">{{ t.tender.tender_name }}</td>
+            <td class="num">{{ t.formatted_amount }}</td>
+            <td class="num">{{ '{:,.2f}'.format(collected_amount) }}</td>
+            <td class="num" style="color: {% if outstanding | abs < 0.01 %}#2e7d32{% else %}#c0392b{% endif %};">
+              {{ '{:,.2f}'.format(outstanding) }}
+            </td>
+            <td>
+              {% if outstanding | abs < 0.01 %}
+                <span class="badge-submitted" style="background:#e8f5e9;color:#2e7d32;">✓ Fully Collected</span>
+              {% elif collected_amount > 0 %}
+                <span class="badge-pending" style="background:#fff8e1;color:#856404;">Partially Collected</span>
+              {% else %}
+                <span class="badge-pending">Pending Collection</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% if collection_info %}
+          <tr style="background: #f8f9fa;">
+            <td colspan="5" style="padding: 0.5rem 0.75rem; font-size: 0.8rem; color: var(--thc-text-muted);">
+              <strong>Collections:</strong>
+              {% for line in collection_info %}
+                <a href="{{ url_for('collections.view_collection', collection_id=line.collection.id) }}" style="color: var(--thc-accent); text-decoration: none; margin-left: 0.5rem;">
+                  #{{ line.collection.id }} ({{ line.collection.collection_date }}, {{ '{:,.2f}'.format(line.amount_collected) }})
+                  {% if line.collection.status == 'draft' %}[Draft]
+                  {% elif line.collection.status == 'submitted' %}[Submitted]
+                  {% elif line.collection.status == 'posted' %}[Posted]
+                  {% endif %}
+                </a>
+                {% if not loop.last %}, {% endif %}
+              {% endfor %}
+            </td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% endif %}
 
   {# ── Actions ── #}
   <div class="txn-actions">

@@ -7,6 +7,7 @@ from application.extensions import db
 from . import app_name, app_label
 from application.blueprints.operations.daily_sales.models import Payee as Obj
 from .forms import Form
+from application.blueprints.audit.utils import log_delete, model_to_dict
 
 bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_name}")
 ROLES_ACCEPTED = app_label
@@ -88,11 +89,30 @@ def add_popup():
 @roles_accepted([ROLES_ACCEPTED])
 def delete(record_id):
     obj = Obj.query.get_or_404(record_id)
+
+    # Capture old values before deletion
+    old_values = model_to_dict(obj, ['name', 'description', 'active'])
+    record_identifier = f"{obj.name}"
+
     try:
         db.session.delete(obj)
+
+        # Log deletion
+        log_delete(
+            module='payee',
+            record_id=record_id,
+            record_identifier=record_identifier,
+            old_values=old_values,
+            reason='Payee deleted by user'
+        )
+
         db.session.commit()
-        flash(f"{obj} deleted.", "success")
+        flash(f"{record_identifier} deleted.", "success")
     except IntegrityError:
         db.session.rollback()
         flash("Cannot delete — this payee is referenced by existing records.", "danger")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting payee: {str(e)}", "danger")
+        print(f"Delete operation failed: {e}")
     return redirect(url_for(f"{app_name}.home"))

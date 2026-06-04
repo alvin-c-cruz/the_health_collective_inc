@@ -129,7 +129,7 @@
         </table>
     </div>
 
-    {% set draft_count = transactions | selectattr('submitted', 'falsy') | selectattr('cancelled', 'falsy') | list | length %}
+    {% set draft_count = transactions | selectattr('submitted', 'none') | selectattr('cancelled', 'none') | list | length %}
 
     <form method="POST" action="{{ url_for('daily_sales.bulk_submit') }}" id="bulk-form">
         <input type="hidden" name="batch_id" value="{{ batch.id }}">

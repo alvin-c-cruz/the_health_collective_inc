@@ -1,174 +1,944 @@
 {% extends "base.html" %}
-{% from "components/dashboard_components.html" import section_header, summary_metric, sales_table_card, sales_table_row, action_card, quick_action_button %}
 
 {% block title %}Dashboard{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard-components.css') }}">
+<style>
+  /* ═══════════════════════════════════════════════════════════
+     DASHBOARD PAGE LAYOUT
+     ═══════════════════════════════════════════════════════════ */
+  .thc-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--thc-space-6);
+  }
+
+  /* Page header */
+  .thc-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--thc-space-8);
+    padding-bottom: var(--thc-space-5);
+    border-bottom: 2px solid var(--thc-border-default);
+  }
+
+  .thc-page-header h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--thc-text-primary);
+    font-family: var(--thc-font-heading);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     DASHBOARD TABLE STYLES
+     ═══════════════════════════════════════════════════════════ */
+  .dashboard-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: white;
+    border-radius: var(--thc-radius-xl);
+    overflow: hidden;
+    box-shadow: var(--thc-shadow-md);
+    margin-bottom: var(--thc-space-6);
+    border: 1px solid var(--thc-border-default);
+  }
+
+  /* Table Headers */
+  .dashboard-table thead {
+    background: linear-gradient(to bottom, var(--thc-primary-50), var(--thc-primary-100));
+  }
+
+  .dashboard-table th {
+    padding: var(--thc-space-4) var(--thc-space-5);
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.075em;
+    color: var(--thc-primary-800);
+    border-bottom: 3px solid var(--thc-primary-200);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    white-space: nowrap;
+  }
+
+  .dashboard-table th:first-child {
+    width: 40%;
+    padding-left: var(--thc-space-6);
+  }
+
+  .dashboard-table th:not(:first-child) {
+    text-align: right;
+    width: 20%;
+    padding-right: var(--thc-space-6);
+  }
+
+  /* Table Body */
+  .dashboard-table tbody tr {
+    transition: all 0.15s ease;
+  }
+
+  .dashboard-table td {
+    padding: var(--thc-space-3) var(--thc-space-5);
+    border-bottom: 1px solid var(--thc-border-subtle);
+    font-size: 0.9375rem;
+    color: var(--thc-text-primary);
+  }
+
+  .dashboard-table td:first-child {
+    padding-left: var(--thc-space-6);
+    font-weight: 500;
+  }
+
+  .dashboard-table td:not(:first-child) {
+    text-align: right;
+    font-family: var(--thc-font-mono);
+    padding-right: var(--thc-space-6);
+    font-weight: 600;
+  }
+
+  .dashboard-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .dashboard-table tbody tr:hover {
+    background: var(--thc-primary-25);
+    transform: translateX(2px);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     ROW VARIANTS
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Primary/Total Rows */
+  .row-primary {
+    background: linear-gradient(to right, var(--thc-primary-100), var(--thc-primary-75));
+    border-top: 2px solid var(--thc-primary-300);
+    border-bottom: 2px solid var(--thc-primary-300) !important;
+  }
+
+  .row-primary td {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--thc-primary-900);
+    padding-top: var(--thc-space-4);
+    padding-bottom: var(--thc-space-4);
+  }
+
+  .row-primary:hover {
+    background: linear-gradient(to right, var(--thc-primary-150), var(--thc-primary-100));
+    transform: translateX(3px);
+  }
+
+  /* Section Headers */
+  .row-section-header {
+    background: linear-gradient(to right, var(--thc-gray-100), var(--thc-gray-75));
+    border-top: 2px solid var(--thc-border-strong);
+    border-bottom: 2px solid var(--thc-border-strong);
+  }
+
+  .row-section-header td {
+    padding: var(--thc-space-3) var(--thc-space-6);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.8125rem;
+    letter-spacing: 0.1em;
+    color: var(--thc-primary-700);
+    text-align: left !important;
+  }
+
+  .row-section-header:hover {
+    background: linear-gradient(to right, var(--thc-gray-125), var(--thc-gray-100));
+  }
+
+  /* Indented Rows */
+  .row-indent {
+    padding-left: var(--thc-space-10) !important;
+    font-size: 0.875rem;
+    color: var(--thc-text-secondary);
+    font-weight: 400;
+  }
+
+  .row-indent-2 {
+    padding-left: var(--thc-space-12) !important;
+    font-size: 0.8125rem;
+    color: var(--thc-text-tertiary);
+    font-weight: 400;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     VISUAL ENHANCEMENTS
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Striped rows for better readability */
+  .dashboard-table tbody tr:nth-child(even):not(.row-primary):not(.row-section-header) {
+    background: var(--thc-gray-25);
+  }
+
+  /* Positive/Negative Number Styling */
+  .amount-positive {
+    color: var(--thc-success-700);
+  }
+
+  .amount-negative {
+    color: var(--thc-danger-700);
+  }
+
+  .amount-zero {
+    color: var(--thc-text-tertiary);
+  }
+
+  /* Empty state styling */
+  .dashboard-table td[colspan] {
+    text-align: center;
+    padding: var(--thc-space-8);
+    color: var(--thc-text-tertiary);
+    font-style: italic;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     RESPONSIVE DESIGN
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Tablet (768px - 1024px) */
+  @media (max-width: 1024px) {
+    .thc-page {
+      padding: var(--thc-space-5);
+    }
+
+    .dashboard-table th,
+    .dashboard-table td {
+      font-size: 0.875rem;
+    }
+
+    .quick-actions-grid {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+  }
+
+  /* Mobile (max-width: 768px) */
+  @media (max-width: 768px) {
+    .thc-page {
+      padding: var(--thc-space-3);
+      max-width: 100%;
+    }
+
+    .thc-page-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--thc-space-3);
+      margin-bottom: var(--thc-space-5);
+    }
+
+    .thc-page-header h1 {
+      font-size: 1.75rem;
+    }
+
+    /* Enable horizontal scroll for tables on mobile */
+    .dashboard-table {
+      display: block;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-bottom: var(--thc-space-5);
+    }
+
+    .dashboard-table thead,
+    .dashboard-table tbody,
+    .dashboard-table tr {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+    }
+
+    .dashboard-table th,
+    .dashboard-table td {
+      padding: var(--thc-space-2) var(--thc-space-3);
+      font-size: 0.75rem;
+    }
+
+    .dashboard-table th:first-child,
+    .dashboard-table td:first-child {
+      padding-left: var(--thc-space-3);
+      width: 35%;
+    }
+
+    .dashboard-table th:not(:first-child),
+    .dashboard-table td:not(:first-child) {
+      padding-right: var(--thc-space-2);
+      width: 21.67%;
+    }
+
+    .row-indent {
+      padding-left: var(--thc-space-5) !important;
+      font-size: 0.7rem;
+    }
+
+    .row-indent-2 {
+      padding-left: var(--thc-space-6) !important;
+      font-size: 0.7rem;
+    }
+
+    .quick-actions h2 {
+      font-size: 1.25rem;
+    }
+
+    .quick-actions-grid {
+      grid-template-columns: 1fr;
+      gap: var(--thc-space-3);
+    }
+
+    .quick-action-card {
+      padding: var(--thc-space-4);
+    }
+
+    .quick-action-icon {
+      width: 40px;
+      height: 40px;
+      font-size: 1.25rem;
+    }
+
+    .quick-action-title {
+      font-size: 0.9375rem;
+    }
+
+    .quick-action-description {
+      font-size: 0.75rem;
+    }
+  }
+
+  /* Small Mobile (max-width: 480px) */
+  @media (max-width: 480px) {
+    .thc-page {
+      padding: var(--thc-space-2);
+    }
+
+    .thc-page-header h1 {
+      font-size: 1.5rem;
+    }
+
+    .dashboard-table th,
+    .dashboard-table td {
+      padding: var(--thc-space-1) var(--thc-space-2);
+      font-size: 0.7rem;
+    }
+
+    .dashboard-table th:first-child,
+    .dashboard-table td:first-child {
+      padding-left: var(--thc-space-2);
+    }
+
+    .row-indent {
+      padding-left: var(--thc-space-4) !important;
+    }
+
+    .row-indent-2 {
+      padding-left: var(--thc-space-5) !important;
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     QUICK ACTIONS
+     ═══════════════════════════════════════════════════════════ */
+  .quick-actions {
+    margin-top: var(--thc-space-8);
+    padding-top: var(--thc-space-6);
+    border-top: 2px solid var(--thc-border-default);
+  }
+
+  .quick-actions h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: var(--thc-space-5);
+    color: var(--thc-text-primary);
+  }
+
+  .quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--thc-space-4);
+  }
+
+  .quick-action-card {
+    background: white;
+    border: 2px solid var(--thc-border-default);
+    border-radius: var(--thc-radius-lg);
+    padding: var(--thc-space-5);
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    align-items: center;
+    gap: var(--thc-space-4);
+    transition: all 0.2s ease;
+    box-shadow: var(--thc-shadow-sm);
+  }
+
+  .quick-action-card:hover {
+    border-color: var(--thc-primary-500);
+    background: var(--thc-primary-25);
+    transform: translateY(-2px);
+    box-shadow: var(--thc-shadow-md);
+    text-decoration: none;
+  }
+
+  .quick-action-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--thc-radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .quick-action-icon.primary {
+    background: var(--thc-primary-100);
+    color: var(--thc-primary-700);
+  }
+
+  .quick-action-icon.success {
+    background: var(--thc-success-100);
+    color: var(--thc-success-700);
+  }
+
+  .quick-action-icon.warning {
+    background: var(--thc-warning-100);
+    color: var(--thc-warning-700);
+  }
+
+  .quick-action-icon.danger {
+    background: var(--thc-danger-100);
+    color: var(--thc-danger-700);
+  }
+
+  .quick-action-icon.info {
+    background: var(--thc-info-100);
+    color: var(--thc-info-700);
+  }
+
+  .quick-action-content {
+    flex: 1;
+  }
+
+  .quick-action-title {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+    color: var(--thc-text-primary);
+  }
+
+  .quick-action-description {
+    font-size: 0.8125rem;
+    color: var(--thc-text-secondary);
+  }
+
+  .quick-action-badge {
+    background: var(--thc-danger-500);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--thc-radius-full);
+    min-width: 20px;
+    text-align: center;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     PRINT STYLES
+     ═══════════════════════════════════════════════════════════ */
+  @media print {
+    .dashboard-table {
+      box-shadow: none;
+      border: 1px solid #000;
+    }
+
+    .dashboard-table tbody tr:hover {
+      background: transparent;
+      transform: none;
+    }
+
+    .row-primary {
+      background: #f0f0f0;
+    }
+
+    .quick-actions {
+      display: none;
+    }
+  }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="thc-page">
+<div class="thc-page" role="main">
 
+    {# Page Header with Date Selector #}
     <div class="thc-page-header">
-        <h4>Dashboard</h4>
+        <h1>Dashboard</h1>
         <div class="d-flex align-items-center" style="gap: var(--thc-gap-md);">
-            <span class="thc-text-sm text-secondary">As of:</span>
-            <form method="GET" action="{{ url_for('dashboard.home') }}" class="d-flex align-items-center" style="gap: var(--thc-gap-sm);">
+            <label for="as_of_date" class="text-secondary">As of:</label>
+            <form method="GET" action="{{ url_for('dashboard.home') }}" class="d-flex align-items-center">
                 <input type="date"
                        name="as_of_date"
                        id="as_of_date"
                        value="{{ today.strftime('%Y-%m-%d') }}"
                        class="form-control form-control-sm"
-                       style="width: auto; font-size: var(--thc-text-sm);"
                        onchange="this.form.submit()">
             </form>
         </div>
-        <div class="ms-auto d-flex" style="gap: var(--thc-gap-sm); flex-wrap: wrap;">
-            {% if "Daily Sales" in current_user.user_roles %}
-            {{ quick_action_button('Daily Sales', url_for('daily_sales.home'), icon='bi-journal-text') }}
-            {{ quick_action_button("Today's Report", url_for('daily_sales.daily_report'),
-                                   icon='bi-file-earmark-bar-graph', open_popup=true) }}
-            {% endif %}
-        </div>
     </div>
 
-    {# ── Sales Overview ── #}
-    <div class="mb-6">
-        {{ section_header(
-            'Sales Overview',
-            link_url=url_for('daily_sales.sales_summary_report'),
-            link_text='Full Report',
-            link_icon='bi-bar-chart-line'
-        ) }}
+    {# Sales Summary Table #}
+    <table class="dashboard-table">
+        <thead>
+            <tr>
+                <th>Sales</th>
+                <th>{{ today.strftime('%b %d, %Y') }}</th>
+                <th>MTD ({{ month_start.strftime('%b %d') }} - {{ today.strftime('%b %d') }})</th>
+                <th>YTD ({{ year_start.strftime('%b %d') }} - {{ today.strftime('%b %d') }})</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="row-primary">
+                <td>Total Sales</td>
+                <td>₱{{ "{:,.2f}".format(today_net_sales) }}</td>
+                <td>₱{{ "{:,.2f}".format(mtd_net_sales) }}</td>
+                <td>₱{{ "{:,.2f}".format(ytd_net_sales) }}</td>
+            </tr>
+        </tbody>
+    </table>
 
-        {# Sales Period Metrics - MTD and YTD side by side #}
-        <div class="row g-3 mb-4">
-            <div class="col-md-6">
-                <div style="background: var(--thc-bg-surface); border: 1px solid var(--thc-border-default); border-radius: var(--thc-radius-xl); padding: var(--thc-space-5); box-shadow: var(--thc-shadow-sm);">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <h6 class="mb-0" style="color: var(--thc-text-secondary); font-size: var(--thc-label-size); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Month to Date</h6>
-                        <span style="color: var(--thc-text-tertiary); font-size: var(--thc-text-sm);">{{ month_start.strftime("%b %d") }} – {{ today.strftime("%b %d, %Y") }}</span>
-                    </div>
-                    <div style="font-family: var(--thc-font-mono); font-size: var(--thc-text-3xl); font-weight: 700; color: var(--thc-primary-600);">
-                        ₱{{ "{:,.2f}".format(mtd_net_sales) }}
-                    </div>
-                    <div style="color: var(--thc-text-tertiary); font-size: var(--thc-text-sm); margin-top: var(--thc-space-2);">
-                        {{ mtd_count }} transaction{{ 's' if mtd_count != 1 else '' }}
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div style="background: var(--thc-bg-surface); border: 1px solid var(--thc-border-default); border-radius: var(--thc-radius-xl); padding: var(--thc-space-5); box-shadow: var(--thc-shadow-sm);">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <h6 class="mb-0" style="color: var(--thc-text-secondary); font-size: var(--thc-label-size); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Year to Date</h6>
-                        <span style="color: var(--thc-text-tertiary); font-size: var(--thc-text-sm);">{{ year_start.strftime("%b %d") }} – {{ today.strftime("%b %d, %Y") }}</span>
-                    </div>
-                    <div style="font-family: var(--thc-font-mono); font-size: var(--thc-text-3xl); font-weight: 700; color: var(--thc-success-600);">
-                        ₱{{ "{:,.2f}".format(ytd_net_sales) }}
-                    </div>
-                    <div style="color: var(--thc-text-tertiary); font-size: var(--thc-text-sm); margin-top: var(--thc-space-2);">
-                        {{ ytd_count }} transaction{{ 's' if ytd_count != 1 else '' }}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {# Product Type Breakdown (Month to Date) #}
-        <div class="mb-3">
-            <h6 style="color: var(--thc-text-secondary); font-size: var(--thc-label-size); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--thc-space-3);">
-                Sales by Product Type (MTD)
-            </h6>
-        </div>
-
-        {# Summary Cards #}
-        <div class="thc-summary-grid mb-4" style="grid-template-columns: repeat({{ product_types|length + 1 }}, 1fr);">
+    {# Service Demographics Table #}
+    <table class="dashboard-table">
+        <thead>
+            <tr>
+                <th>Service Demographics</th>
+                <th>{{ today.strftime('%b %d, %Y') }}</th>
+                <th>MTD ({{ month_start.strftime('%b %d') }} - {{ today.strftime('%b %d') }})</th>
+                <th>YTD ({{ year_start.strftime('%b %d') }} - {{ today.strftime('%b %d') }})</th>
+            </tr>
+        </thead>
+        <tbody>
             {% for pt in product_types %}
-            {{ summary_metric(pt.product_type_name, '₱' ~ "{:,.2f}".format(product_type_totals.get(pt.product_type_name, 0))) }}
-            {% endfor %}
-            {{ summary_metric('Total', '₱' ~ "{:,.2f}".format(mtd_net_sales), is_total=true) }}
-        </div>
+            {# Product Type Header Row #}
+            <tr class="row-section-header">
+                <td colspan="4">{{ pt.product_type_name }}</td>
+            </tr>
 
-        {# Sales Tables - Dynamic based on Product Types #}
-        {% set color_variants = ['info', 'success', 'warning', 'purple', 'green'] %}
-        {% set icons = ['bi-clipboard2-pulse', 'bi-heart-pulse', 'bi-capsule', 'bi-bandaid', 'bi-hospital'] %}
+            {# Special handling for DIALYSIS - show products instead of transaction types #}
+            {% if pt.product_type_name == 'DIALYSIS' %}
+                {% for product_name in daily_dialysis_products.keys()|sort %}
+                    {% set daily_total = daily_dialysis_products.get(product_name, 0) %}
+                    {% set mtd_total = mtd_dialysis_products.get(product_name, 0) %}
+                    {% set ytd_total = ytd_dialysis_products.get(product_name, 0) %}
 
-        <div class="thc-product-grid mb-2" style="grid-template-columns: repeat({{ [product_types|length, 2]|min }}, 1fr);">
-            {% for pt in product_types %}
-            {# Only show product type table if there are sales #}
-            {% if product_type_totals.get(pt.product_type_name, 0) > 0 %}
-            {% call sales_table_card(
-                pt.product_type_name,
-                icons[loop.index0 % icons|length],
-                color_variants[loop.index0 % color_variants|length]
-            ) %}
-                {% for tt in transaction_types %}
-                {% if pt.product_type_name in sales_summary and tt.type_code in sales_summary[pt.product_type_name] and sales_summary[pt.product_type_name][tt.type_code]['total'] > 0 %}
-                {{ sales_table_row(tt.type_name, '₱' ~ "{:,.2f}".format(sales_summary[pt.product_type_name][tt.type_code]['total'])) }}
-                {% endif %}
+                    <tr>
+                        <td class="row-indent">{{ product_name }}</td>
+                        <td>{{ "₱{:,.2f}".format(daily_total) if daily_total > 0 else "-" }}</td>
+                        <td>{{ "₱{:,.2f}".format(mtd_total) if mtd_total > 0 else "-" }}</td>
+                        <td>{{ "₱{:,.2f}".format(ytd_total) if ytd_total > 0 else "-" }}</td>
+                    </tr>
                 {% endfor %}
-                {{ sales_table_row('Total', '₱' ~ "{:,.2f}".format(product_type_totals.get(pt.product_type_name, 0)), is_total=true) }}
-            {% endcall %}
+            {% else %}
+                {# Transaction Types for other Product Types (exclude "Dialysis" from DIAGNOSTIC) #}
+                {% for tt in transaction_types %}
+                    {# Skip "Dialysis" transaction type for DIAGNOSTIC #}
+                    {% if not (pt.product_type_name == 'DIAGNOSTIC' and tt.type_code == 'dialysis') %}
+                        {% set daily_total = daily_sales_summary.get(pt.product_type_name, {}).get(tt.type_code, {}).get('total', 0) %}
+                        {% set mtd_total = mtd_sales_summary.get(pt.product_type_name, {}).get(tt.type_code, {}).get('total', 0) %}
+                        {% set ytd_total = ytd_sales_summary.get(pt.product_type_name, {}).get(tt.type_code, {}).get('total', 0) %}
+
+                        <tr>
+                            <td class="row-indent">{{ tt.type_name }}</td>
+                            <td>{{ "₱{:,.2f}".format(daily_total) if daily_total > 0 else "-" }}</td>
+                            <td>{{ "₱{:,.2f}".format(mtd_total) if mtd_total > 0 else "-" }}</td>
+                            <td>{{ "₱{:,.2f}".format(ytd_total) if ytd_total > 0 else "-" }}</td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+
+                {# Add Total row for DIAGNOSTIC #}
+                {% if pt.product_type_name == 'DIAGNOSTIC' %}
+                <tr class="row-primary">
+                    <td class="row-indent"><strong>Total</strong></td>
+                    <td><strong>{{ "₱{:,.2f}".format(daily_product_type_totals.get(pt.product_type_name, 0)) if daily_product_type_totals.get(pt.product_type_name, 0) > 0 else "-" }}</strong></td>
+                    <td><strong>{{ "₱{:,.2f}".format(mtd_product_type_totals.get(pt.product_type_name, 0)) if mtd_product_type_totals.get(pt.product_type_name, 0) > 0 else "-" }}</strong></td>
+                    <td><strong>{{ "₱{:,.2f}".format(ytd_product_type_totals.get(pt.product_type_name, 0)) if ytd_product_type_totals.get(pt.product_type_name, 0) > 0 else "-" }}</strong></td>
+                </tr>
+                {% endif %}
             {% endif %}
             {% endfor %}
-        </div>
-    </div>
+        </tbody>
+    </table>
 
-    {# ── Action Items ── #}
-    <div>
-        {{ section_header('Action Items') }}
-        <div class="thc-action-grid">
+    {# Payment Methods (Tenders) Table #}
+    <table class="dashboard-table">
+        <thead>
+            <tr>
+                <th>
+                    Payment Methods
+                    {% if current_user.admin or current_user.superuser %}
+                    <button id="btn-edit-payment-methods" class="btn btn-sm btn-link" style="font-size: 0.75rem; padding: 0 0.5rem;" onclick="toggleSortMode('payment_methods')" title="Rearrange items">
+                        <i class="bi bi-arrows-move"></i> Rearrange
+                    </button>
+                    {% endif %}
+                </th>
+                <th>{{ today.strftime('%b %d, %Y') }}</th>
+                <th>MTD ({{ month_start.strftime('%b %d') }} - {{ today.strftime('%b %d') }})</th>
+                <th>YTD ({{ year_start.strftime('%b %d') }} - {{ today.strftime('%b %d') }})</th>
+            </tr>
+        </thead>
+        <tbody id="payment-methods-tbody">
+            {% set all_tenders = {} %}
+            {# Collect all unique tender names across all periods #}
+            {% for pt_name, tt_data in daily_sales_summary.items() %}
+                {% for tt_code, data in tt_data.items() %}
+                    {% for tender_name in data.get('tenders', {}).keys() %}
+                        {% set _ = all_tenders.update({tender_name: True}) %}
+                    {% endfor %}
+                {% endfor %}
+            {% endfor %}
+            {% for pt_name, tt_data in mtd_sales_summary.items() %}
+                {% for tt_code, data in tt_data.items() %}
+                    {% for tender_name in data.get('tenders', {}).keys() %}
+                        {% set _ = all_tenders.update({tender_name: True}) %}
+                    {% endfor %}
+                {% endfor %}
+            {% endfor %}
+            {% for pt_name, tt_data in ytd_sales_summary.items() %}
+                {% for tt_code, data in tt_data.items() %}
+                    {% for tender_name in data.get('tenders', {}).keys() %}
+                        {% set _ = all_tenders.update({tender_name: True}) %}
+                    {% endfor %}
+                {% endfor %}
+            {% endfor %}
 
-            {{ action_card(
-                label='Drafts',
-                value=drafts_count,
-                link_url=url_for('daily_sales.drafts'),
-                icon='bi-pencil-square',
-                link_text='View',
-                icon_color='warning',
-                has_warning=(drafts_count > 0)
-            ) }}
+            {# Display each tender - Show all even if zero, with custom sort order #}
+            {% set sorted_tenders = get_sorted_items(all_tenders.keys()|list, 'payment_methods') if get_sorted_items else (all_tenders.keys()|sort) %}
+            {% for tender_name in sorted_tenders %}
+                {% set daily_amounts = [] %}
+                {% set mtd_amounts = [] %}
+                {% set ytd_amounts = [] %}
 
+                {# Collect all amounts for this tender across product types and transaction types #}
+                {% for pt_name, tt_data in daily_sales_summary.items() %}
+                    {% for tt_code, data in tt_data.items() %}
+                        {% if data.get('tenders', {}).get(tender_name, 0) > 0 %}
+                            {% set _ = daily_amounts.append(data.get('tenders', {}).get(tender_name, 0)) %}
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+
+                {% for pt_name, tt_data in mtd_sales_summary.items() %}
+                    {% for tt_code, data in tt_data.items() %}
+                        {% if data.get('tenders', {}).get(tender_name, 0) > 0 %}
+                            {% set _ = mtd_amounts.append(data.get('tenders', {}).get(tender_name, 0)) %}
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+
+                {% for pt_name, tt_data in ytd_sales_summary.items() %}
+                    {% for tt_code, data in tt_data.items() %}
+                        {% if data.get('tenders', {}).get(tender_name, 0) > 0 %}
+                            {% set _ = ytd_amounts.append(data.get('tenders', {}).get(tender_name, 0)) %}
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+
+                {% set daily_total = daily_amounts|sum %}
+                {% set mtd_total = mtd_amounts|sum %}
+                {% set ytd_total = ytd_amounts|sum %}
+
+                <tr class="sortable-item" data-item-key="{{ tender_name }}">
+                    <td>
+                        <span class="drag-handle" style="display: none; cursor: move; margin-right: 0.5rem;">⋮⋮</span>
+                        {{ tender_name }}
+                    </td>
+                    <td>{{ "₱{:,.2f}".format(daily_total) if daily_total > 0 else "-" }}</td>
+                    <td>{{ "₱{:,.2f}".format(mtd_total) if mtd_total > 0 else "-" }}</td>
+                    <td>{{ "₱{:,.2f}".format(ytd_total) if ytd_total > 0 else "-" }}</td>
+                </tr>
+            {% endfor %}
+
+            {# Total row for Payment Methods #}
+            <tr class="row-primary">
+                <td><strong>Total</strong></td>
+                <td><strong>{{ "₱{:,.2f}".format(today_net_sales) if today_net_sales > 0 else "-" }}</strong></td>
+                <td><strong>{{ "₱{:,.2f}".format(mtd_net_sales) if mtd_net_sales > 0 else "-" }}</strong></td>
+                <td><strong>{{ "₱{:,.2f}".format(ytd_net_sales) if ytd_net_sales > 0 else "-" }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    {# Receivables Report Table #}
+    <table class="dashboard-table">
+        <thead>
+            <tr>
+                <th>Receivables Report</th>
+                <th>{{ today.strftime('%b %d, %Y') }}</th>
+                <th>MTD ({{ month_start.strftime('%b %d') }} - {{ today.strftime('%b %d') }})</th>
+                <th>YTD ({{ year_start.strftime('%b %d') }} - {{ today.strftime('%b %d') }})</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Beginning Balance</td>
+                <td>{{ "₱{:,.2f}".format(daily_receivables.beginning_balance) if daily_receivables.beginning_balance > 0 else "-" }}</td>
+                <td>{{ "₱{:,.2f}".format(mtd_receivables.beginning_balance) if mtd_receivables.beginning_balance > 0 else "-" }}</td>
+                <td>{{ "₱{:,.2f}".format(ytd_receivables.beginning_balance) if ytd_receivables.beginning_balance > 0 else "-" }}</td>
+            </tr>
+            <tr>
+                <td>Current Receivables</td>
+                <td>{{ "₱{:,.2f}".format(daily_receivables.current_receivables) if daily_receivables.current_receivables > 0 else "-" }}</td>
+                <td>{{ "₱{:,.2f}".format(mtd_receivables.current_receivables) if mtd_receivables.current_receivables > 0 else "-" }}</td>
+                <td>{{ "₱{:,.2f}".format(ytd_receivables.current_receivables) if ytd_receivables.current_receivables > 0 else "-" }}</td>
+            </tr>
+            <tr>
+                <td>Collections</td>
+                <td>{{ "₱{:,.2f}".format(daily_receivables.collections) if daily_receivables.collections > 0 else "-" }}</td>
+                <td>{{ "₱{:,.2f}".format(mtd_receivables.collections) if mtd_receivables.collections > 0 else "-" }}</td>
+                <td>{{ "₱{:,.2f}".format(ytd_receivables.collections) if ytd_receivables.collections > 0 else "-" }}</td>
+            </tr>
+            <tr class="row-primary">
+                <td><strong>Ending Balance</strong></td>
+                <td><strong>{{ "₱{:,.2f}".format(daily_receivables.ending_balance) if daily_receivables.ending_balance > 0 else "-" }}</strong></td>
+                <td><strong>{{ "₱{:,.2f}".format(mtd_receivables.ending_balance) if mtd_receivables.ending_balance > 0 else "-" }}</strong></td>
+                <td><strong>{{ "₱{:,.2f}".format(ytd_receivables.ending_balance) if ytd_receivables.ending_balance > 0 else "-" }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    {# Undeposited Sales Report Table #}
+    <table class="dashboard-table">
+        <thead>
+            <tr>
+                <th>Undeposited Sales Report</th>
+                <th>{{ today.strftime('%b %d, %Y') }}</th>
+                <th>MTD ({{ month_start.strftime('%b %d') }} - {{ today.strftime('%b %d') }})</th>
+                <th>YTD ({{ year_start.strftime('%b %d') }} - {{ today.strftime('%b %d') }})</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Beginning Balance</td>
+                <td>{{ "₱{:,.2f}".format(daily_undeposited.beginning_balance) if daily_undeposited.beginning_balance > 0 else "-" }}</td>
+                <td>{{ "₱{:,.2f}".format(mtd_undeposited.beginning_balance) if mtd_undeposited.beginning_balance > 0 else "-" }}</td>
+                <td>{{ "₱{:,.2f}".format(ytd_undeposited.beginning_balance) if ytd_undeposited.beginning_balance > 0 else "-" }}</td>
+            </tr>
+            <tr>
+                <td>Current Undeposited</td>
+                <td>{{ "₱{:,.2f}".format(daily_undeposited.current_undeposited) if daily_undeposited.current_undeposited > 0 else "-" }}</td>
+                <td>{{ "₱{:,.2f}".format(mtd_undeposited.current_undeposited) if mtd_undeposited.current_undeposited > 0 else "-" }}</td>
+                <td>{{ "₱{:,.2f}".format(ytd_undeposited.current_undeposited) if ytd_undeposited.current_undeposited > 0 else "-" }}</td>
+            </tr>
+            <tr>
+                <td>Deposits</td>
+                <td>{{ "₱{:,.2f}".format(daily_undeposited.deposits) if daily_undeposited.deposits > 0 else "-" }}</td>
+                <td>{{ "₱{:,.2f}".format(mtd_undeposited.deposits) if mtd_undeposited.deposits > 0 else "-" }}</td>
+                <td>{{ "₱{:,.2f}".format(ytd_undeposited.deposits) if ytd_undeposited.deposits > 0 else "-" }}</td>
+            </tr>
+            <tr class="row-primary">
+                <td><strong>Ending Balance</strong></td>
+                <td><strong>{{ "₱{:,.2f}".format(daily_undeposited.ending_balance) if daily_undeposited.ending_balance > 0 else "-" }}</strong></td>
+                <td><strong>{{ "₱{:,.2f}".format(mtd_undeposited.ending_balance) if mtd_undeposited.ending_balance > 0 else "-" }}</strong></td>
+                <td><strong>{{ "₱{:,.2f}".format(ytd_undeposited.ending_balance) if ytd_undeposited.ending_balance > 0 else "-" }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    {# Quick Actions Section #}
+    <div class="quick-actions">
+        <h2>Quick Actions</h2>
+        <div class="quick-actions-grid">
+            {# View Daily Sales #}
+            <a href="{{ url_for('daily_sales.home') }}" class="quick-action-card">
+                <div class="quick-action-icon success">
+                    <i class="bi bi-receipt"></i>
+                </div>
+                <div class="quick-action-content">
+                    <div class="quick-action-title">Daily Sales</div>
+                    <div class="quick-action-description">View all transactions</div>
+                </div>
+            </a>
+
+            {# Collections #}
+            <a href="{{ url_for('collections.home') }}" class="quick-action-card">
+                <div class="quick-action-icon info">
+                    <i class="bi bi-cash-coin"></i>
+                </div>
+                <div class="quick-action-content">
+                    <div class="quick-action-title">Collections</div>
+                    <div class="quick-action-description">Manage receivables</div>
+                </div>
+            </a>
+
+            {# Drafts #}
+            <a href="{{ url_for('daily_sales.drafts') }}" class="quick-action-card">
+                <div class="quick-action-icon warning">
+                    <i class="bi bi-pencil-square"></i>
+                </div>
+                <div class="quick-action-content">
+                    <div class="quick-action-title">Drafts</div>
+                    <div class="quick-action-description">{% if drafts_count > 0 %}{{ drafts_count }} draft{{ 's' if drafts_count != 1 else '' }} pending{% else %}View all drafts{% endif %}</div>
+                </div>
+                {% if drafts_count > 0 %}<span class="quick-action-badge">{{ drafts_count }}</span>{% endif %}
+            </a>
+
+            {# Pending Approvals #}
             {% if current_user.admin or current_user.superuser %}
-            {{ action_card(
-                label='Pending Approval',
-                value=pending_approval_count,
-                link_url=url_for('daily_sales.pending_approval'),
-                icon='bi-hourglass-split',
-                link_text='View',
-                icon_color='danger',
-                has_warning=(pending_approval_count > 0)
-            ) }}
-
-            {{ action_card(
-                label='Pending Cancellations',
-                value=pending_fund_cancellations,
-                link_url=url_for('daily_sales.pending_fund_cancellations'),
-                icon='bi-exclamation-triangle',
-                link_text='View',
-                icon_color='warning',
-                has_warning=(pending_fund_cancellations > 0)
-            ) }}
+            <a href="{{ url_for('daily_sales.pending_approval') }}" class="quick-action-card">
+                <div class="quick-action-icon danger">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div class="quick-action-content">
+                    <div class="quick-action-title">Pending Approval</div>
+                    <div class="quick-action-description">{% if pending_approval_count > 0 %}{{ pending_approval_count }} transaction{{ 's' if pending_approval_count != 1 else '' }} awaiting approval{% else %}No pending approvals{% endif %}</div>
+                </div>
+                {% if pending_approval_count > 0 %}<span class="quick-action-badge">{{ pending_approval_count }}</span>{% endif %}
+            </a>
             {% endif %}
-
         </div>
     </div>
-
-    {# ── Uncollected Receivables by Tender ── #}
-    {% if "Collections" in current_user.user_roles and uncollected_by_tender %}
-    <div class="mt-6">
-        {{ section_header('Uncollected Receivables') }}
-
-        {% call sales_table_card('Receivables by Tender', 'bi-cash-coin', 'success') %}
-            {% for tender_name, amount in uncollected_by_tender.items() %}
-            {% if amount > 0 %}
-            {{ sales_table_row(tender_name, '₱' ~ "{:,.2f}".format(amount)) }}
-            {% endif %}
-            {% endfor %}
-            {{ sales_table_row('Total', '₱' ~ "{:,.2f}".format(total_uncollected_receivables), is_total=true) }}
-        {% endcall %}
-    </div>
-    {% endif %}
 
 </div>
+
+{% if current_user.admin or current_user.superuser %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+let sortableInstance = null;
+let originalOrder = [];
+let isSortMode = false;
+
+function toggleSortMode(section) {
+    isSortMode = !isSortMode;
+    const tbody = document.getElementById(`${section}-tbody`);
+    const button = document.getElementById(`btn-edit-${section.replace('_', '-')}`);
+
+    if (isSortMode) {
+        // Enter sort mode
+        button.innerHTML = '<i class="bi bi-check-lg"></i> Save Order';
+        button.classList.remove('btn-link');
+        button.classList.add('btn-primary');
+
+        // Show drag handles
+        tbody.querySelectorAll('.drag-handle').forEach(handle => {
+            handle.style.display = 'inline';
+        });
+
+        // Store original order
+        originalOrder = Array.from(tbody.querySelectorAll('.sortable-item')).map(row => row.dataset.itemKey);
+
+        // Initialize Sortable
+        sortableInstance = new Sortable(tbody, {
+            animation: 150,
+            handle: '.drag-handle',
+            ghostClass: 'sortable-ghost',
+            onEnd: function(evt) {
+                console.log('Item moved from', evt.oldIndex, 'to', evt.newIndex);
+            }
+        });
+
+        // Add cancel button
+        const cancelBtn = document.createElement('button');
+        cancelBtn.id = 'btn-cancel-sort';
+        cancelBtn.className = 'btn btn-sm btn-secondary';
+        cancelBtn.style.cssText = 'font-size: 0.75rem; padding: 0 0.5rem; margin-left: 0.5rem;';
+        cancelBtn.innerHTML = '<i class="bi bi-x-lg"></i> Cancel';
+        cancelBtn.onclick = () => cancelSortMode(section);
+        button.parentNode.insertBefore(cancelBtn, button.nextSibling);
+
+    } else {
+        // Save and exit sort mode
+        saveSortOrder(section);
+    }
+}
+
+function cancelSortMode(section) {
+    isSortMode = false;
+    const button = document.getElementById(`btn-edit-${section.replace('_', '-')}`);
+    const cancelBtn = document.getElementById('btn-cancel-sort');
+
+    // Restore button
+    button.innerHTML = '<i class="bi bi-arrows-move"></i> Rearrange';
+    button.classList.remove('btn-primary');
+    button.classList.add('btn-link');
+
+    // Remove cancel button
+    if (cancelBtn) cancelBtn.remove();
+
+    // Hide drag handles
+    document.querySelectorAll('.drag-handle').forEach(handle => {
+        handle.style.display = 'none';
+    });
+
+    // Destroy sortable
+    if (sortableInstance) {
+        sortableInstance.destroy();
+        sortableInstance = null;
+    }
+
+    // Reload page to restore original order
+    window.location.reload();
+}
+
+function saveSortOrder(section) {
+    const tbody = document.getElementById(`${section}-tbody`);
+    const items = Array.from(tbody.querySelectorAll('.sortable-item')).map(row => row.dataset.itemKey);
+
+    // Check if order changed
+    const orderChanged = JSON.stringify(items) !== JSON.stringify(originalOrder);
+
+    if (!orderChanged) {
+        alert('No changes made to the order.');
+        cancelSortMode(section);
+        return;
+    }
+
+    // Save to server
+    fetch('/api/sort-order', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            section: section,
+            items: items
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Sort order saved successfully!');
+            window.location.reload();
+        } else {
+            alert('Error saving sort order: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Network error. Please try again.');
+    });
+}
+
+// Add some CSS for the sortable ghost
+const style = document.createElement('style');
+style.textContent = `
+    .sortable-ghost {
+        opacity: 0.4;
+        background-color: #f0f0f0;
+    }
+    .sortable-item {
+        transition: background-color 0.2s;
+    }
+    .sortable-item:hover .drag-handle {
+        opacity: 1;
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endif %}
+
 {% endblock %}

@@ -22,19 +22,30 @@
             <a href="{{ url_for('collections.history') }}" class="thc-btn thc-btn-secondary">History</a>
 
             {% if col.status == 'draft' %}
+                <!-- Edit button for draft collections -->
+                <a href="{{ url_for('collections.edit_collection', collection_id=col.id) }}" class="thc-btn thc-btn-primary">
+                    <i class="bi bi-pencil"></i> Edit
+                </a>
                 <!-- Submit button for draft collections -->
                 <form action="{{ url_for('collections.submit_collection', collection_id=col.id) }}" method="post"
                       onsubmit="return confirm('Submit this collection for approval?');">
-                    <button type="submit" class="thc-btn thc-btn-primary">
+                    <button type="submit" class="thc-btn thc-btn-success">
                         <i class="bi bi-send"></i> Submit
                     </button>
                 </form>
             {% elif col.status == 'submitted' %}
                 <!-- Approve button for submitted collections (admin only) -->
                 <form action="{{ url_for('collections.approve_collection', collection_id=col.id) }}" method="post"
-                      onsubmit="return confirm('Approve this collection?');">
+                      onsubmit="return confirm('Approve this collection?');" style="display: inline;">
                     <button type="submit" class="thc-btn thc-btn-success">
                         <i class="bi bi-check-circle"></i> Approve
+                    </button>
+                </form>
+                <!-- Disapprove button for submitted collections (admin only) -->
+                <form action="{{ url_for('collections.reject_collection', collection_id=col.id) }}" method="post"
+                      onsubmit="return confirm('Disapprove and send back to draft?');" style="display: inline;">
+                    <button type="submit" class="thc-btn thc-btn-danger">
+                        <i class="bi bi-x-circle"></i> Disapprove
                     </button>
                 </form>
             {% elif col.status in ['submitted', 'posted'] %}
@@ -91,9 +102,16 @@
                 <div class="text-muted small">Reference</div>
                 <div class="font-monospace">{{ col.reference or '—' }}</div>
             </div>
-            <div class="col-sm-2">
+            <div class="col-sm-3">
                 <div class="text-muted small">Total Amount</div>
-                <div class="fw-semibold font-monospace">₱{{ col.formatted_total }}</div>
+                <div class="fw-semibold font-monospace">
+                    ₱{{ col.formatted_total }}
+                    {% if col.total_deductions > 0 %}
+                    <span class="text-danger"> - ₱{{ col.formatted_total_deductions }}</span>
+                    <span class="text-muted"> = </span>
+                    <span class="text-success">₱{{ col.formatted_net_amount }}</span>
+                    {% endif %}
+                </div>
             </div>
             <div class="col-sm-1">
                 <div class="text-muted small">Status</div>

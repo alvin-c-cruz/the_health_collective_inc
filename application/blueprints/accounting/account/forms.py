@@ -6,6 +6,10 @@ from .admin_models import UserAccount as Preparer
 from .admin_models import AdminAccount as Approver
 from . import app_name
 from datetime import datetime
+from application.blueprints.audit.utils import (
+    log_create, log_update, log_delete,
+    model_to_dict, get_record_identifier
+)
 
 from .. account_type import AccountType
 
@@ -67,18 +71,31 @@ class Form:
             _dict = get_attributes_as_dict(self)
             if "locked" in _dict: _dict.pop("locked")
             _dict.pop("account_type_name")
-            
+
             new_record = Obj(
                 **_dict
                 )
             db.session.add(new_record)
+            db.session.flush()
+
+            # Log creation after flush to get ID
+            log_create(
+                module='account',
+                record_id=new_record.id,
+                record_identifier=str(new_record),
+                new_values=model_to_dict(new_record, [
+                    'account_number', 'account_title', 'account_description', 'account_type_id'
+                ]),
+                notes='Account created'
+            )
+
             db.session.commit()
 
             data = {
                 f"{app_name}_id": new_record.id,
                 "user_id": self.user_prepare_id
             }
-            
+
             preparer = Preparer(**data)
 
             db.session.add(preparer)
@@ -88,10 +105,15 @@ class Form:
             # Update an existing record
             record = Obj.query.get(self.id)
             if record:
+                # Capture old values before update
+                old_values = model_to_dict(record, [
+                    'account_number', 'account_title', 'account_description', 'account_type_id'
+                ])
+
                 data = {
                     f"{app_name}_id": self.id
                 }
-                
+
                 preparer = Preparer.query.filter_by(**data).first()
                 if preparer:
                     preparer.user_id = self.user_prepare_id
@@ -103,7 +125,21 @@ class Form:
                 for attribute in get_attributes(self):
                     if attribute == "id": continue
                     setattr(record, attribute, getattr(self, attribute))
-                                                    
+
+                # Capture new values after update
+                new_values = model_to_dict(record, [
+                    'account_number', 'account_title', 'account_description', 'account_type_id'
+                ])
+
+                # Log update before commit
+                log_update(
+                    module='account',
+                    record_id=record.id,
+                    record_identifier=str(record),
+                    old_values=old_values,
+                    new_values=new_values
+                )
+
         db.session.commit()
    
 

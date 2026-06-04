@@ -1317,7 +1317,7 @@
   // Bank account options from server
   const BANK_ACCOUNT_OPTIONS = [
     {% for ba in bank_accounts %}
-    { id: {{ ba.id }}, name: '{{ ba.bank_name }} — {{ ba.account_number }}' }{% if not loop.last %},{% endif %}
+    { id: {{ ba.id }}, name: '{{ ba }}' }{% if not loop.last %},{% endif %}
     {% endfor %}
   ];
 

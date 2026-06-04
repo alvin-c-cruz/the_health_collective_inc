@@ -55,8 +55,13 @@ def get_changed_fields(old_values, new_values):
         old_val = old_values.get(field)
         new_val = new_values.get(field)
 
-        # Handle None comparisons
-        if old_val != new_val:
+        # Normalize empty values: treat None, '', and empty strings as equivalent
+        # This prevents meaningless audit logs like "None → ''" or "'' → None"
+        old_val_normalized = old_val if old_val not in (None, '', ' ') else None
+        new_val_normalized = new_val if new_val not in (None, '', ' ') else None
+
+        # Only log if there's a meaningful change
+        if old_val_normalized != new_val_normalized:
             changed.append(field)
 
     return changed

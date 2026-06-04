@@ -6,6 +6,10 @@ from .admin_models import UserVendor as Preparer
 from .admin_models import AdminVendor as Approver
 from . import app_name
 from datetime import datetime
+from application.blueprints.audit.utils import (
+    log_create, log_update, log_delete,
+    model_to_dict, get_record_identifier
+)
 
 def get_attributes(object):
     attributes = [x for x in dir(object) if (not x.startswith("_"))]
@@ -56,18 +60,31 @@ class Form:
             # Add a new record
             _dict = get_attributes_as_dict(self)
             if "locked" in _dict: _dict.pop("locked")
-            
+
             new_record = Obj(
                 **_dict
                 )
             db.session.add(new_record)
+            db.session.flush()
+
+            # Log creation after flush to get ID
+            log_create(
+                module='vendor',
+                record_id=new_record.id,
+                record_identifier=str(new_record),
+                new_values=model_to_dict(new_record, [
+                    'vendor_name', 'tin'
+                ]),
+                notes='Vendor created'
+            )
+
             db.session.commit()
 
             data = {
                 f"{app_name}_id": new_record.id,
                 "user_id": self.user_prepare_id
             }
-            
+
             preparer = Preparer(**data)
 
             db.session.add(preparer)
@@ -77,6 +94,11 @@ class Form:
             # Update an existing record
             record = Obj.query.get(self.id)
             if record:
+                # Capture old values before update
+                old_values = model_to_dict(record, [
+                    'vendor_name', 'tin'
+                ])
+
                 data = {
                     f"{app_name}_id": self.id
                 }
@@ -91,7 +113,21 @@ class Form:
                 for attribute in get_attributes(self):
                     if attribute == "id": continue
                     setattr(record, attribute, getattr(self, attribute))
-                                                    
+
+                # Capture new values after update
+                new_values = model_to_dict(record, [
+                    'vendor_name', 'tin'
+                ])
+
+                # Log update before commit
+                log_update(
+                    module='vendor',
+                    record_id=record.id,
+                    record_identifier=str(record),
+                    old_values=old_values,
+                    new_values=new_values
+                )
+
         db.session.commit()
    
 

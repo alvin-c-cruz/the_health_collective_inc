@@ -114,13 +114,40 @@
     </div>
   {% endif %}
 
+  {# ── Collections list ── #}
+  {% if collections %}
+    <div class="thc-sec-lbl" style="margin-top: 1.5rem;">
+      Draft Collections ({{ collections|length }})
+    </div>
+    <div class="thc-txn-list">
+      {% for c in collections %}
+        <a href="{{ url_for('collections.edit_collection', collection_id=c.id) }}"
+           class="thc-rec-row">
+          <div class="thc-rec-icon ic-purple">
+            <i class="bi bi-cash-coin"></i>
+          </div>
+          <div class="thc-rec-info">
+            <div class="thc-rec-num">Collection #{{ c.id }}</div>
+            <div class="thc-rec-customer">{{ c.tender.tender_name if c.tender else '—' }}</div>
+            <div class="thc-rec-type">{{ c.reference or '—' }}</div>
+            <div class="thc-rec-date">{{ c.collection_date }}</div>
+          </div>
+          <div class="thc-rec-amount">₱{{ c.formatted_total_amount }}</div>
+          <div>
+            <span class="thc-rec-badge badge-draft">Draft</span>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
   {# ── Empty state ── #}
-  {% if not transactions and not deposits %}
+  {% if not transactions and not deposits and not collections %}
     <div class="thc-sec-lbl">
       All Draft Records (0)
     </div>
     <div class="thc-empty">
-      No draft transactions or deposits found.
+      No draft transactions, deposits, or collections found.
     </div>
   {% endif %}
 

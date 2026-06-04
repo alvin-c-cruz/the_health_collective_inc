@@ -10,6 +10,7 @@ class ApeBatch(db.Model):
 
     batch_date = db.Column(db.String())
     loa_soa_number = db.Column(db.String(255))
+    reference_number = db.Column(db.String(255))
     package_amount = db.Column(db.Float, default=0)
     notes = db.Column(db.String())
 
