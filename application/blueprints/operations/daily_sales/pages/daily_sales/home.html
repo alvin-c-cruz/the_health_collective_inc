@@ -65,8 +65,17 @@
   <div class="thc-sec-lbl">New transaction</div>
   <div class="thc-txn-grid">
     {% for txn_type in transaction_types %}
-    <div class="thc-txn-card{% if loop.first %} thc-txn-card--featured{% endif %}"
+    <div class="thc-txn-card{% if loop.first %} thc-txn-card--featured{% endif %}{% if txn_type.type_code == 'ape' %} thc-txn-card--with-action{% endif %}"
          onclick="window.location.href='{{ url_for('daily_sales.new_transaction', type_id=txn_type.id, date=selected_date.isoformat()) }}'">
+      {# APE Batch button in top-right corner #}
+      {% if txn_type.type_code == 'ape' %}
+      <a href="{{ url_for('ape_batch.home') }}"
+         class="thc-txn-card__action-btn"
+         onclick="event.stopPropagation()">
+        <i class="bi bi-collection"></i>
+        <span>APE Batch</span>
+      </a>
+      {% endif %}
       <div class="thc-txn-card__icon thc-txn-card__icon--{{ txn_type.icon_color.replace('ic-', '') }}">
         <i class="bi {{ txn_type.icon }}"></i>
       </div>
@@ -81,14 +90,6 @@
              onclick="event.stopPropagation()">{{ t.symbol or t.tender_name }}</a>
           {% endif %}
           {% endfor %}
-          {# Add APE Batch link for APE transaction type #}
-          {% if txn_type.type_code == 'APE' %}
-          <a href="{{ url_for('ape_batch.home') }}"
-             class="thc-badge thc-badge--coral"
-             onclick="event.stopPropagation()">
-            <i class="bi bi-collection"></i> APE Batch
-          </a>
-          {% endif %}
         </div>
       </div>
     </div>
@@ -136,22 +137,112 @@
             <i class="bi {{ tt.icon if tt else 'bi-tag' }}"></i>
           </div>
           <div class="thc-record-row__info">
-            <div class="thc-record-row__number"># {{ t.record_number }}</div>
+            <div class="thc-record-row__number">
+              # {{ t.record_number }}
+              {# Transaction date #}
+              {% if t.record_date %}
+                <span style="font-size: 0.75rem; color: var(--thc-text-muted); font-weight: normal; margin-left: 8px;">{{ t.record_date }}</span>
+              {% endif %}
+            </div>
             <div class="thc-record-row__customer">{{ t.customer.customer_name if t.customer else '—' }}</div>
-            <div class="thc-record-row__type">{{ tt.type_name if tt else '—' }}</div>
+            <div class="thc-record-row__type">
+              {# Service type (Diagnostic/Dialysis) #}
+              {% if t.transaction_details %}
+                {% set product_type = t.transaction_details[0].product.product_type.type_name if t.transaction_details[0].product and t.transaction_details[0].product.product_type else None %}
+                {% if product_type %}
+                  <span style="font-weight: 600; color: var(--thc-text-primary);">{{ product_type }}</span>
+                  <span style="color: var(--thc-text-muted);"> • </span>
+                {% endif %}
+              {% endif %}
+              {{ tt.type_name if tt else '—' }}
+              {# DashLabs / Reference numbers #}
+              {% if t.dashlabs_number or t.pos_number %}
+                <span style="color: var(--thc-text-muted);"> • </span>
+                {% if t.dashlabs_number %}
+                  <span style="font-size: 0.75rem; color: var(--thc-text-secondary);">DL: {{ t.dashlabs_number }}</span>
+                {% endif %}
+                {% if t.pos_number %}
+                  <span style="font-size: 0.75rem; color: var(--thc-text-secondary);">{% if t.dashlabs_number %} / {% endif %}OR: {{ t.pos_number }}</span>
+                {% endif %}
+              {% endif %}
+            </div>
+            {# Tender information with deposit/collection status #}
+            {% if t.transaction_tenders %}
+              <div style="font-size: 0.75rem; color: var(--thc-text-muted); margin-top: 2px;">
+                {% for tender_record in t.transaction_tenders %}
+                  <span style="display: inline-block; margin-right: 8px;">
+                    <strong>{{ tender_record.tender.tender_name }}:</strong> ₱{{ "{:,.2f}".format(tender_record.amount) }}
+                    {% if tender_record.tender.is_receivable %}
+                      {# Receivable - check collection status #}
+                      {% set collected = 0 %}
+                      {% for line in tender_record.collection_lines %}
+                        {% if line.collection.status != 'cancelled' %}
+                          {% set collected = collected + line.amount_collected %}
+                        {% endif %}
+                      {% endfor %}
+                      {% if collected >= tender_record.amount - 0.01 %}
+                        <span style="color: #2e7d32;">✓ Collected</span>
+                      {% elif collected > 0 %}
+                        <span style="color: #f57c00;">Partial</span>
+                      {% else %}
+                        <span style="color: #c0392b;">Uncollected</span>
+                      {% endif %}
+                    {% else %}
+                      {# Cash - check deposit status #}
+                      {% set deposited = 0 %}
+                      {% for item in t.deposit_items %}
+                        {% if item.deposit.status != 'cancelled' %}
+                          {% set deposited = deposited + item.amount %}
+                        {% endif %}
+                      {% endfor %}
+                      {% if deposited >= tender_record.amount - 0.01 %}
+                        <span style="color: #2e7d32;">✓ Deposited</span>
+                      {% elif deposited > 0 %}
+                        <span style="color: #f57c00;">Partial</span>
+                      {% else %}
+                        <span style="color: #c0392b;">Undeposited</span>
+                      {% endif %}
+                    {% endif %}
+                  </span>
+                {% endfor %}
+              </div>
+            {% endif %}
           </div>
           <div class="thc-record-row__amount">₱{{ "{:,.2f}".format(net.val) }}</div>
           <div class="thc-record-row__badges">
             {% if t.cancelled %}
               <span class="thc-record-badge thc-record-badge--cancelled">Cancelled</span>
-            {% elif t.submitted %}
-              {% if t.user_approved %}
-                <span class="thc-record-badge thc-record-badge--approved">Approved</span>
-              {% else %}
-                <span class="thc-record-badge thc-record-badge--submitted">Submitted</span>
-              {% endif %}
             {% else %}
-              <span class="thc-record-badge thc-record-badge--draft">Draft</span>
+              {# Check collection status for receivables #}
+              {% set has_receivable = namespace(found=false) %}
+              {% set all_collected = namespace(val=true) %}
+              {% for tender_record in t.transaction_tenders %}
+                {% if tender_record.tender.is_receivable %}
+                  {% set has_receivable.found = true %}
+                  {% set collected = 0 %}
+                  {% for line in tender_record.collection_lines %}
+                    {% if line.collection.status != 'cancelled' %}
+                      {% set collected = collected + line.amount_collected %}
+                    {% endif %}
+                  {% endfor %}
+                  {% if collected < tender_record.amount - 0.01 %}
+                    {% set all_collected.val = false %}
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+
+              {# Show COLLECTED badge if receivable is collected, otherwise show workflow status #}
+              {% if has_receivable.found and all_collected.val %}
+                <span class="thc-record-badge thc-record-badge--approved">Collected</span>
+              {% elif t.submitted %}
+                {% if t.user_approved %}
+                  <span class="thc-record-badge thc-record-badge--approved">Approved</span>
+                {% else %}
+                  <span class="thc-record-badge thc-record-badge--submitted">Submitted</span>
+                {% endif %}
+              {% else %}
+                <span class="thc-record-badge thc-record-badge--draft">Draft</span>
+              {% endif %}
             {% endif %}
           </div>
         </a>
@@ -209,7 +300,7 @@
   </div>
   <div class="thc-txn-list">
     {% for collection in collections %}
-      <a href="{{ url_for('collections.view_collection', collection_id=collection.id) }}" class="thc-record-row">
+      <a href="{% if collection.status == 'draft' %}{{ url_for('collections.edit_collection', collection_id=collection.id) }}{% else %}{{ url_for('collections.view_collection', collection_id=collection.id) }}{% endif %}" class="thc-record-row">
         <div class="thc-record-row__icon thc-record-row__icon--green">
           <i class="bi bi-cash-coin"></i>
         </div>

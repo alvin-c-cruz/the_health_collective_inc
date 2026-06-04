@@ -17,6 +17,15 @@ from ...register.product_type import ProductType
 from ...register.tender import Tender
 from ...register.sex.models import Sex
 
+# Centralized audit logging
+from application.blueprints.audit.utils import (
+    log_create as audit_log_create,
+    log_update as audit_log_update,
+    log_delete as audit_log_delete,
+    log_status_change as audit_log_status_change,
+    model_to_dict
+)
+
 bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_name}")
 ROLES_ACCEPTED = app_label
 
@@ -156,10 +165,14 @@ def home():
 
     # Calculate cash on hand: cash sales + funds received - funds disbursed - unreimbursed expenses (cumulative up to selected date)
 
-    # 1. Cash from transactions (cumulative up to selected date)
+    # Get cash tender IDs (tenders NOT marked as receivable)
+    cash_tenders = Tender.query.filter(Tender.is_receivable == False).all()
+    cash_tender_ids = [t.id for t in cash_tenders]
+
+    # 1. Cash from transactions (cumulative up to selected date) - only non-receivable tenders
     cash_from_sales = sum(
         sum(td.amount for td in t.transaction_tenders
-            if td.tender and 'cash' in td.tender.tender_name.lower())
+            if td.tender_id in cash_tender_ids)
         for t in Transaction.query.filter(
             Transaction.record_date <= str(selected_date),
             Transaction.submitted.isnot(None),
@@ -202,25 +215,26 @@ def home():
     unreimbursed_expenses = total_petty_cash_expenses - total_reimbursements
 
     # 5. Deposits (cumulative up to selected date, posted and submitted only) - cash going OUT to bank
-    total_deposits = sum(
-        d.total_amount for d in Deposit.query.filter(
+    # Only count deposits from cash transactions (not receivables)
+    from .models import DepositItem
+    deposit_items = (
+        db.session.query(DepositItem)
+        .join(Deposit)
+        .join(Transaction, DepositItem.transaction_id == Transaction.id)
+        .join(TransactionTender, TransactionTender.transaction_id == Transaction.id)
+        .filter(
             Deposit.record_date <= str(selected_date),
-            Deposit.status.in_(['posted', 'submitted'])
-        ).all()
+            Deposit.status.in_(['posted', 'submitted']),
+            TransactionTender.tender_id.in_(cash_tender_ids)
+        )
+        .all()
     )
-
-    # 6. Collections (cumulative up to selected date, posted and submitted only) - cash coming IN from bank
-    from application.blueprints.operations.collections.models import Collection
-    total_collections = sum(
-        c.amount for c in Collection.query.filter(
-            Collection.collection_date <= str(selected_date),
-            Collection.status.in_(['posted', 'submitted'])
-        ).all()
-    )
+    total_deposits = sum(item.amount for item in deposit_items)
 
     # Final cash on hand calculation
-    # Cash sales + Funds received - Funds disbursed - Unreimbursed expenses - Deposits + Collections
-    cash_on_hand = cash_from_sales + total_funds_received - total_funds_disbursed - unreimbursed_expenses - total_deposits + total_collections
+    # Cash sales + Funds received - Funds disbursed - Unreimbursed expenses - Deposits
+    # NOTE: Collections are NOT included because they go directly into bank accounts, not cash on hand
+    cash_on_hand = cash_from_sales + total_funds_received - total_funds_disbursed - unreimbursed_expenses - total_deposits
 
     class Summary:
         pass
@@ -280,6 +294,8 @@ def home():
 @roles_accepted([ROLES_ACCEPTED])
 def drafts():
     """Show all draft transactions and deposits (not submitted)"""
+    from ..collections.models import Collection
+
     # Get all transactions where submitted is NULL (draft status)
     draft_transactions = Transaction.query.filter(
         Transaction.submitted == None,
@@ -291,6 +307,11 @@ def drafts():
         Deposit.status == 'draft'
     ).order_by(Deposit.record_date.desc(), Deposit.id.desc()).all()
 
+    # Get all collections with draft status
+    draft_collections = Collection.query.filter(
+        Collection.status == 'draft'
+    ).order_by(Collection.collection_date.desc(), Collection.id.desc()).all()
+
     transaction_types = TransactionType.query.filter_by(active=True).order_by(TransactionType.sort_order).all()
     type_lookup = {tt.type_code: tt for tt in transaction_types}
 
@@ -298,6 +319,7 @@ def drafts():
         "app_label": app_label,
         "transactions": draft_transactions,
         "deposits": draft_deposits,
+        "collections": draft_collections,
         "type_lookup": type_lookup,
         "page_title": "Draft Records",
     }
@@ -479,12 +501,13 @@ def edit_transaction(transaction_id):
     return_url = request.args.get('return_url') or request.referrer or url_for('daily_sales.home')
 
     # If return_url points to new transaction page or edit page, redirect to daily sales home instead
-    # Allow returning to drafts page after submission
-    if '/transaction/new' in return_url.lower() or '/edit' in return_url.lower():
+    # BUT: Allow returning to special pages like drafts, pending approval, etc.
+    if '/transaction/new' in return_url.lower() or ('/edit' in return_url.lower() and '/drafts' not in return_url.lower() and '/pending' not in return_url.lower()):
         return_url = url_for('daily_sales.home')
 
     # If return_url is daily sales home without date parameter, add the record date
-    if '/daily_sales/' in return_url and '?date=' not in return_url and 'date=' not in return_url:
+    # But don't modify if it's drafts page or other special pages
+    if '/daily_sales/' in return_url and '?date=' not in return_url and 'date=' not in return_url and '/drafts' not in return_url and '/pending' not in return_url:
         return_url = url_for('daily_sales.home', date=record.record_date)
 
     if record.submitted or record.cancelled:
@@ -915,10 +938,22 @@ def pending_approval():
         .all()
     )
 
+    # Get pending collections (submitted but not yet posted or cancelled)
+    from ..collections.models import Collection
+    collections = (
+        Collection.query
+        .filter(
+            Collection.status == 'submitted'
+        )
+        .order_by(Collection.collection_date.asc(), Collection.id.asc())
+        .all()
+    )
+
     return render_template(
         "daily_sales/pending_approval.html",
         transactions=transactions,
         deposits=deposits,
+        collections=collections,
         funds_received=funds_received,
         funds_disbursed=funds_disbursed,
         petty_cash_vouchers=petty_cash_vouchers,
@@ -934,9 +969,9 @@ def pending_approval():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def approve_transaction(transaction_id):
-    from .admin_models import AdminTransaction
     from application.extensions import db
     from flask import abort
+    from .approval_helpers import approve_transaction_both_systems
 
     if not (current_user.admin or current_user.superuser):
         abort(403)
@@ -947,15 +982,13 @@ def approve_transaction(transaction_id):
         flash('Only submitted, active transactions can be approved.', 'warning')
         return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
 
-    existing = AdminTransaction.query.filter_by(transaction_id=transaction_id).first()
-    if existing:
+    # Use helper function to update BOTH legacy and new systems
+    success = approve_transaction_both_systems(record, current_user.id)
+
+    if not success:
         flash('Transaction is already approved.', 'info')
         return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
 
-    db.session.add(AdminTransaction(
-        transaction_id=transaction_id,
-        user_id=current_user.id,
-    ))
     db.session.commit()
 
     # Audit logging - ensure it's created
@@ -982,9 +1015,9 @@ def approve_transaction(transaction_id):
 @roles_accepted([ROLES_ACCEPTED])
 def unapprove_transaction(transaction_id):
     """Superuser unapproves an approved transaction (for testing purposes)"""
-    from .admin_models import AdminTransaction
     from application.extensions import db
     from flask import abort
+    from .approval_helpers import unapprove_transaction_both_systems
 
     if not current_user.superuser:
         abort(403)
@@ -995,8 +1028,13 @@ def unapprove_transaction(transaction_id):
         flash('Only submitted, active transactions can be unapproved.', 'warning')
         return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
 
-    # Remove the approval record
-    AdminTransaction.query.filter_by(transaction_id=transaction_id).delete()
+    # Use helper function to clear BOTH legacy and new systems
+    success = unapprove_transaction_both_systems(record)
+
+    if not success:
+        flash('Transaction is not approved.', 'warning')
+        return redirect(url_for(f'{app_name}.view_transaction', transaction_id=transaction_id))
+
     db.session.commit()
 
     flash('Transaction approval removed. Transaction is now pending approval.', 'success')
@@ -1210,19 +1248,20 @@ def get_undeposited_cash_transactions():
     from application.blueprints.register.tender.models import Tender
     from sqlalchemy import desc
 
-    # Get all submitted transactions
+    # Get only approved (posted) transactions - exclude draft and submitted (unapproved)
     transactions = Transaction.query.filter(
         Transaction.submitted.isnot(None),
+        Transaction.approved_at.isnot(None),  # Only approved transactions
         Transaction.cancelled.is_(None)
     ).order_by(desc(Transaction.id)).all()  # Use ID for ordering to avoid date comparison issues
 
-    # Filter transactions that have cash tenders
+    # Filter transactions that have cash tenders (is_receivable = False)
     undeposited = []
     for transaction in transactions:
-        # Calculate cash amount for this transaction
+        # Calculate cash amount for this transaction (only non-receivable tenders)
         cash_amount = sum(
             td.amount for td in transaction.transaction_tenders
-            if td.tender and 'cash' in td.tender.tender_name.lower()
+            if td.tender and td.tender.is_receivable == False
         )
 
         if cash_amount <= 0:
@@ -1260,6 +1299,9 @@ def record_deposit():
     from flask_login import current_user
     from application.blueprints.operations.bank_account.models import BankAccount
 
+    # Get the date parameter for redirect
+    deposit_date = request.args.get('date') or request.form.get('deposit_date')
+
     if request.method == 'POST':
         try:
             # Create new deposit
@@ -1280,6 +1322,7 @@ def record_deposit():
             # Add deposit items from selected transactions
             total_amount = 0
             transaction_ids = request.form.getlist('transaction_ids')
+            txn_list = []  # Build list for audit log
 
             for trans_id in transaction_ids:
                 amount = float(request.form.get(f'amount_{trans_id}', 0))
@@ -1291,15 +1334,48 @@ def record_deposit():
                     db.session.add(item)
                     total_amount += amount
 
+                    # Add to audit log list
+                    txn = Transaction.query.get(int(trans_id))
+                    if txn:
+                        txn_list.append(f"#{txn.record_number} - {txn.customer.customer_name if txn.customer else 'No customer'} (₱{amount:,.2f})")
+
+            # Build transaction details for audit log
+            txn_details = "; ".join(txn_list) if txn_list else "No transactions"
+
+            # Log deposit creation in centralized audit system
+            try:
+                audit_log_create(
+                    module='deposit',
+                    record_id=deposit.id,
+                    record_identifier=f"Deposit #{deposit.id} - {deposit.bank_account.bank_name if deposit.bank_account else 'No bank'}",
+                    new_values=model_to_dict(deposit, [
+                        'record_date', 'reference_number', 'bank_account_id',
+                        'deductions', 'deduction_details', 'notes', 'status'
+                    ]),
+                    notes=f'Draft deposit created with {len(transaction_ids)} transactions, total ₱{total_amount:,.2f}. Transactions: {txn_details}'
+                )
+            except Exception as e:
+                print(f"Audit logging failed: {e}")
+
             db.session.commit()
 
             flash(f'Deposit recorded successfully! Total amount: ₱{total_amount:,.2f}', 'success')
-            return redirect(url_for(f'{app_name}.deposit_report'))
+
+            # Redirect back to daily_sales if date parameter exists
+            if deposit_date:
+                return redirect(url_for(f'{app_name}.home', date=deposit_date))
+            else:
+                return redirect(url_for(f'{app_name}.deposit_report'))
 
         except Exception as e:
             db.session.rollback()
             flash(f'Error recording deposit: {str(e)}', 'danger')
-            return redirect(url_for(f'{app_name}.record_deposit'))
+
+            # Redirect back with date parameter if it exists
+            if deposit_date:
+                return redirect(url_for(f'{app_name}.record_deposit', date=deposit_date))
+            else:
+                return redirect(url_for(f'{app_name}.record_deposit'))
 
     # GET request - show form
     undeposited_transactions = get_undeposited_cash_transactions()
@@ -1309,6 +1385,7 @@ def record_deposit():
         'app_label': app_label,
         'undeposited_transactions': undeposited_transactions,
         'bank_accounts': bank_accounts,
+        'deposit_date': deposit_date,  # Pass date for redirect
     }
 
     return render_template('daily_sales/record_deposit.html', **context)
@@ -1410,6 +1487,12 @@ def edit_deposit(deposit_id):
 
     if request.method == 'POST':
         try:
+            # Capture old values before update
+            old_values = model_to_dict(deposit, [
+                'record_date', 'reference_number', 'bank_account_id',
+                'deductions', 'deduction_details', 'notes', 'status'
+            ])
+
             # Update deposit fields
             deposit.record_date = request.form.get('record_date')
             deposit.reference_number = request.form.get('reference_number', '')
@@ -1435,6 +1518,25 @@ def edit_deposit(deposit_id):
                     item.amount = amount
                     db.session.add(item)
                     total_amount += amount
+
+            # Capture new values after update
+            new_values = model_to_dict(deposit, [
+                'record_date', 'reference_number', 'bank_account_id',
+                'deductions', 'deduction_details', 'notes', 'status'
+            ])
+
+            # Log deposit update in centralized audit system
+            try:
+                audit_log_update(
+                    module='deposit',
+                    record_id=deposit.id,
+                    record_identifier=f"Deposit #{deposit.id} - {deposit.bank_account.bank_name if deposit.bank_account else 'No bank'}",
+                    old_values=old_values,
+                    new_values=new_values,
+                    notes=f'Deposit updated with {len(transaction_ids)} transactions, total ₱{total_amount:,.2f}'
+                )
+            except Exception as e:
+                print(f"Audit logging failed: {e}")
 
             db.session.commit()
 
@@ -1545,9 +1647,40 @@ def submit_deposit(deposit_id):
     deposit.submitted_at = datetime.now()
     deposit.updated_at = datetime.now()
 
+    # Log in centralized audit system
+    try:
+        # Build transaction list for notes
+        txn_list = []
+        for item in deposit.deposit_items:
+            txn = item.transaction
+            txn_list.append(f"#{txn.record_number} - {txn.customer.customer_name if txn.customer else 'No customer'} (₱{item.formatted_amount})")
+
+        txn_details = "; ".join(txn_list) if txn_list else "No transactions"
+
+        # Build context values to show in audit log
+        context_values = {
+            'bank': deposit.bank_account.bank_name if deposit.bank_account else 'No bank',
+            'deposit_date': deposit.record_date,
+            'reference_number': deposit.reference_number or 'N/A',
+            'total_amount': f'₱{deposit.formatted_total_amount}'
+        }
+
+        audit_log_status_change(
+            module='deposit',
+            record_id=deposit.id,
+            record_identifier=f"Deposit #{deposit.id} - {deposit.bank_account.bank_name if deposit.bank_account else 'No bank'}",
+            action='submitted',
+            old_status='draft',
+            new_status='submitted',
+            context_values=context_values,
+            notes=f'Deposit submitted for approval, total ₱{deposit.formatted_total_amount}. Transactions: {txn_details}'
+        )
+    except Exception as e:
+        print(f"Audit logging failed: {e}")
+
     db.session.commit()
 
-    # Log audit trail
+    # Log audit trail (old system)
     log_status_change('deposit', deposit, 'submitted', user=current_user)
 
     flash(f'Deposit submitted successfully! Waiting for admin approval. Total amount: ₱{deposit.formatted_total_amount}', 'success')
@@ -1594,9 +1727,40 @@ def approve_deposit(deposit_id):
     deposit.approved_at = datetime.now()
     deposit.updated_at = datetime.now()
 
+    # Log in centralized audit system
+    try:
+        # Build transaction list for notes
+        txn_list = []
+        for item in deposit.deposit_items:
+            txn = item.transaction
+            txn_list.append(f"#{txn.record_number} - {txn.customer.customer_name if txn.customer else 'No customer'} (₱{item.formatted_amount})")
+
+        txn_details = "; ".join(txn_list) if txn_list else "No transactions"
+
+        # Build context values to show in audit log
+        context_values = {
+            'bank': deposit.bank_account.bank_name if deposit.bank_account else 'No bank',
+            'deposit_date': deposit.record_date,
+            'reference_number': deposit.reference_number or 'N/A',
+            'total_amount': f'₱{deposit.formatted_total_amount}'
+        }
+
+        audit_log_status_change(
+            module='deposit',
+            record_id=deposit.id,
+            record_identifier=f"Deposit #{deposit.id} - {deposit.bank_account.bank_name if deposit.bank_account else 'No bank'}",
+            action='approved',
+            old_status='submitted',
+            new_status='posted',
+            context_values=context_values,
+            notes=f'Deposit approved and posted, total ₱{deposit.formatted_total_amount}. Transactions: {txn_details}'
+        )
+    except Exception as e:
+        print(f"Audit logging failed: {e}")
+
     db.session.commit()
 
-    # Log audit trail
+    # Log audit trail (old system)
     log_status_change('deposit', deposit, 'approved', user=current_user)
 
     flash(f'Deposit approved successfully! Total amount: ₱{deposit.formatted_total_amount}', 'success')
@@ -1689,9 +1853,24 @@ def cancel_deposit(deposit_id):
     deposit.cancellation_reason = cancellation_reason
     deposit.updated_at = datetime.now()
 
+    # Log in centralized audit system
+    try:
+        audit_log_status_change(
+            module='deposit',
+            record_id=deposit.id,
+            record_identifier=f"Deposit #{deposit.id} - {deposit.bank_account.bank_name if deposit.bank_account else 'No bank'}",
+            action='cancelled',
+            old_status='draft',
+            new_status='cancelled',
+            reason=cancellation_reason,
+            notes=f'Deposit cancelled: {cancellation_reason}'
+        )
+    except Exception as e:
+        print(f"Audit logging failed: {e}")
+
     db.session.commit()
 
-    # Log audit trail
+    # Log audit trail (old system)
     log_status_change('deposit', deposit, 'cancelled', user=current_user,
                      reason=cancellation_reason)
 
@@ -2650,6 +2829,20 @@ def new_fund_received():
             )
 
             db.session.add(fund_received)
+            db.session.flush()
+
+            # Log fund received creation
+            audit_log_create(
+                module='fund_received',
+                record_id=fund_received.id,
+                record_identifier=f"Fund Received #{fund_received.id} - {fund_received.fund_category.category_name if fund_received.fund_category else 'N/A'} - ₱{fund_received.amount:,.2f}",
+                new_values=model_to_dict(fund_received, [
+                    'fund_category_id', 'amount', 'record_date', 'reference_number',
+                    'description', 'status'
+                ]),
+                notes=f'Draft fund received created'
+            )
+
             db.session.commit()
 
             flash("Fund received record created as draft", "success")
@@ -2692,6 +2885,20 @@ def new_fund_disbursed():
             )
 
             db.session.add(fund_disbursed)
+            db.session.flush()
+
+            # Log fund disbursed creation
+            audit_log_create(
+                module='fund_disbursed',
+                record_id=fund_disbursed.id,
+                record_identifier=f"Fund Disbursed #{fund_disbursed.id} - {fund_disbursed.fund_category.category_name if fund_disbursed.fund_category else 'N/A'} - ₱{fund_disbursed.amount:,.2f}",
+                new_values=model_to_dict(fund_disbursed, [
+                    'fund_category_id', 'amount', 'record_date', 'reference_number',
+                    'description', 'status'
+                ]),
+                notes=f'Draft fund disbursed created'
+            )
+
             db.session.commit()
 
             flash("Fund disbursed record created as draft", "success")
@@ -2721,6 +2928,17 @@ def submit_fund_received(id):
     fund.submitted_by_id = current_user.id
     fund.submitted_at = datetime.utcnow()
 
+    # Log submission
+    audit_log_status_change(
+        module='fund_received',
+        record_id=fund.id,
+        record_identifier=f"Fund Received #{fund.id}",
+        action='submitted',
+        old_status='draft',
+        new_status='submitted',
+        notes=f'Submitted for approval - Amount: ₱{fund.amount:,.2f}'
+    )
+
     db.session.commit()
     flash("Fund received submitted for approval", "success")
     return redirect(url_for('daily_sales.accountabilities'))
@@ -2740,6 +2958,17 @@ def approve_fund_received(id):
     fund.status = 'posted'
     fund.approved_by_id = current_user.id
     fund.approved_at = datetime.utcnow()
+
+    # Log approval
+    audit_log_status_change(
+        module='fund_received',
+        record_id=fund.id,
+        record_identifier=f"Fund Received #{fund.id}",
+        action='approved',
+        old_status='submitted',
+        new_status='posted',
+        notes=f'Approved and posted - Amount: ₱{fund.amount:,.2f}'
+    )
 
     db.session.commit()
     flash("Fund received approved successfully", "success")
@@ -2766,17 +2995,43 @@ def cancel_fund_received(id):
 
         # Admin/SuperUser can cancel immediately
         if current_user.admin or current_user.superuser:
+            old_status = fund.status
             fund.status = 'cancelled'
             fund.cancelled_by_id = current_user.id
             fund.cancelled_at = datetime.now()
             fund.cancellation_reason = reason if reason else 'Cancelled by admin'
+
+            # Log cancellation
+            audit_log_status_change(
+                module='fund_received',
+                record_id=fund.id,
+                record_identifier=f"Fund Received #{fund.id}",
+                action='cancelled',
+                old_status=old_status,
+                new_status='cancelled',
+                reason=reason if reason else 'Cancelled by admin'
+            )
+
             db.session.commit()
             flash("Fund received record cancelled successfully", "success")
         else:
             # Staff must request cancellation
+            old_status = fund.status
             fund.status = 'pending_cancellation'
             fund.cancelled_by_id = current_user.id  # Who requested
             fund.cancellation_reason = reason if reason else 'Cancellation requested by user'
+
+            # Log cancellation request
+            audit_log_status_change(
+                module='fund_received',
+                record_id=fund.id,
+                record_identifier=f"Fund Received #{fund.id}",
+                action='cancellation_requested',
+                old_status=old_status,
+                new_status='pending_cancellation',
+                reason=reason if reason else 'Cancellation requested by user'
+            )
+
             db.session.commit()
             flash("Cancellation request submitted. Waiting for admin approval.", "info")
 
@@ -2801,6 +3056,17 @@ def submit_fund_disbursed(id):
     fund.submitted_by_id = current_user.id
     fund.submitted_at = datetime.utcnow()
 
+    # Log submission
+    audit_log_status_change(
+        module='fund_disbursed',
+        record_id=fund.id,
+        record_identifier=f"Fund Disbursed #{fund.id}",
+        action='submitted',
+        old_status='draft',
+        new_status='submitted',
+        notes=f'Submitted for approval - Amount: ₱{fund.amount:,.2f}'
+    )
+
     db.session.commit()
     flash("Fund disbursed submitted for approval", "success")
     return redirect(url_for('daily_sales.accountabilities'))
@@ -2820,6 +3086,17 @@ def approve_fund_disbursed(id):
     fund.status = 'posted'
     fund.approved_by_id = current_user.id
     fund.approved_at = datetime.utcnow()
+
+    # Audit log
+    audit_log_status_change(
+        module='fund_disbursed',
+        record_id=fund.id,
+        record_identifier=f"Fund Disbursed #{fund.id}",
+        action='approved',
+        old_status='submitted',
+        new_status='posted',
+        notes=f'Approved and posted - Amount: ₱{fund.amount:,.2f}'
+    )
 
     db.session.commit()
     flash("Fund disbursed approved successfully", "success")
@@ -2846,17 +3123,43 @@ def cancel_fund_disbursed(id):
 
         # Admin/SuperUser can cancel immediately
         if current_user.admin or current_user.superuser:
+            old_status = fund.status
             fund.status = 'cancelled'
             fund.cancelled_by_id = current_user.id
             fund.cancelled_at = datetime.now()
             fund.cancellation_reason = reason if reason else 'Cancelled by admin'
+
+            # Audit log
+            audit_log_status_change(
+                module='fund_disbursed',
+                record_id=fund.id,
+                record_identifier=f"Fund Disbursed #{fund.id}",
+                action='cancelled',
+                old_status=old_status,
+                new_status='cancelled',
+                reason=reason if reason else 'Cancelled by admin'
+            )
+
             db.session.commit()
             flash("Fund disbursed record cancelled successfully", "success")
         else:
             # Staff must request cancellation
+            old_status = fund.status
             fund.status = 'pending_cancellation'
             fund.cancelled_by_id = current_user.id  # Who requested
             fund.cancellation_reason = reason if reason else 'Cancellation requested by user'
+
+            # Audit log
+            audit_log_status_change(
+                module='fund_disbursed',
+                record_id=fund.id,
+                record_identifier=f"Fund Disbursed #{fund.id}",
+                action='cancellation_requested',
+                old_status=old_status,
+                new_status='pending_cancellation',
+                reason=reason if reason else 'Cancellation requested by user'
+            )
+
             db.session.commit()
             flash("Cancellation request submitted. Waiting for admin approval.", "info")
 

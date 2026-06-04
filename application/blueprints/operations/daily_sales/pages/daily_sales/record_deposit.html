@@ -95,6 +95,9 @@
 
   <!-- Form -->
   <form method="POST" id="depositForm">
+    {% if deposit_date %}
+    <input type="hidden" name="deposit_date" value="{{ deposit_date }}">
+    {% endif %}
 
     <!-- Deposit Details -->
     <div class="row mb-3">
@@ -139,7 +142,7 @@
     <div class="row mb-3">
       <div class="col d-flex gap-2">
         <button type="submit" class="btn btn-primary" id="saveButton" disabled>Save Deposit</button>
-        <a href="{{ url_for('daily_sales.home') }}" class="btn btn-secondary btn-sm">Cancel</a>
+        <a href="{% if deposit_date %}{{ url_for('daily_sales.home', date=deposit_date) }}{% else %}{{ url_for('daily_sales.home') }}{% endif %}" class="btn btn-secondary btn-sm">Cancel</a>
       </div>
     </div>
 
@@ -252,7 +255,7 @@
   // Bank account options from server
   const BANK_ACCOUNT_OPTIONS = [
     {% for ba in bank_accounts %}
-    { id: {{ ba.id }}, name: '{{ ba.bank_name }} — {{ ba.account_number }}' }{% if not loop.last %},{% endif %}
+    { id: {{ ba.id }}, name: '{{ ba }}' }{% if not loop.last %},{% endif %}
     {% endfor %}
   ];
 
