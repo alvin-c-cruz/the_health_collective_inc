@@ -575,14 +575,7 @@
     <table class="dashboard-table">
         <thead>
             <tr>
-                <th>
-                    Mode of Payment
-                    {% if current_user.admin or current_user.superuser %}
-                    <button id="btn-edit-payment-methods" class="btn btn-sm btn-link" style="font-size: 0.75rem; padding: 0 0.5rem;" onclick="toggleSortMode('payment_methods')" title="Rearrange items">
-                        <i class="bi bi-arrows-move"></i> Rearrange
-                    </button>
-                    {% endif %}
-                </th>
+                <th>Mode of Payment</th>
                 <th>{{ today.strftime('%b %d, %Y') }}</th>
                 <th>MTD ({{ month_start.strftime('%b %d') }} - {{ today.strftime('%b %d') }})</th>
                 <th>YTD ({{ year_start.strftime('%b %d') }} - {{ today.strftime('%b %d') }})</th>
@@ -649,11 +642,8 @@
                 {% set mtd_total = mtd_amounts|sum %}
                 {% set ytd_total = ytd_amounts|sum %}
 
-                <tr class="sortable-item" data-item-key="{{ tender_name }}">
-                    <td>
-                        <span class="drag-handle" style="display: none; cursor: move; margin-right: 0.5rem;">⋮⋮</span>
-                        {{ tender_name }}
-                    </td>
+                <tr data-item-key="{{ tender_name }}">
+                    <td>{{ tender_name }}</td>
                     <td>{{ "₱{:,.2f}".format(daily_total) if daily_total > 0 else "-" }}</td>
                     <td>{{ "₱{:,.2f}".format(mtd_total) if mtd_total > 0 else "-" }}</td>
                     <td>{{ "₱{:,.2f}".format(ytd_total) if ytd_total > 0 else "-" }}</td>
@@ -759,141 +749,5 @@
 
 </div>
 
-{% if current_user.admin or current_user.superuser %}
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-<script>
-let sortableInstance = null;
-let originalOrder = [];
-let isSortMode = false;
-
-function toggleSortMode(section) {
-    isSortMode = !isSortMode;
-    const tbody = document.getElementById(`${section}-tbody`);
-    const button = document.getElementById(`btn-edit-${section.replace('_', '-')}`);
-
-    if (isSortMode) {
-        // Enter sort mode
-        button.innerHTML = '<i class="bi bi-check-lg"></i> Save Order';
-        button.classList.remove('btn-link');
-        button.classList.add('btn-primary');
-
-        // Show drag handles
-        tbody.querySelectorAll('.drag-handle').forEach(handle => {
-            handle.style.display = 'inline';
-        });
-
-        // Store original order
-        originalOrder = Array.from(tbody.querySelectorAll('.sortable-item')).map(row => row.dataset.itemKey);
-
-        // Initialize Sortable
-        sortableInstance = new Sortable(tbody, {
-            animation: 150,
-            handle: '.drag-handle',
-            ghostClass: 'sortable-ghost',
-            filter: '.row-primary, tr[style*="height: 2px"]',  // Exclude separator and total rows
-            onEnd: function(evt) {
-                console.log('Item moved from', evt.oldIndex, 'to', evt.newIndex);
-            }
-        });
-
-        // Add cancel button
-        const cancelBtn = document.createElement('button');
-        cancelBtn.id = 'btn-cancel-sort';
-        cancelBtn.className = 'btn btn-sm btn-secondary';
-        cancelBtn.style.cssText = 'font-size: 0.75rem; padding: 0 0.5rem; margin-left: 0.5rem;';
-        cancelBtn.innerHTML = '<i class="bi bi-x-lg"></i> Cancel';
-        cancelBtn.onclick = () => cancelSortMode(section);
-        button.parentNode.insertBefore(cancelBtn, button.nextSibling);
-
-    } else {
-        // Save and exit sort mode
-        saveSortOrder(section);
-    }
-}
-
-function cancelSortMode(section) {
-    isSortMode = false;
-    const button = document.getElementById(`btn-edit-${section.replace('_', '-')}`);
-    const cancelBtn = document.getElementById('btn-cancel-sort');
-
-    // Restore button
-    button.innerHTML = '<i class="bi bi-arrows-move"></i> Rearrange';
-    button.classList.remove('btn-primary');
-    button.classList.add('btn-link');
-
-    // Remove cancel button
-    if (cancelBtn) cancelBtn.remove();
-
-    // Hide drag handles
-    document.querySelectorAll('.drag-handle').forEach(handle => {
-        handle.style.display = 'none';
-    });
-
-    // Destroy sortable
-    if (sortableInstance) {
-        sortableInstance.destroy();
-        sortableInstance = null;
-    }
-
-    // Reload page to restore original order
-    window.location.reload();
-}
-
-function saveSortOrder(section) {
-    const tbody = document.getElementById(`${section}-tbody`);
-    const items = Array.from(tbody.querySelectorAll('.sortable-item')).map(row => row.dataset.itemKey);
-
-    // Check if order changed
-    const orderChanged = JSON.stringify(items) !== JSON.stringify(originalOrder);
-
-    if (!orderChanged) {
-        alert('No changes made to the order.');
-        cancelSortMode(section);
-        return;
-    }
-
-    // Save to server
-    fetch('/api/sort-order', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            section: section,
-            items: items
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Sort order saved successfully!');
-            window.location.reload();
-        } else {
-            alert('Error saving sort order: ' + data.error);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Network error. Please try again.');
-    });
-}
-
-// Add some CSS for the sortable ghost
-const style = document.createElement('style');
-style.textContent = `
-    .sortable-ghost {
-        opacity: 0.4;
-        background-color: #f0f0f0;
-    }
-    .sortable-item {
-        transition: background-color 0.2s;
-    }
-    .sortable-item:hover .drag-handle {
-        opacity: 1;
-    }
-`;
-document.head.appendChild(style);
-</script>
-{% endif %}
 
 {% endblock %}
