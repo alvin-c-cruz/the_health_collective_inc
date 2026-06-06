@@ -242,28 +242,8 @@
             {% if t.cancelled %}
               <span class="thc-record-badge thc-record-badge--cancelled">Cancelled</span>
             {% else %}
-              {# Check collection status for receivables #}
-              {% set has_receivable = namespace(found=false) %}
-              {% set all_collected = namespace(val=true) %}
-              {% for tender_record in t.transaction_tenders %}
-                {% if tender_record.tender.is_receivable %}
-                  {% set has_receivable.found = true %}
-                  {% set collected = 0 %}
-                  {% for line in tender_record.collection_lines %}
-                    {% if line.collection.status != 'cancelled' %}
-                      {% set collected = collected + line.amount_collected %}
-                    {% endif %}
-                  {% endfor %}
-                  {% if collected < tender_record.amount - 0.01 %}
-                    {% set all_collected.val = false %}
-                  {% endif %}
-                {% endif %}
-              {% endfor %}
-
-              {# Show COLLECTED badge if receivable is collected, otherwise show workflow status #}
-              {% if has_receivable.found and all_collected.val %}
-                <span class="thc-record-badge thc-record-badge--approved">Collected</span>
-              {% elif t.submitted %}
+              {# Show workflow status #}
+              {% if t.submitted %}
                 {% if t.user_approved %}
                   <span class="thc-record-badge thc-record-badge--approved">Approved</span>
                 {% else %}
