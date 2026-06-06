@@ -711,82 +711,17 @@
         </tbody>
     </table>
 
-    {# Receivables Grouped by Tender Type #}
+    {# Outstanding Balance by Tender Type #}
     {% if receivables_by_tender %}
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: var(--thc-space-4); margin-top: var(--thc-space-5);">
+    <div style="margin-top: var(--thc-space-4);">
+        <div style="font-size: 0.875rem; font-weight: 600; color: var(--thc-text-secondary); margin-bottom: var(--thc-space-3);">
+            Outstanding Balance
+        </div>
         {% for tender_group in receivables_by_tender %}
-        <div style="background: white; border: 2px solid var(--thc-border-default); border-radius: var(--thc-radius-lg);
-                    padding: var(--thc-space-5); box-shadow: var(--thc-shadow-md);">
-
-            {# Tender Type Header #}
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--thc-space-4); padding-bottom: var(--thc-space-3); border-bottom: 2px solid var(--thc-border-default);">
-                <div>
-                    <div style="background: var(--thc-info-100); color: var(--thc-info-700); padding: 0.375rem 0.75rem; border-radius: var(--thc-radius-md); font-size: 0.875rem; font-weight: 700; display: inline-block;">
-                        {{ tender_group.tender_name }}
-                    </div>
-                    <div style="font-size: 0.75rem; color: var(--thc-text-tertiary); margin-top: 0.5rem;">
-                        {{ tender_group.transaction_count }} transaction{{ 's' if tender_group.transaction_count != 1 }}
-                    </div>
-                </div>
-            </div>
-
-            {# Summary Amounts #}
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--thc-space-3); margin-bottom: var(--thc-space-4);">
-                <div>
-                    <div style="font-size: 0.75rem; color: var(--thc-text-tertiary); margin-bottom: 0.25rem;">Total</div>
-                    <div style="font-size: 1.125rem; font-weight: 700; font-family: var(--thc-font-mono); color: var(--thc-text-primary);">
-                        ₱{{ "{:,.2f}".format(tender_group.total_amount) }}
-                    </div>
-                </div>
-                <div>
-                    <div style="font-size: 0.75rem; color: var(--thc-text-tertiary); margin-bottom: 0.25rem;">Collected</div>
-                    <div style="font-size: 1.125rem; font-weight: 700; font-family: var(--thc-font-mono); color: var(--thc-success-700);">
-                        ₱{{ "{:,.2f}".format(tender_group.collected) }}
-                    </div>
-                </div>
-                <div>
-                    <div style="font-size: 0.75rem; color: var(--thc-text-tertiary); margin-bottom: 0.25rem;">Balance</div>
-                    <div style="font-size: 1.25rem; font-weight: 700; font-family: var(--thc-font-mono); color: var(--thc-danger-700);">
-                        ₱{{ "{:,.2f}".format(tender_group.outstanding) }}
-                    </div>
-                </div>
-            </div>
-
-            {# Transaction List #}
-            <div style="border-top: 1px solid var(--thc-border-subtle); padding-top: var(--thc-space-3);">
-                <div style="font-size: 0.75rem; font-weight: 600; color: var(--thc-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--thc-space-2);">
-                    Transactions
-                </div>
-                <div style="max-height: 300px; overflow-y: auto;">
-                    {% for txn in tender_group.transactions %}
-                    <a href="{{ url_for('daily_sales.view_transaction', transaction_id=txn.transaction_id) }}"
-                       style="display: block; padding: var(--thc-space-2); margin-bottom: var(--thc-space-1); background: var(--thc-bg-subtle); border-radius: var(--thc-radius-sm); text-decoration: none; color: inherit; transition: all 0.2s ease;"
-                       onmouseover="this.style.background='var(--thc-primary-50)'; this.style.transform='translateX(4px)';"
-                       onmouseout="this.style.background='var(--thc-bg-subtle)'; this.style.transform='translateX(0)';">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div style="flex: 1;">
-                                <div style="font-size: 0.75rem; font-weight: 600; color: var(--thc-text-secondary);">
-                                    # {{ txn.record_number }}
-                                </div>
-                                <div style="font-size: 0.8125rem; color: var(--thc-text-primary); margin-top: 0.125rem;">
-                                    {{ txn.customer_name }}
-                                </div>
-                                <div style="font-size: 0.6875rem; color: var(--thc-text-tertiary); margin-top: 0.125rem;">
-                                    {{ txn.record_date }}
-                                </div>
-                            </div>
-                            <div style="text-align: right;">
-                                <div style="font-size: 0.875rem; font-weight: 700; font-family: var(--thc-font-mono); color: var(--thc-danger-700);">
-                                    ₱{{ "{:,.2f}".format(txn.outstanding) }}
-                                </div>
-                                <div style="font-size: 0.75rem; color: var(--thc-text-tertiary); margin-top: 0.125rem;">
-                                    of ₱{{ "{:,.2f}".format(txn.total_amount) }}
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                    {% endfor %}
-                </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--thc-space-2); border-bottom: 1px solid var(--thc-border-subtle);">
+            <div style="color: var(--thc-text-primary);">{{ tender_group.tender_name }}</div>
+            <div style="font-weight: 700; font-family: var(--thc-font-mono); color: var(--thc-danger-700);">
+                ₱{{ "{:,.2f}".format(tender_group.outstanding) }}
             </div>
         </div>
         {% endfor %}
