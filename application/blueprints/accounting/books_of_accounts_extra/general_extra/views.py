@@ -1,15 +1,31 @@
-﻿from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, send_file
+
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    url_for,
+)
 from flask_login import current_user
-import datetime
 from sqlalchemy.exc import IntegrityError
+
+from application.extensions import (
+    db,
+    month_last_day,
+    next_control_number,
+    ph_today,
+    year_first_day,
+)
+
+from ....user import login_required, roles_accepted
+from . import app_label, app_name
+from .extensions import create_journal
+from .forms import Form
 from .models import GeneralExtra as Obj
 from .models import GeneralExtraDetail as ObjDetail
-from .forms import Form
-from application.extensions import db, year_first_day, month_last_day, next_control_number , ph_today
-from .extensions import create_journal
-from .... user import login_required, roles_accepted
-from . import app_name, app_label
-
 
 bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_name}")
 ROLES_ACCEPTED = app_label
@@ -26,30 +42,26 @@ def home():
         date_from = year_first_day()
         date_to = month_last_day()
 
-    rows = Obj.query.filter(
-        Obj.record_date.between(date_from, date_to)
-    ).order_by(
-        Obj.record_number.desc()
-    ).all()
+    rows = (
+        Obj.query.filter(Obj.record_date.between(date_from, date_to))
+        .order_by(Obj.record_number.desc())
+        .all()
+    )
 
     # Collect all unique Account objects from the disbursement details
-    accounts = {
-        detail.account
-        for row in rows
-        for detail in row.general_extra_details
-    }
+    accounts = {detail.account for row in rows for detail in row.general_extra_details}
 
     # Sort accounts by account_number
     account_titles = sorted(accounts, key=lambda acc: acc.account_number)
     account_titles = [acc.account_title for acc in account_titles]
 
     context = {
-        "rows": rows, 
-        "date_from": date_from, 
-        "date_to": date_to, 
-        "account_titles": account_titles, 
+        "rows": rows,
+        "date_from": date_from,
+        "date_to": date_to,
+        "account_titles": account_titles,
         "app_name": app_name,
-        "app_label": app_label
+        "app_label": app_label,
     }
 
     return render_template(f"{app_name}/home.html", **context)
@@ -66,8 +78,10 @@ def add():
         if form._validate_on_submit():
             form.user_prepare_id = current_user.id
             form._save()
-            flash(f"{getattr(form, f'record_number')} has been added.", category="success")
-            return redirect(url_for(f'{app_name}.edit', record_id=form.id))
+            flash(
+                f"{form.record_number} has been added.", category="success"
+            )
+            return redirect(url_for(f"{app_name}.edit", record_id=form.id))
 
     else:
         form = Form()
@@ -75,10 +89,9 @@ def add():
         form.record_date = today
 
         form.record_number = next_control_number(
-            obj=Obj, 
-            control_number_field="record_number"
-            )
-        
+            obj=Obj, control_number_field="record_number"
+        )
+
         last_entry = Obj.query.order_by(Obj.id.desc()).first()
 
         if last_entry:
@@ -88,7 +101,6 @@ def add():
 
     context = {
         "form": form,
-
     }
 
     return render_template(f"{app_name}/form.html", **context)
@@ -97,7 +109,7 @@ def add():
 @bp.route("/edit/<int:record_id>", methods=["POST", "GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
-def edit(record_id):     
+def edit(record_id):
     record = Obj.query.get_or_404(record_id)
 
     if request.method == "POST":
@@ -113,11 +125,17 @@ def edit(record_id):
             form._save()
 
             if cmd_button == "Submit for Printing":
-                flash(f"{getattr(form, f'record_number')} has been submitted for printing.", category="success")
-                return redirect(url_for(f'{app_name}.edit', record_id=form.id))
-            elif cmd_button == "Save Draft":
-                flash(f"{getattr(form, f'record_number')} has been updated.", category="success")
-                return  redirect(url_for(f'{app_name}.edit', record_id=form.id))
+                flash(
+                    f"{form.record_number} has been submitted for printing.",
+                    category="success",
+                )
+                return redirect(url_for(f"{app_name}.edit", record_id=form.id))
+            if cmd_button == "Save Draft":
+                flash(
+                    f"{form.record_number} has been updated.",
+                    category="success",
+                )
+                return redirect(url_for(f"{app_name}.edit", record_id=form.id))
 
     else:
         form = Form()
@@ -133,11 +151,14 @@ def edit(record_id):
 @bp.route("/view/<int:record_id>", methods=["POST", "GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
-def view(record_id):   
+def view(record_id):
     record = Obj.query.get_or_404(record_id)
 
     if request.method == "POST":
-        flash("Record is locked for editting. Contact your administrator.", category="error")
+        flash(
+            "Record is locked for editting. Contact your administrator.",
+            category="error",
+        )
 
     form = Form()
     form._populate(record)
@@ -154,25 +175,31 @@ def view(record_id):
 @roles_accepted([ROLES_ACCEPTED])
 def delete(record_id):
     if not current_user.admin:
-        flash("Administrator rights is required to conduct this activity.", category="error")
+        flash(
+            "Administrator rights is required to conduct this activity.",
+            category="error",
+        )
         return redirect(url_for(f"{app_name}.home"))
 
     obj = Obj.query.get_or_404(record_id)
-    details = ObjDetail.query.filter(getattr(ObjDetail, f"{app_name}_id")==record_id).all()
+    details = ObjDetail.query.filter(
+        getattr(ObjDetail, f"{app_name}_id") == record_id
+    ).all()
     preparer = obj.preparer
 
     try:
-        if preparer: db.session.delete(preparer)
+        if preparer:
+            db.session.delete(preparer)
         for detail in details:
             db.session.delete(detail)
         db.session.delete(obj)
         db.session.commit()
-        flash(f"{getattr(obj, f'record_number')} has been deleted.", category="success")
+        flash(f"{obj.record_number} has been deleted.", category="success")
     except IntegrityError:
         db.session.rollback()
         flash(f"Cannot delete {obj} because it has related records.", category="error")
 
-    return redirect(url_for(f'{app_name}.home'))
+    return redirect(url_for(f"{app_name}.home"))
 
 
 @bp.route("/unlock/<int:record_id>", methods=["POST", "GET"])
@@ -180,7 +207,10 @@ def delete(record_id):
 @roles_accepted([ROLES_ACCEPTED])
 def unlock(record_id):
     if not current_user.admin:
-        flash("Administrator rights is required to conduct this activity.", category="error")
+        flash(
+            "Administrator rights is required to conduct this activity.",
+            category="error",
+        )
         return redirect(url_for(f"{app_name}.home"))
 
     obj = Obj.query.get_or_404(record_id)
@@ -188,29 +218,29 @@ def unlock(record_id):
     obj.cancelled = ""
 
     db.session.commit()
-    flash(f"{getattr(obj, f'record_number')} has been unlocked.", category="success")
+    flash(f"{obj.record_number} has been unlocked.", category="success")
 
-    return redirect(url_for(f'{app_name}.edit', record_id=record_id))
+    return redirect(url_for(f"{app_name}.edit", record_id=record_id))
 
 
 @bp.route("/cancel/<int:record_id>", methods=["POST", "GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
-def cancel(record_id):   
+def cancel(record_id):
     obj = Obj.query.get_or_404(record_id)
     obj.cancelled = str(ph_today())
     db.session.commit()
-    flash(f"{getattr(obj, f'record_number')} has been cancelled.", category="success")
+    flash(f"{obj.record_number} has been cancelled.", category="success")
 
-    return redirect(url_for(f'{app_name}.home'))
+    return redirect(url_for(f"{app_name}.home"))
 
 
 @bp.route("/print/<int:record_id>", methods=["GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
-def print(record_id):   
+def print(record_id):
     obj = Obj.query.get_or_404(record_id)
-    
+
     context = {
         "obj": obj,
     }
@@ -224,20 +254,19 @@ def print(record_id):
 def download():
     date_from = request.args.get("date_from")
     date_to = request.args.get("date_to")
-    
-    rows = Obj.query.filter(
-        Obj.record_date.between(date_from, date_to)).order_by(
-         Obj.record_number,
-        ).all()
+
+    rows = (
+        Obj.query.filter(Obj.record_date.between(date_from, date_to))
+        .order_by(
+            Obj.record_number,
+        )
+        .all()
+    )
 
     filename = create_journal(rows, current_app, date_from, date_to)
     return send_file(
-                    filename,
-                    as_attachment=True,
-                    download_name=f"{app_name}_journal_{date_from}_to_{date_to}.xlsx",
-                    mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-
-
-
-
+        filename,
+        as_attachment=True,
+        download_name=f"{app_name}_journal_{date_from}_to_{date_to}.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )

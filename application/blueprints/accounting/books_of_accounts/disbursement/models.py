@@ -1,7 +1,9 @@
-from application.extensions import db, short_date, long_date
+from application.extensions import db, long_date, short_date
+
+from . import app_name
 from .admin_models import AdminDisbursement as ObjAdmin
 from .admin_models import UserDisbursement as ObjUser
-from . import app_name
+
 
 class Disbursement(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -10,8 +12,8 @@ class Disbursement(db.Model):
     # check_number = db.Column(db.String())
     po_number = db.Column(db.String())
 
-    vendor_id = db.Column(db.Integer, db.ForeignKey('vendor.id'), nullable=False)
-    vendor = db.relationship('Vendor', backref='disbursements', lazy=True)
+    vendor_id = db.Column(db.Integer, db.ForeignKey("vendor.id"), nullable=False)
+    vendor = db.relationship("Vendor", backref="disbursements", lazy=True)
 
     ap_number = db.Column(db.String())
 
@@ -26,12 +28,16 @@ class Disbursement(db.Model):
 
     @property
     def preparer(self):
-        obj = ObjUser.query.filter(getattr(ObjUser,f"{app_name}_id")==self.id).first()
+        obj = ObjUser.query.filter(
+            getattr(ObjUser, f"{app_name}_id") == self.id
+        ).first()
         return obj
-    
+
     @property
     def approved(self):
-        obj = ObjAdmin.query.filter(getattr(ObjAdmin,f"{app_name}_id")==self.id).first()
+        obj = ObjAdmin.query.filter(
+            getattr(ObjAdmin, f"{app_name}_id") == self.id
+        ).first()
         return obj
 
     @property
@@ -49,7 +55,7 @@ class Disbursement(db.Model):
     @property
     def formatted_cancelled(self):
         return short_date(self.cancelled) if self.cancelled else None
-    
+
     def is_submitted(self):
         return True if self.submitted else False
 
@@ -57,11 +63,15 @@ class Disbursement(db.Model):
 class DisbursementDetail(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
-    disbursement_id = db.Column(db.Integer, db.ForeignKey('disbursement.id'), nullable=False)
-    disbursement = db.relationship('Disbursement', backref='disbursement_details', lazy=True)
+    disbursement_id = db.Column(
+        db.Integer, db.ForeignKey("disbursement.id"), nullable=False
+    )
+    disbursement = db.relationship(
+        "Disbursement", backref="disbursement_details", lazy=True
+    )
 
-    account_id = db.Column(db.Integer, db.ForeignKey('account.id'), nullable=False)
-    account = db.relationship('Account', backref='disbursement_details', lazy=True)
+    account_id = db.Column(db.Integer, db.ForeignKey("account.id"), nullable=False)
+    account = db.relationship("Account", backref="disbursement_details", lazy=True)
 
     debit = db.Column(db.Float, default=0)
     credit = db.Column(db.Float, default=0)
@@ -70,8 +80,8 @@ class DisbursementDetail(db.Model):
 
     @property
     def formatted_debit(self):
-        return '{:,.2f}'.format(self.debit)
+        return f"{self.debit:,.2f}"
 
     @property
     def formatted_credit(self):
-        return '{:,.2f}'.format(self.credit)
+        return f"{self.credit:,.2f}"

@@ -4,8 +4,10 @@ Audit Trail Models for Transaction History Tracking
 This module provides comprehensive audit logging for all changes to transactions,
 including field-level change tracking, user attribution, and timestamps.
 """
+
 import json
 from datetime import datetime
+
 from application.extensions import db
 
 
@@ -21,29 +23,36 @@ class AuditLog(db.Model):
     - What fields changed (old_values, new_values)
     - Why the change was made (reason, if applicable)
     """
-    __tablename__ = 'audit_log'
+
+    __tablename__ = "audit_log"
 
     id = db.Column(db.Integer, primary_key=True)
 
     # Record identification
-    record_type = db.Column(db.String(50), nullable=False)  # 'transaction', 'deposit', 'customer', etc.
+    record_type = db.Column(
+        db.String(50), nullable=False
+    )  # 'transaction', 'deposit', 'customer', etc.
     record_id = db.Column(db.Integer, nullable=False)  # ID of the record
 
     # Action performed
-    action = db.Column(db.String(50), nullable=False)  # 'created', 'updated', 'deleted', 'submitted', 'approved', 'cancelled', 'returned_to_draft'
+    action = db.Column(
+        db.String(50), nullable=False
+    )  # 'created', 'updated', 'deleted', 'submitted', 'approved', 'cancelled', 'returned_to_draft'
 
     # Change details - JSON encoded
-    _old_values = db.Column('old_values', db.Text)  # Previous field values
-    _new_values = db.Column('new_values', db.Text)  # New field values
-    _changed_fields = db.Column('changed_fields', db.Text)  # List of field names that changed
+    _old_values = db.Column("old_values", db.Text)  # Previous field values
+    _new_values = db.Column("new_values", db.Text)  # New field values
+    _changed_fields = db.Column(
+        "changed_fields", db.Text
+    )  # List of field names that changed
 
     # Reason/notes for the change
     reason = db.Column(db.String(500))
     notes = db.Column(db.Text)
 
     # User who made the change
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    user = db.relationship('User', backref='audit_logs')
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    user = db.relationship("User", backref="audit_logs")
 
     # Timestamp
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -52,7 +61,7 @@ class AuditLog(db.Model):
     ip_address = db.Column(db.String(45))
 
     # Additional metadata (column name 'metadata' in DB, but use 'extra_metadata' in Python to avoid SQLAlchemy reserved name)
-    extra_metadata = db.Column('metadata', db.Text)  # JSON for extra context
+    extra_metadata = db.Column("metadata", db.Text)  # JSON for extra context
 
     @property
     def old_values(self):
@@ -95,44 +104,43 @@ class AuditLog(db.Model):
         self.extra_metadata = json.dumps(val) if val else None
 
     def __repr__(self):
-        return f'<AuditLog {self.action} {self.record_type}#{self.record_id} by user#{self.user_id} at {self.created_at}>'
+        return f"<AuditLog {self.action} {self.record_type}#{self.record_id} by user#{self.user_id} at {self.created_at}>"
 
     @property
     def formatted_timestamp(self):
         """Format timestamp for display"""
         if self.created_at:
-            return self.created_at.strftime('%Y-%m-%d %I:%M:%S %p')
-        return 'N/A'
+            return self.created_at.strftime("%Y-%m-%d %I:%M:%S %p")
+        return "N/A"
 
     @property
     def summary(self):
         """Generate a human-readable summary of the change"""
-        user_name = self.user.user_name if self.user else 'Unknown'
+        user_name = self.user.user_name if self.user else "Unknown"
 
-        if self.action == 'created':
+        if self.action == "created":
             return f"{user_name} created this record"
-        elif self.action == 'updated':
+        if self.action == "updated":
             if self.changed_fields:
-                fields = ', '.join(self.changed_fields)
+                fields = ", ".join(self.changed_fields)
                 return f"{user_name} updated: {fields}"
             return f"{user_name} updated this record"
-        elif self.action == 'deleted':
+        if self.action == "deleted":
             return f"{user_name} deleted this record"
-        elif self.action == 'submitted':
+        if self.action == "submitted":
             return f"{user_name} submitted for approval"
-        elif self.action == 'approved':
+        if self.action == "approved":
             return f"{user_name} approved this record"
-        elif self.action == 'cancelled':
+        if self.action == "cancelled":
             reason_text = f" - {self.reason}" if self.reason else ""
             return f"{user_name} cancelled this record{reason_text}"
-        elif self.action == 'returned_to_draft':
+        if self.action == "returned_to_draft":
             reason_text = f" - {self.reason}" if self.reason else ""
             return f"{user_name} returned to draft{reason_text}"
-        elif self.action == 'cancellation_requested':
+        if self.action == "cancellation_requested":
             return f"{user_name} requested cancellation"
-        elif self.action == 'cancellation_approved':
+        if self.action == "cancellation_approved":
             return f"{user_name} approved cancellation request"
-        elif self.action == 'cancellation_rejected':
+        if self.action == "cancellation_rejected":
             return f"{user_name} rejected cancellation request"
-        else:
-            return f"{user_name} performed action: {self.action}"
+        return f"{user_name} performed action: {self.action}"

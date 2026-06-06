@@ -3,10 +3,14 @@ Audit Logging Helper Functions
 
 Provides utilities for logging changes to transactions and other records.
 """
+
 from datetime import datetime
+
 from flask import request
 from flask_login import current_user
+
 from application.extensions import db
+
 from .audit_models import AuditLog
 
 
@@ -22,7 +26,7 @@ def get_model_snapshot(instance, exclude_fields=None):
         dict: Field name -> value mapping
     """
     if exclude_fields is None:
-        exclude_fields = ['_sa_instance_state', 'updated_at', 'created_at']
+        exclude_fields = ["_sa_instance_state", "updated_at", "created_at"]
 
     snapshot = {}
     for column in instance.__table__.columns:
@@ -57,8 +61,8 @@ def get_changed_fields(old_values, new_values):
 
         # Normalize empty values: treat None, '', and empty strings as equivalent
         # This prevents meaningless audit logs like "None → ''" or "'' → None"
-        old_val_normalized = old_val if old_val not in (None, '', ' ') else None
-        new_val_normalized = new_val if new_val not in (None, '', ' ') else None
+        old_val_normalized = old_val if old_val not in (None, "", " ") else None
+        new_val_normalized = new_val if new_val not in (None, "", " ") else None
 
         # Only log if there's a meaningful change
         if old_val_normalized != new_val_normalized:
@@ -67,8 +71,17 @@ def get_changed_fields(old_values, new_values):
     return changed
 
 
-def log_audit(record_type, record_id, action, old_values=None, new_values=None,
-              reason=None, notes=None, user=None, metadata=None):
+def log_audit(
+    record_type,
+    record_id,
+    action,
+    old_values=None,
+    new_values=None,
+    reason=None,
+    notes=None,
+    user=None,
+    metadata=None,
+):
     """
     Create an audit log entry.
 
@@ -91,7 +104,7 @@ def log_audit(record_type, record_id, action, old_values=None, new_values=None,
 
     # Get user ID - handle both authenticated and system users
     try:
-        user_id = user.id if user and hasattr(user, 'id') else None
+        user_id = user.id if user and hasattr(user, "id") else None
     except:
         user_id = None
 
@@ -110,16 +123,16 @@ def log_audit(record_type, record_id, action, old_values=None, new_values=None,
     try:
         if request:
             # Try to get real client IP from proxy headers first
-            ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
+            ip_address = request.headers.get("X-Forwarded-For", request.remote_addr)
 
             # X-Forwarded-For may contain multiple IPs (client, proxy1, proxy2, ...)
             # The first IP is the actual client IP
-            if ip_address and ',' in ip_address:
-                ip_address = ip_address.split(',')[0].strip()
+            if ip_address and "," in ip_address:
+                ip_address = ip_address.split(",")[0].strip()
 
             # Fallback to X-Real-IP if X-Forwarded-For is not set
             if not ip_address:
-                ip_address = request.headers.get('X-Real-IP', request.remote_addr)
+                ip_address = request.headers.get("X-Real-IP", request.remote_addr)
     except:
         pass
 
@@ -135,7 +148,7 @@ def log_audit(record_type, record_id, action, old_values=None, new_values=None,
         notes=notes,
         user_id=user_id,
         created_at=datetime.utcnow(),
-        ip_address=ip_address
+        ip_address=ip_address,
     )
 
     if metadata:
@@ -165,10 +178,10 @@ def log_create(record_type, instance, user=None, notes=None):
     return log_audit(
         record_type=record_type,
         record_id=instance.id,
-        action='created',
+        action="created",
         new_values=new_values,
         notes=notes,
-        user=user
+        user=user,
     )
 
 
@@ -192,12 +205,12 @@ def log_update(record_type, instance, old_snapshot, user=None, reason=None, note
     return log_audit(
         record_type=record_type,
         record_id=instance.id,
-        action='updated',
+        action="updated",
         old_values=old_snapshot,
         new_values=new_values,
         reason=reason,
         notes=notes,
-        user=user
+        user=user,
     )
 
 
@@ -220,15 +233,17 @@ def log_delete(record_type, instance, user=None, reason=None, notes=None):
     return log_audit(
         record_type=record_type,
         record_id=instance.id,
-        action='deleted',
+        action="deleted",
         old_values=old_values,
         reason=reason,
         notes=notes,
-        user=user
+        user=user,
     )
 
 
-def log_status_change(record_type, instance, action, user=None, reason=None, notes=None):
+def log_status_change(
+    record_type, instance, action, user=None, reason=None, notes=None
+):
     """
     Log status change (submitted, approved, cancelled, etc.)
 
@@ -249,7 +264,7 @@ def log_status_change(record_type, instance, action, user=None, reason=None, not
         action=action,
         reason=reason,
         notes=notes,
-        user=user
+        user=user,
     )
 
 
@@ -266,8 +281,7 @@ def get_audit_history(record_type, record_id, limit=None):
         list: AuditLog entries ordered by created_at desc
     """
     query = AuditLog.query.filter_by(
-        record_type=record_type,
-        record_id=record_id
+        record_type=record_type, record_id=record_id
     ).order_by(AuditLog.created_at.desc())
 
     if limit:

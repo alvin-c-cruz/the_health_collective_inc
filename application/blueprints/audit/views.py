@@ -4,10 +4,12 @@ Audit Trail Viewer Routes
 Provides comprehensive audit log viewing with filtering and pagination.
 Accessible only to Admin and Accountant roles.
 """
+
+from datetime import datetime
+
 from flask import render_template, request
-from flask_login import login_required, current_user
-from sqlalchemy import or_, and_
-from datetime import datetime, timedelta
+from flask_login import current_user, login_required
+from sqlalchemy import or_
 
 from application.blueprints.audit import bp
 from application.blueprints.audit.models import AuditLog, LoginHistory
@@ -22,7 +24,7 @@ def is_admin_or_accountant():
     return current_user.admin or current_user.superuser
 
 
-@bp.route('/audit-log')
+@bp.route("/audit-log")
 @login_required
 def audit_log():
     """
@@ -42,21 +44,23 @@ def audit_log():
     """
     # Check permissions
     if not is_admin_or_accountant():
-        return render_template('error.html',
-                             error_title='Access Denied',
-                             error_message='You do not have permission to view audit logs. Only Admin and Accountant users can access this page.'), 403
+        return render_template(
+            "error.html",
+            error_title="Access Denied",
+            error_message="You do not have permission to view audit logs. Only Admin and Accountant users can access this page.",
+        ), 403
 
     # Get filter parameters
-    module_filter = request.args.get('module', '').strip()
-    action_filter = request.args.get('action', '').strip()
-    user_id_filter = request.args.get('user_id', '').strip()
-    date_from = request.args.get('date_from', '').strip()
-    date_to = request.args.get('date_to', '').strip()
-    search = request.args.get('search', '').strip()
+    module_filter = request.args.get("module", "").strip()
+    action_filter = request.args.get("action", "").strip()
+    user_id_filter = request.args.get("user_id", "").strip()
+    date_from = request.args.get("date_from", "").strip()
+    date_to = request.args.get("date_to", "").strip()
+    search = request.args.get("search", "").strip()
 
     # Get pagination parameters
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 50, type=int)
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 50, type=int)
 
     # Build query
     query = AuditLog.query
@@ -73,14 +77,14 @@ def audit_log():
 
     if date_from:
         try:
-            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
+            date_from_obj = datetime.strptime(date_from, "%Y-%m-%d")
             query = query.filter(AuditLog.timestamp >= date_from_obj)
         except ValueError:
             pass
 
     if date_to:
         try:
-            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d')
+            date_to_obj = datetime.strptime(date_to, "%Y-%m-%d")
             # Include the entire day
             date_to_obj = date_to_obj.replace(hour=23, minute=59, second=59)
             query = query.filter(AuditLog.timestamp <= date_to_obj)
@@ -89,12 +93,12 @@ def audit_log():
 
     if search:
         # Search in record_identifier, notes, reason
-        search_pattern = f'%{search}%'
+        search_pattern = f"%{search}%"
         query = query.filter(
             or_(
                 AuditLog.record_identifier.ilike(search_pattern),
                 AuditLog.notes.ilike(search_pattern),
-                AuditLog.reason.ilike(search_pattern)
+                AuditLog.reason.ilike(search_pattern),
             )
         )
 
@@ -106,17 +110,25 @@ def audit_log():
     audit_logs = pagination.items
 
     # Get available modules (distinct)
-    available_modules = db.session.query(AuditLog.module).distinct().order_by(AuditLog.module).all()
+    available_modules = (
+        db.session.query(AuditLog.module).distinct().order_by(AuditLog.module).all()
+    )
     available_modules = [m[0] for m in available_modules if m[0]]
 
     # Get available actions (distinct)
-    available_actions = db.session.query(AuditLog.action).distinct().order_by(AuditLog.action).all()
+    available_actions = (
+        db.session.query(AuditLog.action).distinct().order_by(AuditLog.action).all()
+    )
     available_actions = [a[0] for a in available_actions if a[0]]
 
     # Get available users (who have audit logs)
-    available_users = db.session.query(User).join(
-        AuditLog, AuditLog.user_id == User.id
-    ).distinct().order_by(User.user_name).all()
+    available_users = (
+        db.session.query(User)
+        .join(AuditLog, AuditLog.user_id == User.id)
+        .distinct()
+        .order_by(User.user_name)
+        .all()
+    )
 
     # Calculate statistics
     total_logs = query.count()
@@ -126,7 +138,7 @@ def audit_log():
         stats_period = "all time"
 
     return render_template(
-        'audit/audit_log.html',
+        "audit/audit_log.html",
         audit_logs=audit_logs,
         pagination=pagination,
         # Filters
@@ -144,11 +156,11 @@ def audit_log():
         total_logs=total_logs,
         stats_period=stats_period,
         # Pagination
-        per_page=per_page
+        per_page=per_page,
     )
 
 
-@bp.route('/login-history')
+@bp.route("/login-history")
 @login_required
 def login_history():
     """
@@ -157,20 +169,24 @@ def login_history():
     Accessible only to Admin users.
     """
     # Check permissions (more restrictive - admin only)
-    if not current_user.is_authenticated or not (current_user.admin or current_user.superuser):
-        return render_template('error.html',
-                             error_title='Access Denied',
-                             error_message='You do not have permission to view login history. Only Admin users can access this page.'), 403
+    if not current_user.is_authenticated or not (
+        current_user.admin or current_user.superuser
+    ):
+        return render_template(
+            "error.html",
+            error_title="Access Denied",
+            error_message="You do not have permission to view login history. Only Admin users can access this page.",
+        ), 403
 
     # Get filter parameters
-    user_id_filter = request.args.get('user_id', '').strip()
-    status_filter = request.args.get('status', '').strip()
-    date_from = request.args.get('date_from', '').strip()
-    date_to = request.args.get('date_to', '').strip()
+    user_id_filter = request.args.get("user_id", "").strip()
+    status_filter = request.args.get("status", "").strip()
+    date_from = request.args.get("date_from", "").strip()
+    date_to = request.args.get("date_to", "").strip()
 
     # Get pagination parameters
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 50, type=int)
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 50, type=int)
 
     # Build query
     query = LoginHistory.query
@@ -184,14 +200,14 @@ def login_history():
 
     if date_from:
         try:
-            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
+            date_from_obj = datetime.strptime(date_from, "%Y-%m-%d")
             query = query.filter(LoginHistory.login_time >= date_from_obj)
         except ValueError:
             pass
 
     if date_to:
         try:
-            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d')
+            date_to_obj = datetime.strptime(date_to, "%Y-%m-%d")
             date_to_obj = date_to_obj.replace(hour=23, minute=59, second=59)
             query = query.filter(LoginHistory.login_time <= date_to_obj)
         except ValueError:
@@ -205,17 +221,21 @@ def login_history():
     login_logs = pagination.items
 
     # Get available users
-    available_users = db.session.query(User).join(
-        LoginHistory, LoginHistory.user_id == User.id
-    ).distinct().order_by(User.user_name).all()
+    available_users = (
+        db.session.query(User)
+        .join(LoginHistory, LoginHistory.user_id == User.id)
+        .distinct()
+        .order_by(User.user_name)
+        .all()
+    )
 
     # Calculate statistics
     total_logs = query.count()
-    total_success = query.filter(LoginHistory.status == 'success').count()
-    total_failed = query.filter(LoginHistory.status == 'failed').count()
+    total_success = query.filter(LoginHistory.status == "success").count()
+    total_failed = query.filter(LoginHistory.status == "failed").count()
 
     return render_template(
-        'audit/login_history.html',
+        "audit/login_history.html",
         login_logs=login_logs,
         pagination=pagination,
         # Filters
@@ -230,5 +250,5 @@ def login_history():
         total_success=total_success,
         total_failed=total_failed,
         # Pagination
-        per_page=per_page
+        per_page=per_page,
     )

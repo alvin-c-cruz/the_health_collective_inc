@@ -3,9 +3,9 @@ Test data factories for The Health Collective Inc.
 
 Uses factory_boy to create test data easily and consistently.
 """
+
 import factory
 from factory.alchemy import SQLAlchemyModelFactory
-
 
 # Global session - will be set by conftest.py
 _session = None
@@ -29,8 +29,9 @@ class BaseFactory(SQLAlchemyModelFactory):
         """Get the actual model class from string if needed."""
         if isinstance(cls._meta.model, str):
             # Import the model class from the string path
-            module_path, class_name = cls._meta.model.rsplit('.', 1)
+            module_path, class_name = cls._meta.model.rsplit(".", 1)
             import importlib
+
             module = importlib.import_module(module_path)
             return getattr(module, class_name)
         return cls._meta.model
@@ -51,6 +52,7 @@ class BaseFactory(SQLAlchemyModelFactory):
 # ============================================================================
 # User & Auth Models
 # ============================================================================
+
 
 class UserFactory(BaseFactory):
     """Factory for User model."""
@@ -78,6 +80,7 @@ class UserFactory(BaseFactory):
 # Register Models (Master Data)
 # ============================================================================
 
+
 class SexFactory(BaseFactory):
     """Factory for Sex model."""
 
@@ -93,13 +96,9 @@ class ProductTypeFactory(BaseFactory):
     class Meta:
         model = "application.blueprints.register.product_type.models.ProductType"
 
-    product_type_name = factory.Iterator([
-        "Dialysis",
-        "Diagnostic",
-        "Laboratory",
-        "Pharmacy",
-        "Consultation"
-    ])
+    product_type_name = factory.Iterator(
+        ["Dialysis", "Diagnostic", "Laboratory", "Pharmacy", "Consultation"]
+    )
 
 
 class ProductFactory(BaseFactory):
@@ -138,11 +137,14 @@ class TenderFactory(BaseFactory):
 # Operations Models
 # ============================================================================
 
+
 class TransactionTypeFactory(BaseFactory):
     """Factory for TransactionType model."""
 
     class Meta:
-        model = "application.blueprints.operations.transaction_type.models.TransactionType"
+        model = (
+            "application.blueprints.operations.transaction_type.models.TransactionType"
+        )
 
     type_code = factory.Sequence(lambda n: f"TT{n:03d}")
     type_name = factory.Iterator(["Walk-in", "Home Service", "Emergency"])
@@ -176,7 +178,14 @@ class TransactionDetailFactory(BaseFactory):
 
     transaction = factory.SubFactory(TransactionFactory)
     product = factory.SubFactory(ProductFactory)
-    amount = factory.Faker("pydecimal", left_digits=4, right_digits=2, positive=True, min_value=100, max_value=10000)
+    amount = factory.Faker(
+        "pydecimal",
+        left_digits=4,
+        right_digits=2,
+        positive=True,
+        min_value=100,
+        max_value=10000,
+    )
     discount = 0
     billable = True
 
@@ -189,12 +198,20 @@ class TransactionTenderFactory(BaseFactory):
 
     transaction = factory.SubFactory(TransactionFactory)
     tender = factory.SubFactory(TenderFactory)
-    amount = factory.Faker("pydecimal", left_digits=4, right_digits=2, positive=True, min_value=100, max_value=10000)
+    amount = factory.Faker(
+        "pydecimal",
+        left_digits=4,
+        right_digits=2,
+        positive=True,
+        min_value=100,
+        max_value=10000,
+    )
 
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def create_complete_transaction(**kwargs):
     """
@@ -210,8 +227,8 @@ def create_complete_transaction(**kwargs):
             ]
         )
     """
-    details_data = kwargs.pop('details', [])
-    tenders_data = kwargs.pop('tenders', None)
+    details_data = kwargs.pop("details", [])
+    tenders_data = kwargs.pop("tenders", None)
 
     # Create transaction
     transaction = TransactionFactory(**kwargs)
@@ -226,12 +243,12 @@ def create_complete_transaction(**kwargs):
             TransactionTenderFactory(transaction=transaction, **tender_data)
     else:
         # Calculate total from billable details
-        total = sum(d.amount - d.discount for d in transaction.transaction_details if d.billable)
+        total = sum(
+            d.amount - d.discount for d in transaction.transaction_details if d.billable
+        )
         if total > 0:
             TransactionTenderFactory(
-                transaction=transaction,
-                tender__tender_name='Cash',
-                amount=total
+                transaction=transaction, tender__tender_name="Cash", amount=total
             )
 
     return transaction

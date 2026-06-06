@@ -1,24 +1,37 @@
-from flask import Blueprint, render_template, render_template_string, request, redirect, url_for, flash, Response, send_file, current_app
-import os
 import json
-import openpyxl
+import os
 from io import BytesIO
-from werkzeug.utils import secure_filename
+
+import openpyxl
+from flask import (
+    Blueprint,
+    Response,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    render_template_string,
+    request,
+    send_file,
+    url_for,
+)
+from flask_login import current_user
 from sqlalchemy.exc import IntegrityError
-from .models import Product as Obj
+from werkzeug.utils import secure_filename
+
+from application.blueprints.audit.utils import (
+    log_create,
+    log_delete,
+    model_to_dict,
+)
+from application.blueprints.user import login_required, roles_accepted
+from application.extensions import db
+
+from . import app_label, app_name
+from .forms import Form
 from .models import ObjAdmin as Approver
 from .models import ObjUser as Preparer
-from .forms import Form
-from application.extensions import db
-from application.blueprints.user import login_required, roles_accepted
-from flask_login import current_user
-from application.blueprints.audit.utils import (
-    log_create, log_update, log_delete,
-    model_to_dict, get_record_identifier
-)
-
-from . import app_name, app_label
-
+from .models import Product as Obj
 
 bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_name}")
 ROLES_ACCEPTED = app_label
@@ -30,9 +43,7 @@ ROLES_ACCEPTED = app_label
 def home():
     rows = Obj.query.order_by(getattr(Obj, f"{app_name}_name")).all()
 
-    context = {
-        "rows": rows
-    }
+    context = {"rows": rows}
 
     return render_template(f"{app_name}/home.html", **context)
 
@@ -41,7 +52,7 @@ def home():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def add():
-    popup = request.args.get('popup') == '1'
+    popup = request.args.get("popup") == "1"
     if request.method == "POST":
         form = Form()
         form._post(request.form, current_user.id)
@@ -49,22 +60,26 @@ def add():
         if form._validate_on_submit():
             form._save()
             if popup:
-                new_obj = Obj.query.filter_by(product_name=form.product_name).order_by(Obj.id.desc()).first()
+                new_obj = (
+                    Obj.query.filter_by(product_name=form.product_name)
+                    .order_by(Obj.id.desc())
+                    .first()
+                )
                 return render_template_string(
                     '<!doctype html><html><head><meta charset="utf-8"></head><body>'
-                    '<script>'
-                    'if(window.opener){'
+                    "<script>"
+                    "if(window.opener){"
                     'window.opener.postMessage({type:"product_added",product_id:{{ pid }},product_name:{{ pname | tojson }},product_type_name:{{ ptype | tojson }}},"*");'
-                    '}'
-                    'window.close();'
-                    '</script>'
+                    "}"
+                    "window.close();"
+                    "</script>"
                     '<p style="font-family:sans-serif;padding:2rem;">Product saved. This window will close automatically.</p>'
-                    '</body></html>',
+                    "</body></html>",
                     pid=new_obj.id if new_obj else 0,
                     pname=form.product_name,
-                    ptype=form.product_type_name
+                    ptype=form.product_type_name,
                 )
-            return redirect(url_for(f'{app_name}.home'))
+            return redirect(url_for(f"{app_name}.home"))
     else:
         form = Form()
 
@@ -76,17 +91,17 @@ def add():
     return render_template(f"{app_name}/form.html", **context)
 
 
-@bp.route(f"/edit/<int:record_id>", methods=["POST", "GET"])
+@bp.route("/edit/<int:record_id>", methods=["POST", "GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
-def edit(record_id):   
+def edit(record_id):
     if request.method == "POST":
         form = Form()
         form._post(request.form, current_user.id)
 
         if form._validate_on_submit():
             form._save()
-            return redirect(url_for(f'{app_name}.home'))
+            return redirect(url_for(f"{app_name}.home"))
 
     else:
         obj = Obj.query.get(record_id)
@@ -108,20 +123,26 @@ def delete(record_id):
     preparer = obj.preparer
 
     # Capture values before deletion
-    old_values = model_to_dict(obj, [
-        'product_name', 'product_type_id'
-    ])
+    old_values = model_to_dict(obj, ["product_name", "product_type_id"])
     record_id_for_log = obj.id
     identifier = str(obj)
 
     try:
         # Check for related transaction details
-        from application.blueprints.operations.daily_sales.models import TransactionDetail
-        related_details = TransactionDetail.query.filter_by(product_id=record_id).count()
+        from application.blueprints.operations.daily_sales.models import (
+            TransactionDetail,
+        )
+
+        related_details = TransactionDetail.query.filter_by(
+            product_id=record_id
+        ).count()
 
         if related_details > 0:
-            flash(f"Cannot delete {obj} because it is used in {related_details} transaction(s).", category="error")
-            return redirect(url_for(f'{app_name}.home'))
+            flash(
+                f"Cannot delete {obj} because it is used in {related_details} transaction(s).",
+                category="error",
+            )
+            return redirect(url_for(f"{app_name}.home"))
 
         # Delete ALL related admin/user records using direct query
         # This avoids SQLAlchemy relationship cascade issues
@@ -133,10 +154,10 @@ def delete(record_id):
 
         # Log deletion before commit
         log_delete(
-            module='product',
+            module="product",
             record_id=record_id_for_log,
             record_identifier=identifier,
-            old_values=old_values
+            old_values=old_values,
         )
 
         db.session.commit()
@@ -144,50 +165,51 @@ def delete(record_id):
 
     except (IntegrityError, AssertionError) as e:
         db.session.rollback()
-        print(f"DEBUG: IntegrityError/AssertionError: {type(e).__name__}: {str(e)}")
-        flash(f"Cannot delete {obj} because it has related records. Error: {str(e)}", category="error")
+        print(f"DEBUG: IntegrityError/AssertionError: {type(e).__name__}: {e!s}")
+        flash(
+            f"Cannot delete {obj} because it has related records. Error: {e!s}",
+            category="error",
+        )
     except Exception as e:
         db.session.rollback()
-        print(f"DEBUG: Unexpected error: {type(e).__name__}: {str(e)}")
+        print(f"DEBUG: Unexpected error: {type(e).__name__}: {e!s}")
         import traceback
+
         traceback.print_exc()
-        flash(f"Error deleting {obj}: {str(e)}", category="error")
+        flash(f"Error deleting {obj}: {e!s}", category="error")
 
-    return redirect(url_for(f'{app_name}.home'))
+    return redirect(url_for(f"{app_name}.home"))
 
 
-@bp.route("/approve/<int:record_id>", methods=['GET'])
+@bp.route("/approve/<int:record_id>", methods=["GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def approve(record_id):
     if not current_user.admin:
         flash("Administrator rights required.", category="error")
         return redirect(url_for(f"{app_name}.home"))
-    
+
     obj = Obj.query.get_or_404(record_id)
 
-    data = {
-        f"{app_name}_id": record_id,
-        "user_id": current_user.id
-    }
+    data = {f"{app_name}_id": record_id, "user_id": current_user.id}
 
     approve = Approver(**data)
 
     db.session.add(approve)
     db.session.commit()
 
-    flash(f"Approved: {getattr(obj, f"{app_name}_name")}", category="success")
-    return redirect(url_for(f"{app_name}.home"))   
-    
+    flash(f"Approved: {getattr(obj, f'{app_name}_name')}", category="success")
+    return redirect(url_for(f"{app_name}.home"))
 
-@bp.route("/unlock/<int:record_id>", methods=['GET'])
+
+@bp.route("/unlock/<int:record_id>", methods=["GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def unlock(record_id):
     if not current_user.admin:
         flash("Administrator rights required.", category="error")
         return redirect(url_for(f"{app_name}.home"))
-    
+
     obj = Obj.query.get_or_404(record_id)
 
     data = {
@@ -195,19 +217,22 @@ def unlock(record_id):
     }
 
     approve = Approver.query.filter_by(**data).first()
-    
+
     db.session.delete(approve)
     db.session.commit()
 
-    flash(f"Unlocked: {getattr(obj, f"{app_name}_name")}", category="error")
-    return redirect(url_for(f"{app_name}.home"))   
-    
+    flash(f"Unlocked: {getattr(obj, f'{app_name}_name')}", category="error")
+    return redirect(url_for(f"{app_name}.home"))
 
-@bp.route("/autocomplete", methods=['GET'])
+
+@bp.route("/autocomplete", methods=["GET"])
 @login_required
 def _autocomplete():
-    options = [getattr(i,f"{app_name}_name") for i in Obj.query.order_by(getattr(Obj,f"{app_name}_name")).all()]
-    return Response(json.dumps(options), mimetype='application/json')
+    options = [
+        getattr(i, f"{app_name}_name")
+        for i in Obj.query.order_by(getattr(Obj, f"{app_name}_name")).all()
+    ]
+    return Response(json.dumps(options), mimetype="application/json")
 
 
 @bp.route("/upload", methods=["POST"])
@@ -236,12 +261,12 @@ def upload():
 
         imported = 0
         skipped = 0
-        
+
         title = sheet.title
         cell_product_name = sheet["A1"].value
-              
+
         checker = (title, cell_product_name)
-    
+
         if checker == ("Products", "Product Name"):
             for row in sheet.iter_rows(min_row=2, values_only=True):
                 product_name = row[0]
@@ -250,48 +275,49 @@ def upload():
                     continue
 
                 existing = Obj.query.filter(
-                    (Obj.product_name == str(product_name)) 
+                    Obj.product_name == str(product_name)
                 ).first()
 
                 if existing:
                     skipped += 1
                     continue
 
-                product = Obj(
-                    product_name=str(product_name).upper()
-                )
+                product = Obj(product_name=str(product_name).upper())
 
                 db.session.add(product)
                 db.session.flush()
 
                 # Log creation after flush to get ID
                 log_create(
-                    module='product',
+                    module="product",
                     record_id=product.id,
                     record_identifier=str(product),
-                    new_values=model_to_dict(product, [
-                        'product_name', 'product_type_id'
-                    ]),
-                    notes='Product imported from Excel'
+                    new_values=model_to_dict(
+                        product, ["product_name", "product_type_id"]
+                    ),
+                    notes="Product imported from Excel",
                 )
 
                 db.session.commit()
 
                 preparer_data = {
                     f"{app_name}_id": product.id,
-                    "user_id": current_user.id
+                    "user_id": current_user.id,
                 }
                 preparer = Preparer(**preparer_data)
                 db.session.add(preparer)
                 db.session.commit()
 
                 imported += 1
-            flash(f"{imported} record(s) imported successfully. {skipped} skipped due to duplicates.", "success")
+            flash(
+                f"{imported} record(s) imported successfully. {skipped} skipped due to duplicates.",
+                "success",
+            )
         else:
-            flash(f"Error processing file: Invalid format.", "danger")
+            flash("Error processing file: Invalid format.", "danger")
 
     except Exception as e:
-        flash(f"Error processing file: {str(e)}", "danger")
+        flash(f"Error processing file: {e!s}", "danger")
 
     return redirect(url_for(f"{app_name}.home"))
 
@@ -316,5 +342,5 @@ def download_template():
         file_stream,
         as_attachment=True,
         download_name="product.xlsx",
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )

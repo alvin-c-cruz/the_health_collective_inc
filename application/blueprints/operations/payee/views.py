@@ -1,13 +1,21 @@
-from flask import Blueprint, render_template, render_template_string, request, redirect, url_for, flash
+from flask import (
+    Blueprint,
+    flash,
+    redirect,
+    render_template,
+    render_template_string,
+    request,
+    url_for,
+)
 from sqlalchemy.exc import IntegrityError
 
+from application.blueprints.audit.utils import log_delete, model_to_dict
+from application.blueprints.operations.daily_sales.models import Payee as Obj
 from application.blueprints.user import login_required, roles_accepted
 from application.extensions import db
 
-from . import app_name, app_label
-from application.blueprints.operations.daily_sales.models import Payee as Obj
+from . import app_label, app_name
 from .forms import Form
-from application.blueprints.audit.utils import log_delete, model_to_dict
 
 bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_name}")
 ROLES_ACCEPTED = app_label
@@ -67,16 +75,16 @@ def add_popup():
             # Send postMessage to parent window with payee details
             return render_template_string(
                 '<!doctype html><html><head><meta charset="utf-8"></head><body>'
-                '<script>'
-                'if(window.opener){'
+                "<script>"
+                "if(window.opener){"
                 'window.opener.postMessage({type:"payee_added",payee_id:{{ id | tojson }},payee_name:{{ name | tojson }}},"*");'
-                '}'
-                'window.close();'
-                '</script>'
+                "}"
+                "window.close();"
+                "</script>"
                 '<p style="font-family:sans-serif;padding:2rem;">Payee saved. This window will close automatically.</p>'
-                '</body></html>',
+                "</body></html>",
                 id=obj.id,
-                name=obj.name
+                name=obj.name,
             )
     else:
         form = Form()
@@ -91,7 +99,7 @@ def delete(record_id):
     obj = Obj.query.get_or_404(record_id)
 
     # Capture old values before deletion
-    old_values = model_to_dict(obj, ['name', 'description', 'active'])
+    old_values = model_to_dict(obj, ["name", "description", "active"])
     record_identifier = f"{obj.name}"
 
     try:
@@ -99,11 +107,11 @@ def delete(record_id):
 
         # Log deletion
         log_delete(
-            module='payee',
+            module="payee",
             record_id=record_id,
             record_identifier=record_identifier,
             old_values=old_values,
-            reason='Payee deleted by user'
+            reason="Payee deleted by user",
         )
 
         db.session.commit()
@@ -113,6 +121,6 @@ def delete(record_id):
         flash("Cannot delete — this payee is referenced by existing records.", "danger")
     except Exception as e:
         db.session.rollback()
-        flash(f"Error deleting payee: {str(e)}", "danger")
+        flash(f"Error deleting payee: {e!s}", "danger")
         print(f"Delete operation failed: {e}")
     return redirect(url_for(f"{app_name}.home"))

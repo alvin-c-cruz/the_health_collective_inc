@@ -5,7 +5,6 @@ Automatically generates version strings based on git commit information.
 """
 
 import subprocess
-import os
 from pathlib import Path
 
 
@@ -26,11 +25,11 @@ def get_git_version():
 
         # Get total commit count
         result = subprocess.run(
-            ['git', 'rev-list', '--count', 'HEAD'],
+            ["git", "rev-list", "--count", "HEAD"],
             cwd=repo_root,
             capture_output=True,
             text=True,
-            timeout=5
+            timeout=5,
         )
 
         if result.returncode != 0:
@@ -40,11 +39,11 @@ def get_git_version():
 
         # Check if working directory is dirty (has uncommitted changes)
         result = subprocess.run(
-            ['git', 'status', '--porcelain'],
+            ["git", "status", "--porcelain"],
             cwd=repo_root,
             capture_output=True,
             text=True,
-            timeout=5
+            timeout=5,
         )
 
         is_dirty = bool(result.stdout.strip())
@@ -56,7 +55,12 @@ def get_git_version():
 
         return version
 
-    except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError, Exception):
+    except (
+        subprocess.TimeoutExpired,
+        subprocess.CalledProcessError,
+        FileNotFoundError,
+        Exception,
+    ):
         # Fallback if git is not available or any error occurs
         return "v1.0.dev"
 
@@ -81,68 +85,74 @@ def get_git_commit_info():
 
         # Get short hash
         result = subprocess.run(
-            ['git', 'rev-parse', '--short', 'HEAD'],
+            ["git", "rev-parse", "--short", "HEAD"],
             cwd=repo_root,
             capture_output=True,
             text=True,
-            timeout=5
+            timeout=5,
         )
         short_hash = result.stdout.strip() if result.returncode == 0 else "unknown"
 
         # Get full hash
         result = subprocess.run(
-            ['git', 'rev-parse', 'HEAD'],
+            ["git", "rev-parse", "HEAD"],
             cwd=repo_root,
             capture_output=True,
             text=True,
-            timeout=5
+            timeout=5,
         )
         full_hash = result.stdout.strip() if result.returncode == 0 else "unknown"
 
         # Get commit date
         result = subprocess.run(
-            ['git', 'log', '-1', '--format=%cd', '--date=short'],
+            ["git", "log", "-1", "--format=%cd", "--date=short"],
             cwd=repo_root,
             capture_output=True,
             text=True,
-            timeout=5
+            timeout=5,
         )
         commit_date = result.stdout.strip() if result.returncode == 0 else "unknown"
 
         # Get commit count
         result = subprocess.run(
-            ['git', 'rev-list', '--count', 'HEAD'],
+            ["git", "rev-list", "--count", "HEAD"],
             cwd=repo_root,
             capture_output=True,
             text=True,
-            timeout=5
+            timeout=5,
         )
         commit_count = int(result.stdout.strip()) if result.returncode == 0 else 0
 
         # Check if dirty
         result = subprocess.run(
-            ['git', 'status', '--porcelain'],
+            ["git", "status", "--porcelain"],
             cwd=repo_root,
             capture_output=True,
             text=True,
-            timeout=5
+            timeout=5,
         )
         is_dirty = bool(result.stdout.strip())
 
         return {
-            'short_hash': short_hash,
-            'full_hash': full_hash,
-            'date': commit_date,
-            'count': commit_count,
-            'is_dirty': is_dirty
+            "short_hash": short_hash,
+            "full_hash": full_hash,
+            "date": commit_date,
+            "count": commit_count,
+            "is_dirty": is_dirty,
         }
 
-    except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError, Exception):
+    except (
+        subprocess.TimeoutExpired,
+        subprocess.CalledProcessError,
+        FileNotFoundError,
+        Exception,
+    ):
         return None
 
 
 # Cache version on module import for performance
 _cached_version = None
+
 
 def get_version():
     """

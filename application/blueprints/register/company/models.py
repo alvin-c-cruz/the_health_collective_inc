@@ -1,7 +1,7 @@
 from application.extensions import db
+
 from .admin_models import AdminCompany as ObjAdmin
 from .admin_models import UserCompany as ObjUser
-from . import app_name
 
 
 class Company(db.Model):

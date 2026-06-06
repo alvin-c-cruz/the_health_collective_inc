@@ -1,10 +1,11 @@
-from flask_sqlalchemy import SQLAlchemy
-from flask_mail import Mail
-from flask_bcrypt import Bcrypt
-from flask_migrate import Migrate
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+
+from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
+from flask_mail import Mail
+from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
+from zoneinfo import ZoneInfo
 
 db = SQLAlchemy()
 mail = Mail()
@@ -12,7 +13,7 @@ bcrypt = Bcrypt()
 migrate = Migrate()
 login_manager = LoginManager()
 
-_PH = ZoneInfo('Asia/Manila')
+_PH = ZoneInfo("Asia/Manila")
 
 
 def ph_today():
@@ -51,11 +52,11 @@ def month_last_day():
 
 
 import re
-from datetime import datetime
+
 
 def next_control_number(obj, control_number_field, record_date=None):
     record = obj.query.order_by(getattr(obj, control_number_field).desc()).first()
-    
+
     if not record:
         return "00001"
 
@@ -66,10 +67,10 @@ def next_control_number(obj, control_number_field, record_date=None):
         return f"{last_number}-001"
 
     # Match and split by last numeric sequence
-    match = re.search(r'(\d+)$', last_number)
+    match = re.search(r"(\d+)$", last_number)
     if match:
         num_str = match.group(1)
-        prefix = last_number[:-len(num_str)]
+        prefix = last_number[: -len(num_str)]
         num_len = len(num_str)
         new_num = int(num_str) + 1
         return f"{prefix}{str(new_num).zfill(num_len)}"

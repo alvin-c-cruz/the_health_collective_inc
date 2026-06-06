@@ -1,7 +1,9 @@
-from application.extensions import db, short_date, long_date
+from application.extensions import db, long_date, short_date
+
+from . import app_name
 from .admin_models import AdminAccountsPayableExtra as ObjAdmin
 from .admin_models import UserAccountsPayableExtra as ObjUser
-from . import app_name
+
 
 class AccountsPayableExtra(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -11,9 +13,8 @@ class AccountsPayableExtra(db.Model):
     rr_number = db.Column(db.String())
     po_number = db.Column(db.String())
 
-    vendor_id = db.Column(db.Integer, db.ForeignKey('vendor.id'), nullable=False)
-    vendor = db.relationship('Vendor', backref='accounts_payable_extras', lazy=True)
-
+    vendor_id = db.Column(db.Integer, db.ForeignKey("vendor.id"), nullable=False)
+    vendor = db.relationship("Vendor", backref="accounts_payable_extras", lazy=True)
 
     prepared_by = db.Column(db.String())
     checked_by = db.Column(db.String())
@@ -26,12 +27,16 @@ class AccountsPayableExtra(db.Model):
 
     @property
     def preparer(self):
-        obj = ObjUser.query.filter(getattr(ObjUser,f"{app_name}_id")==self.id).first()
+        obj = ObjUser.query.filter(
+            getattr(ObjUser, f"{app_name}_id") == self.id
+        ).first()
         return obj
-    
+
     @property
     def approved(self):
-        obj = ObjAdmin.query.filter(getattr(ObjAdmin,f"{app_name}_id")==self.id).first()
+        obj = ObjAdmin.query.filter(
+            getattr(ObjAdmin, f"{app_name}_id") == self.id
+        ).first()
         return obj
 
     @property
@@ -49,7 +54,7 @@ class AccountsPayableExtra(db.Model):
     @property
     def formatted_cancelled(self):
         return short_date(self.cancelled) if self.cancelled else None
-    
+
     def is_submitted(self):
         return True if self.submitted else False
 
@@ -57,11 +62,17 @@ class AccountsPayableExtra(db.Model):
 class AccountsPayableExtraDetail(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
-    accounts_payable_extra_id = db.Column(db.Integer, db.ForeignKey('accounts_payable_extra.id'), nullable=False)
-    accounts_payable_extra = db.relationship('AccountsPayableExtra', backref='accounts_payable_extra_details', lazy=True)
+    accounts_payable_extra_id = db.Column(
+        db.Integer, db.ForeignKey("accounts_payable_extra.id"), nullable=False
+    )
+    accounts_payable_extra = db.relationship(
+        "AccountsPayableExtra", backref="accounts_payable_extra_details", lazy=True
+    )
 
-    account_id = db.Column(db.Integer, db.ForeignKey('account.id'), nullable=False)
-    account = db.relationship('Account', backref='accounts_payable_extra_details', lazy=True)
+    account_id = db.Column(db.Integer, db.ForeignKey("account.id"), nullable=False)
+    account = db.relationship(
+        "Account", backref="accounts_payable_extra_details", lazy=True
+    )
 
     debit = db.Column(db.Float, default=0)
     credit = db.Column(db.Float, default=0)
@@ -70,8 +81,8 @@ class AccountsPayableExtraDetail(db.Model):
 
     @property
     def formatted_debit(self):
-        return '{:,.2f}'.format(self.debit)
+        return f"{self.debit:,.2f}"
 
     @property
     def formatted_credit(self):
-        return '{:,.2f}'.format(self.credit)
+        return f"{self.credit:,.2f}"

@@ -1,15 +1,15 @@
-﻿from dataclasses import dataclass
+from dataclasses import dataclass
+
 from sqlalchemy import func
+
 from application.extensions import db, ph_today
+
+from ....register.vendor import Vendor
+from ...account import Account
+from . import app_name
+from .admin_models import UserDisbursementExtra as Preparer
 from .models import DisbursementExtra as Obj
 from .models import DisbursementExtraDetail as ObjDetail
-from .admin_models import UserDisbursementExtra as Preparer
-from datetime import datetime
-from . import app_name
-
-from ... account import Account
-from .... register.vendor import Vendor
-
 
 DETAIL_ROWS = 20
 
@@ -17,14 +17,14 @@ DETAIL_ROWS = 20
 def get_attributes(object):
     attributes = [x for x in dir(object) if (not x.startswith("_"))]
     exceptions = (
-        "user_prepare_id", 
-        "user_prepare", 
-        "errors", 
-        "active", 
+        "user_prepare_id",
+        "user_prepare",
+        "errors",
+        "active",
         "details",
-        "locked", 
+        "locked",
         app_name,
-        )
+    )
     for i in exceptions:
         try:
             attributes.remove(i)
@@ -35,16 +35,13 @@ def get_attributes(object):
 
 def get_attributes_as_dict(object):
     attributes = get_attributes(object)
-    return {
-        attribute: getattr(object, attribute)
-        for attribute in attributes
-    }
+    return {attribute: getattr(object, attribute) for attribute in attributes}
 
 
 @dataclass
 class SubForm:
     id: int = 0
-    disbursement_extra_id:int = 0
+    disbursement_extra_id: int = 0
     account_id: int = 0
     debit: float = 0
     credit: float = 0
@@ -58,8 +55,8 @@ class SubForm:
         for attribute in get_attributes(self):
             if attribute in ["errors", "amount", "account_name"]:
                 continue
-            elif attribute in ["account_id"]:
-                account = Account.query.get(getattr(row, "account_id"))
+            if attribute in ["account_id"]:
+                account = Account.query.get(row.account_id)
                 setattr(self, attribute, account.id)
                 self.account_name = account.account_name
             elif attribute in ["debit", "credit"]:
@@ -70,7 +67,7 @@ class SubForm:
     def _validate(self):
         self.errors = {}
 
-        if self._is_dirty():            
+        if self._is_dirty():
             if self.debit < 0:
                 self.errors["debit"] = "Debit cannot be less than zero (0)."
 
@@ -81,25 +78,23 @@ class SubForm:
                 self.errors["account_name"] = "Please select account title."
             else:
                 account_number, account_title = self.account_name.split(": ")
-                account = Account.query.filter(Account.account_number==account_number).first()
+                account = Account.query.filter(
+                    Account.account_number == account_number
+                ).first()
                 if not account:
-                    self.errors["account_name"] = f"{self.account_name} does not exists."
+                    self.errors["account_name"] = (
+                        f"{self.account_name} does not exists."
+                    )
                 else:
                     self.account_id = account.id
 
         if not self.errors:
             return True
-        else:
-            return False    
+        return False
 
     def _is_dirty(self):
-        return any([
-            self.account_name, 
-            self.debit, 
-            self.credit, 
-            self.side_note
-            ])    
-        
+        return any([self.account_name, self.debit, self.credit, self.side_note])
+
 
 @dataclass
 class Form:
@@ -119,7 +114,7 @@ class Form:
     locked: bool = False
 
     user_prepare_id: int = None
-    
+
     vendor_name: str = ""
 
     details = []
@@ -134,12 +129,11 @@ class Form:
         if self.id is None:
             # Add a new record
             _dict = get_attributes_as_dict(self)
-            if "locked" in _dict: _dict.pop("locked")
+            if "locked" in _dict:
+                _dict.pop("locked")
             _dict.pop("vendor_name")
-            
-            new_record = Obj(
-                **_dict
-                )
+
+            new_record = Obj(**_dict)
             db.session.add(new_record)
             db.session.commit()
 
@@ -154,12 +148,9 @@ class Form:
                     new_detail = ObjDetail(**_dict)
                     db.session.add(new_detail)
                     db.session.commit()
-            
-            data = {
-                f"{app_name}_id": new_record.id,
-                "user_id": self.user_prepare_id
-            }
-            
+
+            data = {f"{app_name}_id": new_record.id, "user_id": self.user_prepare_id}
+
             preparer = Preparer(**data)
 
             db.session.add(preparer)
@@ -169,25 +160,24 @@ class Form:
             # Update an existing record
             record = Obj.query.get(self.id)
             if record:
-                data = {
-                    f"{app_name}_id": self.id
-                }
+                data = {f"{app_name}_id": self.id}
                 preparer = Preparer.query.filter_by(**data).first()
                 if preparer:
                     preparer.user_id = self.user_prepare_id
                 else:
-                    data[f"user_id"] = self.user_prepare_id
+                    data["user_id"] = self.user_prepare_id
                     preparer = Preparer(**data)
                     db.session.add(preparer)
 
                 for attribute in get_attributes(self):
-                    if attribute == "id": continue
+                    if attribute == "id":
+                        continue
                     setattr(record, attribute, getattr(self, attribute))
-                                    
+
                 details = ObjDetail.query.filter(
-                    getattr(ObjDetail, f"{app_name}_id")==self.id
-                    )
-                
+                    getattr(ObjDetail, f"{app_name}_id") == self.id
+                )
+
                 for detail in details:
                     db.session.delete(detail)
 
@@ -199,9 +189,9 @@ class Form:
                         _dict[f"{app_name}_id"] = record.id
                         row_detail = ObjDetail(**_dict)
                         db.session.add(row_detail)
-                
+
         db.session.commit()
-   
+
     def _populate(self, obj):
         for attribute in get_attributes(self):
             if attribute in ["vendor_id"]:
@@ -223,14 +213,12 @@ class Form:
     def _post(self, request_form):
         for attribute in get_attributes(self):
             if attribute == "id":
-                value = getattr(request_form, "get")("record_id")
+                value = request_form.get("record_id")
                 if value:
-                    setattr(self, "id", int(value))
+                    self.id = int(value)
             elif attribute in ["vendor_id"]:
-                vendor_name = request_form.get('vendor_name')
-                vendor = Vendor.query.filter_by(
-                    vendor_name=vendor_name
-                    ).first()
+                vendor_name = request_form.get("vendor_name")
+                vendor = Vendor.query.filter_by(vendor_name=vendor_name).first()
                 if vendor:
                     setattr(self, attribute, vendor.id)
                 self.vendor_name = vendor_name
@@ -238,28 +226,40 @@ class Form:
             elif attribute in ("submitted", "cancelled"):
                 continue
             else:
-                setattr(self, attribute, getattr(request_form, "get")(attribute))
+                setattr(self, attribute, request_form.get(attribute))
 
         for i in range(DETAIL_ROWS):
             for attribute in ["account_name"] + get_attributes(ObjDetail):
                 if attribute in ("debit", "credit"):
-                    if type(request_form.get(f'{attribute}-{i}')) == str:
-                        _value = request_form.get(f'{attribute}-{i}')
-                        if _value.isnumeric() or (_value.replace('.', '', 1).isdigit() and _value.count('.') <= 1):
+                    if type(request_form.get(f"{attribute}-{i}")) == str:
+                        _value = request_form.get(f"{attribute}-{i}")
+                        if _value.isnumeric() or (
+                            _value.replace(".", "", 1).isdigit()
+                            and _value.count(".") <= 1
+                        ):
                             setattr(self.details[i][1], attribute, float(_value))
                         else:
                             setattr(getattr(self.details[i][1], attribute), 0)
-                    else: 
-                        setattr(getattr(self.details[i][1], attribute), float(request_form.get(f'{attribute}-{i}')))
+                    else:
+                        setattr(
+                            getattr(self.details[i][1], attribute),
+                            float(request_form.get(f"{attribute}-{i}")),
+                        )
                 elif attribute in ["account_name"]:
-                    account_name = request_form.get(f'account_name-{i}')
+                    account_name = request_form.get(f"account_name-{i}")
                     setattr(self.details[i][1], attribute, account_name)
                     if account_name:
-                        account = Account.query.filter_by(account_name=account_name).first()
+                        account = Account.query.filter_by(
+                            account_name=account_name
+                        ).first()
                         if account:
-                            setattr(self.details[i][1], "account_id", account.id)
+                            self.details[i][1].account_id = account.id
                 elif attribute in ["side_note"]:
-                    setattr(self.details[i][1], attribute, request_form.get(f'{attribute}-{i}'))
+                    setattr(
+                        self.details[i][1],
+                        attribute,
+                        request_form.get(f"{attribute}-{i}"),
+                    )
                 else:
                     continue
 
@@ -274,11 +274,13 @@ class Form:
             self.errors["record_number"] = "Please type disbursement extra number."
         else:
             duplicate = Obj.query.filter(
-                func.lower(Obj.record_number) == func.lower(self.record_number), 
-                Obj.id != self.id
+                func.lower(Obj.record_number) == func.lower(self.record_number),
+                Obj.id != self.id,
             ).first()
             if duplicate:
-                self.errors["record_number"] = "Disbursement extra number is already used, please verify."        
+                self.errors["record_number"] = (
+                    "Disbursement extra number is already used, please verify."
+                )
 
         if not self.vendor_name:
             self.errors["vendor_name"] = "Please type vendor."
@@ -309,11 +311,13 @@ class Form:
 
         # Check if total debit equals total credit
         if round(total_debit, 2) != round(total_credit, 2):
-            self.errors["totals"] = f"Total debit ({total_debit:,.2f}) and credit ({total_credit:,.2f}) must be equal."
+            self.errors["totals"] = (
+                f"Total debit ({total_debit:,.2f}) and credit ({total_credit:,.2f}) must be equal."
+            )
 
         if not self.errors and detail_validation:
-            return True  
-    
+            return True
+
     def _submit(self):
         self.submitted = str(ph_today())
 
@@ -321,6 +325,4 @@ class Form:
     def _locked_(self):
         if self.submitted or self.cancelled:
             return True
-        else:
-            return False
-    
+        return False

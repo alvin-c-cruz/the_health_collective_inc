@@ -1,8 +1,9 @@
 from datetime import datetime
-from application.extensions import db, short_date, long_date
+
+from application.extensions import db, long_date, short_date
+
 from .admin_models import AdminTransaction as ObjAdmin
 from .admin_models import UserTransaction as ObjUser
-from ..transaction_type.models import TransactionType
 
 
 class Transaction(db.Model):
@@ -12,8 +13,8 @@ class Transaction(db.Model):
     dashlabs_number = db.Column(db.String())
     pos_number = db.Column(db.String())
 
-    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
-    customer = db.relationship('Customer', backref='transactions', lazy=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey("customer.id"), nullable=False)
+    customer = db.relationship("Customer", backref="transactions", lazy=True)
 
     # Legacy fields (keep for backward compatibility)
     prepared_by = db.Column(db.String())
@@ -22,11 +23,13 @@ class Transaction(db.Model):
 
     description = db.Column(db.String())
 
-    transaction_type_id = db.Column(db.Integer, db.ForeignKey('transaction_type.id'), nullable=True)
-    transaction_type = db.relationship('TransactionType', lazy=True)
+    transaction_type_id = db.Column(
+        db.Integer, db.ForeignKey("transaction_type.id"), nullable=True
+    )
+    transaction_type = db.relationship("TransactionType", lazy=True)
 
-    ape_batch_id = db.Column(db.Integer, db.ForeignKey('ape_batch.id'), nullable=True)
-    ape_batch = db.relationship('ApeBatch', lazy=True, foreign_keys=[ape_batch_id])
+    ape_batch_id = db.Column(db.Integer, db.ForeignKey("ape_batch.id"), nullable=True)
+    ape_batch = db.relationship("ApeBatch", lazy=True, foreign_keys=[ape_batch_id])
 
     # Legacy submitted/cancelled fields
     submitted = db.Column(db.String())
@@ -36,26 +39,44 @@ class Transaction(db.Model):
     discount_description = db.Column(db.String(), nullable=True)
 
     # New workflow fields
-    status = db.Column(db.String(20), default='draft')  # draft | submitted | posted
-    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    created_by_user = db.relationship('User', foreign_keys=[created_by_id], backref='transactions_created')
+    status = db.Column(db.String(20), default="draft")  # draft | submitted | posted
+    created_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    created_by_user = db.relationship(
+        "User", foreign_keys=[created_by_id], backref="transactions_created"
+    )
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    submitted_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    submitted_by_user = db.relationship('User', foreign_keys=[submitted_by_id], backref='transactions_submitted')
+    submitted_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    submitted_by_user = db.relationship(
+        "User", foreign_keys=[submitted_by_id], backref="transactions_submitted"
+    )
     submitted_at = db.Column(db.DateTime, nullable=True)
 
-    approved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    approved_by_user = db.relationship('User', foreign_keys=[approved_by_id], backref='transactions_approved')
+    approved_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    approved_by_user = db.relationship(
+        "User", foreign_keys=[approved_by_id], backref="transactions_approved"
+    )
     approved_at = db.Column(db.DateTime, nullable=True)
 
     # Cancellation request fields
-    cancellation_requested_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    cancellation_requested_by_user = db.relationship('User', foreign_keys=[cancellation_requested_by_id], backref='cancellation_requests_made')
+    cancellation_requested_by_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), nullable=True
+    )
+    cancellation_requested_by_user = db.relationship(
+        "User",
+        foreign_keys=[cancellation_requested_by_id],
+        backref="cancellation_requests_made",
+    )
     cancellation_requested_at = db.Column(db.DateTime, nullable=True)
     cancellation_reason = db.Column(db.String(), nullable=True)
-    cancellation_approved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    cancellation_approved_by_user = db.relationship('User', foreign_keys=[cancellation_approved_by_id], backref='cancellation_requests_approved')
+    cancellation_approved_by_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), nullable=True
+    )
+    cancellation_approved_by_user = db.relationship(
+        "User",
+        foreign_keys=[cancellation_approved_by_id],
+        backref="cancellation_requests_approved",
+    )
     cancellation_approved_at = db.Column(db.DateTime, nullable=True)
 
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -86,7 +107,7 @@ class Transaction(db.Model):
 
     @property
     def formatted_discount(self):
-        return '{:,.2f}'.format(self.discount)
+        return f"{self.discount:,.2f}"
 
     def is_submitted(self):
         return True if self.submitted else False
@@ -94,90 +115,123 @@ class Transaction(db.Model):
     # New workflow status methods
     @property
     def is_draft(self):
-        return self.status == 'draft'
+        return self.status == "draft"
 
     @property
     def is_status_submitted(self):
-        return self.status == 'submitted'
+        return self.status == "submitted"
 
     @property
     def is_posted(self):
-        return self.status == 'posted'
+        return self.status == "posted"
 
 
 class TransactionDetail(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
-    transaction_id = db.Column(db.Integer, db.ForeignKey('transaction.id'), nullable=False)
-    transaction = db.relationship('Transaction', backref='transaction_details', lazy=True)
+    transaction_id = db.Column(
+        db.Integer, db.ForeignKey("transaction.id"), nullable=False
+    )
+    transaction = db.relationship(
+        "Transaction", backref="transaction_details", lazy=True
+    )
 
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
-    product = db.relationship('Product', backref='transaction_details', lazy=True)
+    product_id = db.Column(db.Integer, db.ForeignKey("product.id"), nullable=False)
+    product = db.relationship("Product", backref="transaction_details", lazy=True)
 
     amount = db.Column(db.Float, default=0)
     discount = db.Column(db.Float, default=0)
     side_note = db.Column(db.String())
-    billable = db.Column(db.Boolean, default=True)  # True = billable, False = inventory only
+    billable = db.Column(
+        db.Boolean, default=True
+    )  # True = billable, False = inventory only
 
     @property
     def formatted_amount(self):
-        return '{:,.2f}'.format(self.amount)
+        return f"{self.amount:,.2f}"
 
     @property
     def formatted_discount(self):
-        return '{:,.2f}'.format(self.discount)
+        return f"{self.discount:,.2f}"
 
 
 class TransactionTender(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
-    transaction_id = db.Column(db.Integer, db.ForeignKey('transaction.id'), nullable=False)
-    transaction = db.relationship('Transaction', backref='transaction_tenders', lazy=True)
+    transaction_id = db.Column(
+        db.Integer, db.ForeignKey("transaction.id"), nullable=False
+    )
+    transaction = db.relationship(
+        "Transaction", backref="transaction_tenders", lazy=True
+    )
 
-    tender_id = db.Column(db.Integer, db.ForeignKey('tender.id'), nullable=False)
-    tender = db.relationship('Tender', backref='transaction_tenders', lazy=True)
+    tender_id = db.Column(db.Integer, db.ForeignKey("tender.id"), nullable=False)
+    tender = db.relationship("Tender", backref="transaction_tenders", lazy=True)
 
     amount = db.Column(db.Float, default=0)
     side_note = db.Column(db.String())
 
     @property
     def formatted_amount(self):
-        return '{:,.2f}'.format(self.amount)
+        return f"{self.amount:,.2f}"
 
 
 class Deposit(db.Model):
     """Bank deposit record linking cash sales to bank deposits"""
+
     id = db.Column(db.Integer, primary_key=True)
     record_date = db.Column(db.String())  # Deposit date
     reference_number = db.Column(db.String())  # Bank slip / ref no.
-    bank_account_id = db.Column(db.Integer, db.ForeignKey("bank_account.id"), nullable=True)
+    bank_account_id = db.Column(
+        db.Integer, db.ForeignKey("bank_account.id"), nullable=True
+    )
     bank_account = db.relationship("BankAccount", lazy=True)
     notes = db.Column(db.String())  # Optional notes
     deductions = db.Column(db.Numeric(12, 2), default=0.00)  # Bank charges, fees, etc.
-    deduction_details = db.Column(db.String())  # Description of what the deduction is for
+    deduction_details = db.Column(
+        db.String()
+    )  # Description of what the deduction is for
 
     # Workflow fields
-    status = db.Column(db.String(20), default='draft')  # draft | submitted | posted | cancelled
-    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    created_by_user = db.relationship('User', foreign_keys=[created_by_id], backref='deposits_created')
+    status = db.Column(
+        db.String(20), default="draft"
+    )  # draft | submitted | posted | cancelled
+    created_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    created_by_user = db.relationship(
+        "User", foreign_keys=[created_by_id], backref="deposits_created"
+    )
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    submitted_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    submitted_by_user = db.relationship('User', foreign_keys=[submitted_by_id], backref='deposits_submitted')
+    submitted_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    submitted_by_user = db.relationship(
+        "User", foreign_keys=[submitted_by_id], backref="deposits_submitted"
+    )
     submitted_at = db.Column(db.DateTime, nullable=True)
 
-    approved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    approved_by_user = db.relationship('User', foreign_keys=[approved_by_id], backref='deposits_approved')
+    approved_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    approved_by_user = db.relationship(
+        "User", foreign_keys=[approved_by_id], backref="deposits_approved"
+    )
     approved_at = db.Column(db.DateTime, nullable=True)
 
-    cancelled_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    cancelled_by_user = db.relationship('User', foreign_keys=[cancelled_by_id], backref='deposits_cancelled')
+    cancelled_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    cancelled_by_user = db.relationship(
+        "User", foreign_keys=[cancelled_by_id], backref="deposits_cancelled"
+    )
     cancelled_at = db.Column(db.DateTime, nullable=True)
-    cancellation_reason = db.Column(db.String(), nullable=True)  # Why was this deposit cancelled
+    cancellation_reason = db.Column(
+        db.String(), nullable=True
+    )  # Why was this deposit cancelled
 
     # Cancellation request fields (for approval workflow)
-    cancellation_requested_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    cancellation_requested_by_user = db.relationship('User', foreign_keys=[cancellation_requested_by_id], backref='deposit_cancellation_requests_made')
+    cancellation_requested_by_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), nullable=True
+    )
+    cancellation_requested_by_user = db.relationship(
+        "User",
+        foreign_keys=[cancellation_requested_by_id],
+        backref="deposit_cancellation_requests_made",
+    )
     cancellation_requested_at = db.Column(db.DateTime, nullable=True)
     cancellation_request_reason = db.Column(db.String(), nullable=True)
 
@@ -193,7 +247,7 @@ class Deposit(db.Model):
         if self.bank_account:
             # Use the BankAccount model's __str__ method which respects display_name
             return str(self.bank_account)
-        return '-'
+        return "-"
 
     @property
     def total_amount(self):
@@ -202,7 +256,7 @@ class Deposit(db.Model):
 
     @property
     def formatted_total_amount(self):
-        return '{:,.2f}'.format(self.total_amount)
+        return f"{self.total_amount:,.2f}"
 
     @property
     def net_bank_credit(self):
@@ -211,45 +265,51 @@ class Deposit(db.Model):
 
     @property
     def formatted_net_bank_credit(self):
-        return '{:,.2f}'.format(self.net_bank_credit)
+        return f"{self.net_bank_credit:,.2f}"
 
     @property
     def is_draft(self):
-        return self.status == 'draft'
+        return self.status == "draft"
 
     @property
     def is_submitted(self):
-        return self.status == 'submitted'
+        return self.status == "submitted"
 
     @property
     def is_posted(self):
-        return self.status == 'posted'
+        return self.status == "posted"
 
     @property
     def is_cancelled(self):
-        return self.status == 'cancelled'
+        return self.status == "cancelled"
 
 
 class DepositItem(db.Model):
     """Individual transactions included in a deposit"""
+
     id = db.Column(db.Integer, primary_key=True)
 
-    deposit_id = db.Column(db.Integer, db.ForeignKey('deposit.id'), nullable=False)
-    deposit = db.relationship('Deposit', backref='deposit_items', lazy=True)
+    deposit_id = db.Column(db.Integer, db.ForeignKey("deposit.id"), nullable=False)
+    deposit = db.relationship("Deposit", backref="deposit_items", lazy=True)
 
-    transaction_id = db.Column(db.Integer, db.ForeignKey('transaction.id'), nullable=False)
-    transaction = db.relationship('Transaction', backref='deposit_items', lazy=True)
+    transaction_id = db.Column(
+        db.Integer, db.ForeignKey("transaction.id"), nullable=False
+    )
+    transaction = db.relationship("Transaction", backref="deposit_items", lazy=True)
 
-    amount = db.Column(db.Float, default=0)  # Amount from this transaction included in deposit
+    amount = db.Column(
+        db.Float, default=0
+    )  # Amount from this transaction included in deposit
     notes = db.Column(db.String())  # Optional notes per item
 
     @property
     def formatted_amount(self):
-        return '{:,.2f}'.format(self.amount)
+        return f"{self.amount:,.2f}"
 
 
 class FundCategory(db.Model):
     """Categories of funds: Petty Cash, Change Fund, etc."""
+
     id = db.Column(db.Integer, primary_key=True)
     category_name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.String())
@@ -257,37 +317,50 @@ class FundCategory(db.Model):
     active = db.Column(db.Boolean, default=True)
 
     def __repr__(self):
-        return f'<FundCategory {self.category_name}>'
+        return f"<FundCategory {self.category_name}>"
 
 
 class FundReceived(db.Model):
     """Funds received (incoming funds like replenishments)"""
+
     id = db.Column(db.Integer, primary_key=True)
     record_date = db.Column(db.String(), nullable=False)
 
-    fund_category_id = db.Column(db.Integer, db.ForeignKey('fund_category.id'), nullable=False)
-    fund_category = db.relationship('FundCategory', backref='funds_received', lazy=True)
+    fund_category_id = db.Column(
+        db.Integer, db.ForeignKey("fund_category.id"), nullable=False
+    )
+    fund_category = db.relationship("FundCategory", backref="funds_received", lazy=True)
 
     amount = db.Column(db.Float, default=0)
     reference_number = db.Column(db.String())
     description = db.Column(db.String())
 
     # Workflow fields
-    status = db.Column(db.String(20), default='draft')  # draft | submitted | posted | cancelled
-    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    created_by_user = db.relationship('User', foreign_keys=[created_by_id], backref='funds_received_created')
+    status = db.Column(
+        db.String(20), default="draft"
+    )  # draft | submitted | posted | cancelled
+    created_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    created_by_user = db.relationship(
+        "User", foreign_keys=[created_by_id], backref="funds_received_created"
+    )
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    submitted_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    submitted_by_user = db.relationship('User', foreign_keys=[submitted_by_id], backref='funds_received_submitted')
+    submitted_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    submitted_by_user = db.relationship(
+        "User", foreign_keys=[submitted_by_id], backref="funds_received_submitted"
+    )
     submitted_at = db.Column(db.DateTime, nullable=True)
 
-    approved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    approved_by_user = db.relationship('User', foreign_keys=[approved_by_id], backref='funds_received_approved')
+    approved_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    approved_by_user = db.relationship(
+        "User", foreign_keys=[approved_by_id], backref="funds_received_approved"
+    )
     approved_at = db.Column(db.DateTime, nullable=True)
 
-    cancelled_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    cancelled_by_user = db.relationship('User', foreign_keys=[cancelled_by_id], backref='funds_received_cancelled')
+    cancelled_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    cancelled_by_user = db.relationship(
+        "User", foreign_keys=[cancelled_by_id], backref="funds_received_cancelled"
+    )
     cancelled_at = db.Column(db.DateTime, nullable=True)
     cancellation_reason = db.Column(db.String(), nullable=True)
 
@@ -299,53 +372,68 @@ class FundReceived(db.Model):
 
     @property
     def formatted_amount(self):
-        return '{:,.2f}'.format(self.amount)
+        return f"{self.amount:,.2f}"
 
     @property
     def is_draft(self):
-        return self.status == 'draft'
+        return self.status == "draft"
 
     @property
     def is_submitted(self):
-        return self.status == 'submitted'
+        return self.status == "submitted"
 
     @property
     def is_posted(self):
-        return self.status == 'posted'
+        return self.status == "posted"
 
     @property
     def is_cancelled(self):
-        return self.status == 'cancelled'
+        return self.status == "cancelled"
 
 
 class FundDisbursed(db.Model):
     """Funds disbursed (outgoing funds like expenses)"""
+
     id = db.Column(db.Integer, primary_key=True)
     record_date = db.Column(db.String(), nullable=False)
 
-    fund_category_id = db.Column(db.Integer, db.ForeignKey('fund_category.id'), nullable=False)
-    fund_category = db.relationship('FundCategory', backref='funds_disbursed', lazy=True)
+    fund_category_id = db.Column(
+        db.Integer, db.ForeignKey("fund_category.id"), nullable=False
+    )
+    fund_category = db.relationship(
+        "FundCategory", backref="funds_disbursed", lazy=True
+    )
 
     amount = db.Column(db.Float, default=0)
     reference_number = db.Column(db.String())
     description = db.Column(db.String())
 
     # Workflow fields
-    status = db.Column(db.String(20), default='draft')  # draft | submitted | posted | cancelled
-    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    created_by_user = db.relationship('User', foreign_keys=[created_by_id], backref='funds_disbursed_created')
+    status = db.Column(
+        db.String(20), default="draft"
+    )  # draft | submitted | posted | cancelled
+    created_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    created_by_user = db.relationship(
+        "User", foreign_keys=[created_by_id], backref="funds_disbursed_created"
+    )
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    submitted_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    submitted_by_user = db.relationship('User', foreign_keys=[submitted_by_id], backref='funds_disbursed_submitted')
+    submitted_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    submitted_by_user = db.relationship(
+        "User", foreign_keys=[submitted_by_id], backref="funds_disbursed_submitted"
+    )
     submitted_at = db.Column(db.DateTime, nullable=True)
 
-    approved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    approved_by_user = db.relationship('User', foreign_keys=[approved_by_id], backref='funds_disbursed_approved')
+    approved_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    approved_by_user = db.relationship(
+        "User", foreign_keys=[approved_by_id], backref="funds_disbursed_approved"
+    )
     approved_at = db.Column(db.DateTime, nullable=True)
 
-    cancelled_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    cancelled_by_user = db.relationship('User', foreign_keys=[cancelled_by_id], backref='funds_disbursed_cancelled')
+    cancelled_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    cancelled_by_user = db.relationship(
+        "User", foreign_keys=[cancelled_by_id], backref="funds_disbursed_cancelled"
+    )
     cancelled_at = db.Column(db.DateTime, nullable=True)
     cancellation_reason = db.Column(db.String(), nullable=True)
 
@@ -357,31 +445,33 @@ class FundDisbursed(db.Model):
 
     @property
     def formatted_amount(self):
-        return '{:,.2f}'.format(self.amount)
+        return f"{self.amount:,.2f}"
 
     @property
     def is_draft(self):
-        return self.status == 'draft'
+        return self.status == "draft"
 
     @property
     def is_submitted(self):
-        return self.status == 'submitted'
+        return self.status == "submitted"
 
     @property
     def is_posted(self):
-        return self.status == 'posted'
+        return self.status == "posted"
 
     @property
     def is_cancelled(self):
-        return self.status == 'cancelled'
+        return self.status == "cancelled"
 
 
 # =============================================================================
 # Petty Cash Management Models
 # =============================================================================
 
+
 class Payee(db.Model):
     """Payee for petty cash vouchers"""
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False, unique=True)
     description = db.Column(db.String(500))
@@ -394,41 +484,52 @@ class Payee(db.Model):
 
 class PettyCashVoucher(db.Model):
     """Petty Cash Voucher (PCV)"""
-    __tablename__ = 'petty_cash_voucher'
+
+    __tablename__ = "petty_cash_voucher"
 
     id = db.Column(db.Integer, primary_key=True)
     pcv_number = db.Column(db.String(50), unique=True, nullable=False)
     record_date = db.Column(db.String(10), nullable=False)  # YYYY-MM-DD format
 
-    payee_id = db.Column(db.Integer, db.ForeignKey('payee.id'), nullable=False)
-    payee = db.relationship('Payee', backref='vouchers')
+    payee_id = db.Column(db.Integer, db.ForeignKey("payee.id"), nullable=False)
+    payee = db.relationship("Payee", backref="vouchers")
 
     amount = db.Column(db.Float, nullable=False)
     description = db.Column(db.Text)
 
     # Status workflow: draft -> submitted -> posted -> for_reimbursement -> reimbursed
-    status = db.Column(db.String(20), default='draft')
+    status = db.Column(db.String(20), default="draft")
 
     # Audit fields
-    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    created_by = db.relationship('User', foreign_keys=[created_by_id], backref='pcvs_created')
+    created_by_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    created_by = db.relationship(
+        "User", foreign_keys=[created_by_id], backref="pcvs_created"
+    )
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    submitted_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    submitted_by = db.relationship('User', foreign_keys=[submitted_by_id], backref='pcvs_submitted')
+    submitted_by_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    submitted_by = db.relationship(
+        "User", foreign_keys=[submitted_by_id], backref="pcvs_submitted"
+    )
     submitted_at = db.Column(db.DateTime)
 
-    posted_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    posted_by = db.relationship('User', foreign_keys=[posted_by_id], backref='pcvs_posted')
+    posted_by_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    posted_by = db.relationship(
+        "User", foreign_keys=[posted_by_id], backref="pcvs_posted"
+    )
     posted_at = db.Column(db.DateTime)
 
-    cancelled_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    cancelled_by = db.relationship('User', foreign_keys=[cancelled_by_id], backref='pcvs_cancelled')
+    cancelled_by_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    cancelled_by = db.relationship(
+        "User", foreign_keys=[cancelled_by_id], backref="pcvs_cancelled"
+    )
     cancelled_at = db.Column(db.DateTime)
     cancelled_reason = db.Column(db.Text)
 
     # Link to reimbursement report when status becomes for_reimbursement
-    reimbursement_report_id = db.Column(db.Integer, db.ForeignKey('reimbursement_report.id'))
+    reimbursement_report_id = db.Column(
+        db.Integer, db.ForeignKey("reimbursement_report.id")
+    )
 
     def __str__(self):
         return f"{self.pcv_number} - {self.payee.name if self.payee else 'N/A'}"
@@ -443,57 +544,58 @@ class PettyCashVoucher(db.Model):
 
     @property
     def is_draft(self):
-        return self.status == 'draft'
+        return self.status == "draft"
 
     @property
     def is_submitted(self):
-        return self.status == 'submitted'
+        return self.status == "submitted"
 
     @property
     def is_posted(self):
-        return self.status == 'posted'
+        return self.status == "posted"
 
     @property
     def is_for_reimbursement(self):
-        return self.status == 'for_reimbursement'
+        return self.status == "for_reimbursement"
 
     @property
     def is_reimbursed(self):
-        return self.status == 'reimbursed'
+        return self.status == "reimbursed"
 
     @property
     def is_cancelled(self):
-        return self.status == 'cancelled'
+        return self.status == "cancelled"
 
     @property
     def can_edit(self):
         """Can only edit draft vouchers"""
-        return self.status == 'draft'
+        return self.status == "draft"
 
     @property
     def can_submit(self):
         """Can submit draft vouchers"""
-        return self.status == 'draft'
+        return self.status == "draft"
 
     @property
     def can_post(self):
         """Can post submitted vouchers"""
-        return self.status == 'submitted'
+        return self.status == "submitted"
 
     @property
     def can_cancel(self):
         """Can cancel before reimbursement"""
-        return self.status in ['draft', 'submitted', 'posted']
+        return self.status in ["draft", "submitted", "posted"]
 
     @property
     def can_add_to_reimbursement(self):
         """Can add to reimbursement report when posted"""
-        return self.status == 'posted'
+        return self.status == "posted"
 
 
 class ReimbursementReport(db.Model):
     """Reimbursement Report aggregating multiple PCVs"""
-    __tablename__ = 'reimbursement_report'
+
+    __tablename__ = "reimbursement_report"
 
     id = db.Column(db.Integer, primary_key=True)
     report_number = db.Column(db.String(50), unique=True, nullable=False)
@@ -505,19 +607,23 @@ class ReimbursementReport(db.Model):
     total_amount = db.Column(db.Float, default=0)
 
     # Status: pending -> submitted -> reimbursed
-    status = db.Column(db.String(20), default='pending')
+    status = db.Column(db.String(20), default="pending")
 
     # Signatories
-    prepared_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    prepared_by = db.relationship('User', foreign_keys=[prepared_by_id], backref='reimbursement_reports_prepared')
+    prepared_by_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    prepared_by = db.relationship(
+        "User", foreign_keys=[prepared_by_id], backref="reimbursement_reports_prepared"
+    )
 
-    approved_by = db.Column(db.String(100), default='DGO')  # Default approver
+    approved_by = db.Column(db.String(100), default="DGO")  # Default approver
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     submitted_at = db.Column(db.DateTime)
 
     # Relationships
-    vouchers = db.relationship('PettyCashVoucher', backref='reimbursement_report', lazy=True)
+    vouchers = db.relationship(
+        "PettyCashVoucher", backref="reimbursement_report", lazy=True
+    )
 
     def __str__(self):
         return f"{self.report_number} - ₱{self.formatted_total_amount}"
@@ -538,15 +644,15 @@ class ReimbursementReport(db.Model):
 
     @property
     def is_pending(self):
-        return self.status == 'pending'
+        return self.status == "pending"
 
     @property
     def is_submitted(self):
-        return self.status == 'submitted'
+        return self.status == "submitted"
 
     @property
     def is_reimbursed(self):
-        return self.status == 'reimbursed'
+        return self.status == "reimbursed"
 
     def calculate_total(self):
         """Calculate total from all linked vouchers"""
@@ -556,35 +662,50 @@ class ReimbursementReport(db.Model):
 
 class ReimbursementReceived(db.Model):
     """Reimbursement received from bank/account"""
-    __tablename__ = 'reimbursement_received'
+
+    __tablename__ = "reimbursement_received"
 
     id = db.Column(db.Integer, primary_key=True)
     reference_number = db.Column(db.String(50), unique=True, nullable=False)
     record_date = db.Column(db.String(10), nullable=False)
 
-    bank_account_id = db.Column(db.Integer, db.ForeignKey('bank_account.id'), nullable=False)
-    bank_account = db.relationship('BankAccount', backref='reimbursements')
+    bank_account_id = db.Column(
+        db.Integer, db.ForeignKey("bank_account.id"), nullable=False
+    )
+    bank_account = db.relationship("BankAccount", backref="reimbursements")
 
     amount = db.Column(db.Float, nullable=False)
     notes = db.Column(db.Text)
 
     # Link to reimbursement report(s)
-    reimbursement_report_id = db.Column(db.Integer, db.ForeignKey('reimbursement_report.id'))
-    reimbursement_report = db.relationship('ReimbursementReport', backref='reimbursements_received')
+    reimbursement_report_id = db.Column(
+        db.Integer, db.ForeignKey("reimbursement_report.id")
+    )
+    reimbursement_report = db.relationship(
+        "ReimbursementReport", backref="reimbursements_received"
+    )
 
     # Approval workflow
-    status = db.Column(db.String(50), default='draft')  # draft, submitted, posted, cancelled
+    status = db.Column(
+        db.String(50), default="draft"
+    )  # draft, submitted, posted, cancelled
 
-    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    created_by = db.relationship('User', foreign_keys=[created_by_id], backref='reimbursements_created')
+    created_by_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    created_by = db.relationship(
+        "User", foreign_keys=[created_by_id], backref="reimbursements_created"
+    )
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    submitted_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    submitted_by = db.relationship('User', foreign_keys=[submitted_by_id], backref='reimbursements_submitted')
+    submitted_by_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    submitted_by = db.relationship(
+        "User", foreign_keys=[submitted_by_id], backref="reimbursements_submitted"
+    )
     submitted_at = db.Column(db.DateTime)
 
-    approved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    approved_by = db.relationship('User', foreign_keys=[approved_by_id], backref='reimbursements_approved')
+    approved_by_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    approved_by = db.relationship(
+        "User", foreign_keys=[approved_by_id], backref="reimbursements_approved"
+    )
     approved_at = db.Column(db.DateTime)
 
     def __str__(self):

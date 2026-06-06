@@ -7,14 +7,17 @@ User Role Hierarchy:
 - Staff: Can enter transactions (draft/submitted), request modifications, view reports
 - View: Read-only access to reports, no CRUD operations
 """
+
 from functools import wraps
-from flask import flash, redirect, url_for, session
+
+from flask import flash, redirect, session, url_for
+
 from application.blueprints.user.models import User
 
 
 def get_current_user():
     """Get the current logged-in user from session"""
-    user_id = session.get('user_id')
+    user_id = session.get("user_id")
     if user_id:
         return User.query.get(user_id)
     return None
@@ -45,7 +48,9 @@ def is_view(user=None):
     """Check if user has at least view permissions"""
     if user is None:
         user = get_current_user()
-    return user and (user.is_view or user.is_staff or user.is_admin or user.is_superuser)
+    return user and (
+        user.is_view or user.is_staff or user.is_admin or user.is_superuser
+    )
 
 
 def can_manage_users(user=None):
@@ -95,49 +100,58 @@ def can_view_reports(user=None):
 
 # Decorators for views
 
+
 def superuser_required(f):
     """Decorator: Require SuperUser access"""
+
     @wraps(f)
     def decorated_function(*args, **kwargs):
         user = get_current_user()
         if not is_superuser(user):
-            flash('SuperUser access required.', 'danger')
-            return redirect(url_for('daily_sales.home'))
+            flash("SuperUser access required.", "danger")
+            return redirect(url_for("daily_sales.home"))
         return f(*args, **kwargs)
+
     return decorated_function
 
 
 def admin_required(f):
     """Decorator: Require Admin or SuperUser access"""
+
     @wraps(f)
     def decorated_function(*args, **kwargs):
         user = get_current_user()
         if not is_admin(user):
-            flash('Admin access required.', 'danger')
-            return redirect(url_for('daily_sales.home'))
+            flash("Admin access required.", "danger")
+            return redirect(url_for("daily_sales.home"))
         return f(*args, **kwargs)
+
     return decorated_function
 
 
 def staff_required(f):
     """Decorator: Require Staff or higher access"""
+
     @wraps(f)
     def decorated_function(*args, **kwargs):
         user = get_current_user()
         if not is_staff(user):
-            flash('Staff access required.', 'danger')
-            return redirect(url_for('daily_sales.home'))
+            flash("Staff access required.", "danger")
+            return redirect(url_for("daily_sales.home"))
         return f(*args, **kwargs)
+
     return decorated_function
 
 
 def view_required(f):
     """Decorator: Require View or higher access"""
+
     @wraps(f)
     def decorated_function(*args, **kwargs):
         user = get_current_user()
         if not is_view(user):
-            flash('Access denied.', 'danger')
-            return redirect(url_for('daily_sales.home'))
+            flash("Access denied.", "danger")
+            return redirect(url_for("daily_sales.home"))
         return f(*args, **kwargs)
+
     return decorated_function

@@ -4,20 +4,24 @@ from application.extensions import db, short_date
 class Collection(db.Model):
     __tablename__ = "collection"
 
-    id              = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     collection_date = db.Column(db.String(), nullable=False)
-    tender_id       = db.Column(db.Integer, db.ForeignKey("tender.id"), nullable=False)
-    tender          = db.relationship("Tender", lazy=True)
-    bank_account_id = db.Column(db.Integer, db.ForeignKey("bank_account.id"), nullable=True)
-    bank_account    = db.relationship("BankAccount", lazy=True)
-    reference       = db.Column(db.String())
-    notes           = db.Column(db.String())
+    tender_id = db.Column(db.Integer, db.ForeignKey("tender.id"), nullable=False)
+    tender = db.relationship("Tender", lazy=True)
+    bank_account_id = db.Column(
+        db.Integer, db.ForeignKey("bank_account.id"), nullable=True
+    )
+    bank_account = db.relationship("BankAccount", lazy=True)
+    reference = db.Column(db.String())
+    notes = db.Column(db.String())
 
     # Deductions stored as JSON array of objects: [{"description": "...", "amount": 0.00}, ...]
-    deductions = db.Column(db.Text, default='[]')  # JSON string
+    deductions = db.Column(db.Text, default="[]")  # JSON string
 
     # Status workflow fields (matching Deposit model)
-    status = db.Column(db.String(20), default='draft')  # draft | submitted | posted | cancelled
+    status = db.Column(
+        db.String(20), default="draft"
+    )  # draft | submitted | posted | cancelled
 
     # Audit trail fields
     created_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
@@ -43,10 +47,14 @@ class Collection(db.Model):
     recorded_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
 
     ape_batch_id = db.Column(db.Integer, db.ForeignKey("ape_batch.id"), nullable=True)
-    ape_batch    = db.relationship("ApeBatch", backref="collections", lazy=True)
+    ape_batch = db.relationship("ApeBatch", backref="collections", lazy=True)
 
-    details = db.relationship("CollectionDetail", backref="collection", lazy=True,
-                              cascade="all, delete-orphan")
+    details = db.relationship(
+        "CollectionDetail",
+        backref="collection",
+        lazy=True,
+        cascade="all, delete-orphan",
+    )
 
     @property
     def total_amount(self):
@@ -56,9 +64,10 @@ class Collection(db.Model):
     def total_deductions(self):
         """Calculate total deductions from JSON"""
         import json
+
         try:
-            deductions_list = json.loads(self.deductions or '[]')
-            return sum(float(d.get('amount', 0)) for d in deductions_list)
+            deductions_list = json.loads(self.deductions or "[]")
+            return sum(float(d.get("amount", 0)) for d in deductions_list)
         except (json.JSONDecodeError, ValueError):
             return 0.0
 
@@ -73,7 +82,7 @@ class Collection(db.Model):
 
     @property
     def formatted_total(self):
-        return "{:,.2f}".format(self.total_amount)
+        return f"{self.total_amount:,.2f}"
 
     @property
     def formatted_total_amount(self):
@@ -82,21 +91,27 @@ class Collection(db.Model):
 
     @property
     def formatted_total_deductions(self):
-        return "{:,.2f}".format(self.total_deductions)
+        return f"{self.total_deductions:,.2f}"
 
     @property
     def formatted_net_amount(self):
-        return "{:,.2f}".format(self.net_amount)
+        return f"{self.net_amount:,.2f}"
 
 
 class CollectionDetail(db.Model):
     __tablename__ = "collection_detail"
 
-    id                    = db.Column(db.Integer, primary_key=True)
-    collection_id         = db.Column(db.Integer, db.ForeignKey("collection.id"), nullable=False)
-    transaction_tender_id = db.Column(db.Integer, db.ForeignKey("transaction_tender.id"), nullable=False)
-    transaction_tender    = db.relationship("TransactionTender", backref="collection_lines", lazy=True)
-    amount_applied        = db.Column(db.Float, default=0)
+    id = db.Column(db.Integer, primary_key=True)
+    collection_id = db.Column(
+        db.Integer, db.ForeignKey("collection.id"), nullable=False
+    )
+    transaction_tender_id = db.Column(
+        db.Integer, db.ForeignKey("transaction_tender.id"), nullable=False
+    )
+    transaction_tender = db.relationship(
+        "TransactionTender", backref="collection_lines", lazy=True
+    )
+    amount_applied = db.Column(db.Float, default=0)
 
     @property
     def amount_collected(self):
@@ -105,4 +120,4 @@ class CollectionDetail(db.Model):
 
     @property
     def formatted_amount(self):
-        return "{:,.2f}".format(self.amount_applied)
+        return f"{self.amount_applied:,.2f}"

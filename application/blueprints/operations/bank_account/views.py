@@ -1,13 +1,21 @@
-from flask import Blueprint, render_template, render_template_string, request, redirect, url_for, flash
+from flask import (
+    Blueprint,
+    flash,
+    redirect,
+    render_template,
+    render_template_string,
+    request,
+    url_for,
+)
 from sqlalchemy.exc import IntegrityError
 
+from application.blueprints.audit.utils import log_delete, model_to_dict
 from application.blueprints.user import login_required, roles_accepted
 from application.extensions import db
 
-from . import app_name, app_label
-from .models import BankAccount as Obj
+from . import app_label, app_name
 from .forms import Form
-from application.blueprints.audit.utils import log_delete, model_to_dict
+from .models import BankAccount as Obj
 
 bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_name}")
 ROLES_ACCEPTED = app_label
@@ -26,7 +34,7 @@ def home():
 @roles_accepted([ROLES_ACCEPTED])
 def add():
     # Check for popup parameter in query string
-    popup = request.args.get('popup') == '1'
+    popup = request.args.get("popup") == "1"
 
     if request.method == "POST":
         form = Form()
@@ -38,22 +46,24 @@ def add():
                 bank_account_display = str(obj)
                 return render_template_string(
                     '<!doctype html><html><head><meta charset="utf-8"></head><body>'
-                    '<script>'
-                    'if(window.opener){'
+                    "<script>"
+                    "if(window.opener){"
                     'window.opener.postMessage({type:"bank_account_added",bank_account_name:{{ name | tojson }}},"*");'
-                    '}'
-                    'window.close();'
-                    '</script>'
+                    "}"
+                    "window.close();"
+                    "</script>"
                     '<p style="font-family:sans-serif;padding:2rem;">Bank account saved. This window will close automatically.</p>'
-                    '</body></html>',
-                    name=bank_account_display
+                    "</body></html>",
+                    name=bank_account_display,
                 )
             flash("Bank account added.", "success")
             return redirect(url_for(f"{app_name}.home"))
     else:
         form = Form()
 
-    return render_template(f"{app_name}/form.html", form=form, app_label=app_label, popup=popup)
+    return render_template(
+        f"{app_name}/form.html", form=form, app_label=app_label, popup=popup
+    )
 
 
 @bp.route("/edit/<int:record_id>", methods=["GET", "POST"])
@@ -70,7 +80,9 @@ def edit(record_id):
             return redirect(url_for(f"{app_name}.home"))
     else:
         form._populate(obj)
-    return render_template(f"{app_name}/form.html", form=form, app_label=app_label, popup=False)
+    return render_template(
+        f"{app_name}/form.html", form=form, app_label=app_label, popup=False
+    )
 
 
 @bp.route("/add-popup", methods=["GET", "POST"])
@@ -86,16 +98,16 @@ def add_popup():
             bank_account_display = str(obj)
             return render_template_string(
                 '<!doctype html><html><head><meta charset="utf-8"></head><body>'
-                '<script>'
-                'if(window.opener){'
+                "<script>"
+                "if(window.opener){"
                 'window.opener.postMessage({type:"bank_account_added",bank_account_id:{{ id | tojson }},bank_account_name:{{ name | tojson }}},"*");'
-                '}'
-                'window.close();'
-                '</script>'
+                "}"
+                "window.close();"
+                "</script>"
                 '<p style="font-family:sans-serif;padding:2rem;">Bank account saved. This window will close automatically.</p>'
-                '</body></html>',
+                "</body></html>",
                 id=obj.id,
-                name=bank_account_display
+                name=bank_account_display,
             )
     else:
         form = Form()
@@ -110,7 +122,9 @@ def delete(record_id):
     obj = Obj.query.get_or_404(record_id)
 
     # Capture old values before deletion
-    old_values = model_to_dict(obj, ['bank_name', 'account_name', 'account_number', 'notes', 'active'])
+    old_values = model_to_dict(
+        obj, ["bank_name", "account_name", "account_number", "notes", "active"]
+    )
     record_identifier = str(obj)
 
     try:
@@ -118,20 +132,23 @@ def delete(record_id):
 
         # Log deletion
         log_delete(
-            module='bank_account',
+            module="bank_account",
             record_id=record_id,
             record_identifier=record_identifier,
             old_values=old_values,
-            reason='Bank account deleted by user'
+            reason="Bank account deleted by user",
         )
 
         db.session.commit()
         flash(f"{record_identifier} deleted.", "success")
     except IntegrityError:
         db.session.rollback()
-        flash("Cannot delete — this bank account is referenced by existing collections.", "danger")
+        flash(
+            "Cannot delete — this bank account is referenced by existing collections.",
+            "danger",
+        )
     except Exception as e:
         db.session.rollback()
-        flash(f"Error deleting bank account: {str(e)}", "danger")
+        flash(f"Error deleting bank account: {e!s}", "danger")
         print(f"Delete operation failed: {e}")
     return redirect(url_for(f"{app_name}.home"))

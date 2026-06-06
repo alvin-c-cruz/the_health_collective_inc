@@ -3,22 +3,27 @@ Bulk Create APE Transactions for COEX Batch
 Creates individual APE transactions for all employees in a batch.
 """
 
-import sys
 import os
+import sys
 
 # Add parent directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 
 from flask_app import app
-from application.extensions import db
-from application.blueprints.operations.daily_sales.models import Transaction, TransactionDetail, TransactionTender
+
 from application.blueprints.operations.ape_batch.models import ApeBatch
+from application.blueprints.operations.daily_sales.models import (
+    Transaction,
+    TransactionDetail,
+    TransactionTender,
+)
+from application.blueprints.operations.transaction_type.models import TransactionType
 from application.blueprints.register.customer.models import Customer
 from application.blueprints.register.product.models import Product
-from application.blueprints.register.tender.models import Tender
-from application.blueprints.operations.transaction_type.models import TransactionType
 from application.blueprints.register.sex.models import Sex
-from datetime import datetime
+from application.blueprints.register.tender.models import Tender
+from application.extensions import db
 
 # Employee list from COEX batch
 EMPLOYEES = [
@@ -77,17 +82,25 @@ def parse_name(full_name):
     parts = full_name.strip().split()
     if len(parts) == 0:
         return None, None, None
-    elif len(parts) == 1:
+    if len(parts) == 1:
         return parts[0], None, None
-    elif len(parts) == 2:
+    if len(parts) == 2:
         return parts[0], parts[1], None
-    else:
-        # Last name is first word, first name is second, rest is middle
-        return parts[0], parts[1], ' '.join(parts[2:])
+    # Last name is first word, first name is second, rest is middle
+    return parts[0], parts[1], " ".join(parts[2:])
 
 
-def create_ape_transaction(employee_name, batch_id, transaction_date, amount, current_user_id,
-                          transaction_type_id, ape_product_id, credit_tender_id, default_sex_id):
+def create_ape_transaction(
+    employee_name,
+    batch_id,
+    transaction_date,
+    amount,
+    current_user_id,
+    transaction_type_id,
+    ape_product_id,
+    credit_tender_id,
+    default_sex_id,
+):
     """Create a single APE transaction for an employee"""
 
     # Parse employee name
@@ -99,9 +112,7 @@ def create_ape_transaction(employee_name, batch_id, transaction_date, amount, cu
 
     # Check if customer already exists
     customer = Customer.query.filter_by(
-        last_name=last_name,
-        first_name=first_name,
-        middle_name=middle_name
+        last_name=last_name, first_name=first_name, middle_name=middle_name
     ).first()
 
     if not customer:
@@ -110,7 +121,7 @@ def create_ape_transaction(employee_name, batch_id, transaction_date, amount, cu
             last_name=last_name,
             first_name=first_name,
             middle_name=middle_name,
-            sex_id=default_sex_id
+            sex_id=default_sex_id,
         )
         db.session.add(customer)
         db.session.flush()  # Get customer ID
@@ -125,8 +136,8 @@ def create_ape_transaction(employee_name, batch_id, transaction_date, amount, cu
         transaction_type_id=transaction_type_id,
         ape_batch_id=batch_id,
         discount=0,
-        status='draft',
-        created_by_id=current_user_id
+        status="draft",
+        created_by_id=current_user_id,
     )
     db.session.add(transaction)
     db.session.flush()  # Get transaction ID
@@ -136,7 +147,7 @@ def create_ape_transaction(employee_name, batch_id, transaction_date, amount, cu
         transaction_id=transaction.id,
         product_id=ape_product_id,
         amount=amount,
-        discount=0
+        discount=0,
     )
     db.session.add(detail)
 
@@ -145,7 +156,7 @@ def create_ape_transaction(employee_name, batch_id, transaction_date, amount, cu
         transaction_id=transaction.id,
         tender_id=credit_tender_id,
         amount=amount,
-        side_note=None
+        side_note=None,
     )
     db.session.add(tender)
 
@@ -171,14 +182,14 @@ def main():
         print(f"   [+] Package Amount: P{PACKAGE_AMOUNT:,.2f}")
 
         # Get transaction type
-        ape_type = TransactionType.query.filter_by(type_code='ape').first()
+        ape_type = TransactionType.query.filter_by(type_code="ape").first()
         if not ape_type:
             print("[X] ERROR: APE transaction type not found!")
             return
         print(f"   [+] Transaction Type: {ape_type.type_name} (ID: {ape_type.id})")
 
         # Get or create APE service product
-        ape_product = Product.query.filter(Product.product_name.like('%APE%')).first()
+        ape_product = Product.query.filter(Product.product_name.like("%APE%")).first()
         if not ape_product:
             # Create generic APE service
             ape_product = Product(product_name=APE_SERVICE_NAME)
@@ -189,14 +200,14 @@ def main():
             print(f"   [+] Product: {ape_product.product_name} (ID: {ape_product.id})")
 
         # Get credit tender (exact match to avoid getting "Credit Card")
-        credit_tender = Tender.query.filter_by(tender_name='Credit').first()
+        credit_tender = Tender.query.filter_by(tender_name="Credit").first()
         if not credit_tender:
             print("[X] ERROR: Credit tender not found!")
             return
         print(f"   [+] Tender: {credit_tender.tender_name} (ID: {credit_tender.id})")
 
         # Get default sex
-        default_sex = Sex.query.filter(Sex.sex_name.like(f'%{DEFAULT_SEX}%')).first()
+        default_sex = Sex.query.filter(Sex.sex_name.like(f"%{DEFAULT_SEX}%")).first()
         if not default_sex:
             default_sex = Sex.query.first()
         print(f"   [+] Default Sex: {default_sex.sex_name} (ID: {default_sex.id})")
@@ -224,7 +235,7 @@ def main():
                     transaction_type_id=ape_type.id,
                     ape_product_id=ape_product.id,
                     credit_tender_id=credit_tender.id,
-                    default_sex_id=default_sex.id
+                    default_sex_id=default_sex.id,
                 )
 
                 if transaction:
@@ -234,7 +245,7 @@ def main():
                     skipped_count += 1
 
             except Exception as e:
-                print(f"   [X] ERROR: {str(e)}")
+                print(f"   [X] ERROR: {e!s}")
                 skipped_count += 1
                 db.session.rollback()
                 continue
@@ -257,14 +268,15 @@ def main():
         print("\n[OK] Script completed successfully!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
         print("\n\n[X] Script interrupted by user")
         sys.exit(1)
     except Exception as e:
-        print(f"\n\n[X] FATAL ERROR: {str(e)}")
+        print(f"\n\n[X] FATAL ERROR: {e!s}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

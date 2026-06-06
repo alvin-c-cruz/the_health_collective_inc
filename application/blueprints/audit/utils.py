@@ -25,12 +25,14 @@ Usage:
     # ... delete customer ...
     log_delete('customer', record_id, identifier, old_values=old_values)
 """
-import json
+
 from datetime import datetime
+
 from flask import request
 from flask_login import current_user
-from application.extensions import db
+
 from application.blueprints.audit.models import AuditLog, LoginHistory
+from application.extensions import db
 
 
 def get_client_ip():
@@ -39,18 +41,17 @@ def get_client_ip():
 
     Returns the real client IP even behind reverse proxies.
     """
-    if request.headers.get('X-Forwarded-For'):
+    if request.headers.get("X-Forwarded-For"):
         # Behind proxy - get first IP in chain
-        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
-    elif request.headers.get('X-Real-IP'):
-        return request.headers.get('X-Real-IP')
-    else:
-        return request.remote_addr
+        return request.headers.get("X-Forwarded-For").split(",")[0].strip()
+    if request.headers.get("X-Real-IP"):
+        return request.headers.get("X-Real-IP")
+    return request.remote_addr
 
 
 def get_user_agent():
     """Get user agent string, truncated to max length"""
-    user_agent = request.headers.get('User-Agent', '')
+    user_agent = request.headers.get("User-Agent", "")
     return user_agent[:500] if user_agent else None
 
 
@@ -69,9 +70,17 @@ def get_user_info():
     return None, None, None
 
 
-def log_audit(module, action, record_id=None, record_identifier=None,
-              old_values=None, new_values=None, reason=None, notes=None,
-              user=None):
+def log_audit(
+    module,
+    action,
+    record_id=None,
+    record_identifier=None,
+    old_values=None,
+    new_values=None,
+    reason=None,
+    notes=None,
+    user=None,
+):
     """
     Generic audit logging function.
 
@@ -110,7 +119,7 @@ def log_audit(module, action, record_id=None, record_identifier=None,
             ip_address=get_client_ip(),
             user_agent=get_user_agent(),
             reason=reason,
-            notes=notes
+            notes=notes,
         )
 
         # Set values using properties (which handle JSON serialization)
@@ -149,17 +158,25 @@ def log_create(module, record_id, record_identifier, new_values, notes=None, use
     """
     return log_audit(
         module=module,
-        action='created',
+        action="created",
         record_id=record_id,
         record_identifier=record_identifier,
         new_values=new_values,
         notes=notes,
-        user=user
+        user=user,
     )
 
 
-def log_update(module, record_id, record_identifier, old_values, new_values,
-               reason=None, notes=None, user=None):
+def log_update(
+    module,
+    record_id,
+    record_identifier,
+    old_values,
+    new_values,
+    reason=None,
+    notes=None,
+    user=None,
+):
     """
     Log record update.
 
@@ -178,18 +195,20 @@ def log_update(module, record_id, record_identifier, old_values, new_values,
     """
     return log_audit(
         module=module,
-        action='updated',
+        action="updated",
         record_id=record_id,
         record_identifier=record_identifier,
         old_values=old_values,
         new_values=new_values,
         reason=reason,
         notes=notes,
-        user=user
+        user=user,
     )
 
 
-def log_delete(module, record_id, record_identifier, old_values, reason=None, notes=None, user=None):
+def log_delete(
+    module, record_id, record_identifier, old_values, reason=None, notes=None, user=None
+):
     """
     Log record deletion.
 
@@ -207,19 +226,28 @@ def log_delete(module, record_id, record_identifier, old_values, reason=None, no
     """
     return log_audit(
         module=module,
-        action='deleted',
+        action="deleted",
         record_id=record_id,
         record_identifier=record_identifier,
         old_values=old_values,
         reason=reason,
         notes=notes,
-        user=user
+        user=user,
     )
 
 
-def log_status_change(module, record_id, record_identifier, action,
-                      old_status=None, new_status=None, reason=None, notes=None, user=None,
-                      context_values=None):
+def log_status_change(
+    module,
+    record_id,
+    record_identifier,
+    action,
+    old_status=None,
+    new_status=None,
+    reason=None,
+    notes=None,
+    user=None,
+    context_values=None,
+):
     """
     Log status/workflow changes (submitted, approved, cancelled, etc.)
 
@@ -238,8 +266,8 @@ def log_status_change(module, record_id, record_identifier, action,
     Returns:
         AuditLog instance
     """
-    old_values = {'status': old_status} if old_status else {}
-    new_values = {'status': new_status} if new_status else {}
+    old_values = {"status": old_status} if old_status else {}
+    new_values = {"status": new_status} if new_status else {}
 
     # Add contextual fields to both old and new values (these show what record was affected)
     if context_values:
@@ -255,7 +283,7 @@ def log_status_change(module, record_id, record_identifier, action,
         new_values=new_values if new_values else None,
         reason=reason,
         notes=notes,
-        user=user
+        user=user,
     )
 
 
@@ -340,21 +368,21 @@ def get_record_identifier(instance):
         identifier = get_record_identifier(customer)  # "CUST-001 - ABC Corp"
     """
     # Pattern 1: code + name
-    if hasattr(instance, 'code') and hasattr(instance, 'name'):
+    if hasattr(instance, "code") and hasattr(instance, "name"):
         return f"{instance.code} - {instance.name}"
 
     # Pattern 2: record_number
-    if hasattr(instance, 'record_number'):
+    if hasattr(instance, "record_number"):
         return instance.record_number
 
     # Pattern 3: just name
-    if hasattr(instance, 'name'):
+    if hasattr(instance, "name"):
         return instance.name
 
     # Pattern 4: username (for users)
-    if hasattr(instance, 'user_name'):
+    if hasattr(instance, "user_name"):
         full_name = ""
-        if hasattr(instance, 'first_name') and hasattr(instance, 'last_name'):
+        if hasattr(instance, "first_name") and hasattr(instance, "last_name"):
             full_name = f" - {instance.first_name} {instance.last_name}"
         return f"{instance.user_name}{full_name}"
 
@@ -363,7 +391,7 @@ def get_record_identifier(instance):
     return f"{class_name} #{instance.id}"
 
 
-def log_login(user, status='success', failure_reason=None):
+def log_login(user, status="success", failure_reason=None):
     """
     Log login attempt (success or failure).
 
@@ -393,7 +421,7 @@ def log_login(user, status='success', failure_reason=None):
             status=status,
             failure_reason=failure_reason,
             ip_address=get_client_ip(),
-            user_agent=get_user_agent()
+            user_agent=get_user_agent(),
         )
 
         db.session.add(login)

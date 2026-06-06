@@ -1,12 +1,17 @@
-from application.extensions import db
 from sqlalchemy.ext.hybrid import hybrid_property
+
+from application.extensions import db
+
+from . import app_name
 from .admin_models import AdminCustomer as ObjAdmin
 from .admin_models import UserCustomer as ObjUser
-from . import app_name
+
 
 class Customer(db.Model):
     id = db.Column(db.Integer(), primary_key=True)
-    _customer_name = db.Column('customer_name', db.String(255))  # Legacy field stored in DB
+    _customer_name = db.Column(
+        "customer_name", db.String(255)
+    )  # Legacy field stored in DB
     last_name = db.Column(db.String(100))
     first_name = db.Column(db.String(100))
     middle_name = db.Column(db.String(100))
@@ -15,8 +20,8 @@ class Customer(db.Model):
     business_style = db.Column(db.String(), default="")
     birthday = db.Column(db.String())
 
-    sex_id = db.Column(db.Integer, db.ForeignKey('sex.id'), nullable=False)
-    sex = db.relationship('Sex', backref='customers', lazy=True)
+    sex_id = db.Column(db.Integer, db.ForeignKey("sex.id"), nullable=False)
+    sex = db.relationship("Sex", backref="customers", lazy=True)
 
     salesman = db.Column(db.String(), default="")
 
@@ -24,17 +29,17 @@ class Customer(db.Model):
     def customer_name(self):
         """Returns formatted name: Last Name, First Name Middle Name"""
         # Get actual string values, handling None
-        last = getattr(self, 'last_name', None) or ''
-        first = getattr(self, 'first_name', None) or ''
-        middle = getattr(self, 'middle_name', None) or ''
+        last = getattr(self, "last_name", None) or ""
+        first = getattr(self, "first_name", None) or ""
+        middle = getattr(self, "middle_name", None) or ""
 
         # Ensure we have strings, not InstrumentedAttribute
         if not isinstance(last, str):
-            last = ''
+            last = ""
         if not isinstance(first, str):
-            first = ''
+            first = ""
         if not isinstance(middle, str):
-            middle = ''
+            middle = ""
 
         if last or first:
             parts = []
@@ -46,20 +51,21 @@ class Customer(db.Model):
             if middle:
                 name_parts.append(middle)
             if name_parts:
-                parts.append(' '.join(name_parts))
-            return ', '.join(parts) if len(parts) > 1 else parts[0] if parts else ''
+                parts.append(" ".join(name_parts))
+            return ", ".join(parts) if len(parts) > 1 else parts[0] if parts else ""
 
         # Fall back to legacy customer_name field
-        legacy = getattr(self, '_customer_name', None)
-        return legacy if isinstance(legacy, str) else ''
+        legacy = getattr(self, "_customer_name", None)
+        return legacy if isinstance(legacy, str) else ""
 
     @customer_name.expression
     def customer_name(cls):
         """SQL expression for ordering/filtering - uses last_name as primary sort"""
         from sqlalchemy import func
+
         # For SQL queries, order by last_name (most common sorting need)
         # If last_name is NULL/empty, fall back to legacy _customer_name field
-        return func.coalesce(cls.last_name, cls._customer_name, '')
+        return func.coalesce(cls.last_name, cls._customer_name, "")
 
     @customer_name.setter
     def customer_name(self, value):
@@ -74,13 +80,17 @@ class Customer(db.Model):
     def display_name(self):
         """Returns formatted name: Last Name, First Name Middle Name"""
         return self.customer_name
-    
+
     @property
     def preparer(self):
-        obj = ObjUser.query.filter(getattr(ObjUser,f"{app_name}_id")==self.id).first()
+        obj = ObjUser.query.filter(
+            getattr(ObjUser, f"{app_name}_id") == self.id
+        ).first()
         return obj
-    
+
     @property
     def approved(self):
-        obj = ObjAdmin.query.filter(getattr(ObjAdmin,f"{app_name}_id")==self.id).first()
+        obj = ObjAdmin.query.filter(
+            getattr(ObjAdmin, f"{app_name}_id") == self.id
+        ).first()
         return obj

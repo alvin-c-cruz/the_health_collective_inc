@@ -1,13 +1,16 @@
 from dataclasses import dataclass
+
 from sqlalchemy import func
-from application.extensions import db
-from .models import Company as Obj
-from .admin_models import UserCompany as Preparer
-from . import app_name
+
 from application.blueprints.audit.utils import (
-    log_create, log_update, log_delete,
-    model_to_dict, get_record_identifier
+    log_create,
+    log_update,
+    model_to_dict,
 )
+from application.extensions import db
+
+from .admin_models import UserCompany as Preparer
+from .models import Company as Obj
 
 
 @dataclass
@@ -54,13 +57,21 @@ class Form:
 
             # Log creation after flush to get ID
             log_create(
-                module='company',
+                module="company",
                 record_id=obj.id,
                 record_identifier=str(obj),
-                new_values=model_to_dict(obj, [
-                    'company_name', 'contact_person', 'contact_number', 'address', 'tin', 'active'
-                ]),
-                notes='Company created'
+                new_values=model_to_dict(
+                    obj,
+                    [
+                        "company_name",
+                        "contact_person",
+                        "contact_number",
+                        "address",
+                        "tin",
+                        "active",
+                    ],
+                ),
+                notes="Company created",
             )
 
             db.session.commit()
@@ -70,9 +81,17 @@ class Form:
             obj = Obj.query.get(self.id)
 
             # Capture old values before update
-            old_values = model_to_dict(obj, [
-                'company_name', 'contact_person', 'contact_number', 'address', 'tin', 'active'
-            ])
+            old_values = model_to_dict(
+                obj,
+                [
+                    "company_name",
+                    "contact_person",
+                    "contact_number",
+                    "address",
+                    "tin",
+                    "active",
+                ],
+            )
 
             obj.company_name = self.company_name
             obj.contact_person = self.contact_person
@@ -81,24 +100,34 @@ class Form:
             obj.active = self.active
 
             # Capture new values after update
-            new_values = model_to_dict(obj, [
-                'company_name', 'contact_person', 'contact_number', 'address', 'tin', 'active'
-            ])
+            new_values = model_to_dict(
+                obj,
+                [
+                    "company_name",
+                    "contact_person",
+                    "contact_number",
+                    "address",
+                    "tin",
+                    "active",
+                ],
+            )
 
             # Log update before commit
             log_update(
-                module='company',
+                module="company",
                 record_id=obj.id,
                 record_identifier=str(obj),
                 old_values=old_values,
-                new_values=new_values
+                new_values=new_values,
             )
 
             preparer = Preparer.query.filter_by(company_id=self.id).first()
             if preparer:
                 preparer.user_id = self.user_prepare_id
             else:
-                db.session.add(Preparer(company_id=self.id, user_id=self.user_prepare_id))
+                db.session.add(
+                    Preparer(company_id=self.id, user_id=self.user_prepare_id)
+                )
             db.session.commit()
 
     def _validate_on_submit(self):
@@ -108,7 +137,7 @@ class Form:
         else:
             duplicate = Obj.query.filter(
                 func.lower(Obj.company_name) == func.lower(self.company_name),
-                Obj.id != self.id
+                Obj.id != self.id,
             ).first()
             if duplicate:
                 self.errors["company_name"] = "Company name already exists."

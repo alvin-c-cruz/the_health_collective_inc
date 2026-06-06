@@ -1,33 +1,32 @@
-﻿from dataclasses import dataclass, field
-from sqlalchemy import func
-from application.extensions import db, ph_today
-from .models import Transaction as Obj
-from .models import TransactionDetail as ObjDetail
-from .models import TransactionTender as ObjTender
-from .admin_models import UserTransaction as Preparer
-from datetime import datetime
-from . import app_name
-from .audit_logger import log_status_change, get_model_snapshot
+from dataclasses import dataclass, field
 
 # Centralized audit logging
 from application.blueprints.audit.utils import (
     log_create as audit_log_create,
-    log_update as audit_log_update,
-    model_to_dict
 )
+from application.blueprints.audit.utils import (
+    log_update as audit_log_update,
+)
+from application.blueprints.audit.utils import (
+    model_to_dict,
+)
+from application.extensions import db, ph_today
 
 from ...register.customer import Customer
-from ...register.product import Product
-from ...register.tender import Tender
-
+from .admin_models import UserTransaction as Preparer
+from .audit_logger import get_model_snapshot, log_status_change
+from .models import Transaction as Obj
+from .models import TransactionDetail as ObjDetail
+from .models import TransactionTender as ObjTender
 
 DETAIL_ROWS = 100  # Support up to 100 line items per transaction
-TENDER_ROWS = 20   # Support up to 20 payment methods per transaction
+TENDER_ROWS = 20  # Support up to 20 payment methods per transaction
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _safe_float(value, default=0.0):
     try:
@@ -39,6 +38,7 @@ def _safe_float(value, default=0.0):
 # ---------------------------------------------------------------------------
 # SubForm – one product line item
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class DetailSubForm:
@@ -58,7 +58,9 @@ class DetailSubForm:
         self.amount = float(row.amount)
         self.discount = float(row.discount)
         self.side_note = row.side_note or ""
-        self.billable = getattr(row, 'billable', True)  # Default to True for backward compatibility
+        self.billable = getattr(
+            row, "billable", True
+        )  # Default to True for backward compatibility
         if row.product:
             self.product_name = row.product.product_name
 
@@ -82,6 +84,7 @@ class DetailSubForm:
 # ---------------------------------------------------------------------------
 # TenderSubForm – one payment line
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class TenderSubForm:
@@ -117,6 +120,7 @@ class TenderSubForm:
 # ---------------------------------------------------------------------------
 # Main Form
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class Form:
@@ -174,7 +178,9 @@ class Form:
         self.cancelled = obj.cancelled or ""
 
         if obj.customer:
-            self.customer_name = str(obj.customer)  # Use formatted name: Last Name, First Name Middle Name
+            self.customer_name = str(
+                obj.customer
+            )  # Use formatted name: Last Name, First Name Middle Name
 
         self.details = [(i, DetailSubForm()) for i in range(DETAIL_ROWS)]
         for i, row in enumerate(obj.transaction_details):
@@ -234,16 +240,22 @@ class Form:
         amounts = request_form.getlist("amount[]")
         detail_discounts = request_form.getlist("detail_discount[]")
         side_notes = request_form.getlist("side_note[]")
-        billable_values = request_form.getlist("billable[]")  # Hidden field updated by checkbox
+        billable_values = request_form.getlist(
+            "billable[]"
+        )  # Hidden field updated by checkbox
 
         self.details = []
         for i in range(len(product_ids)):
             sub = DetailSubForm()
             sub.product_id = int(product_ids[i]) if product_ids[i] else 0
             sub.amount = _safe_float(amounts[i] if i < len(amounts) else 0)
-            sub.discount = _safe_float(detail_discounts[i] if i < len(detail_discounts) else 0)
+            sub.discount = _safe_float(
+                detail_discounts[i] if i < len(detail_discounts) else 0
+            )
             sub.side_note = side_notes[i] if i < len(side_notes) else ""
-            sub.billable = billable_values[i] == "1" if i < len(billable_values) else True
+            sub.billable = (
+                billable_values[i] == "1" if i < len(billable_values) else True
+            )
             self.details.append((i, sub))
 
         # Tender rows
@@ -255,7 +267,9 @@ class Form:
         for i in range(len(tender_ids)):
             sub = TenderSubForm()
             sub.tender_id = int(tender_ids[i]) if tender_ids[i] else 0
-            sub.amount = _safe_float(tender_amounts[i] if i < len(tender_amounts) else 0)
+            sub.amount = _safe_float(
+                tender_amounts[i] if i < len(tender_amounts) else 0
+            )
             sub.side_note = tender_notes[i] if i < len(tender_notes) else ""
             self.tenders.append((i, sub))
 
@@ -281,7 +295,9 @@ class Form:
                     customer = c
                     break
             if not customer:
-                customer = Customer.query.filter_by(customer_name=self.customer_name).first()
+                customer = Customer.query.filter_by(
+                    customer_name=self.customer_name
+                ).first()
             if not customer:
                 self.errors["customer_name"] = f'"{self.customer_name}" not found.'
 
@@ -296,8 +312,16 @@ class Form:
 
         # Calculate total due first to determine if tenders are required
         # Only sum billable items (exclude inventory-only items)
-        gross = sum(sub.amount for _, sub in self.details if sub._is_dirty() and getattr(sub, 'billable', True))
-        detail_discount = sum(sub.discount for _, sub in self.details if sub._is_dirty() and getattr(sub, 'billable', True))
+        gross = sum(
+            sub.amount
+            for _, sub in self.details
+            if sub._is_dirty() and getattr(sub, "billable", True)
+        )
+        detail_discount = sum(
+            sub.discount
+            for _, sub in self.details
+            if sub._is_dirty() and getattr(sub, "billable", True)
+        )
         total_due = gross - detail_discount - self.discount
 
         # Tender total must equal (gross - discount)
@@ -311,7 +335,9 @@ class Form:
                     tender_valid = False
 
         if not self.errors and detail_valid and tender_valid:
-            total_tendered = sum(sub.amount for _, sub in self.tenders if sub._is_dirty())
+            total_tendered = sum(
+                sub.amount for _, sub in self.tenders if sub._is_dirty()
+            )
 
             # Only validate tender total match if there's an amount due
             if total_due != 0 and round(total_due, 2) != round(total_tendered, 2):
@@ -375,24 +401,28 @@ class Form:
         # Insert details
         for _, sub in self.details:
             if sub._is_dirty():
-                db.session.add(ObjDetail(
-                    transaction_id=self.id,
-                    product_id=sub.product_id,
-                    amount=sub.amount,
-                    discount=sub.discount,
-                    side_note=sub.side_note,
-                    billable=sub.billable,
-                ))
+                db.session.add(
+                    ObjDetail(
+                        transaction_id=self.id,
+                        product_id=sub.product_id,
+                        amount=sub.amount,
+                        discount=sub.discount,
+                        side_note=sub.side_note,
+                        billable=sub.billable,
+                    )
+                )
 
         # Insert tenders
         for _, sub in self.tenders:
             if sub._is_dirty():
-                db.session.add(ObjTender(
-                    transaction_id=self.id,
-                    tender_id=sub.tender_id,
-                    amount=sub.amount,
-                    side_note=sub.side_note,
-                ))
+                db.session.add(
+                    ObjTender(
+                        transaction_id=self.id,
+                        tender_id=sub.tender_id,
+                        amount=sub.amount,
+                        side_note=sub.side_note,
+                    )
+                )
 
         # Preparer (upsert)
         if self.user_prepare_id:
@@ -400,26 +430,35 @@ class Form:
             if preparer:
                 preparer.user_id = self.user_prepare_id
             else:
-                db.session.add(Preparer(
-                    transaction_id=self.id,
-                    user_id=self.user_prepare_id,
-                ))
+                db.session.add(
+                    Preparer(
+                        transaction_id=self.id,
+                        user_id=self.user_prepare_id,
+                    )
+                )
 
         db.session.commit()
 
         # Audit logging
         try:
-            from flask_login import current_user
 
             # Build transaction identifier
-            customer_name = record.customer.customer_name if record.customer else 'No customer'
-            txn_type = record.transaction_type.type_name if record.transaction_type else 'No type'
+            customer_name = (
+                record.customer.customer_name if record.customer else "No customer"
+            )
+            txn_type = (
+                record.transaction_type.type_name
+                if record.transaction_type
+                else "No type"
+            )
 
             # Calculate total amount
             total_amount = sum(t.amount for t in record.transaction_tenders)
 
             # Get tender names
-            tender_names = ', '.join([t.tender.tender_name for t in record.transaction_tenders if t.tender])
+            tender_names = ", ".join(
+                [t.tender.tender_name for t in record.transaction_tenders if t.tender]
+            )
 
             record_identifier = f"Transaction #{record.record_number} - {customer_name}"
 
@@ -428,14 +467,24 @@ class Form:
                 notes = f"{txn_type} • Total: ₱{total_amount:,.2f} • {tender_names if tender_names else 'No tender'}"
 
                 audit_log_create(
-                    module='daily_sales',
+                    module="daily_sales",
                     record_id=record.id,
                     record_identifier=record_identifier,
-                    new_values=model_to_dict(record, [
-                        'record_date', 'record_number', 'dashlabs_number', 'pos_number',
-                        'transaction_type_id', 'customer_id', 'discount', 'description', 'status'
-                    ]),
-                    notes=notes
+                    new_values=model_to_dict(
+                        record,
+                        [
+                            "record_date",
+                            "record_number",
+                            "dashlabs_number",
+                            "pos_number",
+                            "transaction_type_id",
+                            "customer_id",
+                            "discount",
+                            "description",
+                            "status",
+                        ],
+                    ),
+                    notes=notes,
                 )
             elif old_snapshot:
                 # UPDATE action
@@ -443,19 +492,20 @@ class Form:
                 notes = f"{txn_type} • Total: ₱{total_amount:,.2f} • {tender_names if tender_names else 'No tender'}"
 
                 audit_log_update(
-                    module='daily_sales',
+                    module="daily_sales",
                     record_id=record.id,
                     record_identifier=record_identifier,
                     old_values=old_snapshot,
                     new_values=new_snapshot,
-                    notes=notes
+                    notes=notes,
                 )
 
             db.session.commit()
         except Exception as e:
             # Don't fail the transaction save if audit logging fails, but warn user
             from flask import flash
-            flash(f'Transaction saved, but audit logging failed: {str(e)}', 'warning')
+
+            flash(f"Transaction saved, but audit logging failed: {e!s}", "warning")
             print(f"Audit logging failed: {e}")
 
     # ------------------------------------------------------------------ #
@@ -470,11 +520,19 @@ class Form:
 
         # Audit logging
         try:
-            log_status_change('transaction', record, 'submitted', notes='Transaction submitted for approval')
+            log_status_change(
+                "transaction",
+                record,
+                "submitted",
+                notes="Transaction submitted for approval",
+            )
             db.session.commit()
         except Exception as e:
             from flask import flash
-            flash(f'Transaction submitted, but audit logging failed: {str(e)}', 'warning')
+
+            flash(
+                f"Transaction submitted, but audit logging failed: {e!s}", "warning"
+            )
             print(f"Audit logging failed: {e}")
 
     def _cancel(self):

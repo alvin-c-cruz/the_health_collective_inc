@@ -1,24 +1,37 @@
-from flask import Blueprint, render_template, render_template_string, request, redirect, url_for, flash, Response, send_file, current_app
-import os
 import json
-import openpyxl
+import os
 from io import BytesIO
-from werkzeug.utils import secure_filename
+
+import openpyxl
+from flask import (
+    Blueprint,
+    Response,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    render_template_string,
+    request,
+    send_file,
+    url_for,
+)
+from flask_login import current_user
 from sqlalchemy.exc import IntegrityError
+from werkzeug.utils import secure_filename
+
+from application.blueprints.audit.utils import (
+    log_create,
+    log_delete,
+    model_to_dict,
+)
+from application.blueprints.user import login_required, roles_accepted
+from application.extensions import db
+
+from . import app_label, app_name
+from .forms import Form
 from .models import Customer as Obj
 from .models import ObjAdmin as Approver
 from .models import ObjUser as Preparer
-from .forms import Form
-from application.extensions import db
-from application.blueprints.user import login_required, roles_accepted
-from flask_login import current_user
-from application.blueprints.audit.utils import (
-    log_create, log_update, log_delete,
-    model_to_dict, get_record_identifier
-)
-
-from . import app_name, app_label
-
 
 bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_name}")
 ROLES_ACCEPTED = app_label
@@ -30,9 +43,7 @@ ROLES_ACCEPTED = app_label
 def home():
     rows = Obj.query.order_by(getattr(Obj, f"{app_name}_name")).all()
 
-    context = {
-        "rows": rows
-    }
+    context = {"rows": rows}
 
     return render_template(f"{app_name}/home.html", **context)
 
@@ -41,7 +52,7 @@ def home():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def add():
-    popup = request.args.get('popup') == '1'
+    popup = request.args.get("popup") == "1"
     if request.method == "POST":
         form = Form()
         form._post(request.form, current_user.id)
@@ -51,17 +62,17 @@ def add():
             if popup:
                 return render_template_string(
                     '<!doctype html><html><head><meta charset="utf-8"></head><body>'
-                    '<script>'
-                    'if(window.opener){'
+                    "<script>"
+                    "if(window.opener){"
                     'window.opener.postMessage({type:"customer_added",customer_name:{{ name | tojson }}},"*");'
-                    '}'
-                    'window.close();'
-                    '</script>'
+                    "}"
+                    "window.close();"
+                    "</script>"
                     '<p style="font-family:sans-serif;padding:2rem;">Patient saved. This window will close automatically.</p>'
-                    '</body></html>',
-                    name=form.get_formatted_name()
+                    "</body></html>",
+                    name=form.get_formatted_name(),
                 )
-            return redirect(url_for(f'{app_name}.home'))
+            return redirect(url_for(f"{app_name}.home"))
     else:
         form = Form()
 
@@ -77,6 +88,7 @@ def add():
 @login_required
 def quick_add():
     from flask import jsonify
+
     form = Form()
     form._post(request.form, current_user.id)
     if form._validate_on_submit():
@@ -85,17 +97,17 @@ def quick_add():
     return jsonify({"success": False, "errors": form.errors}), 400
 
 
-@bp.route(f"/edit/<int:record_id>", methods=["POST", "GET"])
+@bp.route("/edit/<int:record_id>", methods=["POST", "GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
-def edit(record_id):   
+def edit(record_id):
     if request.method == "POST":
         form = Form()
         form._post(request.form, current_user.id)
 
         if form._validate_on_submit():
             form._save()
-            return redirect(url_for(f'{app_name}.home'))
+            return redirect(url_for(f"{app_name}.home"))
 
     else:
         obj = Obj.query.get(record_id)
@@ -117,23 +129,34 @@ def delete(record_id):
     preparer = obj.preparer
 
     # Capture values before deletion
-    old_values = model_to_dict(obj, [
-        'last_name', 'first_name', 'middle_name', 'birthday', 'sex_id',
-        'tin', 'address', 'business_style', 'salesman'
-    ])
+    old_values = model_to_dict(
+        obj,
+        [
+            "last_name",
+            "first_name",
+            "middle_name",
+            "birthday",
+            "sex_id",
+            "tin",
+            "address",
+            "business_style",
+            "salesman",
+        ],
+    )
     record_id_for_log = obj.id
     identifier = str(obj)
 
     try:
-        if preparer:  db.session.delete(preparer)
+        if preparer:
+            db.session.delete(preparer)
         db.session.delete(obj)
 
         # Log deletion before commit
         log_delete(
-            module='customer',
+            module="customer",
             record_id=record_id_for_log,
             record_identifier=identifier,
-            old_values=old_values
+            old_values=old_values,
         )
 
         db.session.commit()
@@ -142,41 +165,38 @@ def delete(record_id):
         db.session.rollback()
         flash(f"Cannot delete {obj} because it has related records.", category="error")
 
-    return redirect(url_for(f'{app_name}.home'))
+    return redirect(url_for(f"{app_name}.home"))
 
 
-@bp.route("/approve/<int:record_id>", methods=['GET'])
+@bp.route("/approve/<int:record_id>", methods=["GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def approve(record_id):
     if not current_user.admin:
         flash("Administrator rights required.", category="error")
         return redirect(url_for(f"{app_name}.home"))
-    
+
     obj = Obj.query.get_or_404(record_id)
 
-    data = {
-        f"{app_name}_id": record_id,
-        "user_id": current_user.id
-    }
+    data = {f"{app_name}_id": record_id, "user_id": current_user.id}
 
     approve = Approver(**data)
 
     db.session.add(approve)
     db.session.commit()
 
-    flash(f"Approved: {getattr(obj, f"{app_name}_name")}", category="success")
-    return redirect(url_for(f"{app_name}.home"))   
-    
+    flash(f"Approved: {getattr(obj, f'{app_name}_name')}", category="success")
+    return redirect(url_for(f"{app_name}.home"))
 
-@bp.route("/unlock/<int:record_id>", methods=['GET'])
+
+@bp.route("/unlock/<int:record_id>", methods=["GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def unlock(record_id):
     if not current_user.admin:
         flash("Administrator rights required.", category="error")
         return redirect(url_for(f"{app_name}.home"))
-    
+
     obj = Obj.query.get_or_404(record_id)
 
     data = {
@@ -184,20 +204,25 @@ def unlock(record_id):
     }
 
     approve = Approver.query.filter_by(**data).first()
-    
+
     db.session.delete(approve)
     db.session.commit()
 
-    flash(f"Unlocked: {getattr(obj, f"{app_name}_name")}", category="error")
-    return redirect(url_for(f"{app_name}.home"))   
-    
+    flash(f"Unlocked: {getattr(obj, f'{app_name}_name')}", category="error")
+    return redirect(url_for(f"{app_name}.home"))
 
-@bp.route("/autocomplete", methods=['GET'])
+
+@bp.route("/autocomplete", methods=["GET"])
 @login_required
 def _autocomplete():
     # Return patient names in format: Last Name, First Name Middle Name
-    options = [str(i) for i in Obj.query.order_by(Obj.last_name, Obj.first_name, Obj.middle_name).all()]
-    return Response(json.dumps(options), mimetype='application/json')
+    options = [
+        str(i)
+        for i in Obj.query.order_by(
+            Obj.last_name, Obj.first_name, Obj.middle_name
+        ).all()
+    ]
+    return Response(json.dumps(options), mimetype="application/json")
 
 
 @bp.route("/upload", methods=["POST"])
@@ -226,17 +251,31 @@ def upload():
 
         imported = 0
         skipped = 0
-        
+
         title = sheet.title
         cell_customer_name = sheet["A1"].value
         cell_tin = sheet["B1"].value
-        cell_address = sheet["C1"].value        
-        cell_business_style = sheet["D1"].value        
-        cell_salesman = sheet["E1"].value  
-              
-        checker = (title, cell_customer_name, cell_tin, cell_address, cell_business_style, cell_salesman)
-    
-        if checker == ("Customers", "Customer Name", "TIN", "Address", "Business Style", "Salesman"):
+        cell_address = sheet["C1"].value
+        cell_business_style = sheet["D1"].value
+        cell_salesman = sheet["E1"].value
+
+        checker = (
+            title,
+            cell_customer_name,
+            cell_tin,
+            cell_address,
+            cell_business_style,
+            cell_salesman,
+        )
+
+        if checker == (
+            "Customers",
+            "Customer Name",
+            "TIN",
+            "Address",
+            "Business Style",
+            "Salesman",
+        ):
             for row in sheet.iter_rows(min_row=2, values_only=True):
                 customer_name, tin, address, business_style, salesman = row[:5]
 
@@ -244,8 +283,7 @@ def upload():
                     continue
 
                 existing = Obj.query.filter(
-                    (Obj.customer_name == str(customer_name)) |
-                    (Obj.tin == str(tin))
+                    (Obj.customer_name == str(customer_name)) | (Obj.tin == str(tin))
                 ).first()
 
                 if existing:
@@ -257,7 +295,7 @@ def upload():
                     tin=str(tin or "").upper(),
                     address=str(address or "").upper(),
                     business_style=str(business_style or "").upper(),
-                    salesman=str(salesman or "").upper()
+                    salesman=str(salesman or "").upper(),
                 )
 
                 db.session.add(customer)
@@ -265,32 +303,42 @@ def upload():
 
                 # Log creation after flush to get ID
                 log_create(
-                    module='customer',
+                    module="customer",
                     record_id=customer.id,
                     record_identifier=str(customer),
-                    new_values=model_to_dict(customer, [
-                        '_customer_name', 'tin', 'address', 'business_style', 'salesman'
-                    ]),
-                    notes='Customer imported from Excel'
+                    new_values=model_to_dict(
+                        customer,
+                        [
+                            "_customer_name",
+                            "tin",
+                            "address",
+                            "business_style",
+                            "salesman",
+                        ],
+                    ),
+                    notes="Customer imported from Excel",
                 )
 
                 db.session.commit()
 
                 preparer_data = {
                     f"{app_name}_id": customer.id,
-                    "user_id": current_user.id
+                    "user_id": current_user.id,
                 }
                 preparer = Preparer(**preparer_data)
                 db.session.add(preparer)
                 db.session.commit()
 
                 imported += 1
-            flash(f"{imported} record(s) imported successfully. {skipped} skipped due to duplicates.", "success")
+            flash(
+                f"{imported} record(s) imported successfully. {skipped} skipped due to duplicates.",
+                "success",
+            )
         else:
-            flash(f"Error processing file: Invalid format.", "danger")
+            flash("Error processing file: Invalid format.", "danger")
 
     except Exception as e:
-        flash(f"Error processing file: {str(e)}", "danger")
+        flash(f"Error processing file: {e!s}", "danger")
 
     return redirect(url_for(f"{app_name}.home"))
 
@@ -315,5 +363,5 @@ def download_template():
         file_stream,
         as_attachment=True,
         download_name="customer.xlsx",
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )

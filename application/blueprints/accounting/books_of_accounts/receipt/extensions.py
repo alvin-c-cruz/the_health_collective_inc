@@ -1,53 +1,48 @@
 import os
-from flask import g
-from pandas import DataFrame, concat
-import numpy as np
-from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment
-from openpyxl.styles.borders import Border, Side
-from datetime import datetime
-
-from .models import Receipt, ReceiptDetail
-from .... register.customer import Customer  # adjust path as needed
 from collections import defaultdict
+from datetime import datetime
 from decimal import Decimal
+
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font
+from openpyxl.styles.borders import Border, Side
 from openpyxl.utils import get_column_letter
 
 # from .. account_type import AccountType
-from ... account import Account
+from . import app_label, app_name
 
-from . import app_name, app_label
+thin_border = Border(
+    left=Side(style="thin"),
+    right=Side(style="thin"),
+    top=Side(style="thin"),
+    bottom=Side(style="thin"),
+)
 
-thin_border = Border(left=Side(style='thin'),
-                     right=Side(style='thin'),
-                     top=Side(style='thin'),
-                     bottom=Side(style='thin'))
-
-double_rule_border = Border(bottom=Side(style='double'))
+double_rule_border = Border(bottom=Side(style="double"))
 
 ALIGNMENT = {
-                "Date": Alignment(horizontal="center", vertical="top"),
-                "Receipt No.": Alignment(horizontal="center", vertical="top"),
-                "Invoice No.": Alignment(horizontal="center", vertical="top"),
-                "Customer": Alignment(horizontal="left", vertical="top", wrap_text=True),
-                "Particulars": Alignment(horizontal="left", vertical="top", wrap_text=True),
-            }
+    "Date": Alignment(horizontal="center", vertical="top"),
+    "Receipt No.": Alignment(horizontal="center", vertical="top"),
+    "Invoice No.": Alignment(horizontal="center", vertical="top"),
+    "Customer": Alignment(horizontal="left", vertical="top", wrap_text=True),
+    "Particulars": Alignment(horizontal="left", vertical="top", wrap_text=True),
+}
 
 NUMBER_FORMAT = {
-                "Date": "yyyy-mmm-dd",
-                "Receipt No.": "General",
-                "Invoice No.": "General",
-                "Customer": "General",
-                "Particulars": "General",
-            }
+    "Date": "yyyy-mmm-dd",
+    "Receipt No.": "General",
+    "Invoice No.": "General",
+    "Customer": "General",
+    "Particulars": "General",
+}
 
 COLUMN_WIDTH = {
-                "Date": 12,
-                "Receipt No.": 10,
-                "Invoice No.": 12,
-                "Customer": 20,
-                "Particulars": 25,
-            }
+    "Date": 12,
+    "Receipt No.": 10,
+    "Invoice No.": 12,
+    "Customer": 20,
+    "Particulars": 25,
+}
 
 
 def create_journal(data, app, date_from, date_to):
@@ -77,7 +72,7 @@ def WriteData(wb, data, date_from, date_to):
     ws.append([f"{app_label.upper()} JOURNAL"])
     ws.append([f"From {date_from} to {date_to}"])
     ws.append([])
-    
+
     ws["A1"].font = Font(bold=True, size=16)
     ws["A2"].font = Font(bold=True)
 
@@ -89,13 +84,21 @@ def WriteData(wb, data, date_from, date_to):
                 account_names.add(detail.account.account_title)
 
     account_names = sorted(account_names)  # keep columns in order
-    header = ["Date", "Receipt No.", "Invoice No.", "Customer", "Particulars"] + account_names
+    header = [
+        "Date",
+        "Receipt No.",
+        "Invoice No.",
+        "Customer",
+        "Particulars",
+    ] + account_names
     ws.append(header)
 
     # Style header row
     for cell in ws[ws.max_row]:
         cell.font = Font(bold=True)
-        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.alignment = Alignment(
+            horizontal="center", vertical="center", wrap_text=True
+        )
         cell.border = thin_border
 
     totals = defaultdict(Decimal)
@@ -124,11 +127,13 @@ def WriteData(wb, data, date_from, date_to):
         for detail in record.receipt_details:
             name = detail.account.account_title if detail.account else ""
             if not record.cancelled:
-                row_data[name] += Decimal(detail.debit or 0) - Decimal(detail.credit or 0)
+                row_data[name] += Decimal(detail.debit or 0) - Decimal(
+                    detail.credit or 0
+                )
                 totals[name] += Decimal(detail.debit or 0) - Decimal(detail.credit or 0)
             else:
                 row_data[name] += 0
-                totals[name] += 0                
+                totals[name] += 0
 
         # Prepare the row
         row = [
@@ -157,7 +162,7 @@ def WriteData(wb, data, date_from, date_to):
             else:
                 cell.alignment = Alignment(horizontal="right", vertical="top")
             if isinstance(cell.value, (int, float, Decimal)):
-                cell.number_format = '#,##0.00_ ;(#,##0.00)'
+                cell.number_format = "#,##0.00_ ;(#,##0.00)"
 
     # --- Append Totals ---
     # Determine row bounds for data
@@ -178,14 +183,14 @@ def WriteData(wb, data, date_from, date_to):
         cell.border = double_rule_border
         cell.font = Font(bold=True)
         cell.alignment = Alignment(horizontal="right", vertical="top")
-        cell.number_format = '#,##0.00_ ;(#,##0.00)'
+        cell.number_format = "#,##0.00_ ;(#,##0.00)"
 
     for cell in ws[ws.max_row]:
         cell.border = double_rule_border
         cell.font = Font(bold=True)
         cell.alignment = Alignment(horizontal="right", vertical="top")
         if isinstance(cell.value, (int, float, Decimal)):
-            cell.number_format = '#,##0.00_ ;(#,##0.00)'
+            cell.number_format = "#,##0.00_ ;(#,##0.00)"
 
     # --- Set column widths ---
     col_widths = {
@@ -199,4 +204,3 @@ def WriteData(wb, data, date_from, date_to):
     for i, col_name in enumerate(header, start=1):
         width = col_widths.get(col_name, 15)
         ws.column_dimensions[get_column_letter(i)].width = width
-    

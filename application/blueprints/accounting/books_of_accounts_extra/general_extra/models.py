@@ -1,7 +1,9 @@
-from application.extensions import db, short_date, long_date
+from application.extensions import db, long_date, short_date
+
+from . import app_name
 from .admin_models import AdminGeneralExtra as ObjAdmin
 from .admin_models import UserGeneralExtra as ObjUser
-from . import app_name
+
 
 class GeneralExtra(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -19,12 +21,16 @@ class GeneralExtra(db.Model):
 
     @property
     def preparer(self):
-        obj = ObjUser.query.filter(getattr(ObjUser,f"{app_name}_id")==self.id).first()
+        obj = ObjUser.query.filter(
+            getattr(ObjUser, f"{app_name}_id") == self.id
+        ).first()
         return obj
-    
+
     @property
     def approved(self):
-        obj = ObjAdmin.query.filter(getattr(ObjAdmin,f"{app_name}_id")==self.id).first()
+        obj = ObjAdmin.query.filter(
+            getattr(ObjAdmin, f"{app_name}_id") == self.id
+        ).first()
         return obj
 
     @property
@@ -42,7 +48,7 @@ class GeneralExtra(db.Model):
     @property
     def formatted_cancelled(self):
         return short_date(self.cancelled) if self.cancelled else None
-    
+
     def is_submitted(self):
         return True if self.submitted else False
 
@@ -50,11 +56,15 @@ class GeneralExtra(db.Model):
 class GeneralExtraDetail(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
-    general_extra_id = db.Column(db.Integer, db.ForeignKey('general_extra.id'), nullable=False)
-    general_extra = db.relationship('GeneralExtra', backref='general_extra_details', lazy=True)
+    general_extra_id = db.Column(
+        db.Integer, db.ForeignKey("general_extra.id"), nullable=False
+    )
+    general_extra = db.relationship(
+        "GeneralExtra", backref="general_extra_details", lazy=True
+    )
 
-    account_id = db.Column(db.Integer, db.ForeignKey('account.id'), nullable=False)
-    account = db.relationship('Account', backref='general_extra_details', lazy=True)
+    account_id = db.Column(db.Integer, db.ForeignKey("account.id"), nullable=False)
+    account = db.relationship("Account", backref="general_extra_details", lazy=True)
 
     debit = db.Column(db.Float, default=0)
     credit = db.Column(db.Float, default=0)
@@ -63,8 +73,8 @@ class GeneralExtraDetail(db.Model):
 
     @property
     def formatted_debit(self):
-        return '{:,.2f}'.format(self.debit)
+        return f"{self.debit:,.2f}"
 
     @property
     def formatted_credit(self):
-        return '{:,.2f}'.format(self.credit)
+        return f"{self.credit:,.2f}"

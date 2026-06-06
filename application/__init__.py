@@ -1,45 +1,47 @@
-from flask import Flask, request, redirect, url_for, abort, g, render_template, session
+import os
+from datetime import timedelta
+from http import HTTPStatus
+from pathlib import Path
+
+from flask import Flask, abort, g, redirect, render_template, request, session, url_for
 from flask_login import current_user
 
-import os
-from pathlib import Path
-from http import HTTPStatus
-from datetime import timedelta
-
-from . extensions import db, bcrypt, mail, migrate, login_manager
-from . blueprints.user import User
 from . import blueprints
-from . utils.version import get_version
+from .blueprints.user import User
+from .extensions import bcrypt, db, login_manager, mail, migrate
+from .utils.version import get_version
 
 
 def create_app(test=False):
     app = Flask(__name__, instance_relative_config=True)
 
     # Check if running in test mode via environment variable
-    is_testing = test or os.environ.get('TESTING') == '1'
+    is_testing = test or os.environ.get("TESTING") == "1"
 
     if is_testing:
         # Use test configuration if available, otherwise load production and override
         try:
-            app.config.from_pyfile('test_config.py')
+            app.config.from_pyfile("test_config.py")
         except FileNotFoundError:
-            app.config.from_pyfile('config.py')
+            app.config.from_pyfile("config.py")
             # Override with test database from environment if set
-            if 'SQLALCHEMY_DATABASE_URI' in os.environ:
-                app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['SQLALCHEMY_DATABASE_URI']
+            if "SQLALCHEMY_DATABASE_URI" in os.environ:
+                app.config["SQLALCHEMY_DATABASE_URI"] = os.environ[
+                    "SQLALCHEMY_DATABASE_URI"
+                ]
     else:
-        app.config.from_pyfile('config.py')
+        app.config.from_pyfile("config.py")
 
-    app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
+    app.config["REMEMBER_COOKIE_DURATION"] = timedelta(days=30)
 
     instance_path = Path(app.instance_path)
     parent_directory = Path(instance_path.parent)
     if not parent_directory.is_dir():
         parent_directory.mkdir()
-    
+
     if not instance_path.is_dir():
         instance_path.mkdir()
-    
+
     login_manager.init_app(app)
 
     @login_manager.user_loader
@@ -48,32 +50,34 @@ def create_app(test=False):
 
     @login_manager.unauthorized_handler
     def unauthorized():
-        if request.blueprint == 'api':
+        if request.blueprint == "api":
             abort(HTTPStatus.UNAUTHORIZED)
         # Check maintenance mode before redirecting to login
-        if app.config.get('MAINTENANCE_MODE', False):
-            return redirect(url_for('maintenance'))
-        return redirect(url_for('user.login'))
+        if app.config.get("MAINTENANCE_MODE", False):
+            return redirect(url_for("maintenance"))
+        return redirect(url_for("user.login"))
 
     # Maintenance page route
-    @app.route('/maintenance')
+    @app.route("/maintenance")
     def maintenance():
         """Show maintenance page"""
-        return render_template('maintenance.html'), 503
+        return render_template("maintenance.html"), 503
 
     # Maintenance mode check
     @app.before_request
     def check_maintenance_mode():
         # Skip maintenance check for maintenance page itself, static files, and login
-        allowed_endpoints = ['maintenance', 'user.login', 'static']
+        allowed_endpoints = ["maintenance", "user.login", "static"]
         if request.endpoint:
-            if request.endpoint == 'maintenance' or request.endpoint.startswith('static'):
+            if request.endpoint == "maintenance" or request.endpoint.startswith(
+                "static"
+            ):
                 return None
-            if request.endpoint == 'user.login':
+            if request.endpoint == "user.login":
                 return None
 
         # Check if maintenance mode is enabled
-        if app.config.get('MAINTENANCE_MODE', False):
+        if app.config.get("MAINTENANCE_MODE", False):
             # Check if user is a superuser using Flask-Login's current_user
             if current_user.is_authenticated:
                 # Get user from database to check superuser status
@@ -82,24 +86,24 @@ def create_app(test=False):
                     return None  # Superuser can access the site
 
             # Redirect everyone else to maintenance page
-            return redirect(url_for('maintenance'))
+            return redirect(url_for("maintenance"))
 
         return None
 
     # Register Blueprints
     modules = [
-        getattr(blueprints, module) 
-        for module in dir(blueprints) if hasattr(getattr(blueprints, module),"bp")
-        ]
+        getattr(blueprints, module)
+        for module in dir(blueprints)
+        if hasattr(getattr(blueprints, module), "bp")
+    ]
 
     menu_list = []
     for module in modules:
-        app.register_blueprint(getattr(module, "bp"))
+        app.register_blueprint(module.bp)
         if hasattr(module, "menu_label"):
-            menu_list.append(getattr(module, "menu_label"))
-        
+            menu_list.append(module.menu_label)
 
-    app.config['MENUS'] = menu_list
+    app.config["MENUS"] = menu_list
 
     # Initialize the database
     bcrypt.init_app(app)
@@ -109,20 +113,20 @@ def create_app(test=False):
 
     # Sync roles from registered modules on every startup
     # Skip during testing as tables may not exist yet
-    if not os.environ.get('TESTING'):
+    if not os.environ.get("TESTING"):
         with app.app_context():
             from .blueprints.user.views import check_roles
+
             check_roles()
 
     # Register CSV Import blueprint
     from .blueprints.operations.daily_sales.csv_import_views import csv_import_bp
+
     app.register_blueprint(csv_import_bp)
 
     # Make version available to all templates
     @app.context_processor
     def inject_version():
-        return {
-            'app_version': get_version()
-        }
+        return {"app_version": get_version()}
 
     return app

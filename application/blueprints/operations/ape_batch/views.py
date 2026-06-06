@@ -1,22 +1,23 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user
-
-from application.extensions import db, ph_today
-from application.blueprints.user import login_required, roles_accepted
-from .models import ApeBatch
-from ..daily_sales.models import Transaction
-from ...register.company.models import Company
 
 # Centralized audit logging
 from application.blueprints.audit.utils import (
-    log_create, log_update, log_delete,
-    model_to_dict, get_record_identifier
+    log_create,
+    log_delete,
+    log_update,
+    model_to_dict,
 )
+from application.blueprints.user import login_required, roles_accepted
+from application.extensions import db, ph_today
 
-from . import app_name, app_label
+from ...register.company.models import Company
+from ..daily_sales.models import Transaction
+from . import app_label, app_name
+from .models import ApeBatch
 
 bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_name}")
-ROLES_ACCEPTED = [app_label, 'Daily Sales']
+ROLES_ACCEPTED = [app_label, "Daily Sales"]
 
 
 @bp.route("/")
@@ -31,7 +32,9 @@ def home():
 @login_required
 @roles_accepted(ROLES_ACCEPTED)
 def new_batch():
-    companies = Company.query.filter_by(active=True).order_by(Company.company_name).all()
+    companies = (
+        Company.query.filter_by(active=True).order_by(Company.company_name).all()
+    )
 
     if request.method == "POST":
         f = request.form
@@ -64,14 +67,23 @@ def new_batch():
             # Log APE batch creation
             try:
                 log_create(
-                    module='ape_batch',
+                    module="ape_batch",
                     record_id=batch.id,
                     record_identifier=str(batch),
-                    new_values=model_to_dict(batch, [
-                        'company_id', 'batch_date', 'loa_soa_number', 'reference_number',
-                        'package_amount', 'notes', 'created_by', 'created_at'
-                    ]),
-                    notes='APE batch created'
+                    new_values=model_to_dict(
+                        batch,
+                        [
+                            "company_id",
+                            "batch_date",
+                            "loa_soa_number",
+                            "reference_number",
+                            "package_amount",
+                            "notes",
+                            "created_by",
+                            "created_at",
+                        ],
+                    ),
+                    notes="APE batch created",
                 )
             except Exception as e:
                 # Don't break the operation if audit logging fails
@@ -81,7 +93,9 @@ def new_batch():
             flash("APE Batch created.", "success")
             return redirect(url_for(f"{app_name}.view_batch", batch_id=batch.id))
 
-    return render_template(f"{app_name}/form.html", companies=companies, today=str(ph_today()))
+    return render_template(
+        f"{app_name}/form.html", companies=companies, today=str(ph_today())
+    )
 
 
 @bp.route("/<int:batch_id>")
@@ -90,7 +104,9 @@ def new_batch():
 def view_batch(batch_id):
     batch = ApeBatch.query.get_or_404(batch_id)
     transactions = Transaction.query.filter_by(ape_batch_id=batch_id).all()
-    return render_template(f"{app_name}/view.html", batch=batch, transactions=transactions)
+    return render_template(
+        f"{app_name}/view.html", batch=batch, transactions=transactions
+    )
 
 
 @bp.route("/<int:batch_id>/edit", methods=["GET", "POST"])
@@ -98,14 +114,23 @@ def view_batch(batch_id):
 @roles_accepted(ROLES_ACCEPTED)
 def edit_batch(batch_id):
     batch = ApeBatch.query.get_or_404(batch_id)
-    companies = Company.query.filter_by(active=True).order_by(Company.company_name).all()
+    companies = (
+        Company.query.filter_by(active=True).order_by(Company.company_name).all()
+    )
 
     if request.method == "POST":
         # Capture old values before update
-        old_values = model_to_dict(batch, [
-            'company_id', 'batch_date', 'loa_soa_number', 'reference_number',
-            'package_amount', 'notes'
-        ])
+        old_values = model_to_dict(
+            batch,
+            [
+                "company_id",
+                "batch_date",
+                "loa_soa_number",
+                "reference_number",
+                "package_amount",
+                "notes",
+            ],
+        )
 
         f = request.form
         batch.company_id = f.get("company_id", type=int)
@@ -119,20 +144,27 @@ def edit_batch(batch_id):
         batch.notes = (f.get("notes") or "").strip()
 
         # Capture new values after update
-        new_values = model_to_dict(batch, [
-            'company_id', 'batch_date', 'loa_soa_number', 'reference_number',
-            'package_amount', 'notes'
-        ])
+        new_values = model_to_dict(
+            batch,
+            [
+                "company_id",
+                "batch_date",
+                "loa_soa_number",
+                "reference_number",
+                "package_amount",
+                "notes",
+            ],
+        )
 
         # Log APE batch update
         try:
             log_update(
-                module='ape_batch',
+                module="ape_batch",
                 record_id=batch.id,
                 record_identifier=str(batch),
                 old_values=old_values,
                 new_values=new_values,
-                notes='APE batch updated'
+                notes="APE batch updated",
             )
         except Exception as e:
             # Don't break the operation if audit logging fails
@@ -142,7 +174,12 @@ def edit_batch(batch_id):
         flash("APE Batch updated.", "success")
         return redirect(url_for(f"{app_name}.view_batch", batch_id=batch.id))
 
-    return render_template(f"{app_name}/form.html", batch=batch, companies=companies, today=batch.batch_date)
+    return render_template(
+        f"{app_name}/form.html",
+        batch=batch,
+        companies=companies,
+        today=batch.batch_date,
+    )
 
 
 @bp.route("/<int:batch_id>/delete", methods=["POST"])
@@ -155,10 +192,18 @@ def delete_batch(batch_id):
         return redirect(url_for(f"{app_name}.view_batch", batch_id=batch_id))
 
     # Capture values before delete
-    old_values = model_to_dict(batch, [
-        'company_id', 'batch_date', 'loa_soa_number',
-        'package_amount', 'notes', 'created_by', 'created_at'
-    ])
+    old_values = model_to_dict(
+        batch,
+        [
+            "company_id",
+            "batch_date",
+            "loa_soa_number",
+            "package_amount",
+            "notes",
+            "created_by",
+            "created_at",
+        ],
+    )
     batch_identifier = str(batch)
 
     db.session.delete(batch)
@@ -166,11 +211,11 @@ def delete_batch(batch_id):
     # Log APE batch deletion
     try:
         log_delete(
-            module='ape_batch',
+            module="ape_batch",
             record_id=batch_id,
             record_identifier=batch_identifier,
             old_values=old_values,
-            notes='APE batch deleted'
+            notes="APE batch deleted",
         )
     except Exception as e:
         # Don't break the operation if audit logging fails
@@ -186,8 +231,14 @@ def delete_batch(batch_id):
 @roles_accepted(ROLES_ACCEPTED)
 def soa(batch_id):
     batch = ApeBatch.query.get_or_404(batch_id)
-    transactions = Transaction.query.filter_by(ape_batch_id=batch_id).order_by(Transaction.record_date).all()
-    return render_template(f"{app_name}/soa.html", batch=batch, transactions=transactions)
+    transactions = (
+        Transaction.query.filter_by(ape_batch_id=batch_id)
+        .order_by(Transaction.record_date)
+        .all()
+    )
+    return render_template(
+        f"{app_name}/soa.html", batch=batch, transactions=transactions
+    )
 
 
 @bp.route("/guide")
@@ -202,10 +253,12 @@ def guide():
 @login_required
 def batch_info(batch_id):
     batch = ApeBatch.query.get_or_404(batch_id)
-    return jsonify({
-        "id": batch.id,
-        "company": batch.company.company_name,
-        "batch_date": batch.batch_date,
-        "loa_soa_number": batch.loa_soa_number,
-        "package_amount": batch.package_amount,
-    })
+    return jsonify(
+        {
+            "id": batch.id,
+            "company": batch.company.company_name,
+            "batch_date": batch.batch_date,
+            "loa_soa_number": batch.loa_soa_number,
+            "package_amount": batch.package_amount,
+        }
+    )

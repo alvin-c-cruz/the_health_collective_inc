@@ -12,11 +12,12 @@ Issue: Approved transactions not appearing in deposits/collections
 See: docs/the_health_collective_inc/PREVENTING_DUAL_SYSTEM_CONFLICTS.md
 """
 
-from datetime import datetime
 import logging
+from datetime import datetime
+
+from application.extensions import db
 
 from .admin_models import AdminTransaction
-from application.extensions import db
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,9 @@ def approve_transaction_both_systems(transaction, user_id):
         >>>     db.session.commit()
     """
     # Check if already approved (either system)
-    existing_admin = AdminTransaction.query.filter_by(transaction_id=transaction.id).first()
+    existing_admin = AdminTransaction.query.filter_by(
+        transaction_id=transaction.id
+    ).first()
     if existing_admin:
         logger.warning(
             f"Transaction {transaction.id} already has AdminTransaction record"
@@ -50,9 +53,7 @@ def approve_transaction_both_systems(transaction, user_id):
         return False
 
     if transaction.approved_at:
-        logger.warning(
-            f"Transaction {transaction.id} already has approved_at set"
-        )
+        logger.warning(f"Transaction {transaction.id} already has approved_at set")
         return False
 
     # Update BOTH systems atomically
@@ -66,7 +67,7 @@ def approve_transaction_both_systems(transaction, user_id):
     # 2. New workflow system
     transaction.approved_at = datetime.utcnow()
     transaction.approved_by_id = user_id
-    transaction.status = 'posted'  # Approved transactions are posted
+    transaction.status = "posted"  # Approved transactions are posted
 
     logger.info(
         f"Transaction {transaction.id} approved by user {user_id} in both systems"
@@ -93,12 +94,12 @@ def unapprove_transaction_both_systems(transaction):
         >>>     db.session.commit()
     """
     # Check if approved
-    existing_admin = AdminTransaction.query.filter_by(transaction_id=transaction.id).first()
+    existing_admin = AdminTransaction.query.filter_by(
+        transaction_id=transaction.id
+    ).first()
 
     if not existing_admin and not transaction.approved_at:
-        logger.warning(
-            f"Transaction {transaction.id} is not approved in either system"
-        )
+        logger.warning(f"Transaction {transaction.id} is not approved in either system")
         return False
 
     # Detect mismatch before clearing
@@ -117,11 +118,9 @@ def unapprove_transaction_both_systems(transaction):
     # 2. New workflow system
     transaction.approved_at = None
     transaction.approved_by_id = None
-    transaction.status = 'draft'  # Return to draft status
+    transaction.status = "draft"  # Return to draft status
 
-    logger.info(
-        f"Transaction {transaction.id} approval removed from both systems"
-    )
+    logger.info(f"Transaction {transaction.id} approval removed from both systems")
 
     return True
 
@@ -143,9 +142,10 @@ def is_transaction_approved(transaction):
         >>> if is_transaction_approved(txn):
         >>>     print("Transaction is approved")
     """
-    legacy_approved = AdminTransaction.query.filter_by(
-        transaction_id=transaction.id
-    ).first() is not None
+    legacy_approved = (
+        AdminTransaction.query.filter_by(transaction_id=transaction.id).first()
+        is not None
+    )
 
     new_approved = transaction.approved_at is not None
 
@@ -181,6 +181,7 @@ def get_approved_by_user(transaction):
     # Try new workflow first
     if transaction.approved_by_id:
         from application.blueprints.user.models import User
+
         return User.query.get(transaction.approved_by_id)
 
     # Fall back to legacy system
@@ -190,6 +191,7 @@ def get_approved_by_user(transaction):
 
     if admin_record:
         from application.blueprints.user.models import User
+
         logger.warning(
             f"Transaction {transaction.id} using legacy approval user. "
             f"Consider running migration."
@@ -222,9 +224,7 @@ def sync_check_all_transactions():
     admin_ids = {admin.transaction_id for admin in admin_txns}
 
     # Get all transactions with approved_at set
-    approved_txns = Transaction.query.filter(
-        Transaction.approved_at.isnot(None)
-    ).all()
+    approved_txns = Transaction.query.filter(Transaction.approved_at.isnot(None)).all()
     approved_ids = {txn.id for txn in approved_txns}
 
     # Find mismatches

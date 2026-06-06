@@ -4,9 +4,10 @@ Functional tests for daily_sales home view.
 This test reproduces the NameError bug where 'transactions' is referenced
 but 'all_transactions' is the actual variable name.
 """
-import pytest
+
 from datetime import date
-from application.blueprints.operations.daily_sales.models import Transaction
+
+import pytest
 
 
 @pytest.mark.functional
@@ -24,15 +25,21 @@ def test_daily_sales_home_route_loads_without_error(client, db):
     today = date.today()
 
     # Act: Make GET request to daily sales home page with date parameter
-    response = client.get(f'/daily_sales/?date={today}')
+    response = client.get(f"/daily_sales/?date={today}")
 
     # Assert: Should return 200 OK or 302 redirect (for login) - most importantly NO NameError!
     # The bug was a NameError that would result in status code 500
-    assert response.status_code in [200, 302], f"Expected 200 or 302 but got {response.status_code}"
+    assert response.status_code in [200, 302], (
+        f"Expected 200 or 302 but got {response.status_code}"
+    )
 
     # If it's 200, check content. If 302, that's also success (just means needs auth)
     if response.status_code == 200:
-        assert b'Daily Sales' in response.data or b'daily_sales' in response.data.lower() or b'Transaction' in response.data
+        assert (
+            b"Daily Sales" in response.data
+            or b"daily_sales" in response.data.lower()
+            or b"Transaction" in response.data
+        )
 
 
 @pytest.mark.functional
@@ -41,10 +48,12 @@ def test_daily_sales_home_today_redirect(client, db):
     Test that accessing /daily_sales/ without a date redirects to today's date.
     """
     # Act: Make GET request to daily sales home without date parameter
-    response = client.get('/daily_sales/')
+    response = client.get("/daily_sales/")
 
     # Assert: Should redirect (302) or return 200 OK
-    assert response.status_code in [200, 302], f"Expected 200 or 302 but got {response.status_code}"
+    assert response.status_code in [200, 302], (
+        f"Expected 200 or 302 but got {response.status_code}"
+    )
 
 
 @pytest.mark.functional
@@ -62,38 +71,28 @@ def test_daily_sales_demographics_with_product_types(app, db, client):
     Uses factories to easily create test data.
     """
     from tests.factories import (
-        TransactionFactory,
-        ProductTypeFactory,
         ProductFactory,
+        ProductTypeFactory,
+        TenderFactory,
         TransactionDetailFactory,
+        TransactionFactory,
         TransactionTenderFactory,
-        TenderFactory
     )
 
     with app.app_context():
         # Create product types
-        pt_dialysis = ProductTypeFactory(product_type_name='Dialysis')
-        pt_diagnostic = ProductTypeFactory(product_type_name='Diagnostic')
+        pt_dialysis = ProductTypeFactory(product_type_name="Dialysis")
+        pt_diagnostic = ProductTypeFactory(product_type_name="Diagnostic")
 
         # Create products with specific types
         prod_dialysis = ProductFactory(
-            product_name='Hemodialysis Session',
-            product_type=pt_dialysis
+            product_name="Hemodialysis Session", product_type=pt_dialysis
         )
-        prod_xray = ProductFactory(
-            product_name='X-Ray',
-            product_type=pt_diagnostic
-        )
-        prod_lab = ProductFactory(
-            product_name='Blood Test',
-            product_type=pt_diagnostic
-        )
+        prod_xray = ProductFactory(product_name="X-Ray", product_type=pt_diagnostic)
+        prod_lab = ProductFactory(product_name="Blood Test", product_type=pt_diagnostic)
 
         # Create a transaction
-        transaction = TransactionFactory(
-            record_date='2026-04-08',
-            status='submitted'
-        )
+        transaction = TransactionFactory(record_date="2026-04-08", status="submitted")
 
         # Add billable items
         TransactionDetailFactory(
@@ -101,21 +100,21 @@ def test_daily_sales_demographics_with_product_types(app, db, client):
             product=prod_dialysis,
             amount=5000.00,
             discount=0,
-            billable=True
+            billable=True,
         )
         TransactionDetailFactory(
             transaction=transaction,
             product=prod_xray,
             amount=1500.00,
             discount=0,
-            billable=True
+            billable=True,
         )
         TransactionDetailFactory(
             transaction=transaction,
             product=prod_lab,
             amount=800.00,
             discount=200.00,
-            billable=True
+            billable=True,
         )
 
         # Add non-billable item (should NOT appear in demographics)
@@ -124,24 +123,26 @@ def test_daily_sales_demographics_with_product_types(app, db, client):
             product=prod_lab,
             amount=500.00,
             discount=0,
-            billable=False
+            billable=False,
         )
 
         # Add tender for total
-        tender = TenderFactory(tender_name='Cash')
+        tender = TenderFactory(tender_name="Cash")
         TransactionTenderFactory(
             transaction=transaction,
             tender=tender,
-            amount=7100.00  # 5000 + 1500 + 600 (800-200)
+            amount=7100.00,  # 5000 + 1500 + 600 (800-200)
         )
 
         db.commit()
 
         # Act: Request the daily sales page
-        response = client.get('/daily_sales/?date=2026-04-08')
+        response = client.get("/daily_sales/?date=2026-04-08")
 
         # Assert: Should return 200 or 302 (if auth required)
-        assert response.status_code in [200, 302], f"Expected 200 or 302 but got {response.status_code}"
+        assert response.status_code in [200, 302], (
+            f"Expected 200 or 302 but got {response.status_code}"
+        )
 
         # The key test: AttributeError would cause 500 error, not 200 or 302
         # If the code incorrectly used product_type.type_name instead of
@@ -150,10 +151,12 @@ def test_daily_sales_demographics_with_product_types(app, db, client):
 
         # If we get 200, verify the demographics appear in response
         if response.status_code == 200:
-            response_text = response.data.decode('utf-8')
+            response_text = response.data.decode("utf-8")
 
             # Verify product type names appear (means demographics calculated)
             # Should show: Dialysis: ₱5,000.00  Diagnostic: ₱2,100.00 (1500 + 600)
             # Note: Non-billable ₱500 should NOT be included
-            assert 'Dialysis' in response_text or 'dialysis' in response_text.lower()
-            assert 'Diagnostic' in response_text or 'diagnostic' in response_text.lower()
+            assert "Dialysis" in response_text or "dialysis" in response_text.lower()
+            assert (
+                "Diagnostic" in response_text or "diagnostic" in response_text.lower()
+            )

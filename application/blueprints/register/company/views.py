@@ -1,18 +1,28 @@
-from flask import Blueprint, render_template, render_template_string, request, redirect, url_for, flash, jsonify
+from flask import (
+    Blueprint,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    render_template_string,
+    request,
+    url_for,
+)
 from flask_login import current_user
 from sqlalchemy.exc import IntegrityError
 
-from application.extensions import db
+from application.blueprints.audit.utils import (
+    log_create,
+    log_delete,
+    model_to_dict,
+)
 from application.blueprints.user import login_required, roles_accepted
+from application.extensions import db
+
+from . import app_label, app_name
+from .forms import Form
 from .models import Company as Obj
 from .models import ObjAdmin as Approver
-from .models import ObjUser as Preparer
-from .forms import Form
-from . import app_name, app_label
-from application.blueprints.audit.utils import (
-    log_create, log_update, log_delete,
-    model_to_dict, get_record_identifier
-)
 
 bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_name}")
 ROLES_ACCEPTED = app_label
@@ -30,7 +40,7 @@ def home():
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def add():
-    popup = request.args.get('popup') == '1'
+    popup = request.args.get("popup") == "1"
     if request.method == "POST":
         form = Form()
         form._post(request.form, current_user.id)
@@ -40,13 +50,13 @@ def add():
                 company = Obj.query.get(form.id)
                 return render_template_string(
                     '<!doctype html><html><head><meta charset="utf-8"></head><body>'
-                    '<script>'
-                    'if(window.opener){'
+                    "<script>"
+                    "if(window.opener){"
                     'window.opener.postMessage({type:"company_added",id:{{ id }},company_name:{{ name | tojson }}},"*");'
-                    '}'
-                    'window.close();'
-                    '</script>'
-                    '</body></html>',
+                    "}"
+                    "window.close();"
+                    "</script>"
+                    "</body></html>",
                     id=company.id,
                     name=company.company_name,
                 )
@@ -80,9 +90,17 @@ def delete(record_id):
     obj = Obj.query.get_or_404(record_id)
 
     # Capture values before deletion
-    old_values = model_to_dict(obj, [
-        'company_name', 'contact_person', 'contact_number', 'address', 'tin', 'active'
-    ])
+    old_values = model_to_dict(
+        obj,
+        [
+            "company_name",
+            "contact_person",
+            "contact_number",
+            "address",
+            "tin",
+            "active",
+        ],
+    )
     record_id_for_log = obj.id
     identifier = str(obj)
 
@@ -94,10 +112,10 @@ def delete(record_id):
 
         # Log deletion before commit
         log_delete(
-            module='company',
+            module="company",
             record_id=record_id_for_log,
             record_identifier=identifier,
-            old_values=old_values
+            old_values=old_values,
         )
 
         db.session.commit()
@@ -128,13 +146,21 @@ def quick_add():
 
     # Log creation after flush to get ID
     log_create(
-        module='company',
+        module="company",
         record_id=company.id,
         record_identifier=str(company),
-        new_values=model_to_dict(company, [
-            'company_name', 'contact_person', 'contact_number', 'address', 'tin', 'active'
-        ]),
-        notes='Company quick-added'
+        new_values=model_to_dict(
+            company,
+            [
+                "company_name",
+                "contact_person",
+                "contact_number",
+                "address",
+                "tin",
+                "active",
+            ],
+        ),
+        notes="Company quick-added",
     )
 
     db.session.commit()

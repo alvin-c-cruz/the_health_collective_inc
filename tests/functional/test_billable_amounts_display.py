@@ -6,9 +6,10 @@ excluding non-billable items.
 
 Related to Phase 1 audit bugs #1, #2, #3, #4.
 """
-import pytest
+
 from datetime import date
-import re
+
+import pytest
 
 
 @pytest.mark.functional
@@ -25,71 +26,86 @@ class TestAllTransactionsPage:
         from tests.factories import (
             ProductFactory,
             ProductTypeFactory,
-            create_complete_transaction
+            create_complete_transaction,
         )
 
         with app.app_context():
             # Create products
-            pt = ProductTypeFactory(product_type_name='DIALYSIS')
+            pt = ProductTypeFactory(product_type_name="DIALYSIS")
             db.flush()
 
-            prod_billable = ProductFactory(product_name='HD Session', product_type=pt)
-            prod_nonbillable = ProductFactory(product_name='Medicine', product_type=pt)
+            prod_billable = ProductFactory(product_name="HD Session", product_type=pt)
+            prod_nonbillable = ProductFactory(product_name="Medicine", product_type=pt)
             db.flush()
 
             # Create transaction with mix
             today = date.today()
             transaction = create_complete_transaction(
                 record_date=str(today),
-                status='submitted',
+                status="submitted",
                 details=[
-                    {'product': prod_billable, 'amount': 5000, 'discount': 0, 'billable': True},
-                    {'product': prod_nonbillable, 'amount': 1500, 'discount': 0, 'billable': False},
-                ]
+                    {
+                        "product": prod_billable,
+                        "amount": 5000,
+                        "discount": 0,
+                        "billable": True,
+                    },
+                    {
+                        "product": prod_nonbillable,
+                        "amount": 1500,
+                        "discount": 0,
+                        "billable": False,
+                    },
+                ],
             )
             db.flush()
 
             # Act: Request all_transactions page
-            response = client.get('/daily_sales/all/')
+            response = client.get("/daily_sales/all/")
 
             # Assert: Page loads successfully
             assert response.status_code in [200, 302]
 
             # If accessible, verify amount shown is 5000 (not 6500)
             if response.status_code == 200:
-                response_text = response.data.decode('utf-8')
+                response_text = response.data.decode("utf-8")
                 # Should show 5,000.00 somewhere (formatted with commas)
-                assert '5,000.00' in response_text or '5000.00' in response_text
+                assert "5,000.00" in response_text or "5000.00" in response_text
 
     def test_handles_all_billable_items(self, app, db, client):
         """Test transaction with all billable items shows correct total."""
         from tests.factories import (
             ProductFactory,
             ProductTypeFactory,
-            create_complete_transaction
+            create_complete_transaction,
         )
 
         with app.app_context():
-            pt = ProductTypeFactory(product_type_name='DIAGNOSTIC')
+            pt = ProductTypeFactory(product_type_name="DIAGNOSTIC")
             db.flush()
 
-            prod1 = ProductFactory(product_name='X-Ray', product_type=pt)
-            prod2 = ProductFactory(product_name='Lab Test', product_type=pt)
+            prod1 = ProductFactory(product_name="X-Ray", product_type=pt)
+            prod2 = ProductFactory(product_name="Lab Test", product_type=pt)
             db.flush()
 
             today = date.today()
             transaction = create_complete_transaction(
                 record_date=str(today),
-                status='submitted',
+                status="submitted",
                 details=[
-                    {'product': prod1, 'amount': 2000, 'discount': 0, 'billable': True},
-                    {'product': prod2, 'amount': 1500, 'discount': 500, 'billable': True},
-                ]
+                    {"product": prod1, "amount": 2000, "discount": 0, "billable": True},
+                    {
+                        "product": prod2,
+                        "amount": 1500,
+                        "discount": 500,
+                        "billable": True,
+                    },
+                ],
             )
             db.flush()
 
             # Act
-            response = client.get('/daily_sales/all/')
+            response = client.get("/daily_sales/all/")
 
             # Assert: Total should be 2000 + (1500-500) = 3000
             assert response.status_code in [200, 302]
@@ -99,13 +115,13 @@ class TestAllTransactionsPage:
         from tests.factories import (
             ProductFactory,
             ProductTypeFactory,
+            TransactionDetailFactory,
             TransactionFactory,
-            TransactionDetailFactory
         )
 
         with app.app_context():
-            pt = ProductTypeFactory(product_type_name='DIALYSIS')
-            prod = ProductFactory(product_name='Session', product_type=pt)
+            pt = ProductTypeFactory(product_type_name="DIALYSIS")
+            prod = ProductFactory(product_name="Session", product_type=pt)
             db.flush()
 
             today = date.today()
@@ -113,20 +129,20 @@ class TestAllTransactionsPage:
             # Create transaction with transaction-level discount
             transaction = TransactionFactory(
                 record_date=str(today),
-                status='submitted',
-                discount=500  # Transaction-level discount
+                status="submitted",
+                discount=500,  # Transaction-level discount
             )
             TransactionDetailFactory(
                 transaction=transaction,
                 product=prod,
                 amount=5000,
                 discount=0,
-                billable=True
+                billable=True,
             )
             db.flush()
 
             # Act
-            response = client.get('/daily_sales/all/')
+            response = client.get("/daily_sales/all/")
 
             # Assert: Net should be 5000 - 500 = 4500
             assert response.status_code in [200, 302]
@@ -146,15 +162,15 @@ class TestDraftsPage:
         from tests.factories import (
             ProductFactory,
             ProductTypeFactory,
-            create_complete_transaction
+            create_complete_transaction,
         )
 
         with app.app_context():
-            pt = ProductTypeFactory(product_type_name='DIALYSIS')
+            pt = ProductTypeFactory(product_type_name="DIALYSIS")
             db.flush()
 
-            prod_billable = ProductFactory(product_name='Session', product_type=pt)
-            prod_nonbillable = ProductFactory(product_name='Supplies', product_type=pt)
+            prod_billable = ProductFactory(product_name="Session", product_type=pt)
+            prod_nonbillable = ProductFactory(product_name="Supplies", product_type=pt)
             db.flush()
 
             today = date.today()
@@ -162,24 +178,34 @@ class TestDraftsPage:
             # Create DRAFT transaction
             transaction = create_complete_transaction(
                 record_date=str(today),
-                status='draft',  # Draft status
+                status="draft",  # Draft status
                 details=[
-                    {'product': prod_billable, 'amount': 4000, 'discount': 0, 'billable': True},
-                    {'product': prod_nonbillable, 'amount': 1000, 'discount': 0, 'billable': False},
-                ]
+                    {
+                        "product": prod_billable,
+                        "amount": 4000,
+                        "discount": 0,
+                        "billable": True,
+                    },
+                    {
+                        "product": prod_nonbillable,
+                        "amount": 1000,
+                        "discount": 0,
+                        "billable": False,
+                    },
+                ],
             )
             db.flush()
 
             # Act: Request drafts page
-            response = client.get('/daily_sales/drafts/')
+            response = client.get("/daily_sales/drafts/")
 
             # Assert: Should show 4000 (not 5000)
             assert response.status_code in [200, 302]
 
             if response.status_code == 200:
-                response_text = response.data.decode('utf-8')
+                response_text = response.data.decode("utf-8")
                 # Should show 4,000.00
-                assert '4,000.00' in response_text or '4000.00' in response_text
+                assert "4,000.00" in response_text or "4000.00" in response_text
 
 
 @pytest.mark.functional
@@ -196,15 +222,15 @@ class TestChangeRequestsPage:
         from tests.factories import (
             ProductFactory,
             ProductTypeFactory,
-            create_complete_transaction
+            create_complete_transaction,
         )
 
         with app.app_context():
-            pt = ProductTypeFactory(product_type_name='DIALYSIS')
+            pt = ProductTypeFactory(product_type_name="DIALYSIS")
             db.flush()
 
-            prod_billable = ProductFactory(product_name='Session', product_type=pt)
-            prod_nonbillable = ProductFactory(product_name='Medicine', product_type=pt)
+            prod_billable = ProductFactory(product_name="Session", product_type=pt)
+            prod_nonbillable = ProductFactory(product_name="Medicine", product_type=pt)
             db.flush()
 
             today = date.today()
@@ -212,22 +238,32 @@ class TestChangeRequestsPage:
             # Create transaction with change request (requested status)
             transaction = create_complete_transaction(
                 record_date=str(today),
-                status='requested',  # Change request status
+                status="requested",  # Change request status
                 details=[
-                    {'product': prod_billable, 'amount': 6000, 'discount': 0, 'billable': True},
-                    {'product': prod_nonbillable, 'amount': 2000, 'discount': 0, 'billable': False},
-                ]
+                    {
+                        "product": prod_billable,
+                        "amount": 6000,
+                        "discount": 0,
+                        "billable": True,
+                    },
+                    {
+                        "product": prod_nonbillable,
+                        "amount": 2000,
+                        "discount": 0,
+                        "billable": False,
+                    },
+                ],
             )
             db.flush()
 
             # Act: Request change_requests page
-            response = client.get('/daily_sales/change_requests/')
+            response = client.get("/daily_sales/change_requests/")
 
             # Assert: Should show 6000 (not 8000)
             assert response.status_code in [200, 302]
 
             if response.status_code == 200:
-                response_text = response.data.decode('utf-8')
+                response_text = response.data.decode("utf-8")
                 # Verify billable amount is shown correctly
                 # Note: The sum filter should use selectattr('billable')
                 pass  # Visual verification would require parsing HTML
@@ -247,15 +283,15 @@ class TestRequestChangePage:
         from tests.factories import (
             ProductFactory,
             ProductTypeFactory,
-            create_complete_transaction
+            create_complete_transaction,
         )
 
         with app.app_context():
-            pt = ProductTypeFactory(product_type_name='DIALYSIS')
+            pt = ProductTypeFactory(product_type_name="DIALYSIS")
             db.flush()
 
-            prod_billable = ProductFactory(product_name='Session', product_type=pt)
-            prod_nonbillable = ProductFactory(product_name='Supplies', product_type=pt)
+            prod_billable = ProductFactory(product_name="Session", product_type=pt)
+            prod_nonbillable = ProductFactory(product_name="Supplies", product_type=pt)
             db.flush()
 
             today = date.today()
@@ -263,24 +299,34 @@ class TestRequestChangePage:
             # Create submitted transaction
             transaction = create_complete_transaction(
                 record_date=str(today),
-                status='submitted',
+                status="submitted",
                 details=[
-                    {'product': prod_billable, 'amount': 5000, 'discount': 0, 'billable': True},
-                    {'product': prod_nonbillable, 'amount': 1500, 'discount': 0, 'billable': False},
-                ]
+                    {
+                        "product": prod_billable,
+                        "amount": 5000,
+                        "discount": 0,
+                        "billable": True,
+                    },
+                    {
+                        "product": prod_nonbillable,
+                        "amount": 1500,
+                        "discount": 0,
+                        "billable": False,
+                    },
+                ],
             )
             db.flush()
 
             # Act: Request the change request form for this transaction
-            response = client.get(f'/daily_sales/request_change/{transaction.id}')
+            response = client.get(f"/daily_sales/request_change/{transaction.id}")
 
             # Assert: Page loads successfully
             assert response.status_code in [200, 302, 404]  # May need auth
 
             if response.status_code == 200:
-                response_text = response.data.decode('utf-8')
+                response_text = response.data.decode("utf-8")
                 # Should show billable item (Session)
-                assert 'Session' in response_text
+                assert "Session" in response_text
                 # Should NOT show non-billable item in the current transaction table
                 # (It should be filtered out by {% if detail.billable %})
 
@@ -298,15 +344,15 @@ class TestBillableFilterRegression:
         from tests.factories import (
             ProductFactory,
             ProductTypeFactory,
-            create_complete_transaction
+            create_complete_transaction,
         )
 
         with app.app_context():
-            pt = ProductTypeFactory(product_type_name='DIALYSIS')
+            pt = ProductTypeFactory(product_type_name="DIALYSIS")
             db.flush()
 
-            prod1 = ProductFactory(product_name='Service', product_type=pt)
-            prod2 = ProductFactory(product_name='Medicine', product_type=pt)
+            prod1 = ProductFactory(product_name="Service", product_type=pt)
+            prod2 = ProductFactory(product_name="Medicine", product_type=pt)
             db.flush()
 
             today = date.today()
@@ -314,71 +360,75 @@ class TestBillableFilterRegression:
             # Create transactions in different statuses
             txn_submitted = create_complete_transaction(
                 record_date=str(today),
-                status='submitted',
+                status="submitted",
                 details=[
-                    {'product': prod1, 'amount': 5000, 'discount': 0, 'billable': True},
-                    {'product': prod2, 'amount': 1000, 'discount': 0, 'billable': False},
-                ]
+                    {"product": prod1, "amount": 5000, "discount": 0, "billable": True},
+                    {
+                        "product": prod2,
+                        "amount": 1000,
+                        "discount": 0,
+                        "billable": False,
+                    },
+                ],
             )
 
             txn_draft = create_complete_transaction(
                 record_date=str(today),
-                status='draft',
+                status="draft",
                 details=[
-                    {'product': prod1, 'amount': 3000, 'discount': 0, 'billable': True},
-                    {'product': prod2, 'amount': 500, 'discount': 0, 'billable': False},
-                ]
+                    {"product": prod1, "amount": 3000, "discount": 0, "billable": True},
+                    {"product": prod2, "amount": 500, "discount": 0, "billable": False},
+                ],
             )
 
             db.flush()
 
             # Act: Hit all major pages - none should crash
             pages = [
-                '/daily_sales/',
-                '/daily_sales/all/',
-                '/daily_sales/drafts/',
-                '/daily_sales/pending_approval/',
-                '/dashboard/',
+                "/daily_sales/",
+                "/daily_sales/all/",
+                "/daily_sales/drafts/",
+                "/daily_sales/pending_approval/",
+                "/dashboard/",
             ]
 
             for page_url in pages:
                 response = client.get(page_url)
                 # Should not crash (500 error)
-                assert response.status_code in [200, 302, 404], \
+                assert response.status_code in [200, 302, 404], (
                     f"Page {page_url} returned {response.status_code}"
+                )
 
     def test_edge_case_all_non_billable_transaction(self, app, db, client):
         """Edge case: Transaction with only non-billable items should show 0 or not crash."""
         from tests.factories import (
             ProductFactory,
             ProductTypeFactory,
-            create_complete_transaction
+            create_complete_transaction,
         )
 
         with app.app_context():
-            pt = ProductTypeFactory(product_type_name='PHARMACY')
+            pt = ProductTypeFactory(product_type_name="PHARMACY")
             db.flush()
 
-            prod = ProductFactory(product_name='Medicine', product_type=pt)
+            prod = ProductFactory(product_name="Medicine", product_type=pt)
             db.flush()
 
             today = date.today()
 
             transaction = create_complete_transaction(
                 record_date=str(today),
-                status='submitted',
+                status="submitted",
                 details=[
-                    {'product': prod, 'amount': 1000, 'discount': 0, 'billable': False},
+                    {"product": prod, "amount": 1000, "discount": 0, "billable": False},
                 ],
-                tenders=[
-                    {'tender__tender_name': 'Cash', 'amount': 0}
-                ]
+                tenders=[{"tender__tender_name": "Cash", "amount": 0}],
             )
             db.flush()
 
             # Act: Should not crash
-            response = client.get('/daily_sales/all/')
+            response = client.get("/daily_sales/all/")
             assert response.status_code in [200, 302]
 
-            response = client.get(f'/daily_sales/?date={today}')
+            response = client.get(f"/daily_sales/?date={today}")
             assert response.status_code in [200, 302]

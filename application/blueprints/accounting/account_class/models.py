@@ -1,7 +1,9 @@
 from application.extensions import db
+
+from . import app_name
 from .admin_models import AdminAccountClass as ObjAdmin
 from .admin_models import UserAccountClass as ObjUser
-from . import app_name
+
 
 class AccountClass(db.Model):
     id = db.Column(db.Integer(), primary_key=True)
@@ -10,13 +12,17 @@ class AccountClass(db.Model):
 
     def __str__(self):
         return self.account_class_name
-    
+
     @property
     def preparer(self):
-        obj = ObjUser.query.filter(getattr(ObjUser,f"{app_name}_id")==self.id).first()
+        obj = ObjUser.query.filter(
+            getattr(ObjUser, f"{app_name}_id") == self.id
+        ).first()
         return obj
-    
+
     @property
     def approved(self):
-        obj = ObjAdmin.query.filter(getattr(ObjAdmin,f"{app_name}_id")==self.id).first()
+        obj = ObjAdmin.query.filter(
+            getattr(ObjAdmin, f"{app_name}_id") == self.id
+        ).first()
         return obj

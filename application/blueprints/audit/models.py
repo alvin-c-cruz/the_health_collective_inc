@@ -7,13 +7,16 @@ Following the CAS pattern with improvements based on critical review:
 - Philippine timezone awareness
 - IP address and user agent tracking
 """
+
 import json
 from datetime import datetime
-from application.extensions import db
+
 from zoneinfo import ZoneInfo
 
+from application.extensions import db
+
 # Philippine timezone
-_PH = ZoneInfo('Asia/Manila')
+_PH = ZoneInfo("Asia/Manila")
 
 
 def ph_now():
@@ -32,29 +35,40 @@ class AuditLog(db.Model):
     - Where/How: ip_address, user_agent
     - Changes: old_values, new_values (JSON)
     """
-    __tablename__ = 'audit_logs'
+
+    __tablename__ = "audit_logs"
 
     # Primary key
     id = db.Column(db.Integer, primary_key=True)
 
     # Record identification
-    module = db.Column(db.String(50), nullable=False, index=True)  # 'customer', 'transaction', 'journal', etc.
-    action = db.Column(db.String(20), nullable=False, index=True)  # 'created', 'updated', 'deleted', 'submitted', 'approved', etc.
+    module = db.Column(
+        db.String(50), nullable=False, index=True
+    )  # 'customer', 'transaction', 'journal', etc.
+    action = db.Column(
+        db.String(20), nullable=False, index=True
+    )  # 'created', 'updated', 'deleted', 'submitted', 'approved', etc.
     record_id = db.Column(db.Integer)  # ID of the affected record
-    record_identifier = db.Column(db.String(200))  # Human-readable identifier (e.g., "CUST-001 - ABC Corp")
+    record_identifier = db.Column(
+        db.String(200)
+    )  # Human-readable identifier (e.g., "CUST-001 - ABC Corp")
 
     # Who made the change (with denormalization for safety)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), index=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), index=True
+    )
     username = db.Column(db.String(80))  # Denormalized - preserved even if user deleted
-    full_name = db.Column(db.String(200))  # Denormalized - preserved even if user deleted
-    user = db.relationship('User', backref='audit_logs_new', foreign_keys=[user_id])
+    full_name = db.Column(
+        db.String(200)
+    )  # Denormalized - preserved even if user deleted
+    user = db.relationship("User", backref="audit_logs_new", foreign_keys=[user_id])
 
     # When the change was made (Philippine time)
     timestamp = db.Column(db.DateTime, default=ph_now, nullable=False, index=True)
 
     # What changed (JSON storage for flexibility)
-    _old_values = db.Column('old_values', db.Text)  # JSON: previous field values
-    _new_values = db.Column('new_values', db.Text)  # JSON: new field values
+    _old_values = db.Column("old_values", db.Text)  # JSON: previous field values
+    _new_values = db.Column("new_values", db.Text)  # JSON: new field values
 
     # Where/How the change was made
     ip_address = db.Column(db.String(45))  # IPv4 or IPv6
@@ -108,8 +122,8 @@ class AuditLog(db.Model):
     def formatted_timestamp(self):
         """Format timestamp for display"""
         if self.timestamp:
-            return self.timestamp.strftime('%Y-%m-%d %I:%M:%S %p')
-        return 'N/A'
+            return self.timestamp.strftime("%Y-%m-%d %I:%M:%S %p")
+        return "N/A"
 
     @property
     def summary(self):
@@ -120,26 +134,25 @@ class AuditLog(db.Model):
         elif self.username:
             user_display = self.username
         else:
-            user_display = 'Unknown'
+            user_display = "Unknown"
 
-        action_text = self.action.replace('_', ' ').title()
+        action_text = self.action.replace("_", " ").title()
 
-        if self.action == 'created':
+        if self.action == "created":
             return f"{user_display} created this record"
-        elif self.action == 'updated':
+        if self.action == "updated":
             if self.changed_fields:
-                fields = ', '.join(self.changed_fields)
+                fields = ", ".join(self.changed_fields)
                 return f"{user_display} updated: {fields}"
             return f"{user_display} updated this record"
-        elif self.action == 'deleted':
+        if self.action == "deleted":
             return f"{user_display} deleted this record"
-        elif self.reason:
+        if self.reason:
             return f"{user_display} {action_text}: {self.reason}"
-        else:
-            return f"{user_display} {action_text}"
+        return f"{user_display} {action_text}"
 
     def __repr__(self):
-        return f'<AuditLog {self.action} {self.module}#{self.record_id} by {self.username} at {self.timestamp}>'
+        return f"<AuditLog {self.action} {self.module}#{self.record_id} by {self.username} at {self.timestamp}>"
 
 
 class LoginHistory(db.Model):
@@ -148,19 +161,26 @@ class LoginHistory(db.Model):
 
     Tracks both successful and failed login attempts with context.
     """
-    __tablename__ = 'login_history'
+
+    __tablename__ = "login_history"
 
     id = db.Column(db.Integer, primary_key=True)
 
     # User information (denormalized for safety)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), index=True)
-    username = db.Column(db.String(80), nullable=False)  # Preserved even if user deleted
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), index=True
+    )
+    username = db.Column(
+        db.String(80), nullable=False
+    )  # Preserved even if user deleted
     full_name = db.Column(db.String(200))
-    user = db.relationship('User', backref='login_history', foreign_keys=[user_id])
+    user = db.relationship("User", backref="login_history", foreign_keys=[user_id])
 
     # Login details
     login_time = db.Column(db.DateTime, default=ph_now, nullable=False, index=True)
-    status = db.Column(db.String(20), nullable=False, index=True)  # 'success' or 'failed'
+    status = db.Column(
+        db.String(20), nullable=False, index=True
+    )  # 'success' or 'failed'
     failure_reason = db.Column(db.String(200))  # Why login failed (if applicable)
 
     # Where/How
@@ -171,8 +191,8 @@ class LoginHistory(db.Model):
     def formatted_login_time(self):
         """Format login time for display"""
         if self.login_time:
-            return self.login_time.strftime('%Y-%m-%d %I:%M:%S %p')
-        return 'N/A'
+            return self.login_time.strftime("%Y-%m-%d %I:%M:%S %p")
+        return "N/A"
 
     def __repr__(self):
-        return f'<LoginHistory {self.status} {self.username} at {self.login_time}>'
+        return f"<LoginHistory {self.status} {self.username} at {self.login_time}>"

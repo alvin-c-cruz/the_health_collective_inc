@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+
 from application.extensions import db
 
 
@@ -12,7 +13,8 @@ class ChangeRequest(db.Model):
     - Admin reviews and approves/rejects the request
     - If approved, record is updated and requires re-approval (if applicable)
     """
-    __tablename__ = 'change_request'
+
+    __tablename__ = "change_request"
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -23,30 +25,36 @@ class ChangeRequest(db.Model):
     record_id = db.Column(db.Integer, nullable=False)
 
     # Legacy field for backwards compatibility with existing transaction change requests
-    transaction_id = db.Column(db.Integer, db.ForeignKey('transaction.id'), nullable=True)
-    transaction = db.relationship('Transaction', backref='change_requests', lazy=True)
+    transaction_id = db.Column(
+        db.Integer, db.ForeignKey("transaction.id"), nullable=True
+    )
+    transaction = db.relationship("Transaction", backref="change_requests", lazy=True)
 
     # JSON-encoded old and new values
-    _old_values = db.Column('old_values', db.Text)
-    _new_values = db.Column('new_values', db.Text)
+    _old_values = db.Column("old_values", db.Text)
+    _new_values = db.Column("new_values", db.Text)
 
     # Action requested: 'modification' or 'cancellation'
-    request_action = db.Column(db.String(20), default='modification')
+    request_action = db.Column(db.String(20), default="modification")
 
     # Reason for the change request
     reason = db.Column(db.String(500), nullable=False)
 
     # Status: pending | approved | rejected | direct (superuser direct edit)
-    status = db.Column(db.String(20), default='pending')
+    status = db.Column(db.String(20), default="pending")
 
     # Audit trail - who requested
-    requested_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    requested_by = db.relationship('User', foreign_keys=[requested_by_id], backref='change_requests_made')
+    requested_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    requested_by = db.relationship(
+        "User", foreign_keys=[requested_by_id], backref="change_requests_made"
+    )
     requested_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Audit trail - who reviewed
-    reviewed_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    reviewed_by = db.relationship('User', foreign_keys=[reviewed_by_id], backref='change_requests_reviewed')
+    reviewed_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    reviewed_by = db.relationship(
+        "User", foreign_keys=[reviewed_by_id], backref="change_requests_reviewed"
+    )
     reviewed_at = db.Column(db.DateTime, nullable=True)
     review_notes = db.Column(db.String(500))
 
@@ -72,52 +80,54 @@ class ChangeRequest(db.Model):
 
     @property
     def is_pending(self):
-        return self.status == 'pending'
+        return self.status == "pending"
 
     @property
     def is_approved(self):
-        return self.status == 'approved'
+        return self.status == "approved"
 
     @property
     def is_rejected(self):
-        return self.status == 'rejected'
+        return self.status == "rejected"
 
     @property
     def is_direct(self):
-        return self.status == 'direct'
+        return self.status == "direct"
 
     @property
     def is_cancellation(self):
-        return self.request_action == 'cancellation'
+        return self.request_action == "cancellation"
 
     @property
     def is_modification(self):
-        return self.request_action == 'modification'
+        return self.request_action == "modification"
 
     @property
     def deposit(self):
         """Get the deposit record if record_type is 'deposit'"""
-        if self.record_type == 'deposit':
+        if self.record_type == "deposit":
             from .models import Deposit
+
             return Deposit.query.get(self.record_id)
         return None
 
     @property
     def collection(self):
         """Get the collection record if record_type is 'collection'"""
-        if self.record_type == 'collection':
+        if self.record_type == "collection":
             from ..collections.models import Collection
+
             return Collection.query.get(self.record_id)
         return None
 
     @property
     def record(self):
         """Get the actual record (transaction, deposit, or collection) being modified"""
-        if self.record_type == 'transaction':
+        if self.record_type == "transaction":
             return self.transaction
-        elif self.record_type == 'deposit':
+        if self.record_type == "deposit":
             return self.deposit
-        elif self.record_type == 'collection':
+        if self.record_type == "collection":
             return self.collection
         return None
 
@@ -132,17 +142,17 @@ class ChangeRequest(db.Model):
 
         # Compare basic fields
         for key in set(old.keys()) | set(new.keys()):
-            if key not in ['details', 'tenders']:  # Handle line items separately
+            if key not in ["details", "tenders"]:  # Handle line items separately
                 if old.get(key) != new.get(key):
                     changed.append(key)
 
         # Check if details changed
-        if old.get('details') != new.get('details'):
-            changed.append('items')
+        if old.get("details") != new.get("details"):
+            changed.append("items")
 
         # Check if tenders changed
-        if old.get('tenders') != new.get('tenders'):
-            changed.append('payment')
+        if old.get("tenders") != new.get("tenders"):
+            changed.append("payment")
 
         return changed
 

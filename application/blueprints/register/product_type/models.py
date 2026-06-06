@@ -1,7 +1,9 @@
 from application.extensions import db
+
+from . import app_name
 from .admin_models import AdminProductType as ObjAdmin
 from .admin_models import UserProductType as ObjUser
-from . import app_name
+
 
 class ProductType(db.Model):
     id = db.Column(db.Integer(), primary_key=True)
@@ -9,13 +11,17 @@ class ProductType(db.Model):
 
     def __str__(self):
         return self.product_type_name
-    
+
     @property
     def preparer(self):
-        obj = ObjUser.query.filter(getattr(ObjUser,f"{app_name}_id")==self.id).first()
+        obj = ObjUser.query.filter(
+            getattr(ObjUser, f"{app_name}_id") == self.id
+        ).first()
         return obj
-    
+
     @property
     def approved(self):
-        obj = ObjAdmin.query.filter(getattr(ObjAdmin,f"{app_name}_id")==self.id).first()
+        obj = ObjAdmin.query.filter(
+            getattr(ObjAdmin, f"{app_name}_id") == self.id
+        ).first()
         return obj

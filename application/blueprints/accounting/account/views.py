@@ -1,24 +1,36 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, Response, current_app, send_file
-from io import BytesIO
 import json
-from sqlalchemy.exc import IntegrityError
-from .models import Account as Obj
-from .models import ObjUser as Preparer
-from .models import ObjAdmin as Approver
-from .forms import Form
-from application.extensions import db
-from application.blueprints.user import login_required, roles_accepted
-from flask_login import current_user
-import openpyxl
-from werkzeug.utils import secure_filename
 import os
-from application.blueprints.audit.utils import (
-    log_create, log_update, log_delete,
-    model_to_dict, get_record_identifier
+from io import BytesIO
+
+import openpyxl
+from flask import (
+    Blueprint,
+    Response,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    url_for,
 )
+from flask_login import current_user
+from sqlalchemy.exc import IntegrityError
+from werkzeug.utils import secure_filename
 
-from . import app_name, app_label
+from application.blueprints.audit.utils import (
+    log_create,
+    log_delete,
+    model_to_dict,
+)
+from application.blueprints.user import login_required, roles_accepted
+from application.extensions import db
 
+from . import app_label, app_name
+from .forms import Form
+from .models import Account as Obj
+from .models import ObjAdmin as Approver
+from .models import ObjUser as Preparer
 
 bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_name}")
 ROLES_ACCEPTED = app_label
@@ -29,19 +41,20 @@ ROLES_ACCEPTED = app_label
 @roles_accepted([ROLES_ACCEPTED])
 def home():
     from datetime import date
+
     from ..account_type.models import AccountType
 
     # Get date parameter from query string, default to today
     today = date.today()
-    date_str = request.args.get('as_of_date', str(today))
+    date_str = request.args.get("as_of_date", str(today))
     try:
         as_of_date = date.fromisoformat(date_str)
     except ValueError:
         as_of_date = today
 
     # Get filter parameters
-    account_type_filter = request.args.get('account_type', '')
-    approval_filter = request.args.get('approval', '')  # 'approved' or 'not_approved'
+    account_type_filter = request.args.get("account_type", "")
+    approval_filter = request.args.get("approval", "")  # 'approved' or 'not_approved'
 
     # Build query with filters
     query = Obj.query
@@ -53,14 +66,16 @@ def home():
         except ValueError:
             pass
 
-    if approval_filter == 'approved':
+    if approval_filter == "approved":
         # Filter accounts that have approved relationship
         query = query.join(Approver, Approver.account_id == Obj.id)
-    elif approval_filter == 'not_approved':
+    elif approval_filter == "not_approved":
         # Filter accounts that don't have approved relationship
-        query = query.outerjoin(Approver, Approver.account_id == Obj.id).filter(Approver.account_id == None)
+        query = query.outerjoin(Approver, Approver.account_id == Obj.id).filter(
+            Approver.account_id == None
+        )
 
-    rows = query.order_by(getattr(Obj, f"account_number")).all()
+    rows = query.order_by(Obj.account_number).all()
 
     # Get all account types for filter dropdown
     account_types = AccountType.query.order_by(AccountType.account_type_name).all()
@@ -88,7 +103,7 @@ def add():
         if form._validate_on_submit():
             form._save()
             flash(f"{form.account_title} has been saved.")
-            return redirect(url_for(f'{app_name}.add'))
+            return redirect(url_for(f"{app_name}.add"))
     else:
         form = Form()
 
@@ -99,17 +114,17 @@ def add():
     return render_template(f"{app_name}/form.html", **context)
 
 
-@bp.route(f"/edit/<int:record_id>", methods=["POST", "GET"])
+@bp.route("/edit/<int:record_id>", methods=["POST", "GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
-def edit(record_id):   
+def edit(record_id):
     if request.method == "POST":
         form = Form()
         form._post(request.form, current_user.id)
 
         if form._validate_on_submit():
             form._save()
-            return redirect(url_for(f'{app_name}.home'))
+            return redirect(url_for(f"{app_name}.home"))
 
     else:
         obj = Obj.query.get(record_id)
@@ -131,22 +146,24 @@ def delete(record_id):
     preparer = obj.preparer
 
     # Capture values before deletion
-    old_values = model_to_dict(obj, [
-        'account_number', 'account_title', 'account_description', 'account_type_id'
-    ])
+    old_values = model_to_dict(
+        obj,
+        ["account_number", "account_title", "account_description", "account_type_id"],
+    )
     record_id_for_log = obj.id
     identifier = str(obj)
 
     try:
-        if preparer: db.session.delete(preparer)
+        if preparer:
+            db.session.delete(preparer)
         db.session.delete(obj)
 
         # Log deletion before commit
         log_delete(
-            module='account',
+            module="account",
             record_id=record_id_for_log,
             record_identifier=identifier,
-            old_values=old_values
+            old_values=old_values,
         )
 
         db.session.commit()
@@ -155,41 +172,38 @@ def delete(record_id):
         db.session.rollback()
         flash(f"Cannot delete {obj} because it has related records.", category="error")
 
-    return redirect(url_for(f'{app_name}.home'))
+    return redirect(url_for(f"{app_name}.home"))
 
 
-@bp.route("/approve/<int:record_id>", methods=['GET'])
+@bp.route("/approve/<int:record_id>", methods=["GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def approve(record_id):
     if not current_user.admin:
         flash("Administrator rights required.", category="error")
         return redirect(url_for(f"{app_name}.home"))
-    
+
     obj = Obj.query.get_or_404(record_id)
 
-    data = {
-        f"{app_name}_id": record_id,
-        "user_id": current_user.id
-    }
+    data = {f"{app_name}_id": record_id, "user_id": current_user.id}
 
     approve = Approver(**data)
 
     db.session.add(approve)
     db.session.commit()
 
-    flash(f"Approved: {getattr(obj, f"{app_name}_name")}", category="success")
-    return redirect(url_for(f"{app_name}.home"))   
-    
+    flash(f"Approved: {getattr(obj, f'{app_name}_name')}", category="success")
+    return redirect(url_for(f"{app_name}.home"))
 
-@bp.route("/unlock/<int:record_id>", methods=['GET'])
+
+@bp.route("/unlock/<int:record_id>", methods=["GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def unlock(record_id):
     if not current_user.admin:
         flash("Administrator rights required.", category="error")
         return redirect(url_for(f"{app_name}.home"))
-    
+
     obj = Obj.query.get_or_404(record_id)
 
     data = {
@@ -197,19 +211,22 @@ def unlock(record_id):
     }
 
     approve = Approver.query.filter_by(**data).first()
-    
+
     db.session.delete(approve)
     db.session.commit()
 
-    flash(f"Unlocked: {getattr(obj, f"{app_name}_name")}", category="error")
-    return redirect(url_for(f"{app_name}.home"))   
-    
+    flash(f"Unlocked: {getattr(obj, f'{app_name}_name')}", category="error")
+    return redirect(url_for(f"{app_name}.home"))
 
-@bp.route("/autocomplete", methods=['GET'])
+
+@bp.route("/autocomplete", methods=["GET"])
 @login_required
 def _autocomplete():
-    options = [f"{i.account_number}: {i.account_title}" for i in Obj.query.order_by("account_number").all()]
-    return Response(json.dumps(options), mimetype='application/json')
+    options = [
+        f"{i.account_number}: {i.account_title}"
+        for i in Obj.query.order_by("account_number").all()
+    ]
+    return Response(json.dumps(options), mimetype="application/json")
 
 
 @bp.route("/upload", methods=["POST"])
@@ -243,9 +260,14 @@ def upload():
         cell_account_number = sheet["A1"].value
         cell_account_title = sheet["B1"].value
         cell_address = sheet["C1"].value
-        
+
         checker = (title, cell_account_number, cell_account_title, cell_address)
-        if checker == ("Chart of Accounts", "Account Number", "Account Title", "Description"):
+        if checker == (
+            "Chart of Accounts",
+            "Account Number",
+            "Account Title",
+            "Description",
+        ):
             for row in sheet.iter_rows(min_row=2, values_only=True):
                 account_number, account_title, account_description = row[:3]
 
@@ -253,8 +275,8 @@ def upload():
                     continue
 
                 existing = Obj.query.filter(
-                    (Obj.account_number == str(account_number)) |
-                    (Obj.account_title == str(account_title))
+                    (Obj.account_number == str(account_number))
+                    | (Obj.account_title == str(account_title))
                 ).first()
 
                 if existing:
@@ -264,7 +286,7 @@ def upload():
                 account = Obj(
                     account_number=str(account_number).upper(),
                     account_title=str(account_title).upper(),
-                    account_description=str(account_description or "").upper()
+                    account_description=str(account_description or "").upper(),
                 )
 
                 db.session.add(account)
@@ -272,20 +294,26 @@ def upload():
 
                 # Log creation after flush to get ID
                 log_create(
-                    module='account',
+                    module="account",
                     record_id=account.id,
                     record_identifier=str(account),
-                    new_values=model_to_dict(account, [
-                        'account_number', 'account_title', 'account_description', 'account_type_id'
-                    ]),
-                    notes='Account imported from Excel'
+                    new_values=model_to_dict(
+                        account,
+                        [
+                            "account_number",
+                            "account_title",
+                            "account_description",
+                            "account_type_id",
+                        ],
+                    ),
+                    notes="Account imported from Excel",
                 )
 
                 db.session.commit()
 
                 preparer_data = {
                     f"{app_name}_id": account.id,
-                    "user_id": current_user.id
+                    "user_id": current_user.id,
                 }
                 preparer = Preparer(**preparer_data)
                 db.session.add(preparer)
@@ -293,12 +321,15 @@ def upload():
 
                 imported += 1
 
-            flash(f"{imported} record(s) imported successfully. {skipped} skipped due to duplicates.", "success")
+            flash(
+                f"{imported} record(s) imported successfully. {skipped} skipped due to duplicates.",
+                "success",
+            )
         else:
-            flash(f"Error processing file: Invalid format.", "danger")
+            flash("Error processing file: Invalid format.", "danger")
 
     except Exception as e:
-        flash(f"Error processing file: {str(e)}", "danger")
+        flash(f"Error processing file: {e!s}", "danger")
 
     return redirect(url_for(f"{app_name}.home"))
 
@@ -326,7 +357,7 @@ def download_template():
         file_stream,
         as_attachment=True,
         download_name="account.xlsx",
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
 
@@ -338,7 +369,7 @@ def download_accounts():
 
     # Get date parameter from query string, default to today
     today = date.today()
-    date_str = request.args.get('as_of_date', str(today))
+    date_str = request.args.get("as_of_date", str(today))
     try:
         as_of_date = date.fromisoformat(date_str)
     except ValueError:
@@ -349,9 +380,17 @@ def download_accounts():
     ws.title = "Chart of Accounts"
 
     # Header row with as_of_date
-    ws.append(["Account Number", "Account Title", "Debit", "Credit", f"As of: {as_of_date.strftime('%B %d, %Y')}"])
+    ws.append(
+        [
+            "Account Number",
+            "Account Title",
+            "Debit",
+            "Credit",
+            f"As of: {as_of_date.strftime('%B %d, %Y')}",
+        ]
+    )
 
-    rows = Obj.query.order_by(getattr(Obj, f"account_number")).all()
+    rows = Obj.query.order_by(Obj.account_number).all()
     start_row = 2
     end_row = len(rows) + 1
 
@@ -360,13 +399,20 @@ def download_accounts():
             row.account_number,
             row.account_title,
             row.debit_balance(as_of_date),
-            row.credit_balance(as_of_date)
+            row.credit_balance(as_of_date),
         ]
         ws.append(list_row)
-        
+
     ws.append([])
-        
-    ws.append(["Total", "", f"=SUM(C{start_row}:C{end_row})", f"=SUM(D{start_row}:D{end_row})"])
+
+    ws.append(
+        [
+            "Total",
+            "",
+            f"=SUM(C{start_row}:C{end_row})",
+            f"=SUM(D{start_row}:D{end_row})",
+        ]
+    )
 
     # Save workbook to memory
     file_stream = BytesIO()
@@ -377,5 +423,5 @@ def download_accounts():
         file_stream,
         as_attachment=True,
         download_name="account.xlsx",
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )

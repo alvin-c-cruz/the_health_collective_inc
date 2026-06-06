@@ -1,20 +1,31 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, Response, current_app, send_file
-from io import BytesIO
 import json
-from sqlalchemy.exc import IntegrityError
-from .models import AccountClass as Obj
-from .models import ObjUser as Preparer
-from .models import ObjAdmin as Approver
-from .forms import Form
-from application.extensions import db
-from application.blueprints.user import login_required, roles_accepted
-from flask_login import current_user
-import openpyxl
-from werkzeug.utils import secure_filename
 import os
+from io import BytesIO
 
-from . import app_name, app_label
+import openpyxl
+from flask import (
+    Blueprint,
+    Response,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    url_for,
+)
+from flask_login import current_user
+from sqlalchemy.exc import IntegrityError
+from werkzeug.utils import secure_filename
 
+from application.blueprints.user import login_required, roles_accepted
+from application.extensions import db
+
+from . import app_label, app_name
+from .forms import Form
+from .models import AccountClass as Obj
+from .models import ObjAdmin as Approver
+from .models import ObjUser as Preparer
 
 bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_name}")
 ROLES_ACCEPTED = app_label
@@ -24,11 +35,9 @@ ROLES_ACCEPTED = app_label
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def home():
-    rows = Obj.query.order_by(getattr(Obj, "priority")).all()
+    rows = Obj.query.order_by(Obj.priority).all()
 
-    context = {
-        "rows": rows
-    }
+    context = {"rows": rows}
 
     return render_template(f"{app_name}/home.html", **context)
 
@@ -44,7 +53,7 @@ def add():
         if form._validate_on_submit():
             form._save()
             flash(f"{form.account_class_name} has been saved.")
-            return redirect(url_for(f'{app_name}.add'))
+            return redirect(url_for(f"{app_name}.add"))
     else:
         form = Form()
 
@@ -55,17 +64,17 @@ def add():
     return render_template(f"{app_name}/form.html", **context)
 
 
-@bp.route(f"/edit/<int:record_id>", methods=["POST", "GET"])
+@bp.route("/edit/<int:record_id>", methods=["POST", "GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
-def edit(record_id):   
+def edit(record_id):
     if request.method == "POST":
         form = Form()
         form._post(request.form, current_user.id)
 
         if form._validate_on_submit():
             form._save()
-            return redirect(url_for(f'{app_name}.home'))
+            return redirect(url_for(f"{app_name}.home"))
 
     else:
         obj = Obj.query.get(record_id)
@@ -82,11 +91,12 @@ def edit(record_id):
 @bp.route("/delete/<int:record_id>", methods=["POST", "GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
-def delete(record_id):   
+def delete(record_id):
     obj = Obj.query.get_or_404(record_id)
     preparer = obj.preparer
     try:
-        if preparer: db.session.delete(preparer)
+        if preparer:
+            db.session.delete(preparer)
         db.session.delete(obj)
         db.session.commit()
         flash(f"{obj} has been deleted.", category="success")
@@ -94,41 +104,38 @@ def delete(record_id):
         db.session.rollback()
         flash(f"Cannot delete {obj} because it has related records.", category="error")
 
-    return redirect(url_for(f'{app_name}.home'))
+    return redirect(url_for(f"{app_name}.home"))
 
 
-@bp.route("/approve/<int:record_id>", methods=['GET'])
+@bp.route("/approve/<int:record_id>", methods=["GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def approve(record_id):
     if not current_user.admin:
         flash("Administrator rights required.", category="error")
         return redirect(url_for(f"{app_name}.home"))
-    
+
     obj = Obj.query.get_or_404(record_id)
 
-    data = {
-        f"{app_name}_id": record_id,
-        "user_id": current_user.id
-    }
+    data = {f"{app_name}_id": record_id, "user_id": current_user.id}
 
     approve = Approver(**data)
 
     db.session.add(approve)
     db.session.commit()
 
-    flash(f"Approved: {getattr(obj, f"{app_name}_name")}", category="success")
-    return redirect(url_for(f"{app_name}.home"))   
-    
+    flash(f"Approved: {getattr(obj, f'{app_name}_name')}", category="success")
+    return redirect(url_for(f"{app_name}.home"))
 
-@bp.route("/unlock/<int:record_id>", methods=['GET'])
+
+@bp.route("/unlock/<int:record_id>", methods=["GET"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])
 def unlock(record_id):
     if not current_user.admin:
         flash("Administrator rights required.", category="error")
         return redirect(url_for(f"{app_name}.home"))
-    
+
     obj = Obj.query.get_or_404(record_id)
 
     data = {
@@ -136,19 +143,22 @@ def unlock(record_id):
     }
 
     approve = Approver.query.filter_by(**data).first()
-    
+
     db.session.delete(approve)
     db.session.commit()
 
-    flash(f"Unlocked: {getattr(obj, f"{app_name}_name")}", category="error")
-    return redirect(url_for(f"{app_name}.home"))   
-    
+    flash(f"Unlocked: {getattr(obj, f'{app_name}_name')}", category="error")
+    return redirect(url_for(f"{app_name}.home"))
 
-@bp.route("/autocomplete", methods=['GET'])
+
+@bp.route("/autocomplete", methods=["GET"])
 @login_required
 def _autocomplete():
-    options = [getattr(i, f"{app_name}_name") for i in Obj.query.order_by(f"{app_name}_name").all()]
-    return Response(json.dumps(options), mimetype='application/json')
+    options = [
+        getattr(i, f"{app_name}_name")
+        for i in Obj.query.order_by(f"{app_name}_name").all()
+    ]
+    return Response(json.dumps(options), mimetype="application/json")
 
 
 @bp.route("/upload", methods=["POST"])
@@ -181,7 +191,7 @@ def upload():
         title = sheet.title
         cell_account_class = sheet["A1"].value
         cell_priority = sheet["B1"].value
-        
+
         checker = (title, cell_account_class, cell_priority)
         print(checker)
         if checker == ("Account Class", "Description", "Order"):
@@ -192,8 +202,8 @@ def upload():
                     continue
 
                 existing = Obj.query.filter(
-                    (Obj.account_class_name == str(account_class_name))                
-                    ).first()
+                    Obj.account_class_name == str(account_class_name)
+                ).first()
 
                 if existing:
                     skipped += 1
@@ -209,7 +219,7 @@ def upload():
 
                 preparer_data = {
                     f"{app_name}_id": account_class.id,
-                    "user_id": current_user.id
+                    "user_id": current_user.id,
                 }
                 preparer = Preparer(**preparer_data)
                 db.session.add(preparer)
@@ -217,12 +227,15 @@ def upload():
 
                 imported += 1
 
-            flash(f"{imported} record(s) imported successfully. {skipped} skipped due to duplicates.", "success")
+            flash(
+                f"{imported} record(s) imported successfully. {skipped} skipped due to duplicates.",
+                "success",
+            )
         else:
-            flash(f"Error processing file: Invalid format.", "danger")
+            flash("Error processing file: Invalid format.", "danger")
 
     except Exception as e:
-        flash(f"Error processing file: {str(e)}", "danger")
+        flash(f"Error processing file: {e!s}", "danger")
 
     return redirect(url_for(f"{app_name}.home"))
 
@@ -250,5 +263,5 @@ def download_template():
         file_stream,
         as_attachment=True,
         download_name="account_class.xlsx",
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )

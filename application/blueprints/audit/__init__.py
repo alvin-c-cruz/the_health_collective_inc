@@ -18,11 +18,6 @@ menu_label = (app_name, f"/{app_name}/audit-log", app_label)
 
 from flask import Blueprint
 
-bp = Blueprint(
-    'audit',
-    __name__,
-    template_folder='pages',
-    url_prefix='/audit'
-)
+bp = Blueprint("audit", __name__, template_folder="pages", url_prefix="/audit")
 
 from application.blueprints.audit import views

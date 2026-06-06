@@ -1,67 +1,81 @@
-import pandas as pd
 from datetime import datetime
+
+import pandas as pd
 from sqlalchemy import extract
+
 from application import db
 
 
 def entry_date_info(model):
     if model.__name__ == "SalesDetail":
-        from .. books_of_accounts.sales import Sales
+        from ..books_of_accounts.sales import Sales
+
         return model, Sales.record_date, Sales
 
     if model.__name__ == "ReceiptDetail":
-        from .. books_of_accounts.receipt import Receipt
+        from ..books_of_accounts.receipt import Receipt
+
         return model, Receipt.record_date, Receipt
 
     if model.__name__ == "AccountsPayableDetail":
-        from .. books_of_accounts.accounts_payable import AccountsPayable
+        from ..books_of_accounts.accounts_payable import AccountsPayable
+
         return model, AccountsPayable.record_date, AccountsPayable
 
     if model.__name__ == "DisbursementDetail":
-        from .. books_of_accounts.disbursement import Disbursement
+        from ..books_of_accounts.disbursement import Disbursement
+
         return model, Disbursement.record_date, Disbursement
 
     if model.__name__ == "GeneralDetail":
-        from .. books_of_accounts.general import General
+        from ..books_of_accounts.general import General
+
         return model, General.record_date, General
 
     if model.__name__ == "SalesExtraDetail":
-        from .. books_of_accounts_extra.sales_extra import SalesExtra
+        from ..books_of_accounts_extra.sales_extra import SalesExtra
+
         return model, SalesExtra.record_date, SalesExtra
 
     if model.__name__ == "ReceiptExtraDetail":
-        from .. books_of_accounts_extra.receipt_extra import ReceiptExtra
+        from ..books_of_accounts_extra.receipt_extra import ReceiptExtra
+
         return model, ReceiptExtra.record_date, ReceiptExtra
 
     if model.__name__ == "AccountsPayableExtraDetail":
-        from .. books_of_accounts_extra.accounts_payable_extra import AccountsPayableExtra
+        from ..books_of_accounts_extra.accounts_payable_extra import (
+            AccountsPayableExtra,
+        )
+
         return model, AccountsPayableExtra.record_date, AccountsPayableExtra
 
     if model.__name__ == "DisbursementExtraDetail":
-        from .. books_of_accounts_extra.disbursement_extra import DisbursementExtra
+        from ..books_of_accounts_extra.disbursement_extra import DisbursementExtra
+
         return model, DisbursementExtra.record_date, DisbursementExtra
 
     if model.__name__ == "GeneralExtraDetail":
-        from .. books_of_accounts_extra.general_extra import GeneralExtra
+        from ..books_of_accounts_extra.general_extra import GeneralExtra
+
         return model, GeneralExtra.record_date, GeneralExtra
 
     raise RuntimeError(f"No date mapping for {model.__name__}")
 
 
 def trial_balance_dataframe(year: int):
-    from .. account import Account
-
-    from .. books_of_accounts.sales import SalesDetail
-    from .. books_of_accounts.receipt import ReceiptDetail
-    from .. books_of_accounts.accounts_payable import AccountsPayableDetail
-    from .. books_of_accounts.disbursement import DisbursementDetail
-    from .. books_of_accounts.general import GeneralDetail
-
-    from .. books_of_accounts_extra.sales_extra import SalesExtraDetail
-    from .. books_of_accounts_extra.receipt_extra import ReceiptExtraDetail
-    from .. books_of_accounts_extra.accounts_payable_extra import AccountsPayableExtraDetail
-    from .. books_of_accounts_extra.disbursement_extra import DisbursementExtraDetail
-    from .. books_of_accounts_extra.general_extra import GeneralExtraDetail
+    from ..account import Account
+    from ..books_of_accounts.accounts_payable import AccountsPayableDetail
+    from ..books_of_accounts.disbursement import DisbursementDetail
+    from ..books_of_accounts.general import GeneralDetail
+    from ..books_of_accounts.receipt import ReceiptDetail
+    from ..books_of_accounts.sales import SalesDetail
+    from ..books_of_accounts_extra.accounts_payable_extra import (
+        AccountsPayableExtraDetail,
+    )
+    from ..books_of_accounts_extra.disbursement_extra import DisbursementExtraDetail
+    from ..books_of_accounts_extra.general_extra import GeneralExtraDetail
+    from ..books_of_accounts_extra.receipt_extra import ReceiptExtraDetail
+    from ..books_of_accounts_extra.sales_extra import SalesExtraDetail
 
     ENTRY_MODELS = (
         SalesDetail,
@@ -77,8 +91,19 @@ def trial_balance_dataframe(year: int):
     )
 
     columns = [
-        "Beg", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+        "Beg",
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
     ]
 
     # -----------------------------
@@ -101,10 +126,7 @@ def trial_balance_dataframe(year: int):
         m, date_col, parent = entry_date_info(model)
 
         rows = (
-            db.session.query(
-                m.account_id,
-                db.func.sum(m.debit - m.credit)
-            )
+            db.session.query(m.account_id, db.func.sum(m.debit - m.credit))
             .join(parent)
             .filter(date_col < datetime(year, 1, 1))
             .group_by(m.account_id)
@@ -124,7 +146,7 @@ def trial_balance_dataframe(year: int):
             db.session.query(
                 m.account_id,
                 extract("month", date_col),
-                db.func.sum(m.debit - m.credit)
+                db.func.sum(m.debit - m.credit),
             )
             .join(parent)
             .filter(extract("year", date_col) == year)
