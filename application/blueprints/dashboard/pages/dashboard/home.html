@@ -555,6 +555,10 @@
 
                 {# Add Total row for DIAGNOSTIC #}
                 {% if pt.product_type_name == 'DIAGNOSTIC' %}
+                {# Dividing line before Total Diagnostics #}
+                <tr style="height: 2px; background: transparent;">
+                    <td colspan="4" style="padding: 0; border-top: 3px solid var(--thc-primary-700); border-bottom: none;"></td>
+                </tr>
                 <tr class="row-primary">
                     <td class="row-indent"><strong>Total Diagnostics</strong></td>
                     <td><strong>{{ "₱{:,.2f}".format(daily_product_type_totals.get(pt.product_type_name, 0)) if daily_product_type_totals.get(pt.product_type_name, 0) > 0 else "-" }}</strong></td>
