@@ -917,7 +917,7 @@
 
         <div class="items-summary-row">
 
-          <span class="is-label">Total</span>
+          <span class="is-label">Total Billable</span>
 
           <span class="is-value" id="gross-total">0.00</span>
 
@@ -1627,9 +1627,15 @@
 
       const disc = parseNum(row.querySelector('input[name="detail_discount[]"]')?.value);
 
-      gross         += amt;
+      // Only include billable items in totals
+      const billableInput = row.querySelector('input[name="billable[]"]');
+      const isBillable = billableInput ? billableInput.value === '1' : true;
 
-      lineDiscounts += disc;
+      if (isBillable) {
+        gross         += amt;
+
+        lineDiscounts += disc;
+      }
 
       // Validation: Warn if discount exceeds amount
       const discountInput = row.querySelector('input[name="detail_discount[]"]');
