@@ -571,12 +571,12 @@
         </tbody>
     </table>
 
-    {# Payment Methods (Tenders) Table #}
+    {# Mode of Payment (Tenders) Table #}
     <table class="dashboard-table">
         <thead>
             <tr>
                 <th>
-                    Payment Methods
+                    Mode of Payment
                     {% if current_user.admin or current_user.superuser %}
                     <button id="btn-edit-payment-methods" class="btn btn-sm btn-link" style="font-size: 0.75rem; padding: 0 0.5rem;" onclick="toggleSortMode('payment_methods')" title="Rearrange items">
                         <i class="bi bi-arrows-move"></i> Rearrange
