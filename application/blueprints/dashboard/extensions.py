@@ -529,8 +529,86 @@ def get_dashboard_stats(today: date) -> dict:
             print(f"Error getting detailed receivables: {e}")
             return []
 
-    # Get detailed receivables
+    # Helper function to get receivables grouped by tender type
+    def get_receivables_by_tender():
+        """Get receivables grouped by tender type with transaction details."""
+        try:
+            from ..operations.collections.models import CollectionDetail
+            from ..register.customer.models import Customer
+
+            # Get receivable tender IDs
+            receivable_tenders = Tender.query.filter(Tender.is_receivable == True).all()
+            receivable_tender_ids = [t.id for t in receivable_tenders]
+
+            if not receivable_tender_ids:
+                return []
+
+            # Get all receivable transaction tenders
+            transaction_tenders = (
+                db.session.query(TransactionTender)
+                .join(Transaction)
+                .join(Customer, Transaction.customer_id == Customer.id)
+                .join(Tender, TransactionTender.tender_id == Tender.id)
+                .filter(
+                    TransactionTender.tender_id.in_(receivable_tender_ids),
+                    submitted,
+                    active
+                )
+                .order_by(Tender.tender_name, Transaction.record_date.desc(), Transaction.id.desc())
+                .all()
+            )
+
+            # Group by tender type
+            tender_groups = {}
+            for tt in transaction_tenders:
+                # Calculate collected amount
+                collected = (
+                    db.session.query(func.sum(CollectionDetail.amount_applied))
+                    .filter(CollectionDetail.transaction_tender_id == tt.id)
+                    .scalar() or 0
+                )
+                outstanding = tt.amount - collected
+
+                if outstanding > 0.01:  # Only include if there's outstanding balance
+                    tender_name = tt.tender.tender_name
+
+                    if tender_name not in tender_groups:
+                        tender_groups[tender_name] = {
+                            'tender_name': tender_name,
+                            'total_amount': 0,
+                            'collected': 0,
+                            'outstanding': 0,
+                            'transaction_count': 0,
+                            'transactions': []
+                        }
+
+                    # Add to tender group
+                    tender_groups[tender_name]['total_amount'] += round(tt.amount, 2)
+                    tender_groups[tender_name]['collected'] += round(collected, 2)
+                    tender_groups[tender_name]['outstanding'] += round(outstanding, 2)
+                    tender_groups[tender_name]['transaction_count'] += 1
+                    tender_groups[tender_name]['transactions'].append({
+                        'transaction_id': tt.transaction.id,
+                        'record_number': tt.transaction.record_number,
+                        'record_date': tt.transaction.record_date,
+                        'customer_name': tt.transaction.customer.customer_name if tt.transaction.customer else '—',
+                        'total_amount': round(tt.amount, 2),
+                        'collected': round(collected, 2),
+                        'outstanding': round(outstanding, 2)
+                    })
+
+            # Convert dict to list sorted by tender name
+            return sorted(tender_groups.values(), key=lambda x: x['tender_name'])
+
+        except Exception as e:
+            print(f"Error getting receivables by tender: {e}")
+            return []
+
+    # Get detailed receivables (kept for backward compatibility)
     detailed_receivables = get_detailed_receivables()
+
+    # Get receivables grouped by tender
+    receivables_by_tender = get_receivables_by_tender()
 
     # Helper function to calculate undeposited sales
     def calculate_undeposited_report(start_date_str, end_date_str):
