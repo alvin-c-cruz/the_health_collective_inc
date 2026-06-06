@@ -673,33 +673,78 @@
         </tbody>
     </table>
 
-    {# Outstanding Balance - Receivables and Undeposited Cash #}
-    <div style="margin-top: var(--thc-space-4);">
-        <div style="font-size: 0.875rem; font-weight: 600; color: var(--thc-text-secondary); margin-bottom: var(--thc-space-3);">
-            Outstanding Balance
+    {# Outstanding Balance Card - Receivables and Undeposited Cash #}
+    <div style="background: white;
+                border: 2px solid var(--thc-border-default);
+                border-radius: var(--thc-radius-lg);
+                padding: var(--thc-space-5);
+                margin-top: var(--thc-space-5);
+                box-shadow: var(--thc-shadow-md);">
+
+        {# Card Header #}
+        <div style="margin-bottom: var(--thc-space-4);
+                    padding-bottom: var(--thc-space-3);
+                    border-bottom: 2px solid var(--thc-border-default);">
+            <h3 style="margin: 0;
+                       font-size: 1.125rem;
+                       font-weight: 700;
+                       color: var(--thc-text-primary);">
+                Outstanding Balance
+            </h3>
         </div>
 
-        {# Undeposited Cash sales first #}
-        {% if daily_undeposited and daily_undeposited.ending_balance > 0 %}
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--thc-space-2); border-bottom: 1px solid var(--thc-border-subtle);">
-            <div style="color: var(--thc-text-primary);">Undeposited Cash sales</div>
-            <div style="font-weight: 700; font-family: var(--thc-font-mono); color: var(--thc-danger-700);">
-                ₱{{ "{:,.2f}".format(daily_undeposited.ending_balance) }}
-            </div>
-        </div>
-        {% endif %}
-
-        {# Receivables by tender type #}
-        {% if receivables_by_tender %}
-            {% for tender_group in receivables_by_tender %}
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--thc-space-2); border-bottom: 1px solid var(--thc-border-subtle);">
-                <div style="color: var(--thc-text-primary);">{{ tender_group.tender_name }}</div>
-                <div style="font-weight: 700; font-family: var(--thc-font-mono); color: var(--thc-danger-700);">
-                    ₱{{ "{:,.2f}".format(tender_group.outstanding) }}
+        {# Balance Items #}
+        <div>
+            {# Undeposited Cash sales first #}
+            {% if daily_undeposited and daily_undeposited.ending_balance > 0 %}
+            <div style="display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: var(--thc-space-3);
+                        margin-bottom: var(--thc-space-2);
+                        background: var(--thc-bg-subtle);
+                        border-radius: var(--thc-radius-md);
+                        border-left: 4px solid var(--thc-danger-500);">
+                <div style="font-size: 0.9375rem;
+                            color: var(--thc-text-primary);
+                            font-weight: 500;">
+                    Undeposited Cash sales
+                </div>
+                <div style="font-weight: 700;
+                            font-size: 1.125rem;
+                            font-family: var(--thc-font-mono);
+                            color: var(--thc-danger-700);">
+                    ₱{{ "{:,.2f}".format(daily_undeposited.ending_balance) }}
                 </div>
             </div>
-            {% endfor %}
-        {% endif %}
+            {% endif %}
+
+            {# Receivables by tender type #}
+            {% if receivables_by_tender %}
+                {% for tender_group in receivables_by_tender %}
+                <div style="display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: var(--thc-space-3);
+                            margin-bottom: var(--thc-space-2);
+                            background: var(--thc-bg-subtle);
+                            border-radius: var(--thc-radius-md);
+                            border-left: 4px solid var(--thc-danger-500);">
+                    <div style="font-size: 0.9375rem;
+                                color: var(--thc-text-primary);
+                                font-weight: 500;">
+                        {{ tender_group.tender_name }}
+                    </div>
+                    <div style="font-weight: 700;
+                                font-size: 1.125rem;
+                                font-family: var(--thc-font-mono);
+                                color: var(--thc-danger-700);">
+                        ₱{{ "{:,.2f}".format(tender_group.outstanding) }}
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
     </div>
 
     {# Quick Actions Section #}
