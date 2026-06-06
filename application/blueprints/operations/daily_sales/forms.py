@@ -109,8 +109,8 @@ class TenderSubForm:
         if self._is_dirty():
             if not self.tender_id:
                 self.errors["tender_id"] = "Please select a tender type."
-            if self.amount <= 0:
-                self.errors["amount"] = "Tender amount must be greater than zero."
+            if self.amount < 0:
+                self.errors["amount"] = "Tender amount cannot be negative."
         return not self.errors
 
 
