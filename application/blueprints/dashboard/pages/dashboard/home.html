@@ -657,7 +657,7 @@
             {% endfor %}
 
             {# Total row for Payment Methods #}
-            <tr class="row-primary">
+            <tr class="row-primary" style="border-top: 3px solid var(--thc-primary-500) !important;">
                 <td><strong>Total</strong></td>
                 <td><strong>{{ "₱{:,.2f}".format(today_net_sales) if today_net_sales > 0 else "-" }}</strong></td>
                 <td><strong>{{ "₱{:,.2f}".format(mtd_net_sales) if mtd_net_sales > 0 else "-" }}</strong></td>
