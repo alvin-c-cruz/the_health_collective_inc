@@ -117,6 +117,7 @@ class TransactionDetail(db.Model):
     amount = db.Column(db.Float, default=0)
     discount = db.Column(db.Float, default=0)
     side_note = db.Column(db.String())
+    billable = db.Column(db.Boolean, default=True)  # True = billable, False = inventory only
 
     @property
     def formatted_amount(self):

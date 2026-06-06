@@ -47,6 +47,7 @@ class DetailSubForm:
     amount: float = 0.0
     discount: float = 0.0
     side_note: str = ""
+    billable: bool = True  # True = billable, False = inventory only
 
     product_name: str = ""
     errors: dict = field(default_factory=dict)
@@ -57,6 +58,7 @@ class DetailSubForm:
         self.amount = float(row.amount)
         self.discount = float(row.discount)
         self.side_note = row.side_note or ""
+        self.billable = getattr(row, 'billable', True)  # Default to True for backward compatibility
         if row.product:
             self.product_name = row.product.product_name
 
@@ -232,6 +234,7 @@ class Form:
         amounts = request_form.getlist("amount[]")
         detail_discounts = request_form.getlist("detail_discount[]")
         side_notes = request_form.getlist("side_note[]")
+        billable_values = request_form.getlist("billable[]")  # Hidden field updated by checkbox
 
         self.details = []
         for i in range(len(product_ids)):
@@ -240,6 +243,7 @@ class Form:
             sub.amount = _safe_float(amounts[i] if i < len(amounts) else 0)
             sub.discount = _safe_float(detail_discounts[i] if i < len(detail_discounts) else 0)
             sub.side_note = side_notes[i] if i < len(side_notes) else ""
+            sub.billable = billable_values[i] == "1" if i < len(billable_values) else True
             self.details.append((i, sub))
 
         # Tender rows
@@ -300,8 +304,9 @@ class Form:
                     tender_valid = False
 
         if not self.errors and detail_valid and tender_valid:
-            gross = sum(sub.amount for _, sub in self.details if sub._is_dirty())
-            detail_discount = sum(sub.discount for _, sub in self.details if sub._is_dirty())
+            # Only sum billable items (exclude inventory-only items)
+            gross = sum(sub.amount for _, sub in self.details if sub._is_dirty() and getattr(sub, 'billable', True))
+            detail_discount = sum(sub.discount for _, sub in self.details if sub._is_dirty() and getattr(sub, 'billable', True))
             total_due = gross - detail_discount - self.discount
             total_tendered = sum(sub.amount for _, sub in self.tenders if sub._is_dirty())
 
@@ -372,6 +377,7 @@ class Form:
                     amount=sub.amount,
                     discount=sub.discount,
                     side_note=sub.side_note,
+                    billable=sub.billable,
                 ))
 
         # Insert tenders

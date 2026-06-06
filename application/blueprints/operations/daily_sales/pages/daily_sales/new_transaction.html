@@ -152,7 +152,7 @@
 
   .line-header { display: grid; gap: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--thc-border); margin-bottom: 0.5rem; }
 
-  .line-header.detail-grid { grid-template-columns: 4fr 1.5fr 32px; }
+  .line-header.detail-grid { grid-template-columns: 4fr 1.5fr 60px 32px; }
 
   .line-header.tender-grid { grid-template-columns: 4fr 1.5fr 32px; }
 
@@ -162,7 +162,7 @@
 
   .detail-row, .tender-row { display: grid; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center; }
 
-  .detail-row { grid-template-columns: 4fr 1.5fr 32px; }
+  .detail-row { grid-template-columns: 4fr 1.5fr 60px 32px; }
 
   .tender-row { grid-template-columns: 3fr 2fr 1.5fr 32px; }
 
@@ -855,6 +855,8 @@
 
         <span style="text-align:right">Amount</span>
 
+        <span style="text-align:center">Billable</span>
+
         <span></span>
 
       </div>
@@ -883,6 +885,13 @@
           <input type="hidden" name="detail_discount[]" value="{{ '{:,.2f}'.format(detail.discount) if detail.discount else '0.00' }}">
 
           <input type="hidden" name="side_note[]" value="{{ detail.side_note }}">
+
+          <div style="text-align:center;">
+            <input type="checkbox" name="billable_{{ i }}[]" value="1" {{ 'checked' if detail.billable }} {{ 'disabled' if form._locked_ }}
+                   title="Uncheck for inventory-only items (not billed to patient)"
+                   onchange="this.nextElementSibling.value = this.checked ? '1' : '0'">
+            <input type="hidden" name="billable[]" value="{{ '1' if detail.billable else '0' }}">
+          </div>
 
           {% if not form._locked_ %}
 
