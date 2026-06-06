@@ -184,23 +184,19 @@
                         <span style="color: #2e7d32;">✓ Collected</span>
                       {% elif collected > 0 %}
                         <span style="color: #f57c00;">Partial</span>
-                      {% else %}
-                        <span style="color: #c0392b;">Uncollected</span>
                       {% endif %}
                     {% else %}
                       {# Cash - check deposit status #}
-                      {% set deposited = 0 %}
+                      {% set has_deposit = false %}
                       {% for item in t.deposit_items %}
-                        {% if item.deposit.status != 'cancelled' %}
-                          {% set deposited = deposited + item.amount %}
+                        {% if item.deposit and item.deposit.status != 'cancelled' %}
+                          {% if item.deposit.status in ['submitted', 'posted'] %}
+                            {% set has_deposit = true %}
+                          {% endif %}
                         {% endif %}
                       {% endfor %}
-                      {% if deposited >= tender_record.amount - 0.01 %}
+                      {% if has_deposit %}
                         <span style="color: #2e7d32;">✓ Deposited</span>
-                      {% elif deposited > 0 %}
-                        <span style="color: #f57c00;">Partial</span>
-                      {% else %}
-                        <span style="color: #c0392b;">Undeposited</span>
                       {% endif %}
                     {% endif %}
                   </span>

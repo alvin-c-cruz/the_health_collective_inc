@@ -35,8 +35,7 @@ def _outstanding_lines(tender_id=None, ape_batch_id=None):
     query = TransactionTender.query.filter(
         TransactionTender.tender_id.in_(receivable_ids)
     ).join(TransactionTender.transaction).filter(
-        db.text("\"transaction\".submitted IS NOT NULL"),
-        db.text("\"transaction\".approved_at IS NOT NULL"),  # Only approved transactions
+        db.text("\"transaction\".submitted IS NOT NULL"),  # Include all submitted transactions
         db.text("\"transaction\".cancelled IS NULL"),
     )
     if tender_id:
@@ -219,10 +218,12 @@ def new_collection():
 
             db.session.commit()
             flash(f"Collection saved as draft. Net amount: ₱{col.formatted_net_amount}", "success")
-            return redirect(url_for(f"{app_name}.view_collection", collection_id=col.id))
+            # Redirect to daily_sales with the collection date
+            return redirect(url_for("daily_sales.home", date=col.collection_date))
 
     tender_id_pre    = request.args.get("tender_id", type=int)
     ape_batch_id_pre = request.args.get("ape_batch_id", type=int)
+    date_param       = request.args.get("date")  # Get date from URL parameter
 
     # Get Credit tender ID for APE collections
     credit_tender = Tender.query.filter(Tender.tender_name == 'Credit').first()
@@ -236,6 +237,9 @@ def new_collection():
         if outstanding > 0:
             outstanding_rows.append({"tt": tt, "outstanding": outstanding})
 
+    # Use date parameter if provided, otherwise use today
+    default_date = date_param if date_param else str(ph_today())
+
     context = {
         "app_label": app_label,
         "tenders": tenders,
@@ -246,7 +250,7 @@ def new_collection():
         "selected_ape_batch_id": ape_batch_id_pre,
         "ape_batch_id_pre": ape_batch_id_pre,
         "credit_tender_id": credit_tender_id,
-        "today": str(ph_today()),
+        "today": default_date,
     }
     return render_template("collections/new_collection.html", **context)
 

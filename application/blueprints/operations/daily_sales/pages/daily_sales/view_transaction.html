@@ -252,8 +252,6 @@
           <tr>
             <th>Tender</th>
             <th class="num">Amount</th>
-            <th class="num">Deposited</th>
-            <th class="num">Remaining</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -271,12 +269,15 @@
           <tr>
             <td class="name">{{ t.tender.tender_name }}</td>
             <td class="num">{{ t.formatted_amount }}</td>
-            <td class="num">{{ '{:,.2f}'.format(deposited_amount) }}</td>
-            <td class="num" style="color: {% if remaining | abs < 0.01 %}#2e7d32{% else %}#c0392b{% endif %};">
-              {{ '{:,.2f}'.format(remaining) }}
-            </td>
             <td>
-              {% if remaining | abs < 0.01 %}
+              {% if deposit_info %}
+                {% set latest_deposit = deposit_info[-1].deposit %}
+                {% if latest_deposit.status == 'posted' or latest_deposit.status == 'submitted' %}
+                  <span class="badge-submitted" style="background:#e8f5e9;color:#2e7d32;">✓ Deposited {{ latest_deposit.record_date }}</span>
+                {% else %}
+                  <span class="badge-pending" style="background:#fff8e1;color:#856404;">📝 In Deposit (Draft)</span>
+                {% endif %}
+              {% elif remaining | abs < 0.01 %}
                 <span class="badge-submitted" style="background:#e8f5e9;color:#2e7d32;">✓ Fully Deposited</span>
               {% elif deposited_amount > 0 %}
                 <span class="badge-pending" style="background:#fff8e1;color:#856404;">Partially Deposited</span>
@@ -285,23 +286,6 @@
               {% endif %}
             </td>
           </tr>
-          {% if deposit_info %}
-          <tr style="background: #f8f9fa;">
-            <td colspan="5" style="padding: 0.5rem 0.75rem; font-size: 0.8rem; color: var(--thc-text-muted);">
-              <strong>Deposits:</strong>
-              {% for item in deposit_info %}
-                <a href="{{ url_for('daily_sales.view_deposit', deposit_id=item.deposit.id) }}" style="color: var(--thc-accent); text-decoration: none; margin-left: 0.5rem;">
-                  #{{ item.deposit.id }} ({{ item.deposit.bank_account or 'N/A' }}, {{ '{:,.2f}'.format(item.amount) }})
-                  {% if item.deposit.status == 'draft' %}[Draft]
-                  {% elif item.deposit.status == 'submitted' %}[Submitted]
-                  {% elif item.deposit.status == 'posted' %}[Posted]
-                  {% endif %}
-                </a>
-                {% if not loop.last %}, {% endif %}
-              {% endfor %}
-            </td>
-          </tr>
-          {% endif %}
           {% endfor %}
         </tbody>
       </table>
@@ -378,7 +362,7 @@
 
   {# ── Actions ── #}
   <div class="txn-actions">
-    <a href="{{ url_for('daily_sales.home') }}" class="btn-back">← Back to Daily Sales</a>
+    <a href="{{ url_for('daily_sales.home', date=record.record_date) }}" class="btn-back">← Back to Daily Sales</a>
 
     <a href="{{ url_for('daily_sales.transaction_audit_history', transaction_id=record.id) }}" class="btn-back">📋 View History</a>
 

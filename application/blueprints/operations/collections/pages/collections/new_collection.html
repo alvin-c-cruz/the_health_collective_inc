@@ -210,7 +210,7 @@
           <i class="bi bi-send"></i> Submit for Approval
         </button>
         {% endif %}
-        <a href="{{ url_for('daily_sales.home') }}" class="btn btn-secondary btn-sm">Cancel</a>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="cancelToDailySales()">Cancel</button>
       </div>
     </div>
 
@@ -364,6 +364,12 @@
 </style>
 
 <script>
+// ── Cancel to Daily Sales with date ──
+function cancelToDailySales() {
+  const collectionDate = document.getElementById('collection_date').value;
+  window.location.href = "{{ url_for('daily_sales.home') }}?date=" + collectionDate;
+}
+
 // ── Bank Account Autocomplete ──
 const BANK_OPTIONS = [
   {% for b in bank_accounts %}
