@@ -113,7 +113,7 @@ def home():
     ).order_by(ReimbursementReceived.id.desc()).all()
 
     total_sales = sum(
-        sum(d.amount - d.discount for d in t.transaction_details) - (t.discount or 0)
+        sum(d.amount - d.discount for d in t.transaction_details if d.billable) - (t.discount or 0)
         for t in all_transactions
         if t.submitted and not t.cancelled
     )
@@ -2309,8 +2309,8 @@ def daily_report_details():
             if tender_name not in transactions_by_tender:
                 transactions_by_tender[tender_name] = []
 
-            # Calculate transaction total
-            total = sum(detail.amount - detail.discount for detail in txn.transaction_details)
+            # Calculate transaction total (only billable items)
+            total = sum(detail.amount - detail.discount for detail in txn.transaction_details if detail.billable)
             total -= (txn.discount or 0)
 
             transactions_by_tender[tender_name].append({
