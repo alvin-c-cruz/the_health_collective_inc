@@ -165,13 +165,13 @@
       <tbody>
         {% for detail in record.transaction_details %}
         <tr{{ ' style="opacity: 0.6;"' if not detail.billable else '' }}>
-          <td class="name">
+          <td class="name"{{ ' style="text-decoration: line-through;"' if not detail.billable else '' }}>
             {{ detail.product.product_name if detail.product else '—' }}
             {% if not detail.billable %}
             <span style="color: #666; font-size: 0.85em; font-style: italic;"> [INVENTORY ONLY - NOT BILLED]</span>
             {% endif %}
           </td>
-          <td class="num">{{ detail.formatted_amount }}</td>
+          <td class="num"{{ ' style="text-decoration: line-through;"' if not detail.billable else '' }}>{{ detail.formatted_amount }}</td>
         </tr>
         {% endfor %}
       </tbody>
