@@ -59,26 +59,34 @@
     {# Transaction Demographics #}
     <div class="thc-metric">
       <div class="thc-metric__label">Transaction Demographics</div>
-      <div class="thc-metric__value" style="font-size: 0.9em; line-height: 1.6;">
+      <div class="thc-metric__value" style="line-height: 1.8;">
         {# By Type #}
         {% if summary.by_type %}
-        <div style="margin-bottom: 8px;">
-          <strong style="font-size: 0.85em; color: var(--thc-text-secondary, #666);">By Type:</strong><br>
-          {% for type_name, amount in summary.by_type.items() %}
-          <span style="font-size: 0.8em;">{{ type_name }}: ₱{{ "{:,.2f}".format(amount) }}</span>
-          {% if not loop.last %} | {% endif %}
-          {% endfor %}
+        <div style="margin-bottom: 12px;">
+          <div style="font-size: 0.75rem; font-weight: 600; color: var(--thc-text-secondary, #666); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">By Type:</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+            {% for type_name, amount in summary.by_type.items() %}
+            <div style="font-size: 0.875rem; white-space: nowrap;">
+              <span style="color: var(--thc-text-muted, #888);">{{ type_name }}:</span>
+              <strong style="color: var(--thc-text-primary, #222); margin-left: 4px;">₱{{ "{:,.2f}".format(amount) }}</strong>
+            </div>
+            {% endfor %}
+          </div>
         </div>
         {% endif %}
 
         {# By Tender #}
         {% if summary.by_tender %}
         <div>
-          <strong style="font-size: 0.85em; color: var(--thc-text-secondary, #666);">By Tender:</strong><br>
-          {% for tender_name, amount in summary.by_tender.items() %}
-          <span style="font-size: 0.8em;">{{ tender_name }}: ₱{{ "{:,.2f}".format(amount) }}</span>
-          {% if not loop.last %} | {% endif %}
-          {% endfor %}
+          <div style="font-size: 0.75rem; font-weight: 600; color: var(--thc-text-secondary, #666); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">By Tender:</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+            {% for tender_name, amount in summary.by_tender.items() %}
+            <div style="font-size: 0.875rem; white-space: nowrap;">
+              <span style="color: var(--thc-text-muted, #888);">{{ tender_name }}:</span>
+              <strong style="color: var(--thc-text-primary, #222); margin-left: 4px;">₱{{ "{:,.2f}".format(amount) }}</strong>
+            </div>
+            {% endfor %}
+          </div>
         </div>
         {% endif %}
 
