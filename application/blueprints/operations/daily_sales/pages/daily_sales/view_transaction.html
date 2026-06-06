@@ -164,14 +164,15 @@
       </thead>
       <tbody>
         {% for detail in record.transaction_details %}
-        <tr{{ ' style="opacity: 0.6;"' if not detail.billable else '' }}>
-          <td class="name"{{ ' style="text-decoration: line-through;"' if not detail.billable else '' }}>
+        <tr{% if not detail.billable %} style="background-color: #f5f5f5;"{% endif %}>
+          <td class="name"{% if not detail.billable %} style="color: #999; text-decoration: line-through;"{% endif %}>
             {{ detail.product.product_name if detail.product else '—' }}
             {% if not detail.billable %}
-            <span style="color: #666; font-size: 0.85em; font-style: italic;"> [INVENTORY ONLY - NOT BILLED]</span>
+            <span style="display: inline-block; background: #ff9800; color: white; padding: 2px 8px; border-radius: 3px; font-size: 0.75em; font-weight: 600; margin-left: 8px; font-style: normal;">NOT BILLED</span>
+            <span style="color: #666; font-size: 0.80em; font-style: italic; display: block; margin-top: 4px;">Inventory tracking only</span>
             {% endif %}
           </td>
-          <td class="num"{{ ' style="text-decoration: line-through;"' if not detail.billable else '' }}>{{ detail.formatted_amount }}</td>
+          <td class="num"{% if not detail.billable %} style="color: #999; text-decoration: line-through;"{% endif %}>{{ detail.formatted_amount }}</td>
         </tr>
         {% endfor %}
       </tbody>
