@@ -790,6 +790,7 @@ function toggleSortMode(section) {
             animation: 150,
             handle: '.drag-handle',
             ghostClass: 'sortable-ghost',
+            filter: '.row-primary, tr[style*="height: 2px"]',  // Exclude separator and total rows
             onEnd: function(evt) {
                 console.log('Item moved from', evt.oldIndex, 'to', evt.newIndex);
             }
