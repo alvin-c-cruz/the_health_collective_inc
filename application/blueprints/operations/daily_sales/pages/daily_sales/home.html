@@ -64,8 +64,8 @@
         {% if summary.by_type %}
         <div style="margin-bottom: 8px;">
           <strong style="font-size: 0.85em; color: var(--thc-text-secondary, #666);">By Type:</strong><br>
-          {% for type_name, count in summary.by_type.items() %}
-          <span style="font-size: 0.8em;">{{ type_name }}: {{ count }}</span>
+          {% for type_name, amount in summary.by_type.items() %}
+          <span style="font-size: 0.8em;">{{ type_name }}: ₱{{ "{:,.2f}".format(amount) }}</span>
           {% if not loop.last %} | {% endif %}
           {% endfor %}
         </div>
@@ -75,8 +75,8 @@
         {% if summary.by_tender %}
         <div>
           <strong style="font-size: 0.85em; color: var(--thc-text-secondary, #666);">By Tender:</strong><br>
-          {% for tender_name, count in summary.by_tender.items() %}
-          <span style="font-size: 0.8em;">{{ tender_name }}: {{ count }}</span>
+          {% for tender_name, amount in summary.by_tender.items() %}
+          <span style="font-size: 0.8em;">{{ tender_name }}: ₱{{ "{:,.2f}".format(amount) }}</span>
           {% if not loop.last %} | {% endif %}
           {% endfor %}
         </div>
