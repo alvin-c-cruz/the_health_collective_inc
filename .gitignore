@@ -135,12 +135,20 @@ venv.bak/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+mypy-report/
 
 # Pyre type checker
 .pyre/
 
+# Ruff cache
+.ruff_cache/
+
 
 /instance
+
+# Environment files (keep .env.example in git)
+.env
+!.env.example
 
 # Claude Code
 .claude/settings.local.json

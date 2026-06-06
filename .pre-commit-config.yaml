@@ -1,0 +1,130 @@
+# Pre-commit hooks configuration
+# See https://pre-commit.com for more information
+
+default_language_version:
+  python: python3.8
+
+repos:
+  # Ruff - Fast Python linter and formatter (replaces flake8, black, isort)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.0  # Use the latest version
+    hooks:
+      # Run the linter
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        name: ruff-lint
+        description: Run Ruff linter with auto-fix
+
+      # Run the formatter
+      - id: ruff-format
+        name: ruff-format
+        description: Run Ruff formatter
+
+  # Mypy - Static type checker
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2  # Use the latest version
+    hooks:
+      - id: mypy
+        name: mypy
+        description: Run Mypy type checker
+        additional_dependencies:
+          - types-Flask
+          - types-requests
+        args: [--ignore-missing-imports, --no-strict-optional]
+        exclude: ^(migrations/|tests/)
+
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      # Check for files that would conflict in case-insensitive filesystems
+      - id: check-case-conflict
+
+      # Ensure files end with newline
+      - id: end-of-file-fixer
+        exclude: \.min\.(js|css)$
+
+      # Trim trailing whitespace
+      - id: trailing-whitespace
+        exclude: \.min\.(js|css)$
+        args: [--markdown-linebreak-ext=md]
+
+      # Check for merge conflict strings
+      - id: check-merge-conflict
+
+      # Check YAML files are valid
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+        exclude: ^\.github/
+
+      # Check JSON files are valid
+      - id: check-json
+
+      # Check TOML files are valid
+      - id: check-toml
+
+      # Prevent large files from being committed
+      - id: check-added-large-files
+        args: [--maxkb=1000]  # 1MB limit
+        exclude: \.(db|sqlite)$
+
+      # Detect private keys
+      - id: detect-private-key
+
+      # Check for mixed line endings
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # Python-specific checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      # Check for debugger imports and breakpoints
+      - id: debug-statements
+
+      # Check docstring is first
+      - id: check-docstring-first
+
+      # Fix Python encoding pragma (remove if not needed)
+      - id: fix-encoding-pragma
+        args: [--remove]
+
+  # Security checks
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.9
+    hooks:
+      - id: bandit
+        name: bandit
+        description: Security linter for Python
+        args: [-c, pyproject.toml]
+        additional_dependencies: ["bandit[toml]"]
+        exclude: ^tests/
+
+  # Git commit message checks
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.29.0
+    hooks:
+      - id: commitizen
+        name: commitizen-check
+        description: Check commit message follows Conventional Commits
+        stages: [commit-msg]
+
+# Configuration for specific hooks
+exclude: |
+  (?x)^(
+      migrations/|
+      venv/|
+      \.venv/|
+      htmlcov/|
+      \.pytest_cache/|
+      __pycache__/|
+      \.git/|
+      \.mypy_cache/|
+      \.ruff_cache/|
+      node_modules/|
+      \.min\.(js|css)$|
+      vendor/
+  )
+
+# Global settings
+fail_fast: false  # Continue running hooks even if one fails
