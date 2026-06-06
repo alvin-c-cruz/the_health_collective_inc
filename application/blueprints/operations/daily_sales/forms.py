@@ -294,9 +294,16 @@ class Form:
                 if sub._is_dirty() and not sub._validate():
                     detail_valid = False
 
+        # Calculate total due first to determine if tenders are required
+        # Only sum billable items (exclude inventory-only items)
+        gross = sum(sub.amount for _, sub in self.details if sub._is_dirty() and getattr(sub, 'billable', True))
+        detail_discount = sum(sub.discount for _, sub in self.details if sub._is_dirty() and getattr(sub, 'billable', True))
+        total_due = gross - detail_discount - self.discount
+
         # Tender total must equal (gross - discount)
+        # Tenders are optional when total_due is zero (all items non-billable)
         dirty_tenders = [sub for _, sub in self.tenders if sub._is_dirty()]
-        if not dirty_tenders:
+        if not dirty_tenders and total_due != 0:
             self.errors["tenders"] = "At least one tender/payment is required."
         else:
             for _, sub in self.tenders:
@@ -304,13 +311,10 @@ class Form:
                     tender_valid = False
 
         if not self.errors and detail_valid and tender_valid:
-            # Only sum billable items (exclude inventory-only items)
-            gross = sum(sub.amount for _, sub in self.details if sub._is_dirty() and getattr(sub, 'billable', True))
-            detail_discount = sum(sub.discount for _, sub in self.details if sub._is_dirty() and getattr(sub, 'billable', True))
-            total_due = gross - detail_discount - self.discount
             total_tendered = sum(sub.amount for _, sub in self.tenders if sub._is_dirty())
 
-            if round(total_due, 2) != round(total_tendered, 2):
+            # Only validate tender total match if there's an amount due
+            if total_due != 0 and round(total_due, 2) != round(total_tendered, 2):
                 self.errors["totals"] = (
                     f"Total tendered ({total_tendered:,.2f}) must equal "
                     f"amount due ({total_due:,.2f})."
