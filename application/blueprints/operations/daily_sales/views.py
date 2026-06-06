@@ -954,10 +954,11 @@ def approve_transaction(transaction_id):
         db.session.rollback()
         flash(f'Transaction approved, but audit logging failed: {str(e)}', 'warning')
         print(f"Audit logging failed for transaction {transaction_id}: {e}")
-        return redirect(url_for(f'{app_name}.pending_approval'))
+        return redirect(url_for(f'{app_name}.home', date=record.record_date))
 
     flash('Transaction approved.', 'success')
-    return redirect(url_for(f'{app_name}.pending_approval'))
+    # Redirect to daily_sales with the transaction date
+    return redirect(url_for(f'{app_name}.home', date=record.record_date))
 
 
 # ---------------------------------------------------------------------------
@@ -1492,7 +1493,8 @@ def edit_deposit(deposit_id):
             db.session.commit()
 
             flash(f'Deposit updated successfully! Total amount: ₱{total_amount:,.2f}', 'success')
-            return redirect(return_url)
+            # Redirect to view_deposit page so user can review and submit
+            return redirect(url_for(f'{app_name}.view_deposit', deposit_id=deposit.id))
 
         except Exception as e:
             db.session.rollback()
@@ -1636,7 +1638,8 @@ def submit_deposit(deposit_id):
 
     flash(f'Deposit submitted successfully! Waiting for admin approval. Total amount: ₱{deposit.formatted_total_amount}', 'success')
 
-    return redirect(return_url)
+    # Redirect to daily_sales with the deposit date
+    return redirect(url_for(f'{app_name}.home', date=deposit.record_date))
 
 
 @bp.route('/transaction/reject/<int:transaction_id>', methods=['POST'])
@@ -1826,7 +1829,8 @@ def cancel_deposit(deposit_id):
                      reason=cancellation_reason)
 
     flash('Deposit cancelled successfully.', 'info')
-    return redirect(url_for(f'{app_name}.deposit_report'))
+    # Redirect to daily_sales with the deposit date
+    return redirect(url_for(f'{app_name}.home', date=deposit.record_date))
 
 
 # ---------------------------------------------------------------------------
