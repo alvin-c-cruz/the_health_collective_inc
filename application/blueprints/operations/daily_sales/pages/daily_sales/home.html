@@ -205,33 +205,6 @@
                 {% for tender_record in t.transaction_tenders %}
                   <span style="display: inline-block; margin-right: 8px;">
                     <strong>{{ tender_record.tender.tender_name }}:</strong> ₱{{ "{:,.2f}".format(tender_record.amount) }}
-                    {% if tender_record.tender.is_receivable %}
-                      {# Receivable - check collection status #}
-                      {% set collected = 0 %}
-                      {% for line in tender_record.collection_lines %}
-                        {% if line.collection.status != 'cancelled' %}
-                          {% set collected = collected + line.amount_collected %}
-                        {% endif %}
-                      {% endfor %}
-                      {% if collected >= tender_record.amount - 0.01 %}
-                        <span style="color: #2e7d32;">✓ Collected</span>
-                      {% elif collected > 0 %}
-                        <span style="color: #f57c00;">Partial</span>
-                      {% endif %}
-                    {% else %}
-                      {# Cash - check deposit status #}
-                      {% set has_deposit = false %}
-                      {% for item in t.deposit_items %}
-                        {% if item.deposit and item.deposit.status != 'cancelled' %}
-                          {% if item.deposit.status in ['submitted', 'posted'] %}
-                            {% set has_deposit = true %}
-                          {% endif %}
-                        {% endif %}
-                      {% endfor %}
-                      {% if has_deposit %}
-                        <span style="color: #2e7d32;">✓ Deposited</span>
-                      {% endif %}
-                    {% endif %}
                   </span>
                 {% endfor %}
               </div>
