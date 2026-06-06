@@ -174,7 +174,7 @@
    ================================================================ */
 .thc-metrics {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: 1fr 2fr 1fr;
     gap: var(--thc-gap-md);
     margin-bottom: var(--thc-space-6);
 }
