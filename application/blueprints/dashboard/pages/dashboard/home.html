@@ -673,60 +673,34 @@
         </tbody>
     </table>
 
-    {# Undeposited Sales Report Table #}
-    <table class="dashboard-table">
-        <thead>
-            <tr>
-                <th>Undeposited Sales Report</th>
-                <th>{{ today.strftime('%b %d, %Y') }}</th>
-                <th>MTD ({{ month_start.strftime('%b %d') }} - {{ today.strftime('%b %d') }})</th>
-                <th>YTD ({{ year_start.strftime('%b %d') }} - {{ today.strftime('%b %d') }})</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Beginning Balance</td>
-                <td>{{ "₱{:,.2f}".format(daily_undeposited.beginning_balance) if daily_undeposited.beginning_balance > 0 else "-" }}</td>
-                <td>{{ "₱{:,.2f}".format(mtd_undeposited.beginning_balance) if mtd_undeposited.beginning_balance > 0 else "-" }}</td>
-                <td>{{ "₱{:,.2f}".format(ytd_undeposited.beginning_balance) if ytd_undeposited.beginning_balance > 0 else "-" }}</td>
-            </tr>
-            <tr>
-                <td>Current Undeposited</td>
-                <td>{{ "₱{:,.2f}".format(daily_undeposited.current_undeposited) if daily_undeposited.current_undeposited > 0 else "-" }}</td>
-                <td>{{ "₱{:,.2f}".format(mtd_undeposited.current_undeposited) if mtd_undeposited.current_undeposited > 0 else "-" }}</td>
-                <td>{{ "₱{:,.2f}".format(ytd_undeposited.current_undeposited) if ytd_undeposited.current_undeposited > 0 else "-" }}</td>
-            </tr>
-            <tr>
-                <td>Deposits</td>
-                <td>{{ "₱{:,.2f}".format(daily_undeposited.deposits) if daily_undeposited.deposits > 0 else "-" }}</td>
-                <td>{{ "₱{:,.2f}".format(mtd_undeposited.deposits) if mtd_undeposited.deposits > 0 else "-" }}</td>
-                <td>{{ "₱{:,.2f}".format(ytd_undeposited.deposits) if ytd_undeposited.deposits > 0 else "-" }}</td>
-            </tr>
-            <tr class="row-primary">
-                <td><strong>Ending Balance</strong></td>
-                <td><strong>{{ "₱{:,.2f}".format(daily_undeposited.ending_balance) if daily_undeposited.ending_balance > 0 else "-" }}</strong></td>
-                <td><strong>{{ "₱{:,.2f}".format(mtd_undeposited.ending_balance) if mtd_undeposited.ending_balance > 0 else "-" }}</strong></td>
-                <td><strong>{{ "₱{:,.2f}".format(ytd_undeposited.ending_balance) if ytd_undeposited.ending_balance > 0 else "-" }}</strong></td>
-            </tr>
-        </tbody>
-    </table>
-
-    {# Outstanding Balance by Tender Type #}
-    {% if receivables_by_tender %}
+    {# Outstanding Balance - Receivables and Undeposited Cash #}
     <div style="margin-top: var(--thc-space-4);">
         <div style="font-size: 0.875rem; font-weight: 600; color: var(--thc-text-secondary); margin-bottom: var(--thc-space-3);">
             Outstanding Balance
         </div>
-        {% for tender_group in receivables_by_tender %}
+
+        {# Undeposited Cash sales first #}
+        {% if daily_undeposited and daily_undeposited.ending_balance > 0 %}
         <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--thc-space-2); border-bottom: 1px solid var(--thc-border-subtle);">
-            <div style="color: var(--thc-text-primary);">{{ tender_group.tender_name }}</div>
+            <div style="color: var(--thc-text-primary);">Undeposited Cash sales</div>
             <div style="font-weight: 700; font-family: var(--thc-font-mono); color: var(--thc-danger-700);">
-                ₱{{ "{:,.2f}".format(tender_group.outstanding) }}
+                ₱{{ "{:,.2f}".format(daily_undeposited.ending_balance) }}
             </div>
         </div>
-        {% endfor %}
+        {% endif %}
+
+        {# Receivables by tender type #}
+        {% if receivables_by_tender %}
+            {% for tender_group in receivables_by_tender %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--thc-space-2); border-bottom: 1px solid var(--thc-border-subtle);">
+                <div style="color: var(--thc-text-primary);">{{ tender_group.tender_name }}</div>
+                <div style="font-weight: 700; font-family: var(--thc-font-mono); color: var(--thc-danger-700);">
+                    ₱{{ "{:,.2f}".format(tender_group.outstanding) }}
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
     </div>
-    {% endif %}
 
     {# Quick Actions Section #}
     <div class="quick-actions">
