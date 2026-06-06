@@ -807,6 +807,7 @@ def get_dashboard_stats(today: date) -> dict:
         "mtd_receivables": mtd_receivables,
         "ytd_receivables": ytd_receivables,
         "detailed_receivables": detailed_receivables,
+        "receivables_by_tender": receivables_by_tender,
         # Undeposited sales report data
         "daily_undeposited": daily_undeposited,
         "mtd_undeposited": mtd_undeposited,
