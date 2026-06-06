@@ -204,7 +204,7 @@ def home():
         if t.submitted and not t.cancelled:
             for detail in t.transaction_details:
                 if detail.billable and detail.product and detail.product.product_type:
-                    service_type = detail.product.product_type.type_name
+                    service_type = detail.product.product_type.product_type_name
                     line_total = detail.amount - detail.discount
                     summary.by_type[service_type] = summary.by_type.get(service_type, 0) + line_total
 
