@@ -889,7 +889,7 @@
           <div style="text-align:center;">
             <input type="checkbox" name="billable_{{ i }}[]" value="1" {{ 'checked' if detail.billable }} {{ 'disabled' if form._locked_ }}
                    title="Uncheck for inventory-only items (not billed to patient)"
-                   onchange="this.nextElementSibling.value = this.checked ? '1' : '0'">
+                   onchange="this.nextElementSibling.value = this.checked ? '1' : '0'; recalcTotals();">
             <input type="hidden" name="billable[]" value="{{ '1' if detail.billable else '0' }}">
           </div>
 
@@ -1553,6 +1553,12 @@
       <input type="text" name="amount[]" class="form-control num-input" placeholder="0.00" value="${fmt(amount)}">
       <input type="hidden" name="detail_discount[]" value="${fmt(discount)}">
       <input type="hidden" name="side_note[]" value="${note}">
+      <div style="text-align:center;">
+        <input type="checkbox" name="billable_new[]" value="1" checked
+               title="Uncheck for inventory-only items (not billed to patient)"
+               onchange="this.nextElementSibling.value = this.checked ? '1' : '0'; recalcTotals();">
+        <input type="hidden" name="billable[]" value="1">
+      </div>
       <button type="button" class="btn-remove-row" onclick="removeRow(this, 'transaction-details', 'detail-row')" title="Remove">✕</button>
     `;
 
