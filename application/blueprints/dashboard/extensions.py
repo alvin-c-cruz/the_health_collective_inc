@@ -472,6 +472,66 @@ def get_dashboard_stats(today: date) -> dict:
     mtd_receivables = calculate_receivables_report(month_start_str, today_str)
     ytd_receivables = calculate_receivables_report(year_start_str, today_str)
 
+    # Helper function to get detailed receivable transactions
+    def get_detailed_receivables():
+        """Get list of all outstanding receivable transactions with details."""
+        try:
+            from ..operations.collections.models import CollectionDetail
+            from ..register.customer.models import Customer
+
+            # Get receivable tender IDs
+            receivable_tenders = Tender.query.filter(Tender.is_receivable == True).all()
+            receivable_tender_ids = [t.id for t in receivable_tenders]
+
+            if not receivable_tender_ids:
+                return []
+
+            # Get all receivable transaction tenders with transaction and customer info
+            receivable_items = []
+            transaction_tenders = (
+                db.session.query(TransactionTender)
+                .join(Transaction)
+                .join(Customer, Transaction.customer_id == Customer.id)
+                .join(Tender, TransactionTender.tender_id == Tender.id)
+                .filter(
+                    TransactionTender.tender_id.in_(receivable_tender_ids),
+                    submitted,
+                    active
+                )
+                .order_by(Transaction.record_date.desc(), Transaction.id.desc())
+                .all()
+            )
+
+            for tt in transaction_tenders:
+                # Calculate collected amount
+                collected = (
+                    db.session.query(func.sum(CollectionDetail.amount_applied))
+                    .filter(CollectionDetail.transaction_tender_id == tt.id)
+                    .scalar() or 0
+                )
+                outstanding = tt.amount - collected
+
+                if outstanding > 0.01:  # Only include if there's outstanding balance
+                    receivable_items.append({
+                        'transaction_id': tt.transaction.id,
+                        'record_number': tt.transaction.record_number,
+                        'record_date': tt.transaction.record_date,
+                        'customer_name': tt.transaction.customer.customer_name if tt.transaction.customer else '—',
+                        'tender_name': tt.tender.tender_name,
+                        'total_amount': round(tt.amount, 2),
+                        'collected': round(collected, 2),
+                        'outstanding': round(outstanding, 2)
+                    })
+
+            return receivable_items
+
+        except Exception as e:
+            print(f"Error getting detailed receivables: {e}")
+            return []
+
+    # Get detailed receivables
+    detailed_receivables = get_detailed_receivables()
+
     # Helper function to calculate undeposited sales
     def calculate_undeposited_report(start_date_str, end_date_str):
         """Calculate undeposited sales: beginning balance, current undeposited, deposits made, ending balance."""
@@ -668,6 +728,7 @@ def get_dashboard_stats(today: date) -> dict:
         "daily_receivables": daily_receivables,
         "mtd_receivables": mtd_receivables,
         "ytd_receivables": ytd_receivables,
+        "detailed_receivables": detailed_receivables,
         # Undeposited sales report data
         "daily_undeposited": daily_undeposited,
         "mtd_undeposited": mtd_undeposited,

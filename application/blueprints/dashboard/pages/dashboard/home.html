@@ -749,6 +749,68 @@
         </tbody>
     </table>
 
+    {# Individual Receivable Cards #}
+    {% if detailed_receivables %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: var(--thc-space-4); margin-top: var(--thc-space-5);">
+        {% for item in detailed_receivables %}
+        <a href="{{ url_for('daily_sales.view_transaction', transaction_id=item.transaction_id) }}"
+           style="text-decoration: none; color: inherit;">
+            <div style="background: white; border: 2px solid var(--thc-border-default); border-radius: var(--thc-radius-lg);
+                        padding: var(--thc-space-4); transition: all 0.2s ease; box-shadow: var(--thc-shadow-sm);"
+                 onmouseover="this.style.borderColor='var(--thc-primary-500)'; this.style.boxShadow='var(--thc-shadow-md)'; this.style.transform='translateY(-2px)';"
+                 onmouseout="this.style.borderColor='var(--thc-border-default)'; this.style.boxShadow='var(--thc-shadow-sm)'; this.style.transform='translateY(0)';">
+
+                {# Card Header #}
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: var(--thc-space-3); padding-bottom: var(--thc-space-3); border-bottom: 1px solid var(--thc-border-subtle);">
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 600; color: var(--thc-text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                            # {{ item.record_number }}
+                        </div>
+                        <div style="font-size: 0.875rem; font-weight: 600; color: var(--thc-primary-700); margin-top: 0.25rem;">
+                            {{ item.customer_name }}
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 0.75rem; color: var(--thc-text-tertiary);">
+                            {{ item.record_date }}
+                        </div>
+                        <div style="background: var(--thc-info-100); color: var(--thc-info-700); padding: 0.25rem 0.5rem; border-radius: var(--thc-radius-sm); font-size: 0.75rem; font-weight: 600; margin-top: 0.25rem; display: inline-block;">
+                            {{ item.tender_name }}
+                        </div>
+                    </div>
+                </div>
+
+                {# Card Body - Amounts #}
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--thc-space-3);">
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--thc-text-tertiary); margin-bottom: 0.25rem;">Total</div>
+                        <div style="font-size: 0.9375rem; font-weight: 600; font-family: var(--thc-font-mono); color: var(--thc-text-primary);">
+                            ₱{{ "{:,.2f}".format(item.total_amount) }}
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--thc-text-tertiary); margin-bottom: 0.25rem;">Collected</div>
+                        <div style="font-size: 0.9375rem; font-weight: 600; font-family: var(--thc-font-mono); color: var(--thc-success-700);">
+                            ₱{{ "{:,.2f}".format(item.collected) }}
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--thc-text-tertiary); margin-bottom: 0.25rem;">Balance</div>
+                        <div style="font-size: 1rem; font-weight: 700; font-family: var(--thc-font-mono); color: var(--thc-danger-700);">
+                            ₱{{ "{:,.2f}".format(item.outstanding) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: var(--thc-space-8); color: var(--thc-text-tertiary); font-style: italic; margin-top: var(--thc-space-4);">
+        No outstanding receivables
+    </div>
+    {% endif %}
+
     {# Quick Actions Section #}
     <div class="quick-actions">
         <h2>Quick Actions</h2>
