@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "components/daily_sales_components.html" import metric_card, transaction_card, cash_card, transaction_row, date_navigation, help_button, user_footer %}
 {% from "components/dashboard_components.html" import quick_action_button %}
+{% from 'daily_sales/macros.html' import calc_billable_net, format_currency %}
 
 {% block title %}Daily Sales — The Health Collective Inc.{% endblock %}
 
@@ -150,9 +151,7 @@
   <div class="thc-txn-list">
     {% if transactions %}
       {% for t in transactions %}
-        {% set net = namespace(val=0) %}
-        {% for d in t.transaction_details %}{% if d.billable %}{% set net.val = net.val + d.amount - d.discount %}{% endif %}{% endfor %}
-        {% set net.val = net.val - (t.discount or 0) %}
+        {% set net = calc_billable_net(t) %}
         {% set tt = t.transaction_type %}
         <a href="{{ url_for('daily_sales.edit_transaction', transaction_id=t.id, return_url=request.url) if (not t.submitted and not t.cancelled and can_transact) else url_for('daily_sales.view_transaction', transaction_id=t.id) }}"
            class="thc-record-row">
@@ -200,7 +199,7 @@
               </div>
             {% endif %}
           </div>
-          <div class="thc-record-row__amount">₱{{ "{:,.2f}".format(net.val) }}</div>
+          <div class="thc-record-row__amount">{{ format_currency(net) }}</div>
           <div class="thc-record-row__badges">
             {# Status workflow: draft | submitted | posted | cancelled #}
             {% if t.status == 'cancelled' %}

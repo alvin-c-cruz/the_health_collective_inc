@@ -1,0 +1,146 @@
+{#
+  Jinja2 macros for daily_sales templates.
+
+  These macros provide reusable utilities for calculating and displaying
+  transaction amounts, with proper handling of billable vs non-billable items.
+#}
+
+{#
+  Calculate billable net amount for a transaction.
+
+  CRITICAL: Only billable items are included in patient bills.
+  Non-billable items (e.g., medicines dispensed but not charged) must be excluded.
+
+  Usage:
+    {% from 'daily_sales/macros.html' import calc_billable_net %}
+    {% set amount = calc_billable_net(transaction) %}
+    {{ "₱{:,.2f}".format(amount) }}
+
+  Parameters:
+    - transaction: Transaction object with transaction_details and discount
+
+  Returns:
+    - Float: Net billable amount (sum of billable line items minus discounts)
+
+  Related bugs fixed:
+    - all_transactions.html:147
+    - drafts.html:67
+    - home.html:154
+
+  Pattern:
+    SUM(billable_detail.amount - billable_detail.discount) - transaction.discount
+#}
+{% macro calc_billable_net(transaction) -%}
+  {%- set total = namespace(val=0) -%}
+  {%- for detail in transaction.transaction_details -%}
+    {%- if detail.billable -%}
+      {%- set total.val = total.val + (detail.amount - detail.discount) -%}
+    {%- endif -%}
+  {%- endfor -%}
+  {{- total.val - (transaction.discount or 0) -}}
+{%- endmacro %}
+
+
+{#
+  Calculate billable gross and discount totals for a transaction.
+
+  Returns a dictionary with 'gross' and 'discount' keys.
+  Used in views that need to show breakdown of amounts before transaction discount.
+
+  Usage:
+    {% from 'daily_sales/macros.html' import calc_billable_totals %}
+    {% set totals = calc_billable_totals(transaction) %}
+    Gross: {{ totals.gross }}
+    Discount: {{ totals.discount }}
+    Net: {{ totals.gross - totals.discount - (transaction.discount or 0) }}
+
+  Parameters:
+    - transaction: Transaction object with transaction_details
+
+  Returns:
+    - Dict: {'gross': float, 'discount': float}
+
+  Related bugs fixed:
+    - pending_approval.html:40-43
+    - view_transaction.html:147-151
+#}
+{% macro calc_billable_totals(transaction) -%}
+  {%- set gross = namespace(val=0) -%}
+  {%- set discount = namespace(val=0) -%}
+  {%- for detail in transaction.transaction_details -%}
+    {%- if detail.billable -%}
+      {%- set gross.val = gross.val + detail.amount -%}
+      {%- set discount.val = discount.val + detail.discount -%}
+    {%- endif -%}
+  {%- endfor -%}
+  {{- {'gross': gross.val, 'discount': discount.val} -}}
+{%- endmacro %}
+
+
+{#
+  Get list of billable transaction details.
+
+  Filters transaction_details to only include billable items.
+  Useful for displaying line items in transaction views.
+
+  Usage:
+    {% from 'daily_sales/macros.html' import get_billable_details %}
+    {% for detail in get_billable_details(transaction) %}
+      <tr>
+        <td>{{ detail.product.product_name }}</td>
+        <td>{{ detail.amount }}</td>
+      </tr>
+    {% endfor %}
+
+  Parameters:
+    - transaction: Transaction object with transaction_details
+
+  Returns:
+    - List: Billable transaction details only
+
+  Related bugs fixed:
+    - request_change.html:63-70
+#}
+{% macro get_billable_details(transaction) -%}
+  {{- transaction.transaction_details | selectattr('billable') | list -}}
+{%- endmacro %}
+
+
+{#
+  Format currency amount in Philippine Peso format.
+
+  Displays amount with peso sign, commas, and 2 decimal places.
+
+  Usage:
+    {% from 'daily_sales/macros.html' import format_currency %}
+    {{ format_currency(1234.56) }}  {# Outputs: ₱1,234.56 #}
+
+  Parameters:
+    - amount: Numeric value to format
+
+  Returns:
+    - String: Formatted currency string
+#}
+{% macro format_currency(amount) -%}
+  {{- "₱{:,.2f}".format(amount | float) -}}
+{%- endmacro %}
+
+
+{#
+  Calculate and display formatted billable net amount.
+
+  Combines calc_billable_net() and format_currency() for convenience.
+
+  Usage:
+    {% from 'daily_sales/macros.html' import display_billable_net %}
+    {{ display_billable_net(transaction) }}  {# Outputs: ₱5,000.00 #}
+
+  Parameters:
+    - transaction: Transaction object
+
+  Returns:
+    - String: Formatted currency string of net billable amount
+#}
+{% macro display_billable_net(transaction) -%}
+  {{- format_currency(calc_billable_net(transaction)) -}}
+{%- endmacro %}
