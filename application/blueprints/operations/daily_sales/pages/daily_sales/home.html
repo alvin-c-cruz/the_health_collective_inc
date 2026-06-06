@@ -202,19 +202,15 @@
           </div>
           <div class="thc-record-row__amount">₱{{ "{:,.2f}".format(net.val) }}</div>
           <div class="thc-record-row__badges">
-            {% if t.cancelled %}
+            {# Status workflow: draft | submitted | posted | cancelled #}
+            {% if t.status == 'cancelled' %}
               <span class="thc-record-badge thc-record-badge--cancelled">Cancelled</span>
+            {% elif t.status == 'posted' %}
+              <span class="thc-record-badge thc-record-badge--approved">Approved</span>
+            {% elif t.status == 'submitted' %}
+              <span class="thc-record-badge thc-record-badge--submitted">Submitted</span>
             {% else %}
-              {# Show workflow status #}
-              {% if t.submitted %}
-                {% if t.user_approved %}
-                  <span class="thc-record-badge thc-record-badge--approved">Approved</span>
-                {% else %}
-                  <span class="thc-record-badge thc-record-badge--submitted">Submitted</span>
-                {% endif %}
-              {% else %}
-                <span class="thc-record-badge thc-record-badge--draft">Draft</span>
-              {% endif %}
+              <span class="thc-record-badge thc-record-badge--draft">Draft</span>
             {% endif %}
           </div>
         </a>
@@ -253,7 +249,7 @@
           {% if deposit.status == 'cancelled' %}
             <span class="thc-record-badge thc-record-badge--cancelled">Cancelled</span>
           {% elif deposit.status == 'posted' %}
-            <span class="thc-record-badge thc-record-badge--posted">Posted</span>
+            <span class="thc-record-badge thc-record-badge--approved">Approved</span>
           {% elif deposit.status == 'submitted' %}
             <span class="thc-record-badge thc-record-badge--submitted">Submitted</span>
           {% else %}
@@ -292,7 +288,7 @@
           {% if collection.status == 'cancelled' %}
             <span class="thc-record-badge thc-record-badge--cancelled">Cancelled</span>
           {% elif collection.status == 'posted' %}
-            <span class="thc-record-badge thc-record-badge--posted">Posted</span>
+            <span class="thc-record-badge thc-record-badge--approved">Approved</span>
           {% elif collection.status == 'submitted' %}
             <span class="thc-record-badge thc-record-badge--submitted">Submitted</span>
           {% else %}
@@ -328,7 +324,7 @@
           {% if fund.status == 'cancelled' %}
             <span class="thc-record-badge thc-record-badge--cancelled">Cancelled</span>
           {% elif fund.status == 'posted' %}
-            <span class="thc-record-badge thc-record-badge--posted">Posted</span>
+            <span class="thc-record-badge thc-record-badge--approved">Approved</span>
           {% elif fund.status == 'submitted' %}
             <span class="thc-record-badge thc-record-badge--submitted">Submitted</span>
           {% else %}
@@ -364,7 +360,7 @@
           {% if fund.status == 'cancelled' %}
             <span class="thc-record-badge thc-record-badge--cancelled">Cancelled</span>
           {% elif fund.status == 'posted' %}
-            <span class="thc-record-badge thc-record-badge--posted">Posted</span>
+            <span class="thc-record-badge thc-record-badge--approved">Approved</span>
           {% elif fund.status == 'submitted' %}
             <span class="thc-record-badge thc-record-badge--submitted">Submitted</span>
           {% else %}
@@ -403,7 +399,7 @@
           {% elif voucher.status == 'for_reimbursement' %}
             <span class="thc-record-badge thc-record-badge--for_reimbursement">For Reimbursement</span>
           {% elif voucher.status == 'posted' %}
-            <span class="thc-record-badge thc-record-badge--posted">Posted</span>
+            <span class="thc-record-badge thc-record-badge--approved">Approved</span>
           {% elif voucher.status == 'submitted' %}
             <span class="thc-record-badge thc-record-badge--submitted">Submitted</span>
           {% else %}

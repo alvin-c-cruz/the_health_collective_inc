@@ -26,7 +26,7 @@
                 <label class="text-muted" style="font-size:0.75rem;">Status</label>
                 <div>
                     {% if transaction.is_posted %}
-                    <span class="badge bg-success">Posted</span>
+                    <span class="badge bg-success">Approved</span>
                     {% elif transaction.is_status_submitted %}
                     <span class="badge bg-warning text-dark">Submitted</span>
                     {% else %}

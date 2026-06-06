@@ -206,7 +206,7 @@
             {% if d.is_cancelled %}
               <span class="thc-rec-badge badge-cancelled">Cancelled</span>
             {% elif d.is_posted %}
-              <span class="thc-rec-badge badge-posted">Posted</span>
+              <span class="thc-rec-badge badge-posted">Approved</span>
             {% elif d.is_submitted %}
               <span class="thc-rec-badge badge-submitted">Submitted</span>
             {% else %}
@@ -242,7 +242,7 @@
             {% if c.status == 'cancelled' %}
               <span class="thc-rec-badge badge-cancelled">Cancelled</span>
             {% elif c.status == 'posted' %}
-              <span class="thc-rec-badge badge-posted">Posted</span>
+              <span class="thc-rec-badge badge-posted">Approved</span>
             {% elif c.status == 'submitted' %}
               <span class="thc-rec-badge badge-submitted">Submitted</span>
             {% else %}
@@ -290,7 +290,7 @@
               {% if fr.status == 'cancelled' %}
                 <span class="thc-rec-badge badge-cancelled">Cancelled</span>
               {% elif fr.status == 'posted' %}
-                <span class="thc-rec-badge badge-posted">Posted</span>
+                <span class="thc-rec-badge badge-posted">Approved</span>
               {% elif fr.status == 'submitted' %}
                 <span class="thc-rec-badge badge-submitted">Submitted</span>
               {% else %}
@@ -327,7 +327,7 @@
               {% if fd.status == 'cancelled' %}
                 <span class="thc-rec-badge badge-cancelled">Cancelled</span>
               {% elif fd.status == 'posted' %}
-                <span class="thc-rec-badge badge-posted">Posted</span>
+                <span class="thc-rec-badge badge-posted">Approved</span>
               {% elif fd.status == 'submitted' %}
                 <span class="thc-rec-badge badge-submitted">Submitted</span>
               {% else %}
@@ -368,7 +368,7 @@
             {% elif pcv.is_for_reimbursement %}
               <span class="thc-rec-badge badge-pending">For Reimbursement</span>
             {% elif pcv.is_posted %}
-              <span class="thc-rec-badge badge-posted">Posted</span>
+              <span class="thc-rec-badge badge-posted">Approved</span>
             {% elif pcv.is_submitted %}
               <span class="thc-rec-badge badge-submitted">Submitted</span>
             {% else %}
