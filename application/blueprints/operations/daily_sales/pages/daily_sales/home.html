@@ -161,7 +161,7 @@
     {% if transactions %}
       {% for t in transactions %}
         {% set net = namespace(val=0) %}
-        {% for d in t.transaction_details %}{% set net.val = net.val + d.amount - d.discount %}{% endfor %}
+        {% for d in t.transaction_details %}{% if d.billable %}{% set net.val = net.val + d.amount - d.discount %}{% endif %}{% endfor %}
         {% set net.val = net.val - (t.discount or 0) %}
         {% set tt = t.transaction_type %}
         <a href="{{ url_for('daily_sales.edit_transaction', transaction_id=t.id, return_url=request.url) if (not t.submitted and not t.cancelled and can_transact) else url_for('daily_sales.view_transaction', transaction_id=t.id) }}"
