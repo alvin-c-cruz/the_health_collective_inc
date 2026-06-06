@@ -38,8 +38,10 @@
                 {% set gross = namespace(val=0) %}
                 {% set disc  = namespace(val=0) %}
                 {% for d in record.transaction_details %}
-                    {% set gross.val = gross.val + d.amount %}
-                    {% set disc.val  = disc.val  + d.discount %}
+                    {% if d.billable %}
+                        {% set gross.val = gross.val + d.amount %}
+                        {% set disc.val  = disc.val  + d.discount %}
+                    {% endif %}
                 {% endfor %}
                 {% set net = gross.val - disc.val - (record.discount or 0) %}
                 <tr>
