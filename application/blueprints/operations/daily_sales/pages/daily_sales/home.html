@@ -55,7 +55,40 @@
       '₱' ~ "{:,.2f}".format(summary.total_sales),
       accent=true
     ) }}
-    {{ metric_card('Transactions', summary.transaction_count) }}
+
+    {# Transaction Demographics #}
+    <div class="thc-metric">
+      <div class="thc-metric__label">Transaction Demographics</div>
+      <div class="thc-metric__value" style="font-size: 0.9em; line-height: 1.6;">
+        {# By Type #}
+        {% if summary.by_type %}
+        <div style="margin-bottom: 8px;">
+          <strong style="font-size: 0.85em; color: var(--thc-text-secondary, #666);">By Type:</strong><br>
+          {% for type_name, count in summary.by_type.items() %}
+          <span style="font-size: 0.8em;">{{ type_name }}: {{ count }}</span>
+          {% if not loop.last %} | {% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {# By Tender #}
+        {% if summary.by_tender %}
+        <div>
+          <strong style="font-size: 0.85em; color: var(--thc-text-secondary, #666);">By Tender:</strong><br>
+          {% for tender_name, count in summary.by_tender.items() %}
+          <span style="font-size: 0.8em;">{{ tender_name }}: {{ count }}</span>
+          {% if not loop.last %} | {% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {# Show count if no transactions #}
+        {% if not summary.by_type and not summary.by_tender %}
+        <span style="font-size: 1.2em;">{{ summary.transaction_count }}</span>
+        {% endif %}
+      </div>
+    </div>
+
     {{ metric_card('Cash on hand', '₱' ~ "{:,.2f}".format(summary.cash_on_hand)) }}
   </div>
 

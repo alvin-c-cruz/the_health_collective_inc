@@ -198,6 +198,22 @@ def home():
     summary.cash_on_hand = cash_on_hand
     summary.transaction_count = len([t for t in all_transactions if t.submitted and not t.cancelled])
 
+    # Calculate demographics by transaction type
+    summary.by_type = {}
+    for t in all_transactions:
+        if t.submitted and not t.cancelled and t.transaction_type:
+            type_name = t.transaction_type.type_name
+            summary.by_type[type_name] = summary.by_type.get(type_name, 0) + 1
+
+    # Calculate demographics by tender
+    summary.by_tender = {}
+    for t in all_transactions:
+        if t.submitted and not t.cancelled:
+            for tt in t.transaction_tenders:
+                if tt.tender:
+                    tender_name = tt.tender.tender_name
+                    summary.by_tender[tender_name] = summary.by_tender.get(tender_name, 0) + 1
+
     all_tenders = Tender.query.order_by(Tender.tender_name).all()
     txn_type_tenders = {}
     for t in all_tenders:
