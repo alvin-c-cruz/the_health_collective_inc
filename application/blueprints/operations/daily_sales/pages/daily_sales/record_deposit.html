@@ -259,8 +259,12 @@
     {% endfor %}
   ];
 
-  // Set today's date as default
+  // Set deposit date - use the date from URL parameter if provided, otherwise use today
+  {% if deposit_date %}
+  document.getElementById('record_date').value = '{{ deposit_date }}';
+  {% else %}
   document.getElementById('record_date').valueAsDate = new Date();
+  {% endif %}
 
   // Update totals when deductions change
   document.getElementById('deductions').addEventListener('input', updateTotal);

@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, jsonify
 from datetime import date, datetime
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 
 from ...user import login_required, roles_accepted, current_user
 from ...register.customer import Customer
@@ -63,6 +64,8 @@ def _generate_record_number():
 @roles_accepted([ROLES_ACCEPTED])
 def home():
     from datetime import timedelta
+    # Import at function level to avoid scoping issues with DepositItem used later
+    from .models import DepositItem as DI, Deposit as Dep
 
     today = ph_today()
     date_str = request.args.get('date', str(today))
@@ -71,86 +74,38 @@ def home():
     except ValueError:
         selected_date = today
 
-    # Get transactions for the selected date
-    transactions = Transaction.query.filter(
+    # Get transactions for the selected date (including drafts for this date)
+    all_transactions = Transaction.query.options(
+        joinedload(Transaction.deposit_items).joinedload(DI.deposit)
+    ).filter(
         Transaction.record_date == str(selected_date)
     ).order_by(Transaction.id.desc()).all()
 
-    # Get all draft transactions (regardless of date) that are not cancelled
-    draft_transactions = Transaction.query.filter(
-        Transaction.submitted == None,
-        Transaction.cancelled == None
-    ).order_by(Transaction.record_date.desc(), Transaction.id.desc()).all()
-
-    # Combine: date-specific transactions + all drafts (avoiding duplicates)
-    draft_ids = {t.id for t in draft_transactions}
-    all_transactions = transactions + [t for t in draft_transactions if t.id not in {tx.id for tx in transactions}]
-
-    # Get deposits for the selected date
-    deposits = Deposit.query.filter(
+    # Get deposits for the selected date (including drafts for this date)
+    all_deposits = Deposit.query.filter(
         Deposit.record_date == str(selected_date)
     ).order_by(Deposit.id.desc()).all()
 
-    # Get all draft deposits (regardless of date) that are not cancelled
-    draft_deposits = Deposit.query.filter(
-        Deposit.status == 'draft'
-    ).order_by(Deposit.record_date.desc(), Deposit.id.desc()).all()
-
-    # Combine: date-specific deposits + all drafts (avoiding duplicates)
-    all_deposits = deposits + [d for d in draft_deposits if d.id not in {dep.id for dep in deposits}]
-
-    # Get collections for the selected date
+    # Get collections for the selected date (including drafts for this date)
     from application.blueprints.operations.collections.models import Collection
-    collections = Collection.query.filter(
+    all_collections = Collection.query.filter(
         Collection.collection_date == str(selected_date)
     ).order_by(Collection.id.desc()).all()
 
-    # Get all draft collections (regardless of date)
-    draft_collections = Collection.query.filter(
-        Collection.status == 'draft'
-    ).order_by(Collection.collection_date.desc(), Collection.id.desc()).all()
-
-    # Combine: date-specific collections + all drafts (avoiding duplicates)
-    all_collections = collections + [c for c in draft_collections if c.id not in {col.id for col in collections}]
-
-    # Get funds received for the selected date
-    funds_received = FundReceived.query.filter(
+    # Get funds received for the selected date (including drafts for this date)
+    all_funds_received = FundReceived.query.filter(
         FundReceived.record_date == str(selected_date)
     ).order_by(FundReceived.id.desc()).all()
 
-    # Get all draft funds received (regardless of date)
-    draft_funds_received = FundReceived.query.filter(
-        FundReceived.status == 'draft'
-    ).order_by(FundReceived.record_date.desc(), FundReceived.id.desc()).all()
-
-    # Combine: date-specific + all drafts (avoiding duplicates)
-    all_funds_received = funds_received + [f for f in draft_funds_received if f.id not in {fr.id for fr in funds_received}]
-
-    # Get funds disbursed for the selected date
-    funds_disbursed = FundDisbursed.query.filter(
+    # Get funds disbursed for the selected date (including drafts for this date)
+    all_funds_disbursed = FundDisbursed.query.filter(
         FundDisbursed.record_date == str(selected_date)
     ).order_by(FundDisbursed.id.desc()).all()
 
-    # Get all draft funds disbursed (regardless of date)
-    draft_funds_disbursed = FundDisbursed.query.filter(
-        FundDisbursed.status == 'draft'
-    ).order_by(FundDisbursed.record_date.desc(), FundDisbursed.id.desc()).all()
-
-    # Combine: date-specific + all drafts (avoiding duplicates)
-    all_funds_disbursed = funds_disbursed + [f for f in draft_funds_disbursed if f.id not in {fd.id for fd in funds_disbursed}]
-
-    # Get petty cash vouchers for the selected date
-    petty_cash_vouchers = PettyCashVoucher.query.filter(
+    # Get petty cash vouchers for the selected date (including drafts for this date)
+    all_petty_cash_vouchers = PettyCashVoucher.query.filter(
         PettyCashVoucher.record_date == str(selected_date)
     ).order_by(PettyCashVoucher.id.desc()).all()
-
-    # Get all draft petty cash vouchers (regardless of date)
-    draft_petty_cash_vouchers = PettyCashVoucher.query.filter(
-        PettyCashVoucher.status == 'draft'
-    ).order_by(PettyCashVoucher.record_date.desc(), PettyCashVoucher.id.desc()).all()
-
-    # Combine: date-specific + all drafts (avoiding duplicates)
-    all_petty_cash_vouchers = petty_cash_vouchers + [pcv for pcv in draft_petty_cash_vouchers if pcv.id not in {v.id for v in petty_cash_vouchers}]
 
     # Get reimbursements received for the selected date
     reimbursements_received = ReimbursementReceived.query.filter(
@@ -159,7 +114,7 @@ def home():
 
     total_sales = sum(
         sum(d.amount - d.discount for d in t.transaction_details) - (t.discount or 0)
-        for t in transactions
+        for t in all_transactions
         if t.submitted and not t.cancelled
     )
 
@@ -216,7 +171,6 @@ def home():
 
     # 5. Deposits (cumulative up to selected date, posted and submitted only) - cash going OUT to bank
     # Only count deposits from cash transactions (not receivables)
-    from .models import DepositItem
     deposit_items = (
         db.session.query(DepositItem)
         .join(Deposit)
@@ -242,7 +196,7 @@ def home():
     summary = Summary()
     summary.total_sales = total_sales
     summary.cash_on_hand = cash_on_hand
-    summary.transaction_count = len([t for t in transactions if t.submitted and not t.cancelled])
+    summary.transaction_count = len([t for t in all_transactions if t.submitted and not t.cancelled])
 
     all_tenders = Tender.query.order_by(Tender.tender_name).all()
     txn_type_tenders = {}
@@ -531,8 +485,8 @@ def edit_transaction(transaction_id):
             if action == 'submit':
                 form._submit()
                 flash('Transaction submitted successfully.', 'success')
-                # After submit, go to return URL (usually dashboard or daily sales)
-                return redirect(return_url)
+                # After submit, go to daily sales home page with the transaction's date
+                return redirect(url_for('daily_sales.home', date=record.record_date))
             else:
                 flash('Transaction updated.', 'success')
                 # After save draft, stay on edit page
@@ -1124,7 +1078,7 @@ def disapprove_transaction(transaction_id):
         db.session.rollback()
         flash(f'Transaction returned to draft, but audit logging failed: {str(e)}', 'warning')
         print(f"Audit logging failed for transaction {transaction_id}: {e}")
-        return redirect(url_for(f'{app_name}.pending_approval'))
+        return redirect(url_for('daily_sales.home', date=record.record_date))
 
     # Notification via flash message (staff will see when they next login/view their transactions)
     flash(
@@ -1133,8 +1087,8 @@ def disapprove_transaction(transaction_id):
         'warning'
     )
 
-    # Return to pending approval list
-    return redirect(url_for(f'{app_name}.pending_approval'))
+    # Return to daily sales with the transaction's date
+    return redirect(url_for('daily_sales.home', date=record.record_date))
 
 
 # ---------------------------------------------------------------------------
@@ -1248,10 +1202,10 @@ def get_undeposited_cash_transactions():
     from application.blueprints.register.tender.models import Tender
     from sqlalchemy import desc
 
-    # Get only approved (posted) transactions - exclude draft and submitted (unapproved)
+    # Get submitted transactions (including both submitted and approved)
+    # Exclude cancelled transactions
     transactions = Transaction.query.filter(
-        Transaction.submitted.isnot(None),
-        Transaction.approved_at.isnot(None),  # Only approved transactions
+        Transaction.submitted.isnot(None),  # Include all submitted transactions (approved or not)
         Transaction.cancelled.is_(None)
     ).order_by(desc(Transaction.id)).all()  # Use ID for ordering to avoid date comparison issues
 
@@ -1361,11 +1315,8 @@ def record_deposit():
 
             flash(f'Deposit recorded successfully! Total amount: ₱{total_amount:,.2f}', 'success')
 
-            # Redirect back to daily_sales if date parameter exists
-            if deposit_date:
-                return redirect(url_for(f'{app_name}.home', date=deposit_date))
-            else:
-                return redirect(url_for(f'{app_name}.deposit_report'))
+            # Always redirect back to daily_sales with the deposit's record_date
+            return redirect(url_for(f'{app_name}.home', date=deposit.record_date))
 
         except Exception as e:
             db.session.rollback()

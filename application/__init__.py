@@ -1,6 +1,7 @@
 from flask import Flask, request, redirect, url_for, abort, g, render_template, session
 from flask_login import current_user
 
+import os
 from pathlib import Path
 from http import HTTPStatus
 from datetime import timedelta
@@ -13,8 +14,19 @@ from . utils.version import get_version
 
 def create_app(test=False):
     app = Flask(__name__, instance_relative_config=True)
-    if test:
-        app.config.from_pyfile('test_config.py')
+
+    # Check if running in test mode via environment variable
+    is_testing = test or os.environ.get('TESTING') == '1'
+
+    if is_testing:
+        # Use test configuration if available, otherwise load production and override
+        try:
+            app.config.from_pyfile('test_config.py')
+        except FileNotFoundError:
+            app.config.from_pyfile('config.py')
+            # Override with test database from environment if set
+            if 'SQLALCHEMY_DATABASE_URI' in os.environ:
+                app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['SQLALCHEMY_DATABASE_URI']
     else:
         app.config.from_pyfile('config.py')
 
@@ -96,9 +108,11 @@ def create_app(test=False):
     migrate.init_app(app=app, db=db)
 
     # Sync roles from registered modules on every startup
-    with app.app_context():
-        from .blueprints.user.views import check_roles
-        check_roles()
+    # Skip during testing as tables may not exist yet
+    if not os.environ.get('TESTING'):
+        with app.app_context():
+            from .blueprints.user.views import check_roles
+            check_roles()
 
     # Register CSV Import blueprint
     from .blueprints.operations.daily_sales.csv_import_views import csv_import_bp
