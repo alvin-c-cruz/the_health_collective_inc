@@ -52,7 +52,8 @@ def get_dashboard_stats(today: date) -> dict:
     today_sales = (
         db.session.query(func.sum(TransactionDetail.amount))
         .join(Transaction)
-        .filter(Transaction.record_date == today_str, active, submitted)
+        .filter(Transaction.record_date == today_str, active, submitted,
+                TransactionDetail.billable == True)
         .scalar() or 0.0
     )
     today_discounts = (
@@ -72,7 +73,8 @@ def get_dashboard_stats(today: date) -> dict:
         db.session.query(func.sum(TransactionDetail.amount))
         .join(Transaction)
         .filter(Transaction.record_date >= month_start_str,
-                Transaction.record_date <= today_str, active, submitted)
+                Transaction.record_date <= today_str, active, submitted,
+                TransactionDetail.billable == True)
         .scalar() or 0.0
     )
     mtd_discounts = (
@@ -93,7 +95,8 @@ def get_dashboard_stats(today: date) -> dict:
         db.session.query(func.sum(TransactionDetail.amount))
         .join(Transaction)
         .filter(Transaction.record_date >= year_start_str,
-                Transaction.record_date <= today_str, active, submitted)
+                Transaction.record_date <= today_str, active, submitted,
+                TransactionDetail.billable == True)
         .scalar() or 0.0
     )
     ytd_discounts = (
@@ -107,7 +110,8 @@ def get_dashboard_stats(today: date) -> dict:
     yesterday_sales = (
         db.session.query(func.sum(TransactionDetail.amount))
         .join(Transaction)
-        .filter(Transaction.record_date == yesterday_str, active, submitted)
+        .filter(Transaction.record_date == yesterday_str, active, submitted,
+                TransactionDetail.billable == True)
         .scalar() or 0.0
     )
     yesterday_discounts = (
@@ -121,7 +125,8 @@ def get_dashboard_stats(today: date) -> dict:
         db.session.query(func.sum(TransactionDetail.amount))
         .join(Transaction)
         .filter(Transaction.record_date >= last_month_start_str,
-                Transaction.record_date <= last_month_end_str, active, submitted)
+                Transaction.record_date <= last_month_end_str, active, submitted,
+                TransactionDetail.billable == True)
         .scalar() or 0.0
     )
     last_month_discounts = (
@@ -136,7 +141,8 @@ def get_dashboard_stats(today: date) -> dict:
         db.session.query(func.sum(TransactionDetail.amount))
         .join(Transaction)
         .filter(Transaction.record_date >= last_year_start_str,
-                Transaction.record_date <= last_year_end_str, active, submitted)
+                Transaction.record_date <= last_year_end_str, active, submitted,
+                TransactionDetail.billable == True)
         .scalar() or 0.0
     )
     last_year_discounts = (
