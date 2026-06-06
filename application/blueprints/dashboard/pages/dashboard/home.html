@@ -673,44 +673,6 @@
         </tbody>
     </table>
 
-    {# Receivables Report Table #}
-    <table class="dashboard-table">
-        <thead>
-            <tr>
-                <th>Receivables Report</th>
-                <th>{{ today.strftime('%b %d, %Y') }}</th>
-                <th>MTD ({{ month_start.strftime('%b %d') }} - {{ today.strftime('%b %d') }})</th>
-                <th>YTD ({{ year_start.strftime('%b %d') }} - {{ today.strftime('%b %d') }})</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Beginning Balance</td>
-                <td>{{ "₱{:,.2f}".format(daily_receivables.beginning_balance) if daily_receivables.beginning_balance > 0 else "-" }}</td>
-                <td>{{ "₱{:,.2f}".format(mtd_receivables.beginning_balance) if mtd_receivables.beginning_balance > 0 else "-" }}</td>
-                <td>{{ "₱{:,.2f}".format(ytd_receivables.beginning_balance) if ytd_receivables.beginning_balance > 0 else "-" }}</td>
-            </tr>
-            <tr>
-                <td>Current Receivables</td>
-                <td>{{ "₱{:,.2f}".format(daily_receivables.current_receivables) if daily_receivables.current_receivables > 0 else "-" }}</td>
-                <td>{{ "₱{:,.2f}".format(mtd_receivables.current_receivables) if mtd_receivables.current_receivables > 0 else "-" }}</td>
-                <td>{{ "₱{:,.2f}".format(ytd_receivables.current_receivables) if ytd_receivables.current_receivables > 0 else "-" }}</td>
-            </tr>
-            <tr>
-                <td>Collections</td>
-                <td>{{ "₱{:,.2f}".format(daily_receivables.collections) if daily_receivables.collections > 0 else "-" }}</td>
-                <td>{{ "₱{:,.2f}".format(mtd_receivables.collections) if mtd_receivables.collections > 0 else "-" }}</td>
-                <td>{{ "₱{:,.2f}".format(ytd_receivables.collections) if ytd_receivables.collections > 0 else "-" }}</td>
-            </tr>
-            <tr class="row-primary">
-                <td><strong>Ending Balance</strong></td>
-                <td><strong>{{ "₱{:,.2f}".format(daily_receivables.ending_balance) if daily_receivables.ending_balance > 0 else "-" }}</strong></td>
-                <td><strong>{{ "₱{:,.2f}".format(mtd_receivables.ending_balance) if mtd_receivables.ending_balance > 0 else "-" }}</strong></td>
-                <td><strong>{{ "₱{:,.2f}".format(ytd_receivables.ending_balance) if ytd_receivables.ending_balance > 0 else "-" }}</strong></td>
-            </tr>
-        </tbody>
-    </table>
-
     {# Undeposited Sales Report Table #}
     <table class="dashboard-table">
         <thead>
@@ -745,6 +707,44 @@
                 <td><strong>{{ "₱{:,.2f}".format(daily_undeposited.ending_balance) if daily_undeposited.ending_balance > 0 else "-" }}</strong></td>
                 <td><strong>{{ "₱{:,.2f}".format(mtd_undeposited.ending_balance) if mtd_undeposited.ending_balance > 0 else "-" }}</strong></td>
                 <td><strong>{{ "₱{:,.2f}".format(ytd_undeposited.ending_balance) if ytd_undeposited.ending_balance > 0 else "-" }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    {# Receivables Report Table #}
+    <table class="dashboard-table">
+        <thead>
+            <tr>
+                <th>Receivables Report</th>
+                <th>{{ today.strftime('%b %d, %Y') }}</th>
+                <th>MTD ({{ month_start.strftime('%b %d') }} - {{ today.strftime('%b %d') }})</th>
+                <th>YTD ({{ year_start.strftime('%b %d') }} - {{ today.strftime('%b %d') }})</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Beginning Balance</td>
+                <td>{{ "₱{:,.2f}".format(daily_receivables.beginning_balance) if daily_receivables.beginning_balance > 0 else "-" }}</td>
+                <td>{{ "₱{:,.2f}".format(mtd_receivables.beginning_balance) if mtd_receivables.beginning_balance > 0 else "-" }}</td>
+                <td>{{ "₱{:,.2f}".format(ytd_receivables.beginning_balance) if ytd_receivables.beginning_balance > 0 else "-" }}</td>
+            </tr>
+            <tr>
+                <td>Current Receivables</td>
+                <td>{{ "₱{:,.2f}".format(daily_receivables.current_receivables) if daily_receivables.current_receivables > 0 else "-" }}</td>
+                <td>{{ "₱{:,.2f}".format(mtd_receivables.current_receivables) if mtd_receivables.current_receivables > 0 else "-" }}</td>
+                <td>{{ "₱{:,.2f}".format(ytd_receivables.current_receivables) if ytd_receivables.current_receivables > 0 else "-" }}</td>
+            </tr>
+            <tr>
+                <td>Collections</td>
+                <td>{{ "₱{:,.2f}".format(daily_receivables.collections) if daily_receivables.collections > 0 else "-" }}</td>
+                <td>{{ "₱{:,.2f}".format(mtd_receivables.collections) if mtd_receivables.collections > 0 else "-" }}</td>
+                <td>{{ "₱{:,.2f}".format(ytd_receivables.collections) if ytd_receivables.collections > 0 else "-" }}</td>
+            </tr>
+            <tr class="row-primary">
+                <td><strong>Ending Balance</strong></td>
+                <td><strong>{{ "₱{:,.2f}".format(daily_receivables.ending_balance) if daily_receivables.ending_balance > 0 else "-" }}</strong></td>
+                <td><strong>{{ "₱{:,.2f}".format(mtd_receivables.ending_balance) if mtd_receivables.ending_balance > 0 else "-" }}</strong></td>
+                <td><strong>{{ "₱{:,.2f}".format(ytd_receivables.ending_balance) if ytd_receivables.ending_balance > 0 else "-" }}</strong></td>
             </tr>
         </tbody>
     </table>
