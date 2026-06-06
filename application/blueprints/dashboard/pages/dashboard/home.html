@@ -523,26 +523,19 @@
         </thead>
         <tbody>
             {% for pt in product_types %}
-            {# Product Type Header Row #}
-            <tr class="row-section-header">
-                <td colspan="4">{{ pt.product_type_name }}</td>
-            </tr>
-
-            {# Special handling for DIALYSIS - show products instead of transaction types #}
+            {# Special handling for DIALYSIS - show as single row with totals #}
             {% if pt.product_type_name == 'DIALYSIS' %}
-                {% for product_name in daily_dialysis_products.keys()|sort %}
-                    {% set daily_total = daily_dialysis_products.get(product_name, 0) %}
-                    {% set mtd_total = mtd_dialysis_products.get(product_name, 0) %}
-                    {% set ytd_total = ytd_dialysis_products.get(product_name, 0) %}
-
-                    <tr>
-                        <td class="row-indent">{{ product_name }}</td>
-                        <td>{{ "₱{:,.2f}".format(daily_total) if daily_total > 0 else "-" }}</td>
-                        <td>{{ "₱{:,.2f}".format(mtd_total) if mtd_total > 0 else "-" }}</td>
-                        <td>{{ "₱{:,.2f}".format(ytd_total) if ytd_total > 0 else "-" }}</td>
-                    </tr>
-                {% endfor %}
+                <tr>
+                    <td>{{ pt.product_type_name }}</td>
+                    <td>{{ "₱{:,.2f}".format(daily_product_type_totals.get(pt.product_type_name, 0)) if daily_product_type_totals.get(pt.product_type_name, 0) > 0 else "-" }}</td>
+                    <td>{{ "₱{:,.2f}".format(mtd_product_type_totals.get(pt.product_type_name, 0)) if mtd_product_type_totals.get(pt.product_type_name, 0) > 0 else "-" }}</td>
+                    <td>{{ "₱{:,.2f}".format(ytd_product_type_totals.get(pt.product_type_name, 0)) if ytd_product_type_totals.get(pt.product_type_name, 0) > 0 else "-" }}</td>
+                </tr>
             {% else %}
+                {# Product Type Header Row for other types #}
+                <tr class="row-section-header">
+                    <td colspan="4">{{ pt.product_type_name }}</td>
+                </tr>
                 {# Transaction Types for other Product Types (exclude "Dialysis" from DIAGNOSTIC) #}
                 {% for tt in transaction_types %}
                     {# Skip "Dialysis" transaction type for DIAGNOSTIC #}
