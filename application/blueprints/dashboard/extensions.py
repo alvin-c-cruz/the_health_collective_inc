@@ -304,7 +304,7 @@ def get_dashboard_stats(today: date) -> dict:
             product_type_amounts = {}  # {product_type_name: amount}
 
             for detail in txn.transaction_details:
-                if detail.product and detail.product.product_type:
+                if detail.billable and detail.product and detail.product.product_type:
                     pt_name = detail.product.product_type.product_type_name
                     if pt_name not in product_type_amounts:
                         product_type_amounts[pt_name] = 0
@@ -369,7 +369,7 @@ def get_dashboard_stats(today: date) -> dict:
         # Calculate sales for each Dialysis product
         for txn in transactions:
             for detail in txn.transaction_details:
-                if detail.product and detail.product.product_type_id == dialysis_pt.id:
+                if detail.billable and detail.product and detail.product.product_type_id == dialysis_pt.id:
                     product_name = detail.product.product_name
                     if product_name in dialysis_product_sales:
                         dialysis_product_sales[product_name] += (detail.amount - detail.discount)

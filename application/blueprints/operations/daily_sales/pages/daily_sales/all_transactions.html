@@ -144,7 +144,7 @@
       <div class="thc-txn-list">
         {% for t in transactions %}
           {% set net = namespace(val=0) %}
-          {% for d in t.transaction_details %}{% set net.val = net.val + d.amount - d.discount %}{% endfor %}
+          {% for d in t.transaction_details %}{% if d.billable %}{% set net.val = net.val + d.amount - d.discount %}{% endif %}{% endfor %}
           {% set net.val = net.val - (t.discount or 0) %}
 
           <div class="thc-rec-row" style="display: flex; gap: var(--thc-gap-md);">

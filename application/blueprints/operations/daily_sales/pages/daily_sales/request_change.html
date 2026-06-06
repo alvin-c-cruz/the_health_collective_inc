@@ -61,12 +61,14 @@
                 </thead>
                 <tbody>
                     {% for detail in transaction.transaction_details %}
+                    {% if detail.billable %}
                     <tr style="border-bottom:1px solid #e5e7eb;">
                         <td style="padding:8px;">{{ detail.product.product_name if detail.product else 'N/A' }}</td>
                         <td style="padding:8px; text-align:right; font-family:monospace;">₱{{ '{:,.2f}'.format(detail.amount or 0) }}</td>
                         <td style="padding:8px; text-align:right; font-family:monospace;">₱{{ '{:,.2f}'.format(detail.discount or 0) }}</td>
                         <td style="padding:8px; text-align:right; font-family:monospace;">₱{{ '{:,.2f}'.format((detail.amount or 0) - (detail.discount or 0)) }}</td>
                     </tr>
+                    {% endif %}
                     {% endfor %}
                 </tbody>
             </table>

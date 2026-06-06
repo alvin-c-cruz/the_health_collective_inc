@@ -63,7 +63,7 @@
                 </div>
                 <div class="col-md-3">
                     <small class="text-muted">Amount:</small>
-                    {% set txn_total = txn.transaction_details | sum(attribute='amount') %}
+                    {% set txn_total = txn.transaction_details | selectattr('billable') | sum(attribute='amount') %}
                     <div><strong>₱{{ '{:,.2f}'.format(txn_total) }}</strong></div>
                 </div>
             </div>
