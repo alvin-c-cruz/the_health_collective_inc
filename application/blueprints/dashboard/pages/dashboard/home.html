@@ -556,7 +556,7 @@
                 {# Add Total row for DIAGNOSTIC #}
                 {% if pt.product_type_name == 'DIAGNOSTIC' %}
                 <tr class="row-primary">
-                    <td class="row-indent"><strong>Total</strong></td>
+                    <td class="row-indent"><strong>Total Diagnostics</strong></td>
                     <td><strong>{{ "₱{:,.2f}".format(daily_product_type_totals.get(pt.product_type_name, 0)) if daily_product_type_totals.get(pt.product_type_name, 0) > 0 else "-" }}</strong></td>
                     <td><strong>{{ "₱{:,.2f}".format(mtd_product_type_totals.get(pt.product_type_name, 0)) if mtd_product_type_totals.get(pt.product_type_name, 0) > 0 else "-" }}</strong></td>
                     <td><strong>{{ "₱{:,.2f}".format(ytd_product_type_totals.get(pt.product_type_name, 0)) if ytd_product_type_totals.get(pt.product_type_name, 0) > 0 else "-" }}</strong></td>
