@@ -673,79 +673,33 @@
         </tbody>
     </table>
 
-    {# Outstanding Balance Card - Receivables and Undeposited Cash #}
-    <div style="background: white;
-                border: 2px solid var(--thc-border-default);
-                border-radius: var(--thc-radius-lg);
-                padding: var(--thc-space-5);
-                margin-top: var(--thc-space-5);
-                box-shadow: var(--thc-shadow-md);">
-
-        {# Card Header #}
-        <div style="margin-bottom: var(--thc-space-4);
-                    padding-bottom: var(--thc-space-3);
-                    border-bottom: 2px solid var(--thc-border-default);">
-            <h3 style="margin: 0;
-                       font-size: 1.125rem;
-                       font-weight: 700;
-                       color: var(--thc-text-primary);">
-                Outstanding Balance
-            </h3>
-        </div>
-
-        {# Balance Items #}
-        <div>
+    {# Outstanding Balance Table #}
+    <table class="dashboard-table">
+        <thead>
+            <tr>
+                <th colspan="2">Outstanding Balance</th>
+            </tr>
+        </thead>
+        <tbody>
             {# Undeposited Cash sales first #}
             {% if daily_undeposited and daily_undeposited.ending_balance > 0 %}
-            <div style="display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        padding: var(--thc-space-3);
-                        margin-bottom: var(--thc-space-2);
-                        background: var(--thc-bg-subtle);
-                        border-radius: var(--thc-radius-md);
-                        border-left: 4px solid var(--thc-danger-500);">
-                <div style="font-size: 0.9375rem;
-                            color: var(--thc-text-primary);
-                            font-weight: 500;">
-                    Undeposited Cash sales
-                </div>
-                <div style="font-weight: 700;
-                            font-size: 1.125rem;
-                            font-family: var(--thc-font-mono);
-                            color: var(--thc-danger-700);">
-                    ₱{{ "{:,.2f}".format(daily_undeposited.ending_balance) }}
-                </div>
-            </div>
+            <tr>
+                <td>Undeposited Cash sales</td>
+                <td style="text-align: right;">₱{{ "{:,.2f}".format(daily_undeposited.ending_balance) }}</td>
+            </tr>
             {% endif %}
 
             {# Receivables by tender type #}
             {% if receivables_by_tender %}
                 {% for tender_group in receivables_by_tender %}
-                <div style="display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                            padding: var(--thc-space-3);
-                            margin-bottom: var(--thc-space-2);
-                            background: var(--thc-bg-subtle);
-                            border-radius: var(--thc-radius-md);
-                            border-left: 4px solid var(--thc-danger-500);">
-                    <div style="font-size: 0.9375rem;
-                                color: var(--thc-text-primary);
-                                font-weight: 500;">
-                        {{ tender_group.tender_name }}
-                    </div>
-                    <div style="font-weight: 700;
-                                font-size: 1.125rem;
-                                font-family: var(--thc-font-mono);
-                                color: var(--thc-danger-700);">
-                        ₱{{ "{:,.2f}".format(tender_group.outstanding) }}
-                    </div>
-                </div>
+                <tr>
+                    <td>{{ tender_group.tender_name }}</td>
+                    <td style="text-align: right;">₱{{ "{:,.2f}".format(tender_group.outstanding) }}</td>
+                </tr>
                 {% endfor %}
             {% endif %}
-        </div>
-    </div>
+        </tbody>
+    </table>
 
     {# Quick Actions Section #}
     <div class="quick-actions">
