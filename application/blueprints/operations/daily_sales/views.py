@@ -198,14 +198,15 @@ def home():
     summary.cash_on_hand = cash_on_hand
     summary.transaction_count = len([t for t in all_transactions if t.submitted and not t.cancelled])
 
-    # Calculate demographics by transaction type (sum sales amounts)
+    # Calculate demographics by product type (sum sales amounts by service type)
     summary.by_type = {}
     for t in all_transactions:
-        if t.submitted and not t.cancelled and t.transaction_type:
-            type_name = t.transaction_type.type_name
-            # Calculate transaction total (only billable items)
-            trans_total = sum(d.amount - d.discount for d in t.transaction_details if d.billable) - (t.discount or 0)
-            summary.by_type[type_name] = summary.by_type.get(type_name, 0) + trans_total
+        if t.submitted and not t.cancelled:
+            for detail in t.transaction_details:
+                if detail.billable and detail.product and detail.product.product_type:
+                    service_type = detail.product.product_type.type_name
+                    line_total = detail.amount - detail.discount
+                    summary.by_type[service_type] = summary.by_type.get(service_type, 0) + line_total
 
     # Calculate demographics by tender (sum tender amounts)
     summary.by_tender = {}
