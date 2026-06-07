@@ -2622,6 +2622,10 @@ def daily_report():
     # Calculate undeposited cash sales running balance
     def calculate_undeposited_cash(target_date):
         """Calculate running balance of undeposited cash sales as of target_date (billable only)"""
+        # Get cash tender IDs (tenders NOT marked as receivable) - same logic as dashboard
+        cash_tenders = Tender.query.filter(Tender.is_receivable == False).all()
+        cash_tender_ids = [t.id for t in cash_tenders]
+
         # Get all cash sales up to and including target_date
         cash_sales = Transaction.query.filter(
             Transaction.record_date <= str(target_date),
@@ -2643,15 +2647,13 @@ def daily_report():
             else:
                 billable_ratio = 0
 
-            # Apply billable ratio to cash tenders only
-            for tender in txn.transaction_tenders:
-                if tender.tender and "cash" in tender.tender.tender_name.lower():
-                    # Only count diagnostics cash (not dialysis)
-                    if (
-                        txn.transaction_type
-                        and txn.transaction_type.type_code != "dialysis"
-                    ):
-                        total_cash += tender.amount * billable_ratio
+            # Apply billable ratio to cash tenders (non-receivable tenders) only
+            # Only count diagnostics cash (not dialysis)
+            if txn.transaction_type and txn.transaction_type.type_code != "dialysis":
+                cash_tender_total = sum(
+                    td.amount for td in txn.transaction_tenders if td.tender_id in cash_tender_ids
+                )
+                total_cash += cash_tender_total * billable_ratio
 
         # Subtract all submitted/posted deposits up to and including target_date
         deposits = Deposit.query.filter(
