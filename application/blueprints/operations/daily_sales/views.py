@@ -176,17 +176,32 @@ def home():
     cash_tenders = Tender.query.filter(Tender.is_receivable == False).all()
     cash_tender_ids = [t.id for t in cash_tenders]
 
-    # 1. Cash from transactions (cumulative up to selected date) - only non-receivable tenders
-    cash_from_sales = sum(
-        sum(
+    # 1. Cash from transactions (cumulative up to selected date) - only billable, non-receivable tenders
+    # Calculate by getting cash tender amounts proportional to billable transaction details
+    cash_from_sales = 0
+    for t in Transaction.query.filter(
+        Transaction.record_date <= str(selected_date),
+        Transaction.submitted.isnot(None),
+        Transaction.cancelled.is_(None),
+    ).all():
+        # Get total billable amount for this transaction
+        billable_total = sum(
+            detail.amount for detail in t.transaction_details if detail.billable
+        )
+        # Get total transaction amount
+        total_amount = t.total_amount
+
+        # Calculate billable ratio
+        if total_amount > 0:
+            billable_ratio = billable_total / total_amount
+        else:
+            billable_ratio = 0
+
+        # Apply ratio to cash tenders only
+        cash_tender_total = sum(
             td.amount for td in t.transaction_tenders if td.tender_id in cash_tender_ids
         )
-        for t in Transaction.query.filter(
-            Transaction.record_date <= str(selected_date),
-            Transaction.submitted.isnot(None),
-            Transaction.cancelled.is_(None),
-        ).all()
-    )
+        cash_from_sales += cash_tender_total * billable_ratio
 
     # 2. Funds received (cumulative up to selected date, posted and submitted only)
     total_funds_received = sum(
@@ -2606,7 +2621,7 @@ def daily_report():
 
     # Calculate undeposited cash sales running balance
     def calculate_undeposited_cash(target_date):
-        """Calculate running balance of undeposited cash sales as of target_date"""
+        """Calculate running balance of undeposited cash sales as of target_date (billable only)"""
         # Get all cash sales up to and including target_date
         cash_sales = Transaction.query.filter(
             Transaction.record_date <= str(target_date),
@@ -2616,6 +2631,18 @@ def daily_report():
 
         total_cash = 0
         for txn in cash_sales:
+            # Calculate billable ratio for this transaction
+            billable_total = sum(
+                detail.amount for detail in txn.transaction_details if detail.billable
+            )
+            total_amount = txn.total_amount
+
+            if total_amount > 0:
+                billable_ratio = billable_total / total_amount
+            else:
+                billable_ratio = 0
+
+            # Apply billable ratio to cash tenders only
             for tender in txn.transaction_tenders:
                 if tender.tender and "cash" in tender.tender.tender_name.lower():
                     # Only count diagnostics cash (not dialysis)
@@ -2623,7 +2650,7 @@ def daily_report():
                         txn.transaction_type
                         and txn.transaction_type.type_code != "dialysis"
                     ):
-                        total_cash += tender.amount
+                        total_cash += tender.amount * billable_ratio
 
         # Subtract all submitted/posted deposits up to and including target_date
         deposits = Deposit.query.filter(
