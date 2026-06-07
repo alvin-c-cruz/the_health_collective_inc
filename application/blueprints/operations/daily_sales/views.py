@@ -224,11 +224,30 @@ def home():
     unreimbursed_expenses = total_petty_cash_expenses - total_reimbursements
 
     # 5. Deposits (cumulative BEFORE selected date, posted and submitted only) - cash going OUT to bank
-    deposits = Deposit.query.filter(
-        Deposit.record_date < str(selected_date),
-        Deposit.status.in_(["posted", "submitted"]),
-    ).all()
-    total_deposits = sum(d.total_amount for d in deposits)
+    # Only count deposits from Cash transactions (not GCASH/receivables)
+    total_deposits = 0
+    deposit_items = (
+        DepositItem.query.join(Deposit)
+        .join(Transaction)
+        .filter(
+            Deposit.record_date < str(selected_date),
+            Deposit.status.in_(["posted", "submitted"]),
+        )
+        .all()
+    )
+
+    for item in deposit_items:
+        # Check if this transaction had a Cash tender
+        for tender in item.transaction.transaction_tenders:
+            if (
+                tender.tender
+                and tender.tender.tender_name
+                and "cash" in tender.tender.tender_name.lower()
+            ):
+                if "gcash" not in tender.tender.tender_name.lower():
+                    # This deposit item is from a cash transaction
+                    total_deposits += item.amount
+                    break  # Count this deposit item only once
 
     # Final cash on hand calculation
     # Cash sales + Funds received - Funds disbursed - Unreimbursed expenses - Deposits
@@ -2613,13 +2632,31 @@ def daily_report():
                     if "gcash" not in tender.tender.tender_name.lower():
                         total_cash += tender.amount
 
-        # Subtract all submitted/posted deposits BEFORE target_date (< not <=)
-        deposits = Deposit.query.filter(
-            Deposit.record_date < str(target_date),
-            Deposit.status.in_(["submitted", "posted"]),
-        ).all()
+        # Subtract only cash deposits (deposits from transactions with Cash tender)
+        # Get all deposit items where the transaction had a Cash tender
+        total_deposited = 0
+        deposit_items = (
+            DepositItem.query.join(Deposit)
+            .join(Transaction)
+            .filter(
+                Deposit.record_date < str(target_date),
+                Deposit.status.in_(["submitted", "posted"]),
+            )
+            .all()
+        )
 
-        total_deposited = sum(d.total_amount for d in deposits)
+        for item in deposit_items:
+            # Check if this transaction had a Cash tender
+            for tender in item.transaction.transaction_tenders:
+                if (
+                    tender.tender
+                    and tender.tender.tender_name
+                    and "cash" in tender.tender.tender_name.lower()
+                ):
+                    if "gcash" not in tender.tender.tender_name.lower():
+                        # This deposit item is from a cash transaction
+                        total_deposited += item.amount
+                        break  # Count this deposit item only once
 
         return total_cash - total_deposited
 
