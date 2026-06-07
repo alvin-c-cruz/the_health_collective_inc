@@ -14,8 +14,8 @@ from ..operations.daily_sales.models import (
     Transaction,
     TransactionDetail,
     TransactionTender,
-    TransactionType,
 )
+from ..operations.transaction_type.models import TransactionType
 from ..register.product.models import Product
 from ..register.product_type.models import ProductType
 from ..register.tender.models import Tender

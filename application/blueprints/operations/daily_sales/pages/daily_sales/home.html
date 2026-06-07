@@ -73,9 +73,9 @@
         </div>
         {% endif %}
 
-        {# Show count if no transactions #}
+        {# Show empty if no transactions #}
         {% if not summary.by_type %}
-        <span style="font-size: 1.2em;">{{ summary.transaction_count }}</span>
+        <span style="font-size: 1.2em; color: var(--thc-text-muted, #888);">&nbsp;</span>
         {% endif %}
       </div>
     </div>

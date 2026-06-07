@@ -3,7 +3,7 @@ from datetime import datetime
 import pandas as pd
 from sqlalchemy import extract
 
-from application import db
+from application.extensions import db
 
 
 def entry_date_info(model):

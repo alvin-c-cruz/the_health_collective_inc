@@ -50,7 +50,7 @@ def create_user_with_roles(
     roles: List[str],
     password: str = "testpass123",
     active: bool = True,
-    **kwargs
+    **kwargs,
 ) -> "User":
     """Create a user with specific roles.
 
@@ -72,13 +72,11 @@ def create_user_with_roles(
         ... )
         >>> assert len(user.user_roles) == 3
     """
-    from tests.factories import UserFactory, RoleFactory, UserRoleFactory
     from application.extensions import db
+    from tests.factories import RoleFactory, UserFactory, UserRoleFactory
 
     # Create user
-    user = UserFactory(
-        user_name=username, active=active, **kwargs
-    )
+    user = UserFactory(user_name=username, active=active, **kwargs)
     user.set_pass_word(password)
     db.session.add(user)
     db.session.flush()
@@ -119,8 +117,8 @@ def create_admin_user(username: str = "admin", password: str = "admin123") -> "U
         >>> assert admin.admin is True
         >>> assert admin.superuser is True
     """
-    from tests.factories import UserFactory
     from application.extensions import db
+    from tests.factories import UserFactory
 
     user = UserFactory(
         user_name=username,

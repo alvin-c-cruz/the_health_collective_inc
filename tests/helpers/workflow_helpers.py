@@ -4,7 +4,7 @@ Provides utilities for common workflows like submitting, approving, and cancelin
 transactions, deposits, and other business objects.
 """
 
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 
 def submit_transaction(
@@ -25,8 +25,9 @@ def submit_transaction(
         >>> assert txn.status == "submitted"
         >>> assert txn.submitted is not None
     """
-    from application.extensions import db
     from datetime import datetime
+
+    from application.extensions import db
 
     if user_id is None:
         user_id = transaction.created_by_id
@@ -42,9 +43,7 @@ def submit_transaction(
     return transaction
 
 
-def approve_transaction(
-    transaction: "Transaction", approver_id: int
-) -> "Transaction":
+def approve_transaction(transaction: "Transaction", approver_id: int) -> "Transaction":
     """Approve a submitted transaction.
 
     Args:
@@ -60,8 +59,9 @@ def approve_transaction(
         >>> txn = approve_transaction(txn, admin.id)
         >>> assert txn.approved_by_id == admin.id
     """
-    from application.extensions import db
     from datetime import datetime
+
+    from application.extensions import db
 
     if transaction.status != "submitted":
         raise ValueError("Can only approve submitted transactions")
@@ -95,8 +95,9 @@ def cancel_transaction(
         >>> assert txn.status == "cancelled"
         >>> assert txn.cancelled is not None
     """
-    from application.extensions import db
     from datetime import datetime
+
+    from application.extensions import db
 
     transaction.status = "cancelled"
     transaction.cancelled = datetime.utcnow()
@@ -151,8 +152,9 @@ def submit_deposit(deposit: "Deposit", user_id: Optional[int] = None) -> "Deposi
         >>> deposit = submit_deposit(deposit)
         >>> assert deposit.status == "submitted"
     """
-    from application.extensions import db
     from datetime import datetime
+
+    from application.extensions import db
 
     if user_id is None and hasattr(deposit, "created_by_id"):
         user_id = deposit.created_by_id
@@ -183,8 +185,9 @@ def post_deposit(deposit: "Deposit") -> "Deposit":
         >>> deposit = post_deposit(deposit)
         >>> assert deposit.status == "posted"
     """
-    from application.extensions import db
     from datetime import datetime
+
+    from application.extensions import db
 
     if deposit.status != "submitted":
         raise ValueError("Can only post submitted deposits")
@@ -199,9 +202,7 @@ def post_deposit(deposit: "Deposit") -> "Deposit":
     return deposit
 
 
-def add_transaction_to_deposit(
-    deposit: "Deposit", transaction: "Transaction"
-) -> None:
+def add_transaction_to_deposit(deposit: "Deposit", transaction: "Transaction") -> None:
     """Add a transaction to a deposit.
 
     Args:
@@ -238,9 +239,8 @@ def create_workflow_test_data() -> Dict[str, Any]:
         >>> assert "submitted_transaction" in data
     """
     from tests.factories import (
-        UserFactory,
-        TransactionFactory,
         DepositFactory,
+        UserFactory,
         create_complete_transaction,
     )
     from tests.helpers.auth_helpers import create_admin_user

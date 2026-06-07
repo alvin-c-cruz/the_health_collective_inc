@@ -4,9 +4,9 @@ Provides readable assertions for common testing patterns like checking
 flash messages, redirects, audit logs, and status codes.
 """
 
-from typing import Optional, List
+from typing import List, Optional
+
 from flask import get_flashed_messages
-from flask.testing import FlaskClient
 
 
 def assert_status_code(response, expected_code: int, message: Optional[str] = None):
@@ -98,12 +98,10 @@ def assert_redirect_to(response, expected_location: str, partial: bool = False):
                 f"Expected redirect to contain '{expected_location}', "
                 f"got '{actual_location}'"
             )
-    else:
-        if not actual_location.endswith(expected_location):
-            raise AssertionError(
-                f"Expected redirect to '{expected_location}', "
-                f"got '{actual_location}'"
-            )
+    elif not actual_location.endswith(expected_location):
+        raise AssertionError(
+            f"Expected redirect to '{expected_location}', " f"got '{actual_location}'"
+        )
 
 
 def assert_audit_log_exists(
@@ -146,9 +144,7 @@ def assert_audit_log_exists(
         if record_id:
             filters.append(f"record_id={record_id}")
 
-        raise AssertionError(
-            f"No audit log found with filters: {', '.join(filters)}"
-        )
+        raise AssertionError(f"No audit log found with filters: {', '.join(filters)}")
 
 
 def assert_template_used(response, template_name: str):
@@ -170,13 +166,12 @@ def assert_template_used(response, template_name: str):
             raise AssertionError(
                 f"Expected template '{template_name}', got '{actual_template}'"
             )
-    else:
-        # Fallback: just check if template name appears in response
-        if template_name.encode() not in response.data:
-            raise AssertionError(
-                f"Template '{template_name}' not found in response "
-                "(note: limited check without template recording)"
-            )
+    # Fallback: just check if template name appears in response
+    elif template_name.encode() not in response.data:
+        raise AssertionError(
+            f"Template '{template_name}' not found in response "
+            "(note: limited check without template recording)"
+        )
 
 
 def assert_contains(response, text: str, case_sensitive: bool = True):

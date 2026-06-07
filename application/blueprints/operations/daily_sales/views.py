@@ -33,6 +33,7 @@ from ...register.sex.models import Sex
 from ...register.tender import Tender
 from ...user import current_user, login_required, roles_accepted
 from ..bank_account.models import BankAccount
+from ..transaction_type.models import TransactionType
 from . import app_label, app_name
 from .audit_logger import get_audit_history, log_status_change
 from .forms import Form
@@ -49,7 +50,6 @@ from .models import (
     Transaction,
     TransactionDetail,
     TransactionTender,
-    TransactionType,
 )
 
 bp = Blueprint(app_name, __name__, template_folder="pages", url_prefix=f"/{app_name}")
@@ -1011,7 +1011,6 @@ def bulk_submit():
     else:
         flash("No eligible draft transactions were selected.", "warning")
     if batch_id:
-
         return redirect(url_for("ape_batch.view_batch", batch_id=batch_id))
     return redirect(url_for(f"{app_name}.home"))
 
