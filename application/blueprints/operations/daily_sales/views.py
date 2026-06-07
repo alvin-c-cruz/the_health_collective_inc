@@ -172,63 +172,49 @@ def home():
 
     # Calculate cash on hand: cash sales + funds received - funds disbursed - unreimbursed expenses (cumulative up to selected date)
 
-    # 1. Cash from transactions (cumulative up to selected date) - only billable CASH tenders
-    # Calculate by getting cash tender amounts proportional to billable transaction details
+    # 1. Cash from transactions (cumulative BEFORE selected date) - ALL CASH tenders
     # Note: GCASH/Bank Transfer is receivable, not cash
     cash_from_sales = 0
     for t in Transaction.query.filter(
-        Transaction.record_date <= str(selected_date),
+        Transaction.record_date < str(selected_date),
         Transaction.submitted.isnot(None),
         Transaction.cancelled.is_(None),
     ).all():
-        # Get total billable amount for this transaction
-        billable_total = sum(
-            detail.amount for detail in t.transaction_details if detail.billable
-        )
-        # Get total transaction amount (sum of all transaction details)
-        total_amount = sum(detail.amount for detail in t.transaction_details)
-
-        # Calculate billable ratio
-        if total_amount > 0:
-            billable_ratio = billable_total / total_amount
-        else:
-            billable_ratio = 0
-
-        # Apply ratio to CASH tenders only (not GCASH, not Credit Card, not A/R)
+        # Count ALL cash tenders (no billable filtering, no transaction type filtering)
         for td in t.transaction_tenders:
             if td.tender and td.tender.tender_name and "cash" in td.tender.tender_name.lower():
                 # Exclude GCASH (which contains "cash" but is actually receivable)
                 if "gcash" not in td.tender.tender_name.lower():
-                    cash_from_sales += td.amount * billable_ratio
+                    cash_from_sales += td.amount
 
-    # 2. Funds received (cumulative up to selected date, posted and submitted only)
+    # 2. Funds received (cumulative BEFORE selected date, posted and submitted only)
     total_funds_received = sum(
         f.amount
         for f in FundReceived.query.filter(
-            FundReceived.record_date <= str(selected_date),
+            FundReceived.record_date < str(selected_date),
             FundReceived.status.in_(["posted", "submitted"]),
         ).all()
     )
 
-    # 3. Funds disbursed (cumulative up to selected date, posted and submitted only)
+    # 3. Funds disbursed (cumulative BEFORE selected date, posted and submitted only)
     total_funds_disbursed = sum(
         f.amount
         for f in FundDisbursed.query.filter(
-            FundDisbursed.record_date <= str(selected_date),
+            FundDisbursed.record_date < str(selected_date),
             FundDisbursed.status.in_(["posted", "submitted"]),
         ).all()
     )
 
-    # 4. Unreimbursed petty cash expenses (cumulative up to selected date, posted and submitted only, not yet reimbursed)
+    # 4. Unreimbursed petty cash expenses (cumulative BEFORE selected date, posted and submitted only, not yet reimbursed)
     # Get all petty cash vouchers
     all_petty_cash = PettyCashVoucher.query.filter(
-        PettyCashVoucher.record_date <= str(selected_date),
+        PettyCashVoucher.record_date < str(selected_date),
         PettyCashVoucher.status.in_(["posted", "submitted"]),
     ).all()
 
     # Get all reimbursements received (posted and submitted only)
     all_reimbursements = ReimbursementReceived.query.filter(
-        ReimbursementReceived.record_date <= str(selected_date),
+        ReimbursementReceived.record_date < str(selected_date),
         ReimbursementReceived.status.in_(["posted", "submitted"]),
     ).all()
 
@@ -237,21 +223,12 @@ def home():
     total_reimbursements = sum(r.amount for r in all_reimbursements)
     unreimbursed_expenses = total_petty_cash_expenses - total_reimbursements
 
-    # 5. Deposits (cumulative up to selected date, posted and submitted only) - cash going OUT to bank
-    # Only count deposits from cash transactions (not receivables)
-    deposit_items = (
-        db.session.query(DepositItem)
-        .join(Deposit)
-        .join(Transaction, DepositItem.transaction_id == Transaction.id)
-        .join(TransactionTender, TransactionTender.transaction_id == Transaction.id)
-        .filter(
-            Deposit.record_date <= str(selected_date),
-            Deposit.status.in_(["posted", "submitted"]),
-            TransactionTender.tender_id.in_(cash_tender_ids),
-        )
-        .all()
-    )
-    total_deposits = sum(item.amount for item in deposit_items)
+    # 5. Deposits (cumulative BEFORE selected date, posted and submitted only) - cash going OUT to bank
+    deposits = Deposit.query.filter(
+        Deposit.record_date < str(selected_date),
+        Deposit.status.in_(["posted", "submitted"]),
+    ).all()
+    total_deposits = sum(d.total_amount for d in deposits)
 
     # Final cash on hand calculation
     # Cash sales + Funds received - Funds disbursed - Unreimbursed expenses - Deposits
@@ -2619,45 +2596,26 @@ def daily_report():
 
     # Calculate undeposited cash sales running balance
     def calculate_undeposited_cash(target_date):
-        """Calculate running balance of undeposited cash sales as of target_date (billable only)"""
-        # Get all cash sales up to and including target_date
+        """Calculate running balance of undeposited cash sales before target_date"""
+        # Get all cash sales BEFORE target_date (< not <=)
         cash_sales = Transaction.query.filter(
-            Transaction.record_date <= str(target_date),
+            Transaction.record_date < str(target_date),
             Transaction.submitted.isnot(None),
             Transaction.cancelled.is_(None),
         ).all()
 
         total_cash = 0
         for txn in cash_sales:
-            # Calculate billable ratio for this transaction
-            billable_total = sum(
-                detail.amount for detail in txn.transaction_details if detail.billable
-            )
-            # Get total transaction amount (sum of all transaction details)
-            total_amount = sum(detail.amount for detail in txn.transaction_details)
+            # Count ALL cash tenders (no billable filtering, no transaction type filtering)
+            for tender in txn.transaction_tenders:
+                if tender.tender and tender.tender.tender_name and "cash" in tender.tender.tender_name.lower():
+                    # Exclude GCASH (which contains "cash" but is actually receivable)
+                    if "gcash" not in tender.tender.tender_name.lower():
+                        total_cash += tender.amount
 
-            if total_amount > 0:
-                billable_ratio = billable_total / total_amount
-            else:
-                billable_ratio = 0
-
-            # Apply billable ratio to CASH tenders only (not GCASH, not Credit Card, not A/R)
-            # Exclude dialysis transactions, but include transactions without transaction_type
-            is_dialysis = (
-                txn.transaction_type
-                and txn.transaction_type.type_code == "dialysis"
-            )
-
-            if not is_dialysis:
-                for tender in txn.transaction_tenders:
-                    if tender.tender and tender.tender.tender_name and "cash" in tender.tender.tender_name.lower():
-                        # Exclude GCASH (which contains "cash" but is actually receivable)
-                        if "gcash" not in tender.tender.tender_name.lower():
-                            total_cash += tender.amount * billable_ratio
-
-        # Subtract all submitted/posted deposits up to and including target_date
+        # Subtract all submitted/posted deposits BEFORE target_date (< not <=)
         deposits = Deposit.query.filter(
-            Deposit.record_date <= str(target_date),
+            Deposit.record_date < str(target_date),
             Deposit.status.in_(["submitted", "posted"]),
         ).all()
 
