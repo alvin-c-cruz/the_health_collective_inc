@@ -2642,8 +2642,13 @@ def daily_report():
                 billable_ratio = 0
 
             # Apply billable ratio to CASH tenders only (not GCASH, not Credit Card, not A/R)
-            # Only count diagnostics cash (not dialysis)
-            if txn.transaction_type and txn.transaction_type.type_code != "dialysis":
+            # Exclude dialysis transactions, but include transactions without transaction_type
+            is_dialysis = (
+                txn.transaction_type
+                and txn.transaction_type.type_code == "dialysis"
+            )
+
+            if not is_dialysis:
                 for tender in txn.transaction_tenders:
                     if tender.tender and tender.tender.tender_name and "cash" in tender.tender.tender_name.lower():
                         # Exclude GCASH (which contains "cash" but is actually receivable)
