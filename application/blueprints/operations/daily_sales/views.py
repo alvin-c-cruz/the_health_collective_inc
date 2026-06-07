@@ -188,8 +188,8 @@ def home():
         billable_total = sum(
             detail.amount for detail in t.transaction_details if detail.billable
         )
-        # Get total transaction amount
-        total_amount = t.total_amount
+        # Get total transaction amount (sum of all transaction details)
+        total_amount = sum(detail.amount for detail in t.transaction_details)
 
         # Calculate billable ratio
         if total_amount > 0:
@@ -2635,7 +2635,8 @@ def daily_report():
             billable_total = sum(
                 detail.amount for detail in txn.transaction_details if detail.billable
             )
-            total_amount = txn.total_amount
+            # Get total transaction amount (sum of all transaction details)
+            total_amount = sum(detail.amount for detail in txn.transaction_details)
 
             if total_amount > 0:
                 billable_ratio = billable_total / total_amount
