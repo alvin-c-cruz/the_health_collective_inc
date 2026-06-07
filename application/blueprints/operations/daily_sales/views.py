@@ -172,12 +172,9 @@ def home():
 
     # Calculate cash on hand: cash sales + funds received - funds disbursed - unreimbursed expenses (cumulative up to selected date)
 
-    # Get cash tender IDs (tenders NOT marked as receivable)
-    cash_tenders = Tender.query.filter(Tender.is_receivable == False).all()
-    cash_tender_ids = [t.id for t in cash_tenders]
-
-    # 1. Cash from transactions (cumulative up to selected date) - only billable, non-receivable tenders
+    # 1. Cash from transactions (cumulative up to selected date) - only billable CASH tenders
     # Calculate by getting cash tender amounts proportional to billable transaction details
+    # Note: GCASH/Bank Transfer is receivable, not cash
     cash_from_sales = 0
     for t in Transaction.query.filter(
         Transaction.record_date <= str(selected_date),
@@ -197,11 +194,12 @@ def home():
         else:
             billable_ratio = 0
 
-        # Apply ratio to cash tenders only
-        cash_tender_total = sum(
-            td.amount for td in t.transaction_tenders if td.tender_id in cash_tender_ids
-        )
-        cash_from_sales += cash_tender_total * billable_ratio
+        # Apply ratio to CASH tenders only (not GCASH, not Credit Card, not A/R)
+        for td in t.transaction_tenders:
+            if td.tender and td.tender.tender_name and "cash" in td.tender.tender_name.lower():
+                # Exclude GCASH (which contains "cash" but is actually receivable)
+                if "gcash" not in td.tender.tender_name.lower():
+                    cash_from_sales += td.amount * billable_ratio
 
     # 2. Funds received (cumulative up to selected date, posted and submitted only)
     total_funds_received = sum(
@@ -2622,10 +2620,6 @@ def daily_report():
     # Calculate undeposited cash sales running balance
     def calculate_undeposited_cash(target_date):
         """Calculate running balance of undeposited cash sales as of target_date (billable only)"""
-        # Get cash tender IDs (tenders NOT marked as receivable) - same logic as dashboard
-        cash_tenders = Tender.query.filter(Tender.is_receivable == False).all()
-        cash_tender_ids = [t.id for t in cash_tenders]
-
         # Get all cash sales up to and including target_date
         cash_sales = Transaction.query.filter(
             Transaction.record_date <= str(target_date),
@@ -2647,13 +2641,14 @@ def daily_report():
             else:
                 billable_ratio = 0
 
-            # Apply billable ratio to cash tenders (non-receivable tenders) only
+            # Apply billable ratio to CASH tenders only (not GCASH, not Credit Card, not A/R)
             # Only count diagnostics cash (not dialysis)
             if txn.transaction_type and txn.transaction_type.type_code != "dialysis":
-                cash_tender_total = sum(
-                    td.amount for td in txn.transaction_tenders if td.tender_id in cash_tender_ids
-                )
-                total_cash += cash_tender_total * billable_ratio
+                for tender in txn.transaction_tenders:
+                    if tender.tender and tender.tender.tender_name and "cash" in tender.tender.tender_name.lower():
+                        # Exclude GCASH (which contains "cash" but is actually receivable)
+                        if "gcash" not in tender.tender.tender_name.lower():
+                            total_cash += tender.amount * billable_ratio
 
         # Subtract all submitted/posted deposits up to and including target_date
         deposits = Deposit.query.filter(
