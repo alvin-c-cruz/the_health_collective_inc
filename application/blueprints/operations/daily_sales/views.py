@@ -2486,7 +2486,47 @@ def daily_report():
     except ValueError:
         curr_date = ph_today()
 
-    prev_date = curr_date - timedelta(days=1)
+    # Helper function to find previous date with transactions
+    def find_prev_date_with_transactions(from_date):
+        """Find the most recent date before from_date that has submitted transactions"""
+        check_date = from_date - timedelta(days=1)
+        max_lookback = 90  # Look back up to 90 days
+
+        for _ in range(max_lookback):
+            has_transactions = Transaction.query.filter(
+                Transaction.record_date == str(check_date),
+                Transaction.submitted.isnot(None),
+                Transaction.cancelled.is_(None),
+            ).first() is not None
+
+            if has_transactions:
+                return check_date
+            check_date -= timedelta(days=1)
+
+        # If no transactions found in 90 days, return yesterday
+        return from_date - timedelta(days=1)
+
+    # Helper function to find next date with transactions
+    def find_next_date_with_transactions(from_date):
+        """Find the next date after from_date that has submitted transactions"""
+        check_date = from_date + timedelta(days=1)
+        max_lookforward = 90  # Look forward up to 90 days
+
+        for _ in range(max_lookforward):
+            has_transactions = Transaction.query.filter(
+                Transaction.record_date == str(check_date),
+                Transaction.submitted.isnot(None),
+                Transaction.cancelled.is_(None),
+            ).first() is not None
+
+            if has_transactions:
+                return check_date
+            check_date += timedelta(days=1)
+
+        # If no transactions found in 90 days, return tomorrow
+        return from_date + timedelta(days=1)
+
+    prev_date = find_prev_date_with_transactions(curr_date)
 
     def build_report(target_date):
         transactions = Transaction.query.filter(
@@ -2744,7 +2784,7 @@ def daily_report():
         "app_label": app_label,
         "report_date": curr_date,
         "prev_date": prev_date,
-        "next_date": curr_date + timedelta(days=1),
+        "next_date": find_next_date_with_transactions(curr_date),
     }
     return render_template("daily_sales/daily_sales_report.html", **context)
 
