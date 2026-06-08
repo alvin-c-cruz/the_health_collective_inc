@@ -4247,7 +4247,9 @@ def new_petty_cash_voucher():
 @roles_accepted([ROLES_ACCEPTED])
 def get_voucher_data(voucher_id):
     """Get voucher data as JSON for editing"""
-    voucher = PettyCashVoucher.query.get_or_404(voucher_id)
+    voucher = db.session.get(PettyCashVoucher, voucher_id)
+    if not voucher:
+        return jsonify({"error": "Voucher not found"}), 404
 
     return jsonify(
         {

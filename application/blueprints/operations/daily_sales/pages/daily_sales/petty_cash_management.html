@@ -1541,7 +1541,11 @@
 
     // Fetch voucher data for all selected vouchers
     Promise.all(voucherIds.map(id =>
-      fetch(`/daily_sales/petty_cash/voucher/${id}/data`).then(r => r.json())
+      fetch(`/daily_sales/petty_cash/voucher/${id}/data`)
+        .then(r => {
+          if (!r.ok) throw new Error(`Failed to fetch voucher ${id}: ${r.statusText}`);
+          return r.json();
+        })
     )).then(vouchers => {
       // Calculate date range
       const dates = vouchers.map(v => new Date(v.record_date)).sort((a, b) => a - b);
@@ -1592,7 +1596,7 @@
       modal.show();
     }).catch(error => {
       console.error('Error fetching voucher data:', error);
-      alert('Error loading voucher data');
+      alert('Error loading voucher data: ' + error.message);
     });
   }
 
