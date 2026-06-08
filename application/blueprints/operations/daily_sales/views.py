@@ -4586,6 +4586,46 @@ def create_reimbursement_report():
         return redirect(url_for("daily_sales.petty_cash_management"))
 
 
+@bp.route("/petty_cash/reimbursement_report/<report_number>/data", methods=["GET"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def get_reimbursement_report_data(report_number):
+    """Get reimbursement report data as JSON"""
+    report = ReimbursementReport.query.filter_by(report_number=report_number).first()
+
+    if not report:
+        return jsonify({"error": "Report not found"}), 404
+
+    # Get vouchers in this report
+    vouchers = PettyCashVoucher.query.filter_by(
+        reimbursement_report_id=report.id
+    ).order_by(
+        PettyCashVoucher.record_date,
+        PettyCashVoucher.pcv_number
+    ).all()
+
+    vouchers_data = [
+        {
+            "pcv_number": v.pcv_number,
+            "record_date": v.record_date,
+            "payee_name": v.payee.name if v.payee else "N/A",
+            "description": v.description or "",
+            "amount": float(v.amount),
+        }
+        for v in vouchers
+    ]
+
+    return jsonify({
+        "report_number": report.report_number,
+        "created_date": report.created_date,
+        "period_start": report.period_start,
+        "period_end": report.period_end,
+        "total_amount": float(sum(v.amount for v in vouchers)),
+        "status": report.status,
+        "vouchers": vouchers_data,
+    })
+
+
 @bp.route("/petty_cash/reimbursement/new", methods=["POST"])
 @login_required
 @roles_accepted([ROLES_ACCEPTED])

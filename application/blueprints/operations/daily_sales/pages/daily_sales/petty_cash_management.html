@@ -1672,13 +1672,59 @@
 
   // View specific report details
   function viewReportDetails(reportNo) {
-    // In real implementation, fetch report data from server
-    // For now, just show the modal with mock data
-    document.getElementById('detailReportNo').textContent = reportNo;
-    document.getElementById('detailReportNo2').textContent = reportNo;
+    // Fetch report data from server
+    fetch(`/daily_sales/petty_cash/reimbursement_report/${reportNo}/data`)
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to fetch report data');
+        return response.json();
+      })
+      .then(data => {
+        // Update modal header
+        document.getElementById('detailReportNo').textContent = data.report_number;
+        document.getElementById('detailReportNo2').textContent = data.report_number;
 
-    const modal = new bootstrap.Modal(document.getElementById('viewReportDetailsModal'));
-    modal.show();
+        // Format period
+        const formatDate = (dateStr) => {
+          const date = new Date(dateStr);
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+        };
+
+        const period = data.period_start === data.period_end
+          ? formatDate(data.period_start)
+          : `${formatDate(data.period_start)} - ${formatDate(data.period_end)}`;
+
+        document.getElementById('detailPeriod').textContent = period;
+        document.getElementById('detailCreated').textContent = formatDate(data.created_date);
+
+        // Populate vouchers table
+        const tbody = document.getElementById('detailVouchersBody');
+        tbody.innerHTML = '';
+
+        data.vouchers.forEach(voucher => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${voucher.pcv_number}</td>
+            <td>${formatDateForPrint(voucher.record_date)}</td>
+            <td>${voucher.payee_name}</td>
+            <td>${voucher.description || 'N/A'}</td>
+            <td style="text-align: right;">₱${voucher.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+          `;
+          tbody.appendChild(row);
+        });
+
+        // Update total
+        document.getElementById('detailTotalAmount').textContent =
+          '₱' + data.total_amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('viewReportDetailsModal'));
+        modal.show();
+      })
+      .catch(error => {
+        console.error('Error fetching report data:', error);
+        alert('Error loading report details: ' + error.message);
+      });
   }
 
   // Print PCV
