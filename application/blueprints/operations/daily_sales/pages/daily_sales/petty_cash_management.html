@@ -129,7 +129,9 @@
 
   /* ── reimbursement report button ── */
   .reimbursement-actions { margin-bottom: 1rem; display: flex; justify-content: flex-end; gap: 10px; }
-  .btn-reimbursement-report { padding: 8px 16px; border: none; border-radius: 6px; font-size: .85rem; font-weight: 600; background: #1a6473; color: #fff; cursor: pointer; transition: all .15s; }
+  .btn-download-excel { padding: 8px 16px; border: none; border-radius: 6px; font-size: .85rem; font-weight: 600; background: #217346; color: #fff; cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-download-excel:hover { background: #1a5c37; }
+  .btn-reimbursement-report { padding: 8px 16px; border: none; border-radius: 6px; font-size: .85rem; font-weight: 600; background: #1a6473; color: #fff; cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
   .btn-reimbursement-report:hover { background: #135260; }
   .btn-reimbursement-report:disabled { background: #ccc; cursor: not-allowed; }
 
@@ -548,6 +550,9 @@
 
     <!-- Reimbursement Actions -->
     <div class="reimbursement-actions">
+      <button type="button" class="btn-download-excel" onclick="downloadExcel()">
+        <i class="bi bi-file-earmark-excel"></i> Download as Excel
+      </button>
       <button type="button" class="btn-reimbursement-report" id="createReimbursementBtn" onclick="openReimbursementReport()">
         <i class="bi bi-file-earmark-text"></i> Create Reimbursement Report
       </button>
@@ -1509,6 +1514,19 @@
     const checkboxes = document.querySelectorAll('.pcv-select:checked');
     const btn = document.getElementById('createReimbursementBtn');
     btn.disabled = checkboxes.length === 0;
+  }
+
+  function downloadExcel() {
+    // Get current filter parameters
+    const params = new URLSearchParams();
+    const dateFilter = document.getElementById('filterDate')?.value;
+    const statusFilter = document.getElementById('filterStatus')?.value;
+
+    if (dateFilter) params.append('date', dateFilter);
+    if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
+
+    // Navigate to download endpoint
+    window.location.href = `/daily_sales/petty_cash/download_excel?${params.toString()}`;
   }
 
   function openReimbursementReport() {

@@ -287,13 +287,37 @@
           </tr>
           <tr>
             <td class="lbl">Cash Deposited</td>
-            <td class="num {% if prev_cash_deposited == 0 %}zero{% endif %}">{{ "{:,.2f}".format(prev_cash_deposited) }}</td>
-            <td class="num {% if curr_cash_deposited == 0 %}zero{% endif %}">{{ "{:,.2f}".format(curr_cash_deposited) }}</td>
+            <td class="num {% if prev_cash_deposited == 0 %}zero{% else %}neg{% endif %}">
+              {% if prev_cash_deposited == 0 %}
+                0.00
+              {% else %}
+                ({{ "{:,.2f}".format(prev_cash_deposited) }})
+              {% endif %}
+            </td>
+            <td class="num {% if curr_cash_deposited == 0 %}zero{% else %}neg{% endif %}">
+              {% if curr_cash_deposited == 0 %}
+                0.00
+              {% else %}
+                ({{ "{:,.2f}".format(curr_cash_deposited) }})
+              {% endif %}
+            </td>
           </tr>
           <tr>
             <td class="lbl">Expenses</td>
-            <td class="num {% if prev_daily_funds.total_disbursed == 0 %}zero{% endif %}">{{ "{:,.2f}".format(prev_daily_funds.total_disbursed) }}</td>
-            <td class="num {% if curr_daily_funds.total_disbursed == 0 %}zero{% endif %}">{{ "{:,.2f}".format(curr_daily_funds.total_disbursed) }}</td>
+            <td class="num {% if prev_daily_funds.total_disbursed == 0 %}zero{% else %}neg{% endif %}">
+              {% if prev_daily_funds.total_disbursed == 0 %}
+                0.00
+              {% else %}
+                ({{ "{:,.2f}".format(prev_daily_funds.total_disbursed) }})
+              {% endif %}
+            </td>
+            <td class="num {% if curr_daily_funds.total_disbursed == 0 %}zero{% else %}neg{% endif %}">
+              {% if curr_daily_funds.total_disbursed == 0 %}
+                0.00
+              {% else %}
+                ({{ "{:,.2f}".format(curr_daily_funds.total_disbursed) }})
+              {% endif %}
+            </td>
           </tr>
           <tr class="ending-row">
             <td style="padding-left:5px">Ending Cash</td>
@@ -329,8 +353,20 @@
           {% endfor %}
           <tr>
             <td class="lbl">Unreimbursed Expenses</td>
-            <td class="num zero">0.00</td>
-            <td class="num zero">0.00</td>
+            <td class="num {% if prev_unreimbursed_expenses == 0 %}zero{% elif prev_unreimbursed_expenses < 0 %}neg{% endif %}">
+              {% if prev_unreimbursed_expenses < 0 %}
+                ({{ "{:,.2f}".format(-prev_unreimbursed_expenses) }})
+              {% else %}
+                {{ "{:,.2f}".format(prev_unreimbursed_expenses) }}
+              {% endif %}
+            </td>
+            <td class="num {% if curr_unreimbursed_expenses == 0 %}zero{% elif curr_unreimbursed_expenses < 0 %}neg{% endif %}">
+              {% if curr_unreimbursed_expenses < 0 %}
+                ({{ "{:,.2f}".format(-curr_unreimbursed_expenses) }})
+              {% else %}
+                {{ "{:,.2f}".format(curr_unreimbursed_expenses) }}
+              {% endif %}
+            </td>
           </tr>
           <tr>
             <td class="lbl">Undeposited Cash Sales</td>
@@ -339,12 +375,12 @@
           </tr>
           <tr class="total-row">
             <td style="padding-left:5px">Total Accountabilities</td>
-            <td class="num {% if (prev_fund_balances.values()|sum + prev_undeposited) == 0 %}zero{% endif %}">
-              {% set prev_total = prev_fund_balances.values()|sum + prev_undeposited %}
+            <td class="num {% if (prev_fund_balances.values()|sum + prev_unreimbursed_expenses + prev_undeposited) == 0 %}zero{% endif %}">
+              {% set prev_total = prev_fund_balances.values()|sum + prev_unreimbursed_expenses + prev_undeposited %}
               {{ "{:,.2f}".format(prev_total) }}
             </td>
-            <td class="num {% if (curr_fund_balances.values()|sum + curr_undeposited) == 0 %}zero{% endif %}">
-              {% set curr_total = curr_fund_balances.values()|sum + curr_undeposited %}
+            <td class="num {% if (curr_fund_balances.values()|sum + curr_unreimbursed_expenses + curr_undeposited) == 0 %}zero{% endif %}">
+              {% set curr_total = curr_fund_balances.values()|sum + curr_unreimbursed_expenses + curr_undeposited %}
               {{ "{:,.2f}".format(curr_total) }}
             </td>
           </tr>

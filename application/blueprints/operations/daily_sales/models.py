@@ -543,6 +543,10 @@ class PettyCashVoucher(db.Model):
         return short_date(self.record_date)
 
     @property
+    def formatted_record_date(self):
+        return short_date(self.record_date) if self.record_date else None
+
+    @property
     def is_draft(self):
         return self.status == "draft"
 

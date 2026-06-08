@@ -182,7 +182,11 @@ def home():
     ).all():
         # Count ALL cash tenders (no billable filtering, no transaction type filtering)
         for td in t.transaction_tenders:
-            if td.tender and td.tender.tender_name and "cash" in td.tender.tender_name.lower():
+            if (
+                td.tender
+                and td.tender.tender_name
+                and "cash" in td.tender.tender_name.lower()
+            ):
                 # Exclude GCASH (which contains "cash" but is actually receivable)
                 if "gcash" not in td.tender.tender_name.lower():
                     cash_from_sales += td.amount
@@ -1013,7 +1017,7 @@ def bulk_submit():
         record = Transaction.query.get(int(tid))
         if record and not record.submitted and not record.cancelled:
             record.submitted = str(ph_today())
-            record.status = 'submitted'  # Update new status field
+            record.status = "submitted"  # Update new status field
             submitted_count += 1
     db.session.commit()
     if submitted_count:
@@ -2036,7 +2040,7 @@ def reject_transaction(transaction_id):
 
     # Clear submitted status to send back to draft
     transaction.submitted = None
-    transaction.status = 'draft'  # Update new status field
+    transaction.status = "draft"  # Update new status field
     transaction.updated_at = datetime.now()
 
     db.session.commit()
@@ -2493,11 +2497,14 @@ def daily_report():
         max_lookback = 90  # Look back up to 90 days
 
         for _ in range(max_lookback):
-            has_transactions = Transaction.query.filter(
-                Transaction.record_date == str(check_date),
-                Transaction.submitted.isnot(None),
-                Transaction.cancelled.is_(None),
-            ).first() is not None
+            has_transactions = (
+                Transaction.query.filter(
+                    Transaction.record_date == str(check_date),
+                    Transaction.submitted.isnot(None),
+                    Transaction.cancelled.is_(None),
+                ).first()
+                is not None
+            )
 
             if has_transactions:
                 return check_date
@@ -2513,11 +2520,14 @@ def daily_report():
         max_lookforward = 90  # Look forward up to 90 days
 
         for _ in range(max_lookforward):
-            has_transactions = Transaction.query.filter(
-                Transaction.record_date == str(check_date),
-                Transaction.submitted.isnot(None),
-                Transaction.cancelled.is_(None),
-            ).first() is not None
+            has_transactions = (
+                Transaction.query.filter(
+                    Transaction.record_date == str(check_date),
+                    Transaction.submitted.isnot(None),
+                    Transaction.cancelled.is_(None),
+                ).first()
+                is not None
+            )
 
             if has_transactions:
                 return check_date
@@ -2665,10 +2675,10 @@ def daily_report():
 
     # Calculate undeposited cash sales running balance
     def calculate_undeposited_cash(target_date):
-        """Calculate running balance of undeposited cash sales before target_date"""
-        # Get all cash sales BEFORE target_date (< not <=)
+        """Calculate running balance of undeposited cash sales as of target_date (ending balance)"""
+        # Get all cash sales UP TO AND INCLUDING target_date (<= not <)
         cash_sales = Transaction.query.filter(
-            Transaction.record_date < str(target_date),
+            Transaction.record_date <= str(target_date),
             Transaction.submitted.isnot(None),
             Transaction.cancelled.is_(None),
         ).all()
@@ -2677,7 +2687,11 @@ def daily_report():
         for txn in cash_sales:
             # Count ALL cash tenders (no billable filtering, no transaction type filtering)
             for tender in txn.transaction_tenders:
-                if tender.tender and tender.tender.tender_name and "cash" in tender.tender.tender_name.lower():
+                if (
+                    tender.tender
+                    and tender.tender.tender_name
+                    and "cash" in tender.tender.tender_name.lower()
+                ):
                     # Exclude GCASH (which contains "cash" but is actually receivable)
                     if "gcash" not in tender.tender.tender_name.lower():
                         total_cash += tender.amount
@@ -2689,7 +2703,7 @@ def daily_report():
             DepositItem.query.join(Deposit)
             .join(Transaction)
             .filter(
-                Deposit.record_date < str(target_date),
+                Deposit.record_date <= str(target_date),
                 Deposit.status.in_(["submitted", "posted"]),
             )
             .all()
@@ -2719,16 +2733,38 @@ def daily_report():
         ).all()
         return sum(d.total_amount for d in deposits)
 
+    # Calculate unreimbursed petty cash expenses
+    def calculate_unreimbursed_expenses(target_date):
+        """Calculate unreimbursed petty cash expenses as of target_date (ending balance)"""
+        # Get all petty cash vouchers UP TO AND INCLUDING target_date
+        all_petty_cash = PettyCashVoucher.query.filter(
+            PettyCashVoucher.record_date <= str(target_date),
+            PettyCashVoucher.status.in_(["posted", "submitted"]),
+        ).all()
+
+        # Get all reimbursements received UP TO AND INCLUDING target_date
+        all_reimbursements = ReimbursementReceived.query.filter(
+            ReimbursementReceived.record_date <= str(target_date),
+            ReimbursementReceived.status.in_(["posted", "submitted"]),
+        ).all()
+
+        # Calculate unreimbursed amount as negative (cash out/owed)
+        # Return negative value to indicate it's a liability/accountability
+        total_petty_cash = sum(pcv.amount for pcv in all_petty_cash)
+        total_reimbursements = sum(r.amount for r in all_reimbursements)
+        return -(total_petty_cash - total_reimbursements)
+
     # Calculate beginning cash balance (ending cash from previous date)
     def calculate_cash_on_hand(target_date):
         """
         Calculate cash on hand balance as of target_date
-        Formula: Fund balances + Undeposited cash sales
+        Formula: Fund balances + Undeposited cash sales + Unreimbursed expenses (negative)
         """
         fund_balances = calculate_fund_running_balance(target_date)
         undeposited = calculate_undeposited_cash(target_date)
+        unreimbursed = calculate_unreimbursed_expenses(target_date)
         total_funds = sum(fund_balances.values())
-        return total_funds + undeposited
+        return total_funds + undeposited + unreimbursed
 
     prev_daily_funds = calculate_daily_fund_movements(prev_date)
     curr_daily_funds = calculate_daily_fund_movements(curr_date)
@@ -2743,9 +2779,12 @@ def daily_report():
     prev_cash_deposited = calculate_cash_deposited(prev_date)
     curr_cash_deposited = calculate_cash_deposited(curr_date)
 
+    # Calculate unreimbursed expenses for each date
+    prev_unreimbursed_expenses = calculate_unreimbursed_expenses(prev_date)
+    curr_unreimbursed_expenses = calculate_unreimbursed_expenses(curr_date)
+
     # Calculate beginning and ending cash
     # Beginning cash for prev_date = ending cash from day before prev_date
-    from datetime import timedelta
 
     day_before_prev = prev_date - timedelta(days=1)
     prev_beginning_cash = calculate_cash_on_hand(day_before_prev)
@@ -2780,6 +2819,8 @@ def daily_report():
         "curr_beginning_cash": curr_beginning_cash,
         "prev_ending_cash": prev_ending_cash,
         "curr_ending_cash": curr_ending_cash,
+        "prev_unreimbursed_expenses": prev_unreimbursed_expenses,
+        "curr_unreimbursed_expenses": curr_unreimbursed_expenses,
         "fund_categories": fund_categories,
         "app_label": app_label,
         "report_date": curr_date,
@@ -4037,6 +4078,102 @@ def petty_cash_management():
         "unreimbursed_pcv": unreimbursed_pcv,
     }
     return render_template("daily_sales/petty_cash_management.html", **context)
+
+
+@bp.route("/petty_cash/download_excel", methods=["GET"])
+@login_required
+@roles_accepted([ROLES_ACCEPTED])
+def download_petty_cash_excel():
+    """Download petty cash vouchers as Excel file"""
+    from io import BytesIO
+
+    from flask import send_file
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+
+    # Get filter parameters
+    filter_date = request.args.get("date", "")
+    filter_status = request.args.get("status", "")
+
+    # Query vouchers based on filters
+    query = PettyCashVoucher.query
+
+    if filter_date:
+        query = query.filter(PettyCashVoucher.record_date == filter_date)
+
+    if filter_status and filter_status != "all":
+        query = query.filter(PettyCashVoucher.status == filter_status)
+
+    vouchers = query.order_by(PettyCashVoucher.record_date.desc()).all()
+
+    # Create workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Petty Cash Vouchers"
+
+    # Define styles
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    header_fill = PatternFill(
+        start_color="217346", end_color="217346", fill_type="solid"
+    )
+    header_alignment = Alignment(horizontal="center", vertical="center")
+
+    border = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin"),
+    )
+
+    # Set column widths
+    ws.column_dimensions["A"].width = 12
+    ws.column_dimensions["B"].width = 15
+    ws.column_dimensions["C"].width = 20
+    ws.column_dimensions["D"].width = 15
+    ws.column_dimensions["E"].width = 40
+    ws.column_dimensions["F"].width = 15
+
+    # Add headers
+    headers = ["DATE", "PCV NO.", "PAYEE", "AMOUNT", "DESCRIPTION", "STATUS"]
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = border
+
+    # Add data rows
+    for row_num, voucher in enumerate(vouchers, 2):
+        ws.cell(row=row_num, column=1, value=voucher.record_date).border = border
+        ws.cell(row=row_num, column=2, value=voucher.pcv_number).border = border
+        ws.cell(
+            row=row_num, column=3, value=voucher.payee.name if voucher.payee else "N/A"
+        ).border = border
+
+        amount_cell = ws.cell(row=row_num, column=4, value=voucher.amount)
+        amount_cell.number_format = "#,##0.00"
+        amount_cell.border = border
+
+        ws.cell(row=row_num, column=5, value=voucher.description or "").border = border
+        ws.cell(row=row_num, column=6, value=voucher.status.upper()).border = border
+
+    # Save to BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    # Generate filename with date
+    from datetime import datetime
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"petty_cash_vouchers_{timestamp}.xlsx"
+
+    return send_file(
+        output,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name=filename,
+    )
 
 
 @bp.route("/petty_cash/voucher/new", methods=["POST"])
