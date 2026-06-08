@@ -1568,6 +1568,13 @@
 
       document.getElementById('reportPeriod').textContent = period;
 
+      // Sort vouchers by record_date and then by pcv_number
+      vouchers.sort((a, b) => {
+        const dateCompare = a.record_date.localeCompare(b.record_date);
+        if (dateCompare !== 0) return dateCompare;
+        return a.pcv_number.localeCompare(b.pcv_number);
+      });
+
       // Populate vouchers table
       let totalAmount = 0;
       const tbody = document.getElementById('reportVouchersBody');
