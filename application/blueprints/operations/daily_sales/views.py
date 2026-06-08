@@ -1013,6 +1013,7 @@ def bulk_submit():
         record = Transaction.query.get(int(tid))
         if record and not record.submitted and not record.cancelled:
             record.submitted = str(ph_today())
+            record.status = 'submitted'  # Update new status field
             submitted_count += 1
     db.session.commit()
     if submitted_count:
@@ -2035,6 +2036,7 @@ def reject_transaction(transaction_id):
 
     # Clear submitted status to send back to draft
     transaction.submitted = None
+    transaction.status = 'draft'  # Update new status field
     transaction.updated_at = datetime.now()
 
     db.session.commit()

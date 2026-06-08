@@ -515,6 +515,7 @@ class Form:
     def _submit(self):
         record = Obj.query.get(self.id)
         record.submitted = str(ph_today())
+        record.status = 'submitted'  # Update new status field
         self.submitted = record.submitted
         db.session.commit()
 
@@ -538,6 +539,7 @@ class Form:
     def _cancel(self):
         record = Obj.query.get(self.id)
         record.cancelled = str(ph_today())
+        record.status = 'cancelled'  # Update new status field
         self.cancelled = record.cancelled
         db.session.commit()
 
