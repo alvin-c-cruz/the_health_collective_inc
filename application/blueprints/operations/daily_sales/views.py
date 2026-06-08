@@ -2575,8 +2575,16 @@ def daily_report():
             FundDisbursed.status.in_(["submitted", "posted"]),
         ).all()
 
+        # Include petty cash vouchers (expenses) in disbursed total
+        petty_cash_vouchers = PettyCashVoucher.query.filter(
+            PettyCashVoucher.record_date == str(target_date),
+            PettyCashVoucher.status.in_(["submitted", "posted"]),
+        ).all()
+
         total_received = sum(f.amount for f in funds_received)
-        total_disbursed = sum(f.amount for f in funds_disbursed)
+        total_disbursed = sum(f.amount for f in funds_disbursed) + sum(
+            pcv.amount for pcv in petty_cash_vouchers
+        )
 
         return {
             "total_received": total_received,
