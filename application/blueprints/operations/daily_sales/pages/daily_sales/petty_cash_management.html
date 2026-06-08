@@ -1606,12 +1606,45 @@
   }
 
   function submitReimbursementReport() {
-    alert('Reimbursement report submitted! The selected vouchers will be marked as "For Reimbursement"');
-    // Close modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('reimbursementReportModal'));
-    modal.hide();
+    // Get the selected voucher IDs from the checkboxes
+    const checkboxes = document.querySelectorAll('.pcv-select:checked');
+    const voucherIds = Array.from(checkboxes).map(cb => cb.dataset.pcvId);
 
-    // In real implementation: submit to server and update voucher statuses
+    if (voucherIds.length === 0) {
+      alert('No vouchers selected');
+      return;
+    }
+
+    // Create form data
+    const formData = new FormData();
+    voucherIds.forEach(id => {
+      formData.append('voucher_ids[]', id);
+    });
+
+    // Submit to server
+    fetch('/daily_sales/petty_cash/reimbursement_report/create', {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to create reimbursement report');
+      }
+      return response.text();
+    })
+    .then(() => {
+      // Close modal
+      const modal = bootstrap.Modal.getInstance(document.getElementById('reimbursementReportModal'));
+      modal.hide();
+
+      // Show success message and reload page
+      alert('Reimbursement report created successfully! The selected vouchers have been marked as "For Reimbursement"');
+      window.location.reload();
+    })
+    .catch(error => {
+      console.error('Error creating reimbursement report:', error);
+      alert('Error creating reimbursement report: ' + error.message);
+    });
   }
 
   // Update reimbursement amount based on checked reports
