@@ -1537,7 +1537,7 @@
     }
 
     // Collect selected voucher IDs
-    const voucherIds = Array.from(checkboxes).map(cb => cb.value);
+    const voucherIds = Array.from(checkboxes).map(cb => cb.dataset.pcvId);
 
     // Fetch voucher data for all selected vouchers
     Promise.all(voucherIds.map(id =>
