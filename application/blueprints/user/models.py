@@ -74,7 +74,19 @@ class User(db.Model):
 
     @property
     def user_roles(self):
-        return [user_role.role.role_name for user_role in self.roles]
+        # Cached per-instance. The navbar reads this ~30x per render; the naive
+        # version triggered 1 + N lazy queries on every access (one for
+        # self.roles, one per role for .role). Compute once with a single JOIN
+        # and reuse for the rest of the request.
+        if not hasattr(self, "_user_roles_cache"):
+            self._user_roles_cache = [
+                name
+                for (name,) in db.session.query(Role.role_name)
+                .join(UserRole, UserRole.role_id == Role.id)
+                .filter(UserRole.user_id == self.id)
+                .all()
+            ]
+        return self._user_roles_cache
 
     @property
     def menus(self):

@@ -263,9 +263,15 @@ class TestDemographicsCalculation:
         from tests.factories import ProductFactory, create_complete_transaction
 
         with app.app_context():
-            # Create product WITHOUT product type
-            prod_misc = ProductFactory(product_name="Misc Item", product_type=None)
+            # product_type_id is NOT NULL, so a product can't truly have "no
+            # type" -- but its product_type relationship can resolve to None if
+            # the referenced type is gone. Point at a non-existent type id to
+            # exercise the code's defensive "no product type" handling.
+            prod_misc = ProductFactory(product_name="Misc Item")
+            prod_misc.product_type_id = 999999
             db.flush()
+            db.expire(prod_misc, ["product_type"])  # drop the cached relationship
+            assert prod_misc.product_type is None
 
             today = date.today()
 

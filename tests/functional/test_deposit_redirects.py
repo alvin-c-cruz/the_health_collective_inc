@@ -16,7 +16,7 @@ import pytest
 
 from application.blueprints.operations.bank_account.models import BankAccount
 from application.blueprints.operations.daily_sales.models import Deposit
-from application.blueprints.user.models import User
+from application.blueprints.user.models import Role, User, UserRole
 
 
 @pytest.mark.functional
@@ -101,10 +101,19 @@ def test_submit_deposit_redirects_to_daily_sales(client, db):
     db.add(deposit)
     db.commit()
 
-    # Login using session
-    with client.session_transaction() as sess:
-        sess["user_id"] = user.id
-        sess["_fresh"] = True
+    # Grant the role the endpoint requires, then log in through the real login
+    # endpoint so Flask-Login's current_user is populated correctly.
+    role = Role(role_name="Daily Sales")
+    db.add(role)
+    db.commit()
+    db.add(UserRole(user_id=user.id, role_id=role.id))
+    db.commit()
+
+    client.post(
+        "/user/login",
+        data={"user_name": user.user_name, "pass_word": "password"},
+        follow_redirects=True,
+    )
 
     # Act: POST to submit_deposit
     response = client.post(
@@ -150,10 +159,19 @@ def test_cancel_deposit_redirects_to_daily_sales(client, db):
     db.add(deposit)
     db.commit()
 
-    # Login using session
-    with client.session_transaction() as sess:
-        sess["user_id"] = user.id
-        sess["_fresh"] = True
+    # Grant the role the endpoint requires, then log in through the real login
+    # endpoint so Flask-Login's current_user is populated correctly.
+    role = Role(role_name="Daily Sales")
+    db.add(role)
+    db.commit()
+    db.add(UserRole(user_id=user.id, role_id=role.id))
+    db.commit()
+
+    client.post(
+        "/user/login",
+        data={"user_name": user.user_name, "pass_word": "password"},
+        follow_redirects=True,
+    )
 
     # Act: POST to cancel_deposit
     response = client.post(

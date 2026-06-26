@@ -166,6 +166,18 @@ class TransactionFactory(BaseFactory):
     transaction_type = factory.SubFactory(TransactionTypeFactory)
     discount = 0
     status = "submitted"
+    # The real submit/cancel workflow (forms.py / views.py) sets the LEGACY
+    # string fields alongside `status`, and dashboard/reporting queries filter
+    # on those legacy fields. Mirror that here so factory-built transactions
+    # behave like real ones (otherwise they're invisible to the dashboard).
+    submitted = factory.LazyAttribute(
+        lambda o: (
+            o.record_date if o.status in ("submitted", "posted", "cancelled") else None
+        )
+    )
+    cancelled = factory.LazyAttribute(
+        lambda o: o.record_date if o.status == "cancelled" else None
+    )
     created_by_id = factory.LazyAttribute(lambda obj: UserFactory().id)
     submitted_by_id = factory.SelfAttribute("created_by_id")
 

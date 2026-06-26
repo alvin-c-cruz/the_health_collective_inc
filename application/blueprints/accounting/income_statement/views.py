@@ -52,6 +52,10 @@ def home():
     # Get all accounts ordered by account number
     accounts = Account.query.order_by(Account.account_number).all()
 
+    # Bulk-load balances for the two dates the period calculation needs, so the
+    # per-account balance() calls below are cache hits.
+    Account.warm_balance_cache(accounts, to_date, from_date - timedelta(days=1))
+
     # Organize accounts by class (Revenue, Cost of Sales, Expenses)
     revenue_accounts = []
     cost_of_sales_accounts = []
@@ -196,6 +200,10 @@ def download_excel():
 
     # Get all accounts
     accounts = Account.query.order_by(Account.account_number).all()
+
+    # Bulk-load balances for the two dates the period calculation needs so the
+    # per-account calls below are cache hits.
+    Account.warm_balance_cache(accounts, to_date, from_date - timedelta(days=1))
 
     # Prepare data for Excel
     data_rows = []

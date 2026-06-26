@@ -1,3 +1,4 @@
+import sqlite3
 from datetime import datetime, timedelta
 
 from flask_bcrypt import Bcrypt
@@ -5,6 +6,8 @@ from flask_login import LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
 from zoneinfo import ZoneInfo
 
 db = SQLAlchemy()
@@ -12,6 +15,35 @@ mail = Mail()
 bcrypt = Bcrypt()
 migrate = Migrate()
 login_manager = LoginManager()
+
+
+@event.listens_for(Engine, "connect")
+def _set_sqlite_pragmas(dbapi_connection, connection_record):
+    """Tune SQLite on every new connection.
+
+    - busy_timeout: wait briefly for a lock instead of immediately raising
+      "database is locked". Works everywhere, including PythonAnywhere's
+      networked filesystem -- this is the setting that actually mitigates the
+      lock errors there.
+    - WAL + synchronous=NORMAL: let readers run concurrently with a writer.
+      Best-effort only: WAL relies on same-host shared memory and may not
+      engage on a networked filesystem, so a failure to set it must never break
+      the connection (busy_timeout still applies either way).
+    """
+    if not isinstance(dbapi_connection, sqlite3.Connection):
+        return
+    cursor = dbapi_connection.cursor()
+    try:
+        cursor.execute("PRAGMA busy_timeout=5000")
+        try:
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+        except sqlite3.OperationalError:
+            # e.g. WAL not supported on the underlying filesystem
+            pass
+    finally:
+        cursor.close()
+
 
 _PH = ZoneInfo("Asia/Manila")
 

@@ -2,6 +2,7 @@ from datetime import date
 
 from sqlalchemy import func
 from sqlalchemy import select as sa_select
+from sqlalchemy.orm import joinedload, selectinload
 
 from application.extensions import db
 
@@ -53,6 +54,38 @@ def get_dashboard_stats(today: date) -> dict:
     )
 
     submitted = (Transaction.submitted != None) & (Transaction.submitted != "")
+
+    # Lookup maps computed once with a single grouped query each, replacing the
+    # per-row SUM subqueries that previously ran inside the receivables and
+    # undeposited loops (the N+1 patterns). Keyed all-time to match the original
+    # per-row queries, which had no date filter.
+    try:
+        from ..operations.collections.models import CollectionDetail
+
+        collected_map = {
+            tt_id: amount
+            for tt_id, amount in db.session.query(
+                CollectionDetail.transaction_tender_id,
+                func.sum(CollectionDetail.amount_applied),
+            ).group_by(CollectionDetail.transaction_tender_id)
+        }
+    except Exception:
+        collected_map = {}
+
+    try:
+        from ..operations.daily_sales.models import DepositItem
+
+        deposited_map = {
+            txn_id: amount
+            for txn_id, amount in db.session.query(
+                DepositItem.transaction_id, func.sum(DepositItem.amount)
+            )
+            .join(Deposit)
+            .filter(Deposit.status.in_(["submitted", "posted"]))
+            .group_by(DepositItem.transaction_id)
+        }
+    except Exception:
+        deposited_map = {}
 
     # Today
     today_count = (
@@ -384,13 +417,27 @@ def get_dashboard_stats(today: date) -> dict:
                     "tenders": {},
                 }
 
-        # Query transactions for the date range (only submitted, not drafts)
-        transactions = Transaction.query.filter(
-            Transaction.record_date >= start_date_str,
-            Transaction.record_date <= end_date_str,
-            submitted,
-            active,
-        ).all()
+        # Query transactions for the date range (only submitted, not drafts).
+        # Eager-load the relationships the loop below walks, so iterating the
+        # transactions doesn't trigger a lazy query per detail/tender.
+        transactions = (
+            Transaction.query.filter(
+                Transaction.record_date >= start_date_str,
+                Transaction.record_date <= end_date_str,
+                submitted,
+                active,
+            )
+            .options(
+                joinedload(Transaction.transaction_type),
+                selectinload(Transaction.transaction_details)
+                .joinedload(TransactionDetail.product)
+                .joinedload(Product.product_type),
+                selectinload(Transaction.transaction_tenders).joinedload(
+                    TransactionTender.tender
+                ),
+            )
+            .all()
+        )
 
         for txn in transactions:
             txn_type_code = (
@@ -470,13 +517,22 @@ def get_dashboard_stats(today: date) -> dict:
         for product in dialysis_products:
             dialysis_product_sales[product.product_name] = 0
 
-        # Query transactions for the date range
-        transactions = Transaction.query.filter(
-            Transaction.record_date >= start_date_str,
-            Transaction.record_date <= end_date_str,
-            submitted,
-            active,
-        ).all()
+        # Query transactions for the date range. Eager-load details + product so
+        # the loop below doesn't trigger a lazy query per detail.
+        transactions = (
+            Transaction.query.filter(
+                Transaction.record_date >= start_date_str,
+                Transaction.record_date <= end_date_str,
+                submitted,
+                active,
+            )
+            .options(
+                selectinload(Transaction.transaction_details).joinedload(
+                    TransactionDetail.product
+                )
+            )
+            .all()
+        )
 
         # Calculate sales for each Dialysis product
         for txn in transactions:
@@ -549,12 +605,7 @@ def get_dashboard_stats(today: date) -> dict:
 
             beginning_balance = 0
             for tt in beginning_transactions:
-                collected = (
-                    db.session.query(func.sum(CollectionDetail.amount_applied))
-                    .filter(CollectionDetail.transaction_tender_id == tt.id)
-                    .scalar()
-                    or 0
-                )
+                collected = collected_map.get(tt.id, 0) or 0
                 outstanding = tt.amount - collected
                 if outstanding > 0:
                     beginning_balance += outstanding
@@ -618,7 +669,6 @@ def get_dashboard_stats(today: date) -> dict:
     def get_detailed_receivables():
         """Get list of all outstanding receivable transactions with details."""
         try:
-            from ..operations.collections.models import CollectionDetail
             from ..register.customer.models import Customer
 
             # Get receivable tender IDs
@@ -646,12 +696,7 @@ def get_dashboard_stats(today: date) -> dict:
 
             for tt in transaction_tenders:
                 # Calculate collected amount
-                collected = (
-                    db.session.query(func.sum(CollectionDetail.amount_applied))
-                    .filter(CollectionDetail.transaction_tender_id == tt.id)
-                    .scalar()
-                    or 0
-                )
+                collected = collected_map.get(tt.id, 0) or 0
                 outstanding = tt.amount - collected
 
                 if outstanding > 0.01:  # Only include if there's outstanding balance
@@ -680,7 +725,6 @@ def get_dashboard_stats(today: date) -> dict:
     def get_receivables_by_tender():
         """Get receivables grouped by tender type with transaction details."""
         try:
-            from ..operations.collections.models import CollectionDetail
             from ..register.customer.models import Customer
 
             # Get receivable tender IDs
@@ -713,12 +757,7 @@ def get_dashboard_stats(today: date) -> dict:
             tender_groups = {}
             for tt in transaction_tenders:
                 # Calculate collected amount
-                collected = (
-                    db.session.query(func.sum(CollectionDetail.amount_applied))
-                    .filter(CollectionDetail.transaction_tender_id == tt.id)
-                    .scalar()
-                    or 0
-                )
+                collected = collected_map.get(tt.id, 0) or 0
                 outstanding = tt.amount - collected
 
                 if outstanding > 0.01:  # Only include if there's outstanding balance
@@ -800,16 +839,7 @@ def get_dashboard_stats(today: date) -> dict:
             beginning_balance = 0
             for tt in beginning_transactions:
                 # Get total deposited for this transaction tender
-                deposited = (
-                    db.session.query(func.sum(DepositItem.amount))
-                    .join(Deposit)
-                    .filter(
-                        DepositItem.transaction_id == tt.transaction_id,
-                        Deposit.status.in_(["submitted", "posted"]),
-                    )
-                    .scalar()
-                    or 0
-                )
+                deposited = deposited_map.get(tt.transaction_id, 0) or 0
                 # Get the cash amount for this transaction
                 cash_amount = tt.amount
                 undeposited = cash_amount - deposited
@@ -910,12 +940,7 @@ def get_dashboard_stats(today: date) -> dict:
             # Calculate outstanding for each, grouped by tender
             for tt in receivable_transaction_tenders:
                 # Get total collected for this transaction tender
-                collected = (
-                    db.session.query(func.sum(CollectionDetail.amount_applied))
-                    .filter(CollectionDetail.transaction_tender_id == tt.id)
-                    .scalar()
-                    or 0
-                )
+                collected = collected_map.get(tt.id, 0) or 0
                 outstanding = tt.amount - collected
                 if outstanding > 0:
                     tender_name = tt.tender.tender_name if tt.tender else "Unknown"

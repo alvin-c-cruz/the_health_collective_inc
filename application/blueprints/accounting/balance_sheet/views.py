@@ -26,6 +26,10 @@ def calculate_retained_earnings(as_of_date):
     # Get all accounts
     accounts = Account.query.all()
 
+    # One set of bulk queries warms every account's balance for both dates,
+    # so the per-account balance() calls below are cache hits.
+    Account.warm_balance_cache(accounts, prior_year_end, as_of_date)
+
     # Calculate revenue and expenses for current year
     revenue_current_year = 0
     expenses_current_year = 0
@@ -150,6 +154,10 @@ def home():
     # Get all accounts ordered by account number
     accounts = Account.query.order_by(Account.account_number).all()
 
+    # Bulk-load every account's balance as of the report date (one set of
+    # grouped queries) so the per-account balance() calls below are cache hits.
+    Account.warm_balance_cache(accounts, as_of_date)
+
     # Organize accounts by class (Assets, Liabilities, Equity)
     assets = []
     liabilities = []
@@ -267,6 +275,10 @@ def download_excel():
 
     # Get all accounts
     accounts = Account.query.order_by(Account.account_number).all()
+
+    # Bulk-load balances as of the report date so the per-account calls below
+    # are cache hits.
+    Account.warm_balance_cache(accounts, as_of_date)
 
     # Prepare data for Excel
     data_rows = []

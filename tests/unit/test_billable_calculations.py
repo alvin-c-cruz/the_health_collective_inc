@@ -92,8 +92,8 @@ class TestCalculateUndepositedReport:
             # Act: Get dashboard stats which calls calculate_undeposited_report()
             stats = get_dashboard_stats(today)
 
-            # Assert: Undeposited report should only include billable items
-            undeposited = stats.get("undeposited_sales_summary", {})
+            # Assert: the product-type breakdown should only include billable items
+            undeposited = stats.get("daily_sales_summary", {})
 
             # DIALYSIS total should be 5000 (not 6500 with non-billable medicine)
             dialysis_total = 0
@@ -153,7 +153,7 @@ class TestCalculateUndepositedReport:
 
             # Act
             stats = get_dashboard_stats(today)
-            undeposited = stats.get("undeposited_sales_summary", {})
+            undeposited = stats.get("daily_sales_summary", {})
 
             # Assert: Total should be 3000 + (2500 - 500) = 5000
             dialysis_total = 0
@@ -206,7 +206,7 @@ class TestCalculateUndepositedReport:
 
             # Act
             stats = get_dashboard_stats(today)
-            undeposited = stats.get("undeposited_sales_summary", {})
+            undeposited = stats.get("daily_sales_summary", {})
 
             # Assert: PHARMACY should not appear in undeposited (or should be 0)
             pharmacy_total = 0

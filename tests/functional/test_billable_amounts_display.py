@@ -61,7 +61,7 @@ class TestAllTransactionsPage:
             db.flush()
 
             # Act: Request all_transactions page
-            response = client.get("/daily_sales/all/")
+            response = client.get("/daily_sales/all_transactions")
 
             # Assert: Page loads successfully
             assert response.status_code in [200, 302]
@@ -105,7 +105,7 @@ class TestAllTransactionsPage:
             db.flush()
 
             # Act
-            response = client.get("/daily_sales/all/")
+            response = client.get("/daily_sales/all_transactions")
 
             # Assert: Total should be 2000 + (1500-500) = 3000
             assert response.status_code in [200, 302]
@@ -142,7 +142,7 @@ class TestAllTransactionsPage:
             db.flush()
 
             # Act
-            response = client.get("/daily_sales/all/")
+            response = client.get("/daily_sales/all_transactions")
 
             # Assert: Net should be 5000 - 500 = 4500
             assert response.status_code in [200, 302]
@@ -197,7 +197,7 @@ class TestDraftsPage:
             db.flush()
 
             # Act: Request drafts page
-            response = client.get("/daily_sales/drafts/")
+            response = client.get("/daily_sales/drafts")
 
             # Assert: Should show 4000 (not 5000)
             assert response.status_code in [200, 302]
@@ -257,7 +257,7 @@ class TestChangeRequestsPage:
             db.flush()
 
             # Act: Request change_requests page
-            response = client.get("/daily_sales/change_requests/")
+            response = client.get("/daily_sales/change_requests")
 
             # Assert: Should show 6000 (not 8000)
             assert response.status_code in [200, 302]
@@ -427,7 +427,7 @@ class TestBillableFilterRegression:
             db.flush()
 
             # Act: Should not crash
-            response = client.get("/daily_sales/all/")
+            response = client.get("/daily_sales/all_transactions")
             assert response.status_code in [200, 302]
 
             response = client.get(f"/daily_sales/?date={today}")
